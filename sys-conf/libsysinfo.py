@@ -295,9 +295,9 @@ def __get_stat_fan(mod):
 	_tmp = AttrRead(ALARM_DIR, 'case-fan2')
 	if _tmp != '' and _tmp != 'good':
 		_value = _value + '[机箱风扇2告警: %s] ' % _tmp
-	_tmp = AttrRead(ALARM_DIR, 'cpu-fan')
-	if _tmp != '' and _tmp != 'good':
-		_value = _value + '[CPU风扇告警: %s]' % _tmp
+	#_tmp = AttrRead(ALARM_DIR, 'cpu-fan')
+	#if _tmp != '' and _tmp != 'good':
+	#	_value = _value + '[CPU风扇告警: %s]' % _tmp
 	if _value != '':
 		_stat['value'] = _value
 	else:
