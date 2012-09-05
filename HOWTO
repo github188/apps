@@ -1,0 +1,23 @@
+
+
+1. 安装程序库
+
+sudo apt-get install libparted0 libparted0-dev
+
+2. 编译
+
+在sys_src目录下执行make
+
+
+执行以下操作请确认使用root权限
+
+3. 安装
+
+前提：确保us_d相关的文件已经被安装，如果使用us目录的install.sh覆盖了安装则重新执行下面的安装脚本即可
+在sys_src目录下执行./install.sh
+
+4. 使用命令行，支持的命令如下
+
+sys-manager udv --list
+                --create --vg <vg_name> --name <udv_name> --capacity <size>
+

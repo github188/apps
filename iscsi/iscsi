@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys,os
+
+"""
+Target 功能处理
+"""
+def target_proc():
+	sub_fun = sys.argv[2]
+	if sub_fun == "--list":
+		print """{
+	"total":1,
+	"rows":[
+		{"tid":1,"target_name":"iqn-target-2012.abc","state":"enable","luns":3,"sessions":10,
+		"iscsi_protocol":["DataDigest":"None","FirstBurstLength":1024,"HeaderDigest":"None","ImmediateData":"Yes","InitialR2T":"No","MaxBurstLength":4096,"MaxOutstandingR2T":16,"MaxRecvDataSegmentLength":1024,"MaxXmitDataSegmentLength":1024],
+		"attributes":["NopInInterval":30," NopInTimeout":30," RspTimeout":90,"MaxSessions":10],
+		"statistics":["QueuedCommands":120]}
+	]
+}"""
+	else:
+		msg_out("操作成功!");
+
+"""
+iSCSI卷功能
+"""
+def volume_proc():
+	sub_fun = sys.argv[2]
+
+	if sub_fun == "--list":
+		print """{
+	"total":5,
+	"rows":[
+		{"volume_name":"vd0001","udv_name":"udv1","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
+		{"volume_name":"vd0002","udv_name":"udv2","dev_node":"/dev/md1p2","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
+		{"volume_name":"vd0003","udv_name":"udv3","dev_node":"/dev/md1p3","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
+		{"volume_name":"vd0004","udv_name":"udv4","dev_node":"/dev/md1p4","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
+		{"volume_name":"vd0005","udv_name":"udv5","dev_node":"/dev/md1p5","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
+	]
+}"""
+	else:
+		msg_out("操作成功!");
+
+"""
+LUN管理
+"""
+def lun_proc():
+	sub_fun = sys.argv[2]
+	if sub_fun == "--list":
+		print """{
+	"total":1,
+	"rows":[
+		{"target":"iqn-2012.abc","luns":3,"lun_list":[
+			{"id":1,"volume_name":"vd0001","udv_name":"udv1","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"},
+			{"id":2,"volume_name":"vd0002","udv_name":"udv2","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"},
+			{"id":3,"volume_name":"vd0003","udv_name":"udv3","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
+		]}
+	]
+}"""
+	else:
+		msg_out("操作成功!")
+
+"""
+Session管理
+"""
+def session_proc():
+	sub_fun = sys.argv[2]
+	if sub_fun == "--list":
+		print """{
+	"total":1,
+	"row":[
+		{"sid":" 16000037010040","initiator_name":"iqn.1991-05.com.microsoft:gonglei-pc","luns":3,
+		"iscsi_protocol":["DataDigest":"None","FirstBurstLength":1024,"HeaderDigest":"None","ImmediateData":"Yes","InitialR2T":"No","MaxBurstLength":4096,"MaxOutstandingR2T":16,"MaxRecvDataSegmentLength":1024,"MaxXmitDataSegmentLength":1024],
+		"statistics":["none_cmd_count":123,"unknown_cmd_count":234,"bidi_cmd_count":12,"bidi_io_count_kb":128,"read_cmd_count":89,"read_io_count_kb":23,"write_cmd_count":287,"write_io_count_kb":67]
+		}
+	]
+}"""
+	else:
+		msg_out("操作成功!")
+
+
+"""
+输出返回结果
+"""
+def err_out(msg):
+	print '{"status":false,"msg":"%s"}' % msg
+	sys.exit(1)
+
+def msg_out(msg):
+	print '{"status":true,"msg":"%s"}' % msg
+	sys.exit(0)
+
+"""
+主函数
+"""
+def py_main():
+	argc = len(sys.argv)
+	if argc < 2:
+		err_out("参数长度不正确！")
+
+	try:
+		function = sys.argv[1]
+		if function == "--target":
+			target_proc()
+		elif function == "--volume":
+			volume_proc()
+		elif function == "--lun":
+			lun_proc()
+		elif function == "--session":
+			session_proc()
+		else:
+			err_out("请输入正确的功能参数！")
+	except:
+		pass
+
+	sys.exit(0)
+
+if __name__ == "__main__":
+	py_main()
