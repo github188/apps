@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import libiscsicommon.py
+import libiscsicommon
 
 class TargetAttr:
 	"""
@@ -30,7 +30,6 @@ class Target:
 		self.state = 'disable'
 		self.luns = 0
 		self.sessions = 0
-		self.proto = new iSCSI_Protocol
-		self.attr = new TargetAttr
-		self.stat = new TargetStat
-
+		self.proto = iSCSI_Protocol()
+		self.attr = TargetAttr()
+		self.stat = TargetStat()
