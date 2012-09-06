@@ -17,6 +17,7 @@ struct option udv_options[] = {
 	{"modify",		no_argument,		NULL,	'm'},
 	{"old-name",		required_argument,	NULL,	'o'},
 	{"new-name",		required_argument,	NULL,	'n'},
+	{"remain-capacity",	no_argument,		NULL,	'r'},
 	{0, 0, 0, 0}
 
 };
@@ -28,6 +29,7 @@ void udv_usage()
   printf(_T("       --create --vg <vg_name> --name <udv_name> --capacity <size>\n"));
   printf(_T("       --delete <udv_name>\n"));
   printf(_T("       --modify --old-name <udv_name> --new-name <udv_name>\n"));
+  printf(_T("       --remain-capacity --vg <vg_name>\n"));
   printf(_T("\n\n"));
   exit(0);
 }
@@ -35,6 +37,7 @@ void udv_usage()
 enum {
 	UDV_MODE_CREATE = 1,
 	UDV_MODE_RENAME = 2,
+	UDV_MODE_REMAIN = 3,
 	UDV_MODE_NONE
 };
 
@@ -45,7 +48,7 @@ enum {
 
 static int mode = UDV_MODE_NONE;	// for create & rename
 
-// for create
+// for create or remain
 static char vg_name[128] = {0};
 static char udv_name[128] = {0};
 static uint64_t capacity = 0;
@@ -115,6 +118,36 @@ void list_udv()
 	exit(0);
 }
 
+int get_udv_remain()
+{
+	struct list list, *nn, *nt;
+	ssize_t n;
+	struct geom_stru *elem;
+
+	uint64_t max_remain = 0,
+		 max_single = 0;
+
+	n = get_udv_free_list(vg_name, &list);
+	if (n<0)
+		return_json_msg(MSG_ERROR, "无法获取剩余空间!");
+	else if (n==0)
+		return printf("{\"vg\":\"%s\",\"max_avaliable\":0,\"max_single\":0}\n",
+				vg_name);
+
+	list_iterate_safe(nn, nt, &list)
+	{
+		elem = list_struct_base(nn, struct geom_stru, list);
+
+		max_remain += elem->geom.capacity;
+
+		if (max_single < elem->geom.capacity)
+			max_single = elem->geom.capacity;
+	}
+
+	return printf("{\"vg\":\"%s\",\"max_avaliable\":%llu,\"max_single\":%llu}\n",
+			vg_name, max_remain, max_single);
+}
+
 int udv_main(int argc, char *argv[])
 {
 	char c;
@@ -154,6 +187,9 @@ int udv_main(int argc, char *argv[])
 			case 'n':
 				strcpy(m_new_name, optarg);
 				break;
+			case 'r':
+				mode = UDV_MODE_REMAIN;
+				break;
 			case '?':
 			default:
 				udv_usage();
@@ -163,11 +199,13 @@ int udv_main(int argc, char *argv[])
 
 	if (UDV_MODE_CREATE == mode)
 	{
+		int ret = 0;
 		if ( ! (vg_name[0] && udv_name[0] && capacity) )
 			return_json_msg(MSG_ERROR, "创建用户数据卷参数错误!");
 
-		if (udv_create(vg_name, udv_name, capacity) >= 0)
+		if ((ret=udv_create(vg_name, udv_name, capacity)) >= 0)
 			return_json_msg(MSG_OK, "创建用数据卷成功!");
+		//printf("ret = %d\n", ret);
 		return_json_msg(MSG_ERROR, "创建用户数据卷失败!");
 	}
 	else if (UDV_MODE_RENAME == mode)
@@ -178,6 +216,12 @@ int udv_main(int argc, char *argv[])
 		if (udv_rename(m_old_name, m_new_name) >= 0)
 			return_json_msg(MSG_OK, "修改用户数据卷名称操作成功!");
 		return_json_msg(MSG_ERROR, "修改用户数据卷名称操作失败!");
+	}
+	else if (UDV_MODE_REMAIN == mode)
+	{
+		if (vg_name[0] == '\0')
+			return_json_msg(MSG_ERROR, "请输入卷组名称!");
+		return get_udv_remain();
 	}
 
 	udv_usage();
