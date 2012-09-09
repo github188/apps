@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+
 class SCST_CONFIG(object):
 	"""
 	定义SCST相关属性
@@ -32,20 +34,66 @@ class iSCSI_Protocol:
 		self.DataDigest = "None"
 
 		self.ImmediateDate = "Yes"
-		self.FristBurstLength = 1024
+		self.FirstBurstLength = 1024
 		self.MaxBurstLength = 4096
 		self.InitialR2T = "No"
-		self.MaxOutStandingR2T = 16
+		self.MaxOutstandingR2T = 16
 		self.MaxRecvDataSegmentLength = 1024
 		self.MaxXmitDataSegmentLength = 1024
 
-GlobalConfig = SCST_CONFIG()
+SCST = SCST_CONFIG()
+
+# 公用函数
+def AttrRead(dir_path, attr_name):
+	value = ''
+	full_path = dir_path + os.sep + attr_name
+	try:
+		f = open(full_path)
+		value = f.readline()
+	except IOError, e:
+		value = e
+	else:
+		f.close()
+	return value.strip()
+
+def AttrWrite(file_path, value):
+	try:
+		f = open(file_path, 'w')
+	except IOError,e:
+		err_msg = e
+		return False
+	else:
+		f.write(value)
+		f.close()
+		return True
+
+def getDirList(file_path):
+	dir_list = []
+	try:
+		for td in os.listdir(file_path):
+			if os.path.isdir(file_path + os.sep + td):
+				dir_list.append(td)
+	except IOError,e:
+		err_msg = e
+	finally:
+		return dir_list
+
+def getISCSIProto(tgt_name):
+	tgt_full_path = SCST.ROOT_DIR + '/targets/iscsi/' + tgt_name
+	proto = iSCSI_Protocol()
+	proto.HeaderDigest = AttrRead(tgt_full_path, 'HeaderDigest')
+	proto.DataDigest = AttrRead(tgt_full_path, 'DataDigest')
+	proto.ImmediateData = AttrRead(tgt_full_path, 'ImmediateData')
+	proto.FirstBurstLength = int(AttrRead(tgt_full_path, 'FirstBurstLength'))
+	proto.MaxBurstLength = int(AttrRead(tgt_full_path, 'MaxBurstLength'))
+	proto.InitialR2T = AttrRead(tgt_full_path, 'InitialR2T')
+	proto.MaxOutstandingR2T = int(AttrRead(tgt_full_path, 'MaxOutstandingR2T'))
+	proto.MaxRecvDataSegmentLength = int(AttrRead(tgt_full_path, 'MaxRecvDataSegmentLength'))
+	proto.MaxXmitDataSegmentLength = int(AttrRead(tgt_full_path, 'MaxXmitDataSegmentLength'))
+	return proto
 
 if __name__ == "__main__":
-	print GlobalConfig.ROOT_DIR
-	print GlobalConfig.TARGET_DIR
-	print GlobalConfig.VDISK_DIR
-	print GlobalConfig.__dict__
-	print GlobalConfig.__doc__
-	print GlobalConfig.__module__
-	print GlobalConfig.__class__
+	ss = AttrRead('/sys/kernel/scst_tgt/targets/iscsi/iqn.2012-abc', 'io_grouping_type')
+	print ss
+	xx = AttrWrite('/sys/kernel/scst_tgt/targets/iscsi/iqn.2012-abc/io_grouping_type', 'auto')
+	print xx
