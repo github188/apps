@@ -80,7 +80,7 @@ def getTargetInfo(tgt_name):
 	tgt.stat = getTargetStat(tgt_name)
 	return tgt
 
-def iSCSIGetTargetList():
+def iSCSIGetTargetList(tgt = ''):
 	target_list = []
 	target_dir = SCST.ROOT_DIR + os.sep + 'targets/iscsi'
 	for tgt in getDirList(target_dir):
