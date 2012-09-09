@@ -56,15 +56,17 @@ def AttrRead(dir_path, attr_name):
 		f.close()
 	return value.strip()
 
-def AttrWrite(file_path, value):
+def AttrWrite(dir_path, attr_name, value):
+	full_path = dir_path + os.sep + attr_name
 	try:
-		f = open(file_path, 'w')
-	except IOError,e:
-		err_msg = e
-		return False
-	else:
+		f = open(full_path, 'w')
 		f.write(value)
 		f.close()
+	except IOError,e:
+		err_msg = e
+		print err_msg
+		return False
+	else:
 		return True
 
 def getDirList(file_path):

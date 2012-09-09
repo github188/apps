@@ -80,23 +80,28 @@ def getTargetInfo(tgt_name):
 	tgt.stat = getTargetStat(tgt_name)
 	return tgt
 
-def getTargetList():
+def iSCSIGetTargetList():
 	target_list = []
 	target_dir = SCST.ROOT_DIR + os.sep + 'targets/iscsi'
-	for tgt in  os.listdir(target_dir):
+	for tgt in getDirList(target_dir):
 		tgt_full_path = target_dir + os.sep + tgt
-		if os.path.isdir(tgt_full_path):
-			target_list.append(getTargetInfo(os.path.basename(tgt_full_path)))
+		target_list.append(getTargetInfo(os.path.basename(tgt_full_path)))
 
 	return target_list
 
-def setTargetAttr(tgt_name, attr, value):
-	return
+def iSCSISetTargetAttr(tgt_name, attr, value):
+	if attr != 'MaxSessions':
+		return (False, '参数不正确，目前仅支持MaxSessions参数！')
+	tgt_full_path = SCST.ROOT_DIR + '/targets/iscsi/' + tgt_name
+	if AttrWrite(tgt_full_path, attr, value):
+		if AttrRead(tgt_full_path, attr) == value:
+			return (True, 'Target属性设置成功！')
+	return (False, 'Target属性设置失败！')
 
 # 测试代码
 if __name__ == '__main__':
 	# 获取Target列表
-	tgt_list = getTargetList()
+	tgt_list = iSCSIGetTargetList()
 	for tgt in tgt_list:
 		print '----------------------------'
 		print 'NAME: ', tgt.name
@@ -107,3 +112,7 @@ if __name__ == '__main__':
 		print dir(tgt)
 		print dir(tgt.attr)
 		print dir(tgt.proto)
+
+		(isSetOK, msg) = iSCSISetTargetAttr(tgt.name, 'MaxSessions', '10')
+		print 'isSetOK: ', isSetOK
+		print 'msg: ', msg
