@@ -67,7 +67,10 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 		disk = _create_disk_label(device, ped_disk_type_get("gpt"));
 
 	if (!disk)
+	{
+		ret_code = E_SYS_ERROR;
 		goto error;
+	}
 
 	list_iterate_safe(n, nt, &list)
 	{
@@ -90,7 +93,7 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 	ped_disk_destroy(disk);
 error:
         ped_device_destroy(device);
-	return E_OK;
+	return ret_code;
 }
 
 void free_geom_list(struct list *list)
