@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g ${CFLAG}
 objects=libudv.o list.o
 
 libudv.a : $(objects)

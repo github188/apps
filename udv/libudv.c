@@ -41,8 +41,8 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
                 return E_FMT_ERROR;
 
         // 检查VG是否存在
-        //if (!(vg_dev=vg_name2dev(vg_name)))
-        //        return EEXIST;
+        if (!(vg_dev=vg_name2dev(vg_name)))
+		return EEXIST;
 
         // 检查用户数据卷是否存在
         if (get_udv_by_name(name))
@@ -57,9 +57,11 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 		return E_SYS_ERROR;
         constraint = ped_constraint_any(device);
 
+#ifndef _UDV_DEBUG
 	// 检查是否为MD设备
 	if (device->type != PED_DEVICE_MD)
 		return E_DEVICE_NOTMD;
+#endif
 
 	if ( (type = ped_disk_probe(device)) && !strcmp(type->name, "gpt") )
 		disk = ped_disk_new(device);
@@ -243,9 +245,11 @@ size_t udv_list(udv_info_t *list, size_t n)
 
         while((dev=ped_device_get_next(dev)))
         {
+#ifndef _UDV_DEBUG
                 // 获取所有MD列表
-                //if (dev->type != PED_DEVICE_MD)
-                //        continue;
+		if (dev->type != PED_DEVICE_MD)
+			continue;
+#endif
 
 		// for debug
 		if (!strcmp(dev->path, "/dev/sda"))
@@ -289,6 +293,10 @@ size_t udv_list(udv_info_t *list, size_t n)
         return udv_cnt;
 }
 
+// 检查UDV名称是否存在
+// 返回值：
+//    udv_info_t* 存在，并且返回udv节点信息
+//    NULL udb不存在
 udv_info_t* get_udv_by_name(const char *name)
 {
         PedDevice *dev = NULL;
@@ -303,9 +311,11 @@ udv_info_t* get_udv_by_name(const char *name)
 
         while((dev=ped_device_get_next(dev)))
         {
+#ifndef _UDV_DEBUG
                 // 获取所有MD列表
                 if (dev->type != PED_DEVICE_MD)
                         continue;
+#endif
 
                 // 获取当前MD分区信息
                 if ( !(disk=ped_disk_new(dev)) )

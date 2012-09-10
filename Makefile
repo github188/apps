@@ -1,5 +1,5 @@
 all:
-	$(MAKE) -C udv
+	$(MAKE) -C udv CFLAG=-D_UDV_DEBUG
 	$(MAKE) -C web-iface
 
 clean:
