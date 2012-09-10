@@ -13,7 +13,7 @@ class iSCSIVolume:
 	def __init__(self):
 		self.volume_name = ''
 		self.udv_name = ''
-		self.dev_node = ''
+		self.udv_dev = ''
 		self.capacity = 0
 		self.blocksize = 512
 		self.read_only = 'disable'
@@ -26,24 +26,24 @@ def isVolumeExist(volume_name):
 		return True
 	return False
 
-def isDevNodeUsed(dev_node):
+def isDevNodeUsed(udv_dev):
 	for xx in iSCSIVolumeGetList():
-		if xx.dev_node == dev_node:
+		if xx.udv_dev == udv_dev:
 			return True
 	return False
 
-def iSCSIVolumeAdd(dev_node, blocksize = 512, ro = 'disable', nv_cache = 'enable'):
+def iSCSIVolumeAdd(udv_dev, blocksize = 512, ro = 'disable', nv_cache = 'enable'):
 	if not blocksize in VOL_BLOCK_SIZE:
 		return (False, '映射iSCSI数据卷失败！Block Size参数不正确！')
 	if not ro in VOL_BOOL_MAP:
 		return (False, '映射iSCSI数据卷失败！Read Only参数不正确！')
 	if not nv_cache in VOL_BOOL_MAP:
 		return (False, '映射iSCSI数据卷失败！NV CACHE参数不正确！')
-	if isDevNodeUsed(dev_node):
-		return (False, '映射iSCSI数据卷失败！块设备 %s 已经被使用！' % dev_node)
+	if isDevNodeUsed(udv_dev):
+		return (False, '映射iSCSI数据卷失败！块设备 %s 已经被使用！' % udv_dev)
 
 	vol_name = 'vd_' + time.strftime('%Y%m%d%H%M',time.localtime(time.time()))
-	iscsi_cmd = 'add_device %s filename=%s;blocksize=%d;nv_cache=%s;read_only=%s' % (vol_name, dev_node, blocksize, VOL_BOOL_MAP[nv_cache], VOL_BOOL_MAP[ro])
+	iscsi_cmd = 'add_device %s filename=%s;blocksize=%d;nv_cache=%s;read_only=%s' % (vol_name, udv_dev, blocksize, VOL_BOOL_MAP[nv_cache], VOL_BOOL_MAP[ro])
 
 	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
 		return (True, '添加iSCSI数据卷 %s 成功！' % vol_name)
@@ -65,7 +65,7 @@ def getVolumeInfo(volume_name):
 	vol = iSCSIVolume()
 	vol.volume_name = volume_name
 	#vol.udv_name =
-	vol.dev_node = AttrRead(vol_full_path, 'filename')
+	vol.udv_dev = AttrRead(vol_full_path, 'filename')
 	vol.capacity = int(AttrRead(vol_full_path, 'size_mb'))
 	vol.blocksize = int(AttrRead(vol_full_path, 'blocksize'))
 	vol.read_only = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'read_only')]
@@ -88,13 +88,16 @@ def iSCSIVolumeGetList(volume_name = ''):
 	return vol_list
 
 if __name__ == '__main__':
-	(ret, msg) = iSCSIVolumeAdd('/dev/sdf')
-	print 'ret = ', ret
-	print 'msg = ', msg
-
 	for xx in iSCSIVolumeGetList():
-		print dir(xx)
-		print 'vol.dev_node = ', xx.dev_node
+		print '-------------------------------'
+		print 'volume_name: ', xx.volume_name
+		print 'udv_dev: ', xx.udv_dev
+		print 'udv_name: ', xx.udv_name
+		print 'capacity: ', xx.capacity
+		print 'blocksize: ', xx.blocksize
+		print 'read_only: ', xx.read_only
+		print 'nv_cache: ', xx.nv_cache
+		print 't10_dev_id: ', xx.t10_dev_id
 		#(ret, msg) = iSCSIVolumeRemove(xx.volume_name)
 		#print 'ret = ', ret
 		#print 'msg = ', msg
