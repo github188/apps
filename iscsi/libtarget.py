@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+os.chdir(os.path.dirname(__file__))
+
 from libiscsicommon import *
 
 class TargetAttr:
@@ -30,14 +33,14 @@ _	Target对象
 		self.state = 'disable'
 		self.luns = 0
 		self.sessions = 0
-		self.proto = iSCSI_Protocol()
-		self.attr = TargetAttr()
-		self.stat = TargetStat()
+		self.proto = {}		# iSCSI_Protocol()
+		self.attr = {}		# TargetAttr()
+		self.stat = {}		# TargetStat()
 
 def isTargetExist(tgt_name):
 	isExist = False
 	try:
-		if (os.path.isdir(SCST.ROOT_DIR + os.sep + 'targets/iscsi' + tgt_name)):
+		if (os.path.isdir(SCST.TARGET_DIR + os.sep + tgt_name)):
 			isExist = True
 		else:
 			isExist = False
@@ -75,9 +78,9 @@ def getTargetInfo(tgt_name):
 	tgt.state = getTargetState(tgt_name)
 	tgt.luns = len(getDirList(tgt_full_path + os.sep + 'luns'))
 	tgt.sessions = len(getDirList(tgt_full_path + os.sep + 'sessions'))
-	tgt.attr = getTargetAttr(tgt_name)
-	tgt.proto = getISCSIProto(tgt_name)
-	tgt.stat = getTargetStat(tgt_name)
+	tgt.attr = getTargetAttr(tgt_name).__dict__
+	tgt.proto = getISCSIProto(tgt_name).__dict__
+	tgt.stat = getTargetStat(tgt_name).__dict__
 	return tgt
 
 def iSCSIGetTargetList(tgt = ''):
@@ -85,9 +88,9 @@ def iSCSIGetTargetList(tgt = ''):
 	target_dir = SCST.ROOT_DIR + os.sep + 'targets/iscsi'
 	for t in getDirList(target_dir):
 		tgt_full_path = target_dir + os.sep + t
+		if len(tgt) and tgt != t:
+			continue
 		target_list.append(getTargetInfo(os.path.basename(tgt_full_path)))
-		if tgt == t:
-			break
 
 	return target_list
 

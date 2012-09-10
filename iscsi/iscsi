@@ -5,202 +5,272 @@ import sys
 import os
 import getopt
 import json
+os.chdir(os.path.dirname(sys.argv[0]))
 
 from libtarget import *
 from libvolume import *
 from liblun import *
 
 
-"""
-Target 功能处理
-"""
-def target_proc():
-	sub_fun = sys.argv[2]
-	if sub_fun == "--list":
-		print """{
-	"total":1,
-	"rows":[
-		{"tid":1,"target_name":"iqn-target-2012.abc","state":"enable","luns":3,"sessions":10,
-		"iscsi_protocol":["DataDigest":"None","FirstBurstLength":1024,"HeaderDigest":"None","ImmediateData":"Yes","InitialR2T":"No","MaxBurstLength":4096,"MaxOutstandingR2T":16,"MaxRecvDataSegmentLength":1024,"MaxXmitDataSegmentLength":1024],
-		"attributes":["NopInInterval":30," NopInTimeout":30," RspTimeout":90,"MaxSessions":10],
-		"statistics":["QueuedCommands":120]}
-	]
-}"""
-	else:
-		msg_out("操作成功!");
+class iSCSIArgs:
+	def __init__(self):
+		self.mode = ''
+		self.list_set = False
+		self.target_name_set = False
+		self.target_name_str = ''
+		self.modify_set = False
+		self.attr_set = False
+		self.attr_str = ''
+		self.value_set = False
+		self.value_str = ''
+		self.add_set = False
+		self.remove_set = False
+		self.remove_str = ''
+		self.name_set = False
+		self.name_str = ''
+		self.detail_set = False
+		self.detail_set = ''
+		self.udv_set = False
+		self.udv_str = ''
+		self.blocksize_set = False
+		self.blocksize_str = ''
+		self.read_only_set = False
+		self.read_only_str = ''
+		self.nv_cache_set = False
+		self.nv_cache_str = ''
+		self.map_set = False
+		self.unmap_set = False
+		self.privilage_set = False
+		self.lun_set = False
+		self.lun_id_set = False
+		self.lun_id_str = ''
+		self.volume_name_set = False
+		self.volume_name_str = ''
+		self.udv_set = False
+		self.udv_str = ''
+		self.force_close_set = False
+		self.force_close_str = ''
 
-"""
-iSCSI卷功能
-"""
-def volume_proc():
-	sub_fun = sys.argv[2]
+	def setMode(self, mode):
+		if self.mode == '':
+			self.mode = mode
 
-	if sub_fun == "--list":
-		print """{
-	"total":5,
-	"rows":[
-		{"volume_name":"vd0001","udv_name":"udv1","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
-		{"volume_name":"vd0002","udv_name":"udv2","dev_node":"/dev/md1p2","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
-		{"volume_name":"vd0003","udv_name":"udv3","dev_node":"/dev/md1p3","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
-		{"volume_name":"vd0004","udv_name":"udv4","dev_node":"/dev/md1p4","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
-		{"volume_name":"vd0005","udv_name":"udv5","dev_node":"/dev/md1p5","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
-	]
-}"""
-	else:
-		msg_out("操作成功!");
+class UniOutput:
+	def __init__(self, row_list):
+		self.total = 0
+		self.rows = []
+		for row in row_list:
+			self.rows.append(row.__dict__)
+		self.total = len(self.rows)
 
-"""
-LUN管理
-"""
-def lun_proc():
-	sub_fun = sys.argv[2]
-	if sub_fun == "--list":
-		print """{
-	"total":1,
-	"rows":[
-		{"target":"iqn-2012.abc","luns":3,"lun_list":[
-			{"id":1,"volume_name":"vd0001","udv_name":"udv1","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"},
-			{"id":2,"volume_name":"vd0002","udv_name":"udv2","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"},
-			{"id":3,"volume_name":"vd0003","udv_name":"udv3","dev_node":"/dev/md1p1","capacity":1024000,"block_size":512,"readonly":"enable","nv_cache":"enable","t10_dev_id":" a8f06f0d-udv1"}
-		]}
-	]
-}"""
-	else:
-		msg_out("操作成功!")
+		print json.dumps(self.__dict__, sort_keys = False, indent = 4)
+		sys.exit(0)
 
-"""
-Session管理
-"""
-def session_proc():
-	sub_fun = sys.argv[2]
-	if sub_fun == "--list":
-		print """{
-	"total":1,
-	"row":[
-		{"sid":" 16000037010040","initiator_name":"iqn.1991-05.com.microsoft:gonglei-pc","luns":3,
-		"iscsi_protocol":["DataDigest":"None","FirstBurstLength":1024,"HeaderDigest":"None","ImmediateData":"Yes","InitialR2T":"No","MaxBurstLength":4096,"MaxOutstandingR2T":16,"MaxRecvDataSegmentLength":1024,"MaxXmitDataSegmentLength":1024],
-		"statistics":["none_cmd_count":123,"unknown_cmd_count":234,"bidi_cmd_count":12,"bidi_io_count_kb":128,"read_cmd_count":89,"read_io_count_kb":23,"write_cmd_count":287,"write_io_count_kb":67]
-		}
-	]
-}"""
-	else:
-		msg_out("操作成功!")
+# 处理Target相关参数
+def iscsiTargetProc(args = iSCSIArgs()):
+	if args.mode != '--target':
+		return
 
-
-"""
-输出返回结果
-"""
-def err_out(msg):
-	print '{"status":false,"msg":"%s"}' % msg
-	sys.exit(1)
-
-def msg_out(msg):
-	print '{"status":true,"msg":"%s"}' % msg
-	sys.exit(0)
-
-"""
-主函数
-"""
-def py_main():
-	argc = len(sys.argv)
-	if argc < 2:
-		err_out("参数长度不正确！")
-
-	try:
-		function = sys.argv[1]
-		if function == "--target":
-			target_proc()
-		elif function == "--volume":
-			volume_proc()
-		elif function == "--lun":
-			lun_proc()
-		elif function == "--session":
-			session_proc()
+	if args.list_set:
+		UniOutput(iSCSIGetTargetList(args.target_name_str))
+	elif args.modify_set:
+		if args.name_str == '':
+			iscsiExit(False, '请输入被操作的Target名称!')
+		elif args.attr_str == '':
+			iscsiExit(False, '请输入设置的属性名称!')
+		elif args.value_str == '':
+			iscsiExit(False, '请输入设置的属性取值!')
 		else:
-			err_out("请输入正确的功能参数！")
-	except:
-		pass
+			ret,msg = iSCSISetTargetAttr(args.name_str, args.attr_str, args.value_str)
+			if ret:
+				iscsiExit(True, '设置Target %s 属性 %s 为 %s 成功!' % (args.name_str, args.attr_str, args.value_str))
+			else:
+				iscsiExit(False, '设置Target %s 属性 %s 为 %s 失败!' % (args.name_str, args.attr_str, args.value_str))
+	elif args.add_set:
+		iscsiExit(False, '暂不支持添加Target操作!')
+	elif args.remove_set:
+		iscsiExit(False, '暂不支持删除Target操作!')
+	else:
+		iscsiExit(False, '缺少参数!')
+	return
 
-	sys.exit(0)
+# 处理数据卷相关参数
+def iscsiVolumeProc(args = iSCSIArgs()):
+	if args.mode != '--volume':
+		return
 
-def iscsi_usage():
+	if args.list_set:
+		UniOutput(iSCSIVolumeGetList(args.volume_name_str))
+	elif args.add_set:
+		if not len(args.udv_str):
+			iscsiExit(False, '请输入UDV名称!')
+		try:
+			blocksize = 512
+			if len(args.blocksize_str):
+				blocksize = int(args.blocksize_str)
+
+			read_only = 'disable'
+			if len(args.read_only_str):
+				read_only = args.read_only_str
+
+			nv_cache = 'enable'
+			if len(args.nv_cache_str):
+				nv_cache = args.nv_cache_str
+		except:
+			pass
+		ret,msg = iSCSIVolumeAdd(args.udv_str, blocksize, read_only, nv_cache)
+		iscsiExit(ret, msg)
+	elif args.remove_set:
+		if not len(args.remove_str):
+			iscsiExit(False, '请设置需要删除的iSCSI数据卷名称!')
+		else:
+			ret,msg = iSCSIVolumeRemove(args.remove_str)
+			iscsiExit(ret, msg)
+	else:
+		iscsiExit(False, '缺少参数!')
+
+# 处理LUN相关参数
+def iscsiLunProc(args = iSCSIArgs()):
+	if args.mode != '--lun':
+		return
+
+	if args.list_set:
+		if len(args.lun_id_str):
+			iscsiExit(False, '暂不支持获取指定LUN ID信息！')
+		UniOutput(iSCSILunGetList(args.target_name_str))
+	elif args.map_set:
+		if not len(args.target_name_str):
+			iscsiExit(False, '请输入Target名称!')
+		elif not len(args.volume_name_str):
+			iscsiExit(False, '请输入iSCSI数据卷名称!')
+		elif not len(args.lun_id_str):
+			iscsiExit(False, '请输入LUN ID!')
+		elif not len(args.read_only_str):
+			iscsiExit(False, '请输入读写属性!')
+		else:
+			ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
+					args.lun_id_str, args.read_only_str)
+			iscsiExit(ret, msg)
+	elif args.unmap_set:
+		if not len(args.target_name_str):
+			iscsiExit(False, '请输入Target名称!')
+		elif not len(args.lun_id_str):
+			iscsiExit(False, '请输入LUN ID!')
+		try:
+			ret,msg = iSCSILunUnmap(args.target_name_str, int(args.lun_id_str))
+			iscsiExit(ret, msg)
+		except:
+			sys.exit(-1)
+	elif args.privilage_set:
+		iscsiExit(False, '暂不支持此操作！')
+	else:
+		iscsiExit(False, '缺少参数!')
+
+# 处理Session相关参数
+def iscsiSessionProc(args = iSCSIArgs()):
+	return
+
+def iscsiUsage():
 	print """
-iscsi --target --list [<target_name>]
-      --target --modify --attribute <key> --value <value>
-      --target --add <target_name>
+iscsi --target --list [--target-name <name>]
+      --target --modify --name <name> --attribute <key> --value <value>
+      --target --add --name <target_name>
       --target --remove <target_name>
 
-      --volume --list [<volume_name>]
-      --volume --add --udv <udv_name> --blocksize <size> --read-only <enable|disable> --nv-cache <enable|disable>
+      --volume --list [--volume-name <name>]
+      --volume --add --udv <udv_name> [--blocksize <size> --read-only <enable|disable> --nv-cache <enable|disable>]
       --volume --remove <volume_name>
 
-      --lun --list [--target <target_name> [<lun_id>]]
-      --lun --map --target <target_name> --volume <volume_name> --lun-id <id|auto> --read-only <enable|disable|auto>
-      --lun --unmap --target <target_name> --lun <id>
-      --lun --get-privilage --volume <udv_name>
+      --lun --list [--target-name <name> [--lun-id <id>]]
+      --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --read-only <enable|disable|auto>
+      --lun --unmap --target-name <target_name> --lun-id <id>
+      --lun --get-privilage --udv <name>
 
-      --session --list [--target <target_name> [<session_id>]]
+      --session --list [--target-name <name>]
       --session --force-close <session_id>
 """
 	sys.exit(-1)
 
-class iscsi_args:
-	def __init__(self):
-		self.mode = ''
-		self.list_set = False
-		self.list_str = ''
-		self.modify_set = False
-	
-	def setMode(self, mode):
-		if self.mode != '':
-			self.mode = mode
 
-iscsi_mode = ''
 OP_MODE = ['--target', '--volume', '--lun', '--session']
 
-iscsi_long_opt = ['target', 'list',
-	'modify', 'attribute', 'value',
-	'add', 'remove',
-	'volume', 'udv', 'block-size', 'read-only', 'nv-cache',
-	'lun', 'map', 'lun-id', 'unmap', 'get-privilage',
-	'session']
+iscsi_long_opt = ['target', 'list', 'target-name=',
+	'modify', 'attribute=', 'value=',
+	'add', 'remove=', 'name=', 'get-detail=',
+	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
+	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
+	'session', 'volume-name=']
 
 def iscsi_main():
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], '', iscsi_long_opt)
-	except getopt.GetoptError:
-		iscsi_usage()
-	
+		opts, args = getopt.gnu_getopt(sys.argv[1:], '', iscsi_long_opt)
+	except getopt.GetoptError, e:
+		iscsiExit(False, '%s' % e)
+
+	iscsiArgs = iSCSIArgs()
 	for opt,arg in opts:
 		# mode set
-		if opt in OP_MODE and iscsi_mode != '':
-			iscsi_mode = opt
-		# arg parse
-	
+		if opt in OP_MODE:
+			iscsiArgs.setMode(opt)
+
+		# args proc
+		if opt == '--list':
+			iscsiArgs.list_set = True
+			print 'set list'
+		elif opt == '--target-name':
+			iscsiArgs.target_name_set = True
+			iscsiArgs.target_name_str = arg
+		elif opt == '--volume-name':
+			iscsiArgs.volume_name_set = True
+			iscsiArgs.volume_name_str = arg
+		elif opt == '--modify':
+			iscsiArgs.modify_set = True
+		elif opt == '--attribute':
+			iscsiArgs.attr_set = True
+			iscsiArgs.attr_str = arg
+		elif opt == '--value':
+			iscsiArgs.value_set = True
+			iscsiArgs.value_str = arg
+		elif opt == '--add':
+			iscsiArgs.add_set = True
+		elif opt == '--remove':
+			iscsiArgs.remove_set = True
+			iscsiArgs.remove_str = arg
+		elif opt == '--name':
+			iscsiArgs.name_set = True
+			iscsiArgs.name_str = arg
+		elif opt == '--get-detail':
+			iscsiArgs.detail_set = True
+			iscsiArgs.detail_str = arg
+		elif opt == '--udv':
+			iscsiArgs.udv_set = True
+			iscsiArgs.udv_str = arg
+		elif opt == '--block-size':
+			iscsiArgs.blocksize_set = True
+			iscsiArgs.blocksize_str = arg
+		elif opt == '--read-only':
+			iscsiArgs.read_only_set = True
+			iscsiArgs.read_only_str = arg
+		elif opt == '--nv-cache':
+			iscsiArgs.nv_cache_set = True
+			iscsiArgs.nv_cache_str = arg
+		elif opt == '--lun-id':
+			iscsiArgs.lun_id_set = True
+			iscsiArgs.lun_id_str = arg
+		elif opt == '--target-name':
+			iscsiArgs.target_name_set = True
+			iscsiArgs.target_name_str = arg
+		elif opt == '--map':
+			iscsiArgs.map_set = True
+		elif opt == '--unmap':
+			iscsiArgs.unmap_set = True
+
+	iscsiTargetProc(iscsiArgs)
+	iscsiVolumeProc(iscsiArgs)
+	iscsiLunProc(iscsiArgs)
+	iscsiSessionProc(iscsiArgs)
+
+	iscsiUsage()
+
 if __name__ == "__main__":
-	#py_main()
-	try:
-		#opts,args = getopt.getopt(sys.argv[1:], 'h:p:', ['host=', 'port='])
-		opts,args = getopt.getopt(sys.argv[1:], '', ['host=', 'port='])
-		print 'opts: ', opts
-		print 'args: ', args
-	except getopt.GetoptError:
-		print "Usage:"
-		print "-h arg, --host=arg"
-		print "-p arg, --port=arg"
-		sys.exit(-1)
-	
-	host = "127.0.0.1"
-	port = 8000
-
-	for opt,arg in opts:
-		print 'opt= ', opt
-		if opt in ("-h", "--host"):
-			host = arg
-		if opt in ("-p", "--port"):
-			port = arg
-	
-	print "IP: ", host
-	print "PORT: ", port
-
-	iscsi_usage()
+	iscsi_main()

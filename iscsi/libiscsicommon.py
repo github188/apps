@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import commands
 import json
 
@@ -11,7 +12,7 @@ class SCST_CONFIG(object):
 	"""
 	def __init__(self):
 		self.ROOT_DIR = '/sys/kernel/scst_tgt'
-		self.TARGET_DIR = '%s/target/iscsi' % self.ROOT_DIR
+		self.TARGET_DIR = '%s/targets/iscsi' % self.ROOT_DIR
 		self.VDISK_DIR = '%s/handlers/vdisk_blockio' % self.ROOT_DIR
 
 class iSCSI_Protocol:
@@ -124,6 +125,15 @@ def getUdvDevByName(udv_name):
 	finally:
 		return udv_dev
 
+def iscsiExit(ret = True, msg = ''):
+	ret_msg = {'status':True, 'msg':''}
+	ret_msg['status'] = ret
+	ret_msg['msg'] = msg
+	print json.dumps(ret_msg)
+	if ret:
+		sys.exit(0)
+	sys.exit(-1)
+
 if __name__ == "__main__":
 	"""
 	ss = AttrRead('/sys/kernel/scst_tgt/targets/iscsi/iqn.2012-abc', 'io_grouping_type')
@@ -134,3 +144,5 @@ if __name__ == "__main__":
 
 	print 'udv2: ', getUdvDevByName('udv2')
 	print '/dev/sdg1: ', getUdvNameByDev('/dev/sdg1')
+
+	iscsiExit(True, '错误信息')

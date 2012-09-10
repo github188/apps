@@ -4,6 +4,9 @@
 import time
 import pickle
 import json
+import os
+os.chdir(os.path.dirname(__file__))
+
 from libiscsicommon import *
 
 # 参数约束条件
