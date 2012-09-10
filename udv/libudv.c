@@ -247,6 +247,10 @@ size_t udv_list(udv_info_t *list, size_t n)
                 //if (dev->type != PED_DEVICE_MD)
                 //        continue;
 
+		// for debug
+		if (!strcmp(dev->path, "/dev/sda"))
+			continue;
+
                 // 获取当前MD分区信息
 		if ( !ped_disk_probe(dev) || !(disk=ped_disk_new(dev)) )
 			continue;
