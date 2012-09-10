@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys,os
+import sys
+import os
+import getopt
+import json
+
+from libtarget import *
+from libvolume import *
+from liblun import *
+
 
 """
 Target 功能处理
@@ -115,5 +123,84 @@ def py_main():
 
 	sys.exit(0)
 
+def iscsi_usage():
+	print """
+iscsi --target --list [<target_name>]
+      --target --modify --attribute <key> --value <value>
+      --target --add <target_name>
+      --target --remove <target_name>
+
+      --volume --list [<volume_name>]
+      --volume --add --udv <udv_name> --blocksize <size> --read-only <enable|disable> --nv-cache <enable|disable>
+      --volume --remove <volume_name>
+
+      --lun --list [--target <target_name> [<lun_id>]]
+      --lun --map --target <target_name> --volume <volume_name> --lun-id <id|auto> --read-only <enable|disable|auto>
+      --lun --unmap --target <target_name> --lun <id>
+      --lun --get-privilage --volume <udv_name>
+
+      --session --list [--target <target_name> [<session_id>]]
+      --session --force-close <session_id>
+"""
+	sys.exit(-1)
+
+class iscsi_args:
+	def __init__(self):
+		self.mode = ''
+		self.list_set = False
+		self.list_str = ''
+		self.modify_set = False
+	
+	def setMode(self, mode):
+		if self.mode != '':
+			self.mode = mode
+
+iscsi_mode = ''
+OP_MODE = ['--target', '--volume', '--lun', '--session']
+
+iscsi_long_opt = ['target', 'list',
+	'modify', 'attribute', 'value',
+	'add', 'remove',
+	'volume', 'udv', 'block-size', 'read-only', 'nv-cache',
+	'lun', 'map', 'lun-id', 'unmap', 'get-privilage',
+	'session']
+
+def iscsi_main():
+	try:
+		opts, args = getopt.getopt(sys.argv[1:], '', iscsi_long_opt)
+	except getopt.GetoptError:
+		iscsi_usage()
+	
+	for opt,arg in opts:
+		# mode set
+		if opt in OP_MODE and iscsi_mode != '':
+			iscsi_mode = opt
+		# arg parse
+	
 if __name__ == "__main__":
-	py_main()
+	#py_main()
+	try:
+		#opts,args = getopt.getopt(sys.argv[1:], 'h:p:', ['host=', 'port='])
+		opts,args = getopt.getopt(sys.argv[1:], '', ['host=', 'port='])
+		print 'opts: ', opts
+		print 'args: ', args
+	except getopt.GetoptError:
+		print "Usage:"
+		print "-h arg, --host=arg"
+		print "-p arg, --port=arg"
+		sys.exit(-1)
+	
+	host = "127.0.0.1"
+	port = 8000
+
+	for opt,arg in opts:
+		print 'opt= ', opt
+		if opt in ("-h", "--host"):
+			host = arg
+		if opt in ("-p", "--port"):
+			port = arg
+	
+	print "IP: ", host
+	print "PORT: ", port
+
+	iscsi_usage()
