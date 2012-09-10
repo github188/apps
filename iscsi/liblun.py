@@ -140,5 +140,5 @@ def iSCSILunGetList(tgt = ''):
 		return tgt_lun_list
 
 # 需要搜索所有Target的LUN映射关系，有一个映射为读写属性则返回只读
-def iSCSILunGetPrivilage(dev_node):
+def iSCSILunGetPrivilage(udv_name):
 	return
