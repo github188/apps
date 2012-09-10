@@ -18,8 +18,8 @@ struct option udv_options[] = {
 	{"old-name",		required_argument,	NULL,	'o'},
 	{"new-name",		required_argument,	NULL,	'n'},
 	{"remain-capacity",	no_argument,		NULL,	'r'},
-	{"get-udv-dev",		required_argument,	NULL,	'd'},
-	{"get-udv-name",	required_argument,	NULL,	'e'},
+	{"get-dev-byname",	required_argument,	NULL,	'a'},
+	{"get-name-bydev",	required_argument,	NULL,	'e'},
 	{0, 0, 0, 0}
 
 };
@@ -32,6 +32,8 @@ void udv_usage()
   printf(_T("       --delete <udv_name>\n"));
   printf(_T("       --modify --old-name <udv_name> --new-name <udv_name>\n"));
   printf(_T("       --remain-capacity --vg <vg_name>\n"));
+  printf(_T("       --get-dev-byname <name>\n"));
+  printf(_T("       --get-name-bydev <dev>\n"));
   printf(_T("\n\n"));
   exit(0);
 }
@@ -152,14 +154,64 @@ int get_udv_remain()
 
 
 // 通过udv设备名称获取udv名称
-int get_udv_name_by_dev(const char *udv_dev)
+int get_name_bydev(const char *udv_dev)
 {
+	udv_info_t list[MAX_UDV], *udv;
+	size_t udv_cnt = 0, i;
+
+	if (!udv_dev)
+		return_json_msg(MSG_ERROR, "用户数据卷设备名称无效!");
+
+	udv_cnt = udv_list(list, MAX_UDV);
+	if (udv_cnt<0)
+		return_json_msg(MSG_ERROR, "获取用户数据卷失败!");
+
+	udv = &list[0];
+
+	for (i=0; i<udv_cnt; i++)
+	{
+		if (!strcmp(udv->dev, udv_dev))
+		{
+			printf("{\"status\":true,\"udv_name\":\"%s\",\"udv_dev\":\"%s\"}\n",
+				udv->name, udv->dev);
+			return 0;
+		}
+		udv++;
+	}
+	
+	return_json_msg(MSG_ERROR, "用户数据卷不存在!");
+	return -1;
 }
 
 
 // 通过udv名称获取udv设备名称
-int get_udv_dev_by_name(const char *udv_name)
+int get_dev_byname(const char *udv_name)
 {
+	udv_info_t list[MAX_UDV], *udv;
+	size_t udv_cnt = 0, i;
+
+	if (!udv_name)
+		return_json_msg(MSG_ERROR, "用户数据卷名称无效!");
+
+	udv_cnt = udv_list(list, MAX_UDV);
+	if (udv_cnt<0)
+		return_json_msg(MSG_ERROR, "获取用户数据卷失败!");
+
+	udv = &list[0];
+
+	for (i=0; i<udv_cnt; i++)
+	{
+		if (!strcmp(udv->name, udv_name))
+		{
+			printf("{\"status\":true,\"udv_name\":\"%s\",\"udv_dev\":\"%s\"}\n",
+				udv->name, udv->dev);
+			return 0;
+		}
+		udv++;
+	}
+
+	return_json_msg(MSG_ERROR, "用户数据卷不存在!");
+	return -1;
 }
 
 
@@ -205,10 +257,10 @@ int udv_main(int argc, char *argv[])
 			case 'r':
 				mode = UDV_MODE_REMAIN;
 				break;
-			case 'd':
-				return get_udv_name_by_dev(optarg);
+			case 'a':
+				return get_dev_byname(optarg);
 			case 'e':
-				return get_udv_dev_by_name(optarg);
+				return get_name_bydev(optarg);
 			case '?':
 			default:
 				udv_usage();
