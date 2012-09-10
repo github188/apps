@@ -83,9 +83,11 @@ def getTargetInfo(tgt_name):
 def iSCSIGetTargetList(tgt = ''):
 	target_list = []
 	target_dir = SCST.ROOT_DIR + os.sep + 'targets/iscsi'
-	for tgt in getDirList(target_dir):
-		tgt_full_path = target_dir + os.sep + tgt
+	for t in getDirList(target_dir):
+		tgt_full_path = target_dir + os.sep + t
 		target_list.append(getTargetInfo(os.path.basename(tgt_full_path)))
+		if tgt == t:
+			break
 
 	return target_list
 

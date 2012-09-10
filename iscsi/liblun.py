@@ -72,14 +72,14 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto'):
 	isRo = isLunMappedRw(volume_name)
 	if isRo:
 		ro = '1'
-	else if ro == 'auto':
+	elif ro == 'auto':
 		if isRo:
 			ro = '1'
 		else:
 			ro = '0'
-	else if ro == 'enable':
+	elif ro == 'enable':
 		ro = '1'
-	else if ro == 'disable':
+	elif ro == 'disable':
 		ro = '0'
 	else:
 		return (False, '添加LUN映射失败！ReadOnly属性设置不正确！')

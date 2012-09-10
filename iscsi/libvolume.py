@@ -88,7 +88,7 @@ def iSCSIVolumeGetList(volume_name = ''):
 	return vol_list
 
 if __name__ == '__main__':
-	(ret, msg) = iSCSIVolumeAdd('/dev/sdc')
+	(ret, msg) = iSCSIVolumeAdd('/dev/sdf')
 	print 'ret = ', ret
 	print 'msg = ', msg
 
