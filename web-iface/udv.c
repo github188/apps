@@ -18,6 +18,8 @@ struct option udv_options[] = {
 	{"old-name",		required_argument,	NULL,	'o'},
 	{"new-name",		required_argument,	NULL,	'n'},
 	{"remain-capacity",	no_argument,		NULL,	'r'},
+	{"get-udv-dev",		required_argument,	NULL,	'd'},
+	{"get-udv-name",	required_argument,	NULL,	'e'},
 	{0, 0, 0, 0}
 
 };
@@ -148,6 +150,19 @@ int get_udv_remain()
 			vg_name, max_remain, max_single);
 }
 
+
+// 通过udv设备名称获取udv名称
+int get_udv_name_by_dev(const char *udv_dev)
+{
+}
+
+
+// 通过udv名称获取udv设备名称
+int get_udv_dev_by_name(const char *udv_name)
+{
+}
+
+
 int udv_main(int argc, char *argv[])
 {
 	char c;
@@ -190,6 +205,10 @@ int udv_main(int argc, char *argv[])
 			case 'r':
 				mode = UDV_MODE_REMAIN;
 				break;
+			case 'd':
+				return get_udv_name_by_dev(optarg);
+			case 'e':
+				return get_udv_dev_by_name(optarg);
 			case '?':
 			default:
 				udv_usage();
