@@ -41,8 +41,8 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
                 return E_FMT_ERROR;
 
         // 检查VG是否存在
-        if (!(vg_dev=vg_name2dev(vg_name)))
-		return EEXIST;
+        //if (!(vg_dev=vg_name2dev(vg_name)))
+	//	return EEXIST;
 
         // 检查用户数据卷是否存在
         if (get_udv_by_name(name))
@@ -61,6 +61,9 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 	// 检查是否为MD设备
 	if (device->type != PED_DEVICE_MD)
 		return E_DEVICE_NOTMD;
+#else
+		if (!strcmp(device->path, "/dev/sda"))
+			return E_SYS_ERROR;
 #endif
 
 	if ( (type = ped_disk_probe(device)) && !strcmp(type->name, "gpt") )
@@ -249,6 +252,9 @@ size_t udv_list(udv_info_t *list, size_t n)
                 // 获取所有MD列表
 		if (dev->type != PED_DEVICE_MD)
 			continue;
+#else
+		if (!strcmp(dev->path, "/dev/sda"))
+			continue;
 #endif
 
 		// for debug
@@ -315,6 +321,9 @@ udv_info_t* get_udv_by_name(const char *name)
                 // 获取所有MD列表
                 if (dev->type != PED_DEVICE_MD)
                         continue;
+#else
+		if (!strcmp(dev->path, "/dev/sda"))
+			continue;
 #endif
 
                 // 获取当前MD分区信息
