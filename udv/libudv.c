@@ -244,8 +244,8 @@ size_t udv_list(udv_info_t *list, size_t n)
         while((dev=ped_device_get_next(dev)))
         {
                 // 获取所有MD列表
-                if (dev->type != PED_DEVICE_MD)
-                        continue;
+                //if (dev->type != PED_DEVICE_MD)
+                //        continue;
 
                 // 获取当前MD分区信息
 		if ( !ped_disk_probe(dev) || !(disk=ped_disk_new(dev)) )
@@ -263,6 +263,7 @@ size_t udv_list(udv_info_t *list, size_t n)
                                 break;
 
                         strcpy(udv->name, part_name);
+			sprintf(udv->dev, "%s%d", dev->path, part->num);
                         strcpy(udv->vg_dev, dev->path);
                         udv->part_num = part->num;
 

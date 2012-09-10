@@ -33,9 +33,10 @@ void test_list()
 	udv = &list[0];
 	for (i=0; i<udv_cnt; i++)
 	{
-		printf("%-10s %-8s %-2d %-8lld %-8lld %-8lld\n",
+		printf("%-10s %-8s %-2d %-8lld %-8lld %-8lld %-10s\n",
 			udv->vg_dev, udv->name, udv->part_num,
-			udv->geom.start, udv->geom.end, udv->geom.capacity);
+			udv->geom.start, udv->geom.end, udv->geom.capacity,
+			udv->dev);
 		udv++;
 	}
 }

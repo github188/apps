@@ -45,6 +45,7 @@ typedef struct _udv_info udv_info_t;
 #define UDV_NAME_LEN 72
 struct _udv_info {
         char name[UDV_NAME_LEN];
+	char dev[UDV_NAME_LEN];
         char vg_dev[PATH_MAX];
         int part_num;
         udv_geom geom;
