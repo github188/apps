@@ -37,8 +37,8 @@ def getFreeLunId(tgt):
 	if not isTargetExist(tgt):
 		return -1
 	tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt + '/luns'
-	luns = getDirList(tgt_luns_dir).sort()
-	if not luns or not '0' in luns:
+	luns = getDirList(tgt_luns_dir)
+	if not len(luns) or not '0' in luns:
 		return 0
 	idx = 0
 	luns_len = len(luns) - 1
@@ -55,7 +55,7 @@ def isLunMappedRw(volume_name):
 	for tgt in iSCSIGetTargetList():
 		tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt.name + '/luns'
 		for lun in getDirList(tgt_luns_dir):
-			lun_path = tgt_luns_dir + os.sep + lun.lun_id
+			lun_path = tgt_luns_dir + os.sep + lun
 			if AttrRead(lun_path, 'read_only') == '1':
 				return True
 			lun_device = lun_path + '/device'
