@@ -34,6 +34,8 @@ class iSCSIArgs:
 		self.udv_str = ''
 		self.blocksize_set = False
 		self.blocksize_str = ''
+		self.lun_read_only_set = False
+		self.lun_read_only_str = ''
 		self.read_only_set = False
 		self.read_only_str = ''
 		self.nv_cache_set = False
@@ -63,7 +65,7 @@ class UniOutput:
 			self.rows.append(row.__dict__)
 		self.total = len(self.rows)
 
-		print json.dumps(self.__dict__, sort_keys = False, indent = 4)
+		print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent = 4)
 		sys.exit(0)
 
 # 处理Target相关参数
@@ -94,6 +96,25 @@ def iscsiTargetProc(args = iSCSIArgs()):
 		iscsiExit(False, '缺少参数!')
 	return
 
+def iscsiAddVolume(args = iSCSIArgs()):
+	if not len(args.udv_str):
+		iscsiExit(False, '请输入UDV名称!')
+	try:
+		blocksize = 512
+		if len(args.blocksize_str):
+			blocksize = int(args.blocksize_str)
+
+		read_only = 'disable'
+		if len(args.read_only_str):
+			read_only = args.read_only_str
+
+		nv_cache = 'enable'
+		if len(args.nv_cache_str):
+			nv_cache = args.nv_cache_str
+	except:
+		pass
+	return iSCSIVolumeAdd(args.udv_str, blocksize, read_only, nv_cache)
+
 # 处理数据卷相关参数
 def iscsiVolumeProc(args = iSCSIArgs()):
 	if args.mode != '--volume':
@@ -102,23 +123,7 @@ def iscsiVolumeProc(args = iSCSIArgs()):
 	if args.list_set:
 		UniOutput(iSCSIVolumeGetList(args.volume_name_str))
 	elif args.add_set:
-		if not len(args.udv_str):
-			iscsiExit(False, '请输入UDV名称!')
-		try:
-			blocksize = 512
-			if len(args.blocksize_str):
-				blocksize = int(args.blocksize_str)
-
-			read_only = 'disable'
-			if len(args.read_only_str):
-				read_only = args.read_only_str
-
-			nv_cache = 'enable'
-			if len(args.nv_cache_str):
-				nv_cache = args.nv_cache_str
-		except:
-			pass
-		ret,msg = iSCSIVolumeAdd(args.udv_str, blocksize, read_only, nv_cache)
+		ret,msg = iscsiAddVolume(args) 
 		iscsiExit(ret, msg)
 	elif args.remove_set:
 		if not len(args.remove_str):
@@ -139,17 +144,26 @@ def iscsiLunProc(args = iSCSIArgs()):
 			iscsiExit(False, '暂不支持获取指定LUN ID信息！')
 		UniOutput(iSCSILunGetList(args.target_name_str))
 	elif args.map_set:
+		# check if add volume first
+		if args.add_set:
+			ret,msg = iscsiAddVolume(args) 
+			if not ret:
+				iscsiExit(ret, msg)
+			volume_name = getVolumeByUdv(args.udv_str)
+			if not volume_name:
+				iscsiExit(False, '无法获取iSCSI数据卷名称!')
+			args.volume_name_str = volume_name
 		if not len(args.target_name_str):
 			iscsiExit(False, '请输入Target名称!')
 		elif not len(args.volume_name_str):
 			iscsiExit(False, '请输入iSCSI数据卷名称!')
 		elif not len(args.lun_id_str):
 			iscsiExit(False, '请输入LUN ID!')
-		elif not len(args.read_only_str):
+		elif not len(args.lun_read_only_str):
 			iscsiExit(False, '请输入读写属性!')
 		else:
 			ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
-					args.lun_id_str, args.read_only_str)
+					args.lun_id_str, args.lun_read_only_str)
 			iscsiExit(ret, msg)
 	elif args.unmap_set:
 		if not len(args.target_name_str):
@@ -174,15 +188,16 @@ def iscsiUsage():
 	print """
 iscsi --target --list [--target-name <name>]
       --target --modify --name <name> --attribute <key> --value <value>
-      --target --add --name <target_name>
-      --target --remove <target_name>
+      --target --add --name <name>
+      --target --remove <name>
 
       --volume --list [--volume-name <name>]
-      --volume --add --udv <udv_name> [--blocksize <size> --read-only <enable|disable> --nv-cache <enable|disable>]
+      --volume --add --udv <name> [--blocksize <size> --read-only <enable|disable> --nv-cache <enable|disable>]
       --volume --remove <volume_name>
 
       --lun --list [--target-name <name> [--lun-id <id>]]
-      --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --read-only <enable|disable|auto>
+      --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --lun-read-only <enable|disable|auto>
+      --lun --map --target-name <name> --add --udv <name> [--block-size <size> --nv-cache <enable|disable>] --lun-id <id|auto> --lun-read-only <enable|disable|auto>
       --lun --unmap --target-name <target_name> --lun-id <id>
       --lun --get-privilage --udv <name>
 
@@ -199,7 +214,7 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'add', 'remove=', 'name=', 'get-detail=',
 	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
-	'session', 'volume-name=']
+	'session', 'volume-name=', 'lun-read-only=']
 
 def iscsi_main():
 	try:
@@ -216,7 +231,6 @@ def iscsi_main():
 		# args proc
 		if opt == '--list':
 			iscsiArgs.list_set = True
-			print 'set list'
 		elif opt == '--target-name':
 			iscsiArgs.target_name_set = True
 			iscsiArgs.target_name_str = arg
@@ -248,6 +262,9 @@ def iscsi_main():
 		elif opt == '--block-size':
 			iscsiArgs.blocksize_set = True
 			iscsiArgs.blocksize_str = arg
+		elif opt == '--lun-read-only':
+			iscsiArgs.lun_read_only_set = True
+			iscsiArgs.lun_read_only_str = arg
 		elif opt == '--read-only':
 			iscsiArgs.read_only_set = True
 			iscsiArgs.read_only_str = arg

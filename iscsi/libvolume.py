@@ -93,6 +93,15 @@ def iSCSIVolumeGetList(volume_name = ''):
 				vol_list.append(vol_info)
 	return vol_list
 
+def getVolumeByUdv(udv_name):
+	try:
+		for vol in iSCSIVolumeGetList():
+			if vol.udv_name == udv_name:
+				return vol.volume_name
+	except:
+		pass
+	return None
+
 if __name__ == '__main__':
 	(ret, msg) = iSCSIVolumeAdd('udv1')
 	print 'add udv1 ret: ', ret
