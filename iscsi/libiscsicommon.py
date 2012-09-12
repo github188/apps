@@ -39,7 +39,7 @@ class iSCSI_Protocol:
 		"""
 		self.DataDigest = "None"
 
-		self.ImmediateDate = "Yes"
+		self.ImmediateData = "Yes"
 		self.FirstBurstLength = 1024
 		self.MaxBurstLength = 4096
 		self.InitialR2T = "No"

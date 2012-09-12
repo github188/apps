@@ -33,9 +33,9 @@ _	Target对象
 		self.state = 'disable'
 		self.luns = 0
 		self.sessions = 0
-		self.proto = {}		# iSCSI_Protocol()
-		self.attr = {}		# TargetAttr()
-		self.stat = {}		# TargetStat()
+		self.iscsi_protocol = {}	# iSCSI_Protocol()
+		self.attribute = {}		# TargetAttr()
+		self.statistics = {}		# TargetStat()
 
 def isTargetExist(tgt_name):
 	isExist = False
@@ -51,10 +51,10 @@ def isTargetExist(tgt_name):
 def getTargetAttr(tgt_name):
 	tgt_full_path = SCST.ROOT_DIR + '/targets/iscsi/' + tgt_name
 	tgt_attr = TargetAttr()
-	tgt_attr.NopInInterval = AttrRead(tgt_full_path, 'NopInInterval')
-	tgt_attr.NopInTimeout = AttrRead(tgt_full_path, 'NopInTimeout')
-	tgt_attr.RspTimeOut = AttrRead(tgt_full_path, 'RspTimeout')
-	tgt_attr.MaxSessions = AttrRead(tgt_full_path, 'MaxSessions')
+	tgt_attr.NopInInterval = int(AttrRead(tgt_full_path, 'NopInInterval'))
+	tgt_attr.NopInTimeout = int(AttrRead(tgt_full_path, 'NopInTimeout'))
+	tgt_attr.RspTimeOut = int(AttrRead(tgt_full_path, 'RspTimeout'))
+	tgt_attr.MaxSessions = int(AttrRead(tgt_full_path, 'MaxSessions'))
 	return tgt_attr
 
 def getTargetStat(tgt_name):
@@ -78,9 +78,9 @@ def getTargetInfo(tgt_name):
 	tgt.state = getTargetState(tgt_name)
 	tgt.luns = len(getDirList(tgt_full_path + os.sep + 'luns'))
 	tgt.sessions = len(getDirList(tgt_full_path + os.sep + 'sessions'))
-	tgt.attr = getTargetAttr(tgt_name).__dict__
-	tgt.proto = getISCSIProto(tgt_name).__dict__
-	tgt.stat = getTargetStat(tgt_name).__dict__
+	tgt.attribute = getTargetAttr(tgt_name).__dict__
+	tgt.iscsi_protocol = getISCSIProto(tgt_name).__dict__
+	tgt.statistics = getTargetStat(tgt_name).__dict__
 	return tgt
 
 def iSCSIGetTargetList(tgt = ''):

@@ -11,16 +11,18 @@ from libvolume import *
 LUN_MIN_ID = 0
 LUN_MAX_ID = 254
 
+"""
 class iSCSILun:
 	def __init__(self):
 		self.lun_id = 0
 		self.udv_name = ''
-		self.dev_node = ''
+		self.udv_dev = ''
 		self.capacity = 0
 		self.blocksize = 512
 		self.read_only = 'disable'
 		self.nv_cache = 'enable'
 		self.t10_dev_id = ''
+"""
 
 class iSCSITargetLun:
 	def __init__(self):
@@ -138,4 +140,25 @@ def iSCSILunGetList(tgt = ''):
 
 # 需要搜索所有Target的LUN映射关系，有一个映射为读写属性则返回只读
 def iSCSILunGetPrivilage(udv_name):
-	return
+	priv_dict = {}
+	try:
+		for tgt_lun in iSCSILunGetList():
+			for lun in tgt_lun.lun_list:
+				if lun['udv_name'] == udv_name:
+					priv_dict['volume_name'] = lun['volume_name']
+					priv_dict['udv_name'] = udv_name
+					if lun['read_only'] == 'disable':
+						priv_dict['privilage'] = 'ro'
+					else:
+						priv_dict['privilage'] = 'rw'
+	except:
+		pass
+	finally:
+		return priv_dict
+
+if __name__ == '__main__':
+	for xx in iSCSILunGetList():
+		#print xx.__dict__
+		for yy in xx.lun_list:
+			print yy
+	print iSCSILunGetPrivilage('udv1')

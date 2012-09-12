@@ -42,7 +42,6 @@ class iSCSIArgs:
 		self.nv_cache_str = ''
 		self.map_set = False
 		self.unmap_set = False
-		self.privilage_set = False
 		self.lun_set = False
 		self.lun_id_set = False
 		self.lun_id_str = ''
@@ -52,6 +51,7 @@ class iSCSIArgs:
 		self.udv_str = ''
 		self.force_close_set = False
 		self.force_close_str = ''
+		self.get_privilage_set = False
 
 	def setMode(self, mode):
 		if self.mode == '':
@@ -175,13 +175,22 @@ def iscsiLunProc(args = iSCSIArgs()):
 			iscsiExit(ret, msg)
 		except:
 			sys.exit(-1)
-	elif args.privilage_set:
-		iscsiExit(False, '暂不支持此操作！')
+	elif args.get_privilage_set:
+		if not len(args.udv_str):
+			iscsiExit(False, '请输入需要查询的用户数据卷名称！')
+		priv = iSCSILunGetPrivilage(args.udv_str)
+		if priv != {}:
+			print json.dumps(priv, indent = 4)
+			sys.exit(0)
+		else:
+			iscsiExit(False, '用户数据卷 %s 不存在！' % args.udv_str)
 	else:
 		iscsiExit(False, '缺少参数!')
 
 # 处理Session相关参数
 def iscsiSessionProc(args = iSCSIArgs()):
+	if args.mode == '--session':
+		icsiExit(False, '暂不支持此操作')
 	return
 
 def iscsiUsage():
@@ -281,6 +290,8 @@ def iscsi_main():
 			iscsiArgs.map_set = True
 		elif opt == '--unmap':
 			iscsiArgs.unmap_set = True
+		elif opt == '--get-privilage':
+			iscsiArgs.get_privilage_set = True
 
 	iscsiTargetProc(iscsiArgs)
 	iscsiVolumeProc(iscsiArgs)
