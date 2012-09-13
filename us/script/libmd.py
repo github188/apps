@@ -66,9 +66,10 @@ def __md_fill_attr(str):
     attr["raid_strip"] = __find_attr(str, "Chunk Size : ([0-9]+[KMG])",
                                      __chunk_post)
     attr["raid_rebuild"] = __find_attr(str, "Rebuild Status : ([0-9])\%");
-    attr["capacity"] = __find_attr(str, "Array Size : ([0-9]+)")
-    attr["remain"] = attr["capacity"];
-    attr["disk_cnt"] = __find_attr(str, "Total Devices : ([0-9]+)")
+    attr["capacity"] = int(__find_attr(str, "Array Size : ([0-9]+)"))
+    used_capacity = int(__find_attr(str, "Used Dev Size : ([0-9]+)"))
+    attr["remain"] = int(attr["capacity"]) - used_capacity
+    attr["disk_cnt"] = int(__find_attr(str, "Total Devices : ([0-9]+)"))
     attr["disk_list"] = __find_attr(str, "([0-9]+\s*){4}.*(/dev/.+)",
                                     __disk_post)
 
