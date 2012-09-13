@@ -20,6 +20,7 @@ struct option udv_options[] = {
 	{"remain-capacity",	no_argument,		NULL,	'r'},
 	{"get-dev-byname",	required_argument,	NULL,	'a'},
 	{"get-name-bydev",	required_argument,	NULL,	'e'},
+	{"duplicate-check",	required_argument,	NULL,	'D'},
 	{0, 0, 0, 0}
 
 };
@@ -34,6 +35,7 @@ void udv_usage()
   printf(_T("       --remain-capacity --vg <vg_name>\n"));
   printf(_T("       --get-dev-byname <name>\n"));
   printf(_T("       --get-name-bydev <dev>\n"));
+  printf(_T("       --duplicate-check <udv_name>\n"));
   printf(_T("\n\n"));
   exit(0);
 }
@@ -214,6 +216,33 @@ int get_dev_byname(const char *udv_name)
 	return -1;
 }
 
+int duplicate_check(const char *udv_name)
+{
+	udv_info_t list[MAX_UDV], *udv;
+	size_t udv_cnt = 0, i;
+
+	if (!udv_name)
+		return_json_msg(MSG_ERROR, "用户数据卷名称无效!");
+
+	udv_cnt = udv_list(list, MAX_UDV);
+	if (udv_cnt<0)
+		return_json_msg(MSG_ERROR, "获取用户数据卷失败!");
+
+	udv = &list[0];
+
+	for (i=0; i<udv_cnt; i++)
+	{
+		if (!strcmp(udv->name, udv_name))
+		{
+			printf("{\"udv_name\":\"%s\",\"duplicate\":true}\n", udv_name);
+			return 0;
+		}
+		udv++;
+	}
+
+	printf("{\"udv_name\":\"%s\",\"duplicate\":false}\n", udv_name);
+	return 0;
+}
 
 int udv_main(int argc, char *argv[])
 {
@@ -261,6 +290,8 @@ int udv_main(int argc, char *argv[])
 				return get_dev_byname(optarg);
 			case 'e':
 				return get_name_bydev(optarg);
+			case 'D':	// --duplicate-chcek <udv_name>
+				return duplicate_check(optarg);
 			case '?':
 			default:
 				udv_usage();
