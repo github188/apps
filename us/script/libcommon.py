@@ -13,7 +13,7 @@ def list_files(path, reg):
     return f
 
 def json_dump(obj):
-    print json.dumps(obj, ensure_ascii=False, sort_keys=True)
+    print json.dumps(obj, ensure_ascii=False, sort_keys=True, indent = 4)
 
 def debug_status(res):
     if res:

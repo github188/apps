@@ -82,6 +82,9 @@ def mddev_get_attr(mddev):
     if (sts != 0) :
         return None
     md_attr = __md_fill_attr(output)
+    # add md dev for create udv
+    if md_attr:
+	    md_attr["dev"] = mddev
     return md_attr
 
 def md_list_mddevs():
