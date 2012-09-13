@@ -18,15 +18,15 @@ if [ -f /usr/local/bin/sys-manager ]; then
 	fi
 fi
 
+cd us
+./install.sh
+cd -
+
 rsync -av web-iface/sys-manager /usr/local/bin/
 
 rsync -av udv/libudv.a /usr/local/lib
 
 rsync -av iscsi/* /usr/local/bin
-
-cd us
-./install.sh
-cd -
 
 reset_sd
 
