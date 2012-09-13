@@ -65,7 +65,15 @@ def __md_fill_attr(str):
     attr["raid_state"] = __find_attr(str, "State : (.*)", __state_post)
     attr["raid_strip"] = __find_attr(str, "Chunk Size : ([0-9]+[KMG])",
                                      __chunk_post)
-    attr["raid_rebuild"] = __find_attr(str, "Rebuild Status : ([0-9])\%");
+    rebuild_per = __find_attr(str, "Rebuild Status : ([0-9])\%")
+    resync_per = __find_attr(str, "Resync Status : ([0-9])\%")
+    if rebuild_per:
+        attr["raid_rebuild"] = rebuild_per
+    elif resync_per:
+        attr["raid_rebuild"] = resync_per
+    else:
+        attr["raid_rebuild"] = '0'
+
     attr["capacity"] = int(__find_attr(str, "Array Size : ([0-9]+)"))
     used_capacity = int(__find_attr(str, "Used Dev Size : ([0-9]+)"))
     attr["remain"] = int(attr["capacity"]) - used_capacity
