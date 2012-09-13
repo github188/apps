@@ -1,5 +1,6 @@
 all:
-	$(MAKE) -C udv CFLAG=-D_UDV_DEBUG
+	#$(MAKE) -C udv CFLAG=-D_UDV_DEBUG
+	$(MAKE) -C udv
 	$(MAKE) -C web-iface
 	$(MAKE) -C us
 
