@@ -30,6 +30,7 @@ struct us_disk_pool {
 extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
 extern regex_t udev_md_regex;
+extern regex_t udev_dom_disk_regex;
 
 static struct us_disk_pool us_dp;
 
@@ -52,9 +53,18 @@ static int is_sd(const char *path)
 	return ret == 0;
 }
 
+static int is_dom_disk(const char *path)
+{
+	int ret;
+	printf("dom path: %s\n", path);
+	ret = regexec(&udev_dom_disk_regex, path, 0, NULL, 0);
+	printf("ret = %d\n", ret);
+	return ret == 0;
+}
+
 static int is_sata_sas(const char *path)
 {
-	return is_sd(path) && !is_usb(path);
+	return is_sd(path) && !is_usb(path) && !is_dom_disk(path);
 }
 
 static int find_free_slot(struct us_disk_pool *dp)
