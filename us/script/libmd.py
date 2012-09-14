@@ -58,9 +58,41 @@ def __find_attr(output, reg, post=__def_post):
     p = re.findall(reg, output)
     return post(p)
 
+def __attr_read(path, attr):
+	content = ''
+	try:
+		attr_path = path + os.sep + attr
+		f = open(attr_path)
+		content = f.readline().strip()
+		f.close()
+	except:
+		pass
+	return content
+
+def __get_sys_attr(dev, attr):
+	if dev.find('/dev/md') >= 0:
+		dev_name = dev.split('/dev/')[-1]
+	else:
+		dev_name = dev
+	sys_path = '/sys/block/' + dev_name
+	return __attr_read(sys_path, attr)
+
+# 目前先调用外部程序，以后考虑使用函数级调用的方式实现
+# sys-manager udv --remain-capacity --vg /dev/md1
+# 输出格式：
+# {"vg":"/dev/md1","max_avaliable":212860928,"max_single":212860928}
+def __get_remain_capacity(dev):
+	try:
+		json_result = os.popen('sys-manager udv --remain-capacity --vg %s' % dev).readline()
+		udv_result = json.loads(json_result)
+		return udv_result['max_avaliable']
+	except:
+		return 0
+
 def __md_fill_attr(str):
     attr = {}
     attr["name"] = __find_attr(str, "Name : (.*)", __name_post)
+    attr["dev"] = __find_attr(str, "^(.*):")
     attr["raid_level"] = __find_attr(str, "Raid Level : (.*)", __level_post)
     attr["raid_state"] = __find_attr(str, "State : (.*)", __state_post)
     attr["raid_strip"] = __find_attr(str, "Chunk Size : ([0-9]+[KMG])",
@@ -74,9 +106,8 @@ def __md_fill_attr(str):
     else:
         attr["raid_rebuild"] = '0'
 
-    attr["capacity"] = int(__find_attr(str, "Array Size : ([0-9]+)"))
-    used_capacity = int(__find_attr(str, "Used Dev Size : ([0-9]+)"))
-    attr["remain"] = int(attr["capacity"]) - used_capacity
+    attr["capacity"] = int(__get_sys_attr(attr["dev"], "size")) * 512
+    attr["remain"] = __get_remain_capacity(attr["dev"])
     attr["disk_cnt"] = int(__find_attr(str, "Total Devices : ([0-9]+)"))
     attr["disk_list"] = __find_attr(str, "([0-9]+\s*){4}.*(/dev/.+)",
                                     __disk_post)
@@ -91,13 +122,20 @@ def mddev_get_attr(mddev):
     if (sts != 0) :
         return None
     md_attr = __md_fill_attr(output)
-    # add md dev for create udv
-    if md_attr:
-	    md_attr["dev"] = mddev
     return md_attr
 
 def md_list_mddevs():
-    return list_files("/dev", "md[0-9]+")
+    #return list_files("/dev", "md[0-9]+")
+    # 解决正则表达式匹配md1p1设备的问题
+    dev_list = []
+    try:
+        for dev in os.listdir('/dev'):
+            if (dev.find('md') == 0) and (len(dev.split('p')) == 1) and (len(dev)>2):
+                dev_list.append('/dev/' + dev)
+    except:
+	    pass
+    finally:
+	    return dev_list
 
 def md_find_free_mddev():
     mddevs = md_list_mddevs()
