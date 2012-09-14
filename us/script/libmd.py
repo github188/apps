@@ -125,7 +125,17 @@ def mddev_get_attr(mddev):
     return md_attr
 
 def md_list_mddevs():
-    return list_files("/dev", "md[0-9]+")
+    #return list_files("/dev", "md[0-9]+")
+    # 解决正则表达式匹配md1p1设备的问题
+    dev_list = []
+    try:
+        for dev in os.listdir('/dev'):
+            if (dev.find('md') == 0) and (len(dev.split('p')) == 1) and (len(dev)>2):
+                dev_list.append('/dev/' + dev)
+    except:
+	    pass
+    finally:
+	    return dev_list
 
 def md_find_free_mddev():
     mddevs = md_list_mddevs()
