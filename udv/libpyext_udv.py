@@ -10,6 +10,7 @@ def getVGDevByName(vg_name):
 	md_dev = ''
 	try:
 		mdinfo = md_info()
+		print mdinfo
 		if mdinfo['total'] > 0:
 			for md in mdinfo['rows']:
 				if md['name'] == vg_name:
