@@ -1,42 +1,42 @@
-//#include <Python.h>
+#include <Python.h>
 #include <parted/parted.h>
 #include "libudv.h"
 
 const static int DFT_SECTOR_SIZE = 512;
 
-#if 0
-const char *getVGDev_ByName(const char *vg_name)
+size_t getVGDevByName(const char *vg_name, char *vg_dev)
 {
-	PyObject *pModule, *pFunc, *pArg, *pRetVal, *pName;
+	PyObject *pModule, *pFunc, *pArg, *pRetVal;
+
+	if (!(vg_name && vg_dev))
+		return PYEXT_ERR_INPUT_ARG;
 
 	Py_Initialize();
 	if (!Py_IsInitialized())
-	{
-		return -1;
-	}
+		return PYEXT_ERR_INIT;
 
 	pModule = pFunc = pArg = pRetVal = NULL;
 
 	PyRun_SimpleString("import sys");
 	PyRun_SimpleString("sys.path.append('./')");
 
-	pName = PyString_FromString("wrap");
-	pModule = PyImport_ImportModule("wrap");
-	//pModule = PyImport_Import(pName);
+	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
+		return PYEXT_ERR_LOAD_MODULE;
 
-	pFunc = PyObject_GetAttrString(pModule, "wrap");
+	pFunc = PyObject_GetAttrString(pModule, "getVGDevByName");
 	if(!PyCallable_Check(pFunc))
-	{
-		printf("func not callable!\n");
-		return -1;
-	}
+		return PYEXT_ERR_LOAD_FUNC;
 
-	pArg = Py_BuildValue("(s)", "abc");
-	pRetVal = PyObject_CallObject(pFunc, pArg);
+	if (!(pArg = Py_BuildValue("(s)", vg_name)))
+		return PYEXT_ERR_SET_ARG;
 
-	return printf("py ret: %s\n", PyString_AsString(pRetVal));
+	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
+		return PYEXT_ERR_RUN;
+
+	strcpy(vg_dev, PyString_AsString(pRetVal));
+
+	return PYEXT_RET_OK;
 }
-#endif
 
 PedDisk*
 _create_disk_label (PedDevice *dev, PedDiskType *type)
@@ -67,17 +67,17 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 
 	struct list list, *n, *nt;
 	struct geom_stru *elem;
-	const char *vg_dev = vg_name;   // for debug
 
 	ssize_t ret_code = E_OK;
+	char vg_dev[PATH_MAX];
 
         // 参数检查
         if (!name)
                 return E_FMT_ERROR;
 
         // 检查VG是否存在
-        //if (!(vg_dev=vg_name2dev(vg_name)))
-	//	return EEXIST;
+	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
+		return E_VG_NONEXIST;
 
         // 检查用户数据卷是否存在
         if (get_udv_by_name(name))
@@ -161,12 +161,18 @@ ssize_t get_udv_free_list(const char *vg_name, struct list *list)
 	ssize_t ret_code = E_FMT_ERROR;
 	udv_geom last_geom = { 0, 0, 0 };
 	uint64_t end_pos = 0;
+	char vg_dev[PATH_MAX];
 
         if ( !(vg_name && list) )
                 return ret_code;
+
+	// 检查VG是否存在
+	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
+		return E_VG_NONEXIST;
+
         list_init(list);
 
-        if ( !(device = ped_device_get(vg_name)) )
+        if ( !(device = ped_device_get(vg_dev)) )
 	{
 		ret_code = E_SYS_ERROR;
                 goto err_out;

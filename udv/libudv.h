@@ -14,6 +14,17 @@
 
 #define MAX_UDV 10
 
+/* Error code for c call py */
+enum {
+	PYEXT_RET_OK = 0,
+	PYEXT_ERR_INPUT_ARG,
+	PYEXT_ERR_INIT,
+	PYEXT_ERR_LOAD_MODULE,
+	PYEXT_ERR_LOAD_FUNC,
+	PYEXT_ERR_SET_ARG,
+	PYEXT_ERR_RUN
+};
+
 /* Error Code */
 enum {
 	E_OK = 0,
@@ -70,7 +81,7 @@ size_t udv_list(udv_info_t *list, size_t n);
 
 ssize_t udv_rename(const char *name, const char *new_name);
 
-//const char *getVGDev_ByName(const char *vg_name);
+size_t getVGDev_ByName(const char *vg_name, char *vg_dev);
 
 /**
  * Utils
