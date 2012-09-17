@@ -57,12 +57,23 @@ class iSCSIArgs:
 		if self.mode == '':
 			self.mode = mode
 
+def DictDump(row_list):
+	return row_list
+
+def DefaultDump(row_list):
+	rows = []
+	for row in row_list:
+		rows.append(row.__dict__)
+	return rows
+
 class UniOutput:
-	def __init__(self, row_list):
+	def __init__(self, row_list, dump = DefaultDump):
 		self.total = 0
 		self.rows = []
-		for row in row_list:
-			self.rows.append(row.__dict__)
+		#for row in row_list:
+		#	self.rows.append(row.__dict__)
+		#self.total = len(self.rows)
+		self.rows = dump(row_list)
 		self.total = len(self.rows)
 
 		print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent = 4)
@@ -142,7 +153,7 @@ def iscsiLunProc(args = iSCSIArgs()):
 	if args.list_set:
 		if len(args.lun_id_str):
 			iscsiExit(False, '暂不支持获取指定LUN ID信息！')
-		UniOutput(iSCSILunGetList(args.target_name_str))
+		UniOutput(iSCSILunGetList(args.target_name_str), DictDump)
 	elif args.map_set:
 		# check if add volume first
 		if args.add_set:

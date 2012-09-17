@@ -111,8 +111,8 @@ def iSCSILunGetList(tgt = ''):
 	tgt_lun_list = []
 	try:
 		for t in iSCSIGetTargetList(tgt):
-			tgt_lun = iSCSITargetLun()
-			tgt_lun.target = t.name
+			#tgt_lun = iSCSITargetLun()
+			#tgt_lun.target = t.name
 			tgt_luns_dir = SCST.TARGET_DIR + os.sep + t.name + '/luns'
 			#tgt_lun.luns = len(lun_list)
 
@@ -122,6 +122,7 @@ def iSCSILunGetList(tgt = ''):
 				vol = getVolumeInfo(volume_name)
 				lun = vol.__dict__
 				lun['lun_id'] = int(l)
+				lun['target_name'] = t.name
 				if vol.read_only == 'enable':
 					lun['read_only'] = vol.read_only
 				else:
@@ -129,10 +130,11 @@ def iSCSILunGetList(tgt = ''):
 						lun['read_only'] = 'disable'
 					else:
 						lun['read_only'] = 'enable'
-				tgt_lun.lun_list.append(lun)
+				#tgt_lun.lun_list.append(lun)
+				tgt_lun_list.append(lun)
 
-			tgt_lun.luns = len(tgt_lun.lun_list)
-			tgt_lun_list.append(tgt_lun)
+			#tgt_lun.luns = len(tgt_lun.lun_list)
+			#tgt_lun_list.append(tgt_lun)
 	except IOError, e:
 		msg = e
 	finally:
