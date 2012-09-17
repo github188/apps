@@ -25,6 +25,7 @@ cd -
 rsync -av web-iface/sys-manager /usr/local/bin/
 
 rsync -av udv/libudv.a /usr/local/lib
+rsync -av udv/libpyext_udv.py /usr/local/bin
 
 rsync -av iscsi/* /usr/local/bin
 
