@@ -81,9 +81,9 @@ def __get_sys_attr(dev, attr):
 # sys-manager udv --remain-capacity --vg /dev/md1
 # 输出格式：
 # {"vg":"/dev/md1","max_avaliable":212860928,"max_single":212860928}
-def __get_remain_capacity(dev):
+def __get_remain_capacity(md_name):
 	try:
-		json_result = os.popen('sys-manager udv --remain-capacity --vg %s' % dev).readline()
+		json_result = os.popen('sys-manager udv --remain-capacity --vg %s' % md_name).readline()
 		udv_result = json.loads(json_result)
 		return udv_result['max_avaliable']
 	except:
@@ -107,7 +107,7 @@ def __md_fill_attr(str):
         attr["raid_rebuild"] = '0'
 
     attr["capacity"] = int(__get_sys_attr(attr["dev"], "size")) * 512
-    attr["remain"] = __get_remain_capacity(attr["dev"])
+    attr["remain"] = __get_remain_capacity(attr["name"])
     attr["disk_cnt"] = int(__find_attr(str, "Total Devices : ([0-9]+)"))
     attr["disk_list"] = __find_attr(str, "([0-9]+\s*){4}.*(/dev/.+)",
                                     __disk_post)
