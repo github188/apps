@@ -1,7 +1,42 @@
+//#include <Python.h>
 #include <parted/parted.h>
 #include "libudv.h"
 
 const static int DFT_SECTOR_SIZE = 512;
+
+#if 0
+const char *getVGDev_ByName(const char *vg_name)
+{
+	PyObject *pModule, *pFunc, *pArg, *pRetVal, *pName;
+
+	Py_Initialize();
+	if (!Py_IsInitialized())
+	{
+		return -1;
+	}
+
+	pModule = pFunc = pArg = pRetVal = NULL;
+
+	PyRun_SimpleString("import sys");
+	PyRun_SimpleString("sys.path.append('./')");
+
+	pName = PyString_FromString("wrap");
+	pModule = PyImport_ImportModule("wrap");
+	//pModule = PyImport_Import(pName);
+
+	pFunc = PyObject_GetAttrString(pModule, "wrap");
+	if(!PyCallable_Check(pFunc))
+	{
+		printf("func not callable!\n");
+		return -1;
+	}
+
+	pArg = Py_BuildValue("(s)", "abc");
+	pRetVal = PyObject_CallObject(pFunc, pArg);
+
+	return printf("py ret: %s\n", PyString_AsString(pRetVal));
+}
+#endif
 
 PedDisk*
 _create_disk_label (PedDevice *dev, PedDiskType *type)
@@ -277,7 +312,12 @@ size_t udv_list(udv_info_t *list, size_t n)
                                 break;
 
                         strcpy(udv->name, part_name);
-			sprintf(udv->dev, "%s%d", dev->path, part->num);
+			
+			if (dev->type == PED_DEVICE_MD)
+				sprintf(udv->dev, "%sp%d", dev->path, part->num);
+			else
+				sprintf(udv->dev, "%s%d", dev->path, part->num);
+
                         strcpy(udv->vg_dev, dev->path);
                         udv->part_num = part->num;
 
