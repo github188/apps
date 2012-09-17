@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	*/
 
 	char vg_dev[128];
-	if (getVGDevByName("slash-server", vg_dev)==PYEXT_RET_OK)
+	if (getVGDevByName("vgtest1", vg_dev)==PYEXT_RET_OK)
 		printf("vg dev: %s\n", vg_dev);
 	else
 		printf("get error!\n");
