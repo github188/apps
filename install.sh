@@ -28,5 +28,4 @@ rsync -av udv/libpyext_udv.py /usr/local/bin
 rsync -av iscsi/* /usr/local/bin
 
 reset_sd
-
 ldconfig
