@@ -80,4 +80,4 @@ if __name__ == '__main__':
 	print 'VG: slash-server, DEV: ', vg_dev
 
 	print getVdiskList()
-	print isISCSIVolume('/dev/md1')
+	print isISCSIVolume(sys.argv[1])

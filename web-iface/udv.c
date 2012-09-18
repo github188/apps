@@ -14,6 +14,9 @@ struct option udv_options[] = {
 	{"capacity",		required_argument,	NULL,	'p'},
 	{"delete",		required_argument,	NULL,	'd'},
 	{"list",		no_argument,		NULL,	'l'},
+	{"iscsi",		no_argument,		NULL,	'I'},
+	{"nas",			no_argument,		NULL,	'N'},
+	{"raw",			no_argument,		NULL,	'R'},
 	{"modify",		no_argument,		NULL,	'm'},
 	{"old-name",		required_argument,	NULL,	'o'},
 	{"new-name",		required_argument,	NULL,	'n'},
@@ -28,7 +31,7 @@ struct option udv_options[] = {
 void udv_usage()
 {
   printf(_T("\nsys-udv\n\n"));
-  printf(_T("Usage: --list\n"));
+  printf(_T("Usage: --list [--raw | --iscsi | --nas]\n"));
   printf(_T("       --create --vg <vg_name> --name <udv_name> --capacity <size>\n"));
   printf(_T("       --delete <udv_name>\n"));
   printf(_T("       --modify --old-name <udv_name> --new-name <udv_name>\n"));
@@ -44,6 +47,7 @@ enum {
 	UDV_MODE_CREATE = 1,
 	UDV_MODE_RENAME = 2,
 	UDV_MODE_REMAIN = 3,
+	UDV_MODE_LIST = 4,
 	UDV_MODE_NONE
 };
 
@@ -77,12 +81,18 @@ void return_json_msg(const int type, const char *msg)
 	}
 }
 
-void list_udv()
+typedef struct _list_type list_type_t;
+struct _list_type{
+	bool iscsi, nas, raw;
+};
+
+void list_udv(list_type_t t)
 {
 	udv_info_t list[MAX_UDV], *udv;
-	size_t udv_cnt = 0, i;
+	size_t udv_cnt = 0, i, printed = 0;
 
 	char udv_type[128];
+	bool print = false;
 
 	udv_cnt = udv_list(list, MAX_UDV);
 	if (udv_cnt<0)
@@ -91,7 +101,6 @@ void list_udv()
 	udv = &list[0];
 
 	puts("{");
-	printf("\t\"total\":%d,\n", (int)udv_cnt);
 	printf("\t\"rows\":");
 
 	if (udv_cnt==0)
@@ -101,17 +110,35 @@ void list_udv()
 
 	for (i=0; i<udv_cnt; i++)
 	{
-		if (udv->state==UDV_RAW)
-			strcpy(udv_type, "raw");
-		else if (udv->state==UDV_NAS)
-			strcpy(udv_type, "nas");
+		print = false;
 
-		if (i+1==udv_cnt)
-			printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"}",
-					udv->name, (unsigned long long)udv->geom.capacity, udv_type);
-		else
-			printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"},",
-					udv->name, (unsigned long long)udv->geom.capacity, udv_type);
+		if (t.raw && (udv->state == UDV_RAW))
+		{
+			print = true;
+			strcpy(udv_type, "raw");
+		}
+		else if (t.nas && (udv->state == UDV_NAS))
+		{
+			print = true;
+			strcpy(udv_type, "nas");
+		}
+		else if (t.iscsi && (udv->state == UDV_ISCSI))
+		{
+			print = true;
+			strcpy(udv_type, "iscsi");
+		}
+
+
+		if (print)
+		{
+			if (i+1==udv_cnt)
+				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"}",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_type);
+			else
+				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"},",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_type);
+			printed++;
+		}
 		udv++;
 	}
 
@@ -119,6 +146,7 @@ void list_udv()
 		printf("]\n");
 	else
 		puts("\n\t]\n");
+	printf("\t\"total\":%d,\n", printed);
 	puts("}");
 
 	exit(0);
@@ -247,6 +275,9 @@ int duplicate_check(const char *udv_name)
 int udv_main(int argc, char *argv[])
 {
 	char c;
+	list_type_t t;
+
+	t.raw = t.iscsi = t.nas = false;
 
 	//opterr = 0;  // 关闭错误提示
 	while( (c=getopt_long(argc, argv, "", udv_options, NULL)) != -1 )
@@ -254,8 +285,8 @@ int udv_main(int argc, char *argv[])
 		switch (c)
 		{
 			case 'l':  // --list
-				list_udv(NULL);
-				break;
+				mode = UDV_MODE_LIST;
+				continue;
 			case 'c':  // --create
 				mode = UDV_MODE_CREATE;
 				continue;
@@ -292,6 +323,15 @@ int udv_main(int argc, char *argv[])
 				return get_name_bydev(optarg);
 			case 'D':	// --duplicate-chcek <udv_name>
 				return duplicate_check(optarg);
+			case 'I':	// --iscsi
+				t.iscsi = true;
+				continue;
+			case 'R':	// --raw
+				t.raw = true;
+				continue;
+			case 'N':	// --nas
+				t.nas = true;
+				continue;
 			case '?':
 			default:
 				udv_usage();
@@ -324,6 +364,13 @@ int udv_main(int argc, char *argv[])
 		if (vg_name[0] == '\0')
 			return_json_msg(MSG_ERROR, "请输入卷组名称!");
 		return get_udv_remain();
+	}
+	else if (UDV_MODE_LIST == mode)
+	{
+		// 三个参数都不设置，则显示所有类型的分区
+		if ( !t.raw && !t.iscsi && !t.nas )
+			t.raw = t.iscsi = t.nas = true;
+		list_udv(t);
 	}
 
 	udv_usage();
