@@ -83,6 +83,8 @@ ssize_t udv_rename(const char *name, const char *new_name);
 
 size_t getVGDev_ByName(const char *vg_name, char *vg_dev);
 
+int isISCSIVolume(const char *udv_dev);
+
 /**
  * Utils
  */

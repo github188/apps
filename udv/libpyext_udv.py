@@ -4,6 +4,8 @@
 import os
 import sys
 
+# -----------------------------------------------------------------------------
+
 def getMdNameMap(md_dev):
 	md_map = {}
 	try:
@@ -45,6 +47,37 @@ def getVGDevByName(vg_name):
 	finally:
 		return md_dev
 
+# -----------------------------------------------------------------------------
+
+VDISK_PATH = '/sys/kernel/scst_tgt/handlers/vdisk_blockio'
+
+def getVdiskList():
+	vd_list = []
+	try:
+		for x in os.listdir(VDISK_PATH):
+			dev_path = '%s/%s/filename' % (VDISK_PATH, x)
+			if os.path.isfile(dev_path) == False:
+				continue
+			f = open(dev_path)
+			dev = f.readline().strip()
+			vd_list.append(dev)
+			f.close()
+	except:
+		pass
+	return vd_list
+
+def isISCSIVolume(udv_dev):
+	try:
+		for x in getVdiskList():
+			if x == udv_dev:
+				return 1
+	except:
+		pass
+	return 0
+
 if __name__ == '__main__':
 	vg_dev = getVGDevByName(sys.argv[1])
 	print 'VG: slash-server, DEV: ', vg_dev
+
+	print getVdiskList()
+	print isISCSIVolume('/dev/md1')

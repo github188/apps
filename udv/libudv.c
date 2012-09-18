@@ -38,6 +38,49 @@ size_t getVGDevByName(const char *vg_name, char *vg_dev)
 	return PYEXT_RET_OK;
 }
 
+int isISCSIVolume(const char *udv_dev)
+{
+	int ret = 1;
+	PyObject *pModule, *pFunc, *pArg, *pRetVal;
+
+	if (!udv_dev)
+		return PYEXT_ERR_INPUT_ARG;
+
+	Py_Initialize();
+	if (!Py_IsInitialized())
+		return PYEXT_ERR_INIT;
+
+	pModule = pFunc = pArg = pRetVal = NULL;
+
+	PyRun_SimpleString("import sys");
+	PyRun_SimpleString("sys.path.append('./')");
+
+	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
+		return PYEXT_ERR_LOAD_MODULE;
+
+	pFunc = PyObject_GetAttrString(pModule, "isISCSIVolume");
+	if(!PyCallable_Check(pFunc))
+		return PYEXT_ERR_LOAD_FUNC;
+
+	if (!(pArg = Py_BuildValue("(s)", udv_dev)))
+		return PYEXT_ERR_SET_ARG;
+
+	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
+		return PYEXT_ERR_RUN;
+
+	//strcpy(vg_dev, PyString_AsString(pRetVal));
+
+	ret = PyInt_AsLong(pRetVal);
+
+	// Clean up
+	Py_DECREF(pModule);
+	Py_DECREF(pFunc);
+
+	Py_Finalize();
+
+	return ret;
+}
+
 PedDisk*
 _create_disk_label (PedDevice *dev, PedDiskType *type)
 {
@@ -294,10 +337,6 @@ size_t udv_list(udv_info_t *list, size_t n)
 			continue;
 #endif
 
-		// for debug
-		if (!strcmp(dev->path, "/dev/sda"))
-			continue;
-
                 // 获取当前MD分区信息
 		if ( !ped_disk_probe(dev) || !(disk=ped_disk_new(dev)) )
 			continue;
@@ -327,8 +366,9 @@ size_t udv_list(udv_info_t *list, size_t n)
                         udv->geom.capacity = part->geom.length * DFT_SECTOR_SIZE;
                         udv->geom.end = udv->geom.start + udv->geom.capacity - 1;
 
-                        // TODO: udv->state; iscsi
-			if (part->fs_type)
+			if (isISCSIVolume(udv->dev))
+				udv->state = UDV_ISCSI;
+			else if (part->fs_type)
 				udv->state = UDV_NAS;
 			else
 				udv->state = UDV_RAW;
