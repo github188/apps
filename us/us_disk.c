@@ -277,7 +277,7 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	                di->model);
 	pos += snprintf(pos, end - pos, "%s\"serial\":\"%s\"", delim,
 	                di->serial);
-	pos += snprintf(pos, end - pos, "%s\"capacity\":\"%llu\"", delim,
+	pos += snprintf(pos, end - pos, "%s\"capacity\":%llu", delim,
 	                (unsigned long long)di->size);
 	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim,
 	                disk_get_state(&disk->ri));
@@ -285,9 +285,9 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	                disk_get_smart_status(di));
 
 	if (is_detail) {
-		pos += snprintf(pos, end - pos, "%s\"bus_type\": \"NaN\"",
+		pos += snprintf(pos, end - pos, "%s\"bus_type\": \"SATA\"",
 		                delim);
-		pos += snprintf(pos, end - pos, "%s\"rpm\": \"NaN\"",
+		pos += snprintf(pos, end - pos, "%s\"rpm\":7200",
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"wr_cache\": \"enable\"",
 		                delim);
@@ -298,23 +298,23 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"smart_attr\":{", delim);
-		pos += snprintf(pos, end - pos, "\"read_err\":\"%llu\"",
+		pos += snprintf(pos, end - pos, "\"read_err\":%llu",
 		                (unsigned long long)di->si.spin_up);
-		pos += snprintf(pos, end - pos, "%s\"spin_up\":\"%llu\"",
+		pos += snprintf(pos, end - pos, "%s\"spin_up\":%llu",
 		                delim, (unsigned long long)di->si.spin_up);
 		pos += snprintf(pos, end - pos,
-		                "%s\"reallocate_sectors\":\"%llu\"", delim,
+		                "%s\"reallocate_sectors\":%llu", delim,
 		                (unsigned long long)di->si.reallocate_sectors);
 		pos += snprintf(pos, end - pos,
-		                "%s\"pending_sectors\":\"%llu\"", delim,
+		                "%s\"pending_sectors\":%llu", delim,
 		                (unsigned long long)di->si.pending_sectors);
 		pos += snprintf(pos, end - pos,
-		                "%s\"uncorrectable\":\"%llu\"", delim,
+		                "%s\"uncorrectable\":%llu", delim,
 		                (unsigned long long)di->si.uncorrectable_sectors);
-		pos += snprintf(pos, end - pos, "%s\"power_on_hours\":\"%llu\"",
+		pos += snprintf(pos, end - pos, "%s\"power_on_hours\":%llu",
 		                delim,
 		                (unsigned long long)di->si.power_on / 3600 / 1000);
-		pos += snprintf(pos, end - pos, "%s\"temperature\":\"%.0f\"",
+		pos += snprintf(pos, end - pos, "%s\"temperature\":%.0f",
 		                delim,
 		                di->si.temperature / 1000.0);
 		pos += snprintf(pos, end - pos, "}");

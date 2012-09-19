@@ -54,12 +54,18 @@ def md_get_mddev(mdname):
     return None
 
 def set_disk_free(diskname):
-    cmd = "mdadm --zero %s >/dev/null 2>&1" % diskname
+    cmd = "mdadm --zero-superblock %s 2>&1" % diskname
     sts,out = commands.getstatusoutput(cmd)
-    if sts == 0:
-        return True
+
+    # 修改判断清空superblock的条件
+    # 常见的出错提示
+    #   mdadm: Unrecognised md component device - /dev/sdb
+    #   mdadm: Unrecognised md component device - /dev/sdg
+    # 以上出错mdadm返回值均为0
+    if len(out) == 0:
+	    return True
     else:
-        return False
+	    return False
 
 def set_spare(mdname, slots):
     disks,failed = disks_from_slot(slots)
@@ -81,12 +87,11 @@ def set_spare(mdname, slots):
     return True, "设置'%s'为热备盘成功" % slots
 
 def set_slots_free(slots):
-    slot_list = slots.split()
-    if len(slot_list) == 0:
-        return False,"未找到磁盘"
+    if len(slots) == 0:
+        return False,"请输入设置空闲盘的磁盘槽位号!"
 
     failed = []
-    for slot in slot_list:
+    for slot in slots:
         disk = disk_name(slot)
         if disk == None:
             failed.append(slot)

@@ -39,7 +39,7 @@ int disk_get_raid_info(const char *dev, struct disk_md_info *i);
 static inline const char *disk_get_smart_status(const struct disk_info *info)
 {
 	if (!info->is_smart_avail)
-		return "Nan";
+		return "None";
 	if (!info->si.health_good)
 		return "BAD";
 	if (info->si.pending_sectors || info->si.uncorrectable_sectors)
@@ -54,13 +54,13 @@ static inline const char *disk_get_state(const struct disk_md_info *mi)
 	if (mi->is_raid == 0)
 		stat =  "Free";
 	else if (!mi->is_in_raid)
-		stat = "Inval";
+		stat = "Invalid";
 	else if (mi->is_fault)
 		stat = "Fault";
 	else if (mi->is_spare)
 		stat = "Spare";
 	else
-		stat = "Active";
+		stat = "RAID";
 
 	return stat;
 }

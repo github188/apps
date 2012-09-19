@@ -38,7 +38,7 @@ def main(argv):
     elif cmd == "--set-free":
         if (len(argv)) < 3:
             usage()
-        slots = argv[2]
+	slots = argv[2:]
         res = set_slots_free(slots)
     else:
         res = usage()
@@ -55,7 +55,8 @@ Usage:
         name <slot>
         slot <name>
 """
-    return False,help_str
+    #return False,help_str
+    print help_str
 
 if __name__ == "__main__":
     res = main(sys.argv)
