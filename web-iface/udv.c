@@ -106,7 +106,7 @@ void list_udv(list_type_t t)
 	if (udv_cnt==0)
 		printf("[");
 	else
-		puts("\n\t[");
+		printf("\n\t[");
 
 	for (i=0; i<udv_cnt; i++)
 	{
@@ -142,10 +142,10 @@ void list_udv(list_type_t t)
 	}
 
 	if (udv_cnt==0)
-		printf("]\n");
+		puts("],");
 	else
-		puts("\n\t]\n");
-	printf("\t\"total\":%d,\n", printed);
+		puts("\n\t],");
+	printf("\t\"total\":%d\n", printed);
 	puts("}");
 
 	exit(0);
