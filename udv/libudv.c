@@ -19,6 +19,7 @@ size_t getVGDevByName(const char *vg_name, char *vg_dev)
 
 	PyRun_SimpleString("import sys");
 	PyRun_SimpleString("sys.path.append('./')");
+	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
 
 	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
 		return PYEXT_ERR_LOAD_MODULE;
@@ -54,6 +55,7 @@ int isISCSIVolume(const char *udv_dev)
 
 	PyRun_SimpleString("import sys");
 	PyRun_SimpleString("sys.path.append('./')");
+	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
 
 	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
 		return PYEXT_ERR_LOAD_MODULE;
@@ -124,11 +126,11 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 
         // 检查用户数据卷是否存在
         if (get_udv_by_name(name))
-                return E_VG_NONEXIST;
+                return E_UDV_EXIST;
 
 	// 检查空闲空间
-	if ( (ret_code = get_udv_free_list(vg_dev, &list)) <= 0 )
-		return ret_code;
+	if ( get_udv_free_list(vg_dev, &list) <= 0 )
+		return E_NO_FREE_SPACE;
 
         // 创建用户数据卷
         if (!(device = ped_device_get(vg_dev)))
@@ -151,7 +153,6 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 
 	if (!disk)
 	{
-		printf("err\n");
 		ret_code = E_SYS_ERROR;
 		goto error;
 	}
@@ -169,8 +170,10 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 			ped_partition_set_name(part, name);
 			ped_disk_add_partition(disk, part, constraint);
 			ped_disk_commit(disk);
+			ret_code = E_OK;
 			break;
 		}
+		ret_code = E_NO_FREE_SPACE;
 	}
 
 	free_geom_list(&list);

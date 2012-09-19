@@ -91,7 +91,7 @@ void list_udv(list_type_t t)
 	udv_info_t list[MAX_UDV], *udv;
 	size_t udv_cnt = 0, i, printed = 0;
 
-	char udv_type[128];
+	char udv_state[128];
 	bool print = false;
 
 	udv_cnt = udv_list(list, MAX_UDV);
@@ -115,28 +115,27 @@ void list_udv(list_type_t t)
 		if (t.raw && (udv->state == UDV_RAW))
 		{
 			print = true;
-			strcpy(udv_type, "raw");
+			strcpy(udv_state, "raw");
 		}
 		else if (t.nas && (udv->state == UDV_NAS))
 		{
 			print = true;
-			strcpy(udv_type, "nas");
+			strcpy(udv_state, "nas");
 		}
 		else if (t.iscsi && (udv->state == UDV_ISCSI))
 		{
 			print = true;
-			strcpy(udv_type, "iscsi");
+			strcpy(udv_state, "iscsi");
 		}
-
 
 		if (print)
 		{
 			if (i+1==udv_cnt)
 				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"}",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_type);
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state);
 			else
 				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"},",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_type);
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state);
 			printed++;
 		}
 		udv++;
@@ -272,10 +271,47 @@ int duplicate_check(const char *udv_name)
 	return 0;
 }
 
+void build_err_msg(int err_code, char *err_msg)
+{
+	if (!err_msg)
+		return;
+	switch(err_code)
+	{
+		case E_FMT_ERROR:
+			sprintf(err_msg, "参数格式错误!");
+			break;
+		case E_VG_NONEXIST:
+			sprintf(err_msg, "VG不存在!");
+			break;
+		case E_UDV_NONEXIST:
+			sprintf(err_msg, "UDV不存在!");
+			break;
+		case E_VG_EXIST:
+			sprintf(err_msg, "VG已经存在!");
+			break;
+		case E_UDV_EXIST:
+			sprintf(err_msg, "UDV已经存在!");
+			break;
+		case E_SYS_ERROR:
+			sprintf(err_msg, "系统调用出错!");
+			break;
+		case E_NO_FREE_SPACE:
+			sprintf(err_msg, "可供使用的有效剩余空间不足!");
+			break;
+		case E_DEVICE_NOTMD:
+			sprintf(err_msg, "设备类型不是VG设备!");
+			break;
+		default:
+			sprintf(err_msg, "未知错误!");
+			break;
+	}
+}
+
 int udv_main(int argc, char *argv[])
 {
 	char c;
 	list_type_t t;
+	char err_msg[256];
 
 	t.raw = t.iscsi = t.nas = false;
 
@@ -347,8 +383,8 @@ int udv_main(int argc, char *argv[])
 
 		if ((ret=udv_create(vg_name, udv_name, capacity)) >= 0)
 			return_json_msg(MSG_OK, "创建用数据卷成功!");
-		//printf("ret = %d\n", ret);
-		return_json_msg(MSG_ERROR, "创建用户数据卷失败!");
+		build_err_msg(ret, err_msg);
+		return_json_msg(MSG_ERROR, err_msg);
 	}
 	else if (UDV_MODE_RENAME == mode)
 	{
