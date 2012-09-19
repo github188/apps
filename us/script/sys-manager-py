@@ -11,7 +11,7 @@ def main(argv):
         return usage()
     cmd = argv[1]
     if cmd == "disk":
-        return us_disk.main(argv[1:])
+        return us_disk.disk_main(argv[1:])
     elif cmd == "vg":
         return us_md.main(argv[1:])
     return usage()

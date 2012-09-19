@@ -293,7 +293,7 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"rd_ahead\": \"enable\"",
 		                delim);
-		pos += snprintf(pos, end - pos, "%s\"standby\": \"0\"",
+		pos += snprintf(pos, end - pos, "%s\"standby\":0",
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
 		                delim);
