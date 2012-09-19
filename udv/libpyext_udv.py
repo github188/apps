@@ -26,6 +26,8 @@ def getMdList():
 	md_list = []
 	try:
 		for x in os.listdir('/dev'):
+			if len(x) < 3:
+				continue
 			y = x.split('md')
 			if len(y) == 2 and y[0]=='' and len(y[1].split('p'))==1:
 				md_attr = getMdNameMap(x)

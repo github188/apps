@@ -8,7 +8,7 @@ void test_create()
 {
 	ssize_t ret;
 
-	ret = udv_create("/dev/md1", "udv1", 15000000);
+	ret = udv_create("vgtest1", "udv3", 5000000);
 	if (ret!=0)
 	{
 		printf("ret = %ld\n", ret);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	}
 	*/
 
-	printf("iscsi volume /dev/md1 check, return: %d\n", isISCSIVolume("/dev/md1"));
+	//printf("iscsi volume /dev/md1 check, return: %d\n", isISCSIVolume("/dev/md1"));
 
 	/*
 	char vg_dev[128];
@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
 
 	//printf("=========== after delete =============\n");
 	//printf("=========== after create =============\n");
+	test_list();
+	test_create();
 	test_list();
 
 	/*
