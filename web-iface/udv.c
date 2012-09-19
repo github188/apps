@@ -131,11 +131,13 @@ void list_udv(list_type_t t)
 		if (print)
 		{
 			if (i+1==udv_cnt)
-				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"}",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state);
+				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
+						udv->name, (unsigned long long)udv->geom.capacity);
 			else
-				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"},",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state);
+				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"},",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
+						udv->name, (unsigned long long)udv->geom.capacity);
 			printed++;
 		}
 		udv++;
