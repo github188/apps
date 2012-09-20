@@ -131,11 +131,13 @@ void list_udv(list_type_t t)
 		if (print)
 		{
 			if (i+1==udv_cnt)
-				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"}",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state);
+				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
+						udv->name, (unsigned long long)udv->geom.capacity);
 			else
-				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\"},",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state);
+				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"},",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
+						udv->name, (unsigned long long)udv->geom.capacity);
 			printed++;
 		}
 		udv++;
@@ -160,7 +162,7 @@ int get_udv_remain()
 	uint64_t max_remain = 0,
 		 max_single = 0;
 
-	n = get_udv_free_list(vg_name, &list);
+	n = udv_get_free_list(vg_name, &list);
 	if (n<0)
 		return_json_msg(MSG_ERROR, "无法获取剩余空间!");
 	else if (n==0)
