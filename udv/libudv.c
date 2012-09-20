@@ -129,7 +129,7 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
                 return E_UDV_EXIST;
 
 	// 检查空闲空间
-	if ( get_udv_free_list(vg_dev, &list) <= 0 )
+	if ( udv_get_free_list(vg_name, &list) <= 0 )
 		return E_NO_FREE_SPACE;
 
         // 创建用户数据卷
@@ -198,7 +198,7 @@ void free_geom_list(struct list *list)
         }
 }
 
-ssize_t get_udv_free_list(const char *vg_dev, struct list *list)
+ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 {
         PedDevice *device = NULL;
         PedDisk *disk = NULL;
@@ -208,9 +208,14 @@ ssize_t get_udv_free_list(const char *vg_dev, struct list *list)
 	ssize_t ret_code = E_FMT_ERROR;
 	udv_geom last_geom = { 0, 0, 0 };
 	uint64_t end_pos = 0;
+	char vg_dev[PATH_MAX];
 
-        if ( !(vg_dev && list) )
+        if ( !(vg_name && list) )
                 return ret_code;
+
+        // 检查VG是否存在
+	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
+		return E_VG_NONEXIST;
 
         list_init(list);
 

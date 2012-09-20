@@ -162,7 +162,7 @@ int get_udv_remain()
 	uint64_t max_remain = 0,
 		 max_single = 0;
 
-	n = get_udv_free_list(vg_name, &list);
+	n = udv_get_free_list(vg_name, &list);
 	if (n<0)
 		return_json_msg(MSG_ERROR, "无法获取剩余空间!");
 	else if (n==0)
