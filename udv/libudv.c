@@ -10,6 +10,7 @@ size_t getVGDevByName(const char *vg_name, char *vg_dev)
 
 	if (!(vg_name && vg_dev))
 		return PYEXT_ERR_INPUT_ARG;
+	vg_dev[0] = '\0';
 
 	Py_Initialize();
 	if (!Py_IsInitialized())
@@ -34,6 +35,8 @@ size_t getVGDevByName(const char *vg_name, char *vg_dev)
 	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
 		return PYEXT_ERR_RUN;
 
+	if ('\0' == vg_dev[0])
+		return PYEXT_ERR_NORESULT;
 	strcpy(vg_dev, PyString_AsString(pRetVal));
 
 	return PYEXT_RET_OK;
