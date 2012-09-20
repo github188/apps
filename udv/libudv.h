@@ -85,6 +85,8 @@ size_t getVGDev_ByName(const char *vg_name, char *vg_dev);
 
 int isISCSIVolume(const char *udv_dev);
 
+ssize_t udv_get_free_list(const char *vg_name, struct list *list);
+
 /**
  * Utils
  */
@@ -100,7 +102,6 @@ const char* dev_dev2name(const char *dev);
 
 udv_info_t* get_udv_by_name(const char *name);
 
-ssize_t get_udv_free_list(const char *vg_name, struct list *list);
 
 void free_geom_list(struct list *list);
 

@@ -51,6 +51,7 @@ void test_list()
 
 int main(int argc, char *argv[])
 {
+	udv_info_t list[MAX_UDV];
 	/*
 	if (argc!=2)
 	{
@@ -85,6 +86,8 @@ int main(int argc, char *argv[])
 
 	//printf("=========== after delete =============\n");
 	//printf("=========== after create =============\n");
+	if (udv_get_free_list("vgtest1", list)>0)
+		printf("free space\n");
 	test_list();
 	test_create();
 	test_list();
