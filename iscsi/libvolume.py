@@ -72,7 +72,7 @@ def getVolumeInfo(volume_name):
 	vol.volume_name = volume_name
 	vol.udv_dev = AttrRead(vol_full_path, 'filename')
 	vol.udv_name = getUdvNameByDev(vol.udv_dev)
-	vol.capacity = int(AttrRead(vol_full_path, 'size_mb'))
+	vol.capacity = int(AttrRead(vol_full_path, 'size_mb')) * 1024 * 1024
 	vol.blocksize = int(AttrRead(vol_full_path, 'blocksize'))
 	vol.read_only = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'read_only')]
 	vol.nv_cache = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'nv_cache')]
