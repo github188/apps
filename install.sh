@@ -17,7 +17,7 @@ reset_sd()
 #	fi
 #fi
 
-file_list='us/us_d us/us_cmd us/mon_test us/script/*'
+file_list='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assume.sh us/md-auto-resume/mdscan/mdinfo'
 rsync -av $file_list /usr/local/bin/
 
 rsync -av web-iface/sys-manager /usr/local/bin/
