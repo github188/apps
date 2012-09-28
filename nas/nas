@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+import getopt
+import json
+os.chdir(os.path.dirname(sys.argv[0]))
+
+from libnas import *
+
+def nasUsage():
+	print """
+nas --list [--volume <name>]
+    --map --udv <name>
+    --unmap --volume <name>
+"""
+	sys.exit(-1)
+
+def nasExit(ret = True, msg = ''):
+	ret_msg = {'status':True, 'msg':''}
+	ret_msg['status'] = ret
+	ret_msg['msg'] = msg
+	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	if ret:
+		sys.exit(0)
+	sys.exit(-1)
+
+def nasListProc(volume_name):
+	return
+
+def nasMapProc(udv):
+	return
+
+def nasUnmapProc(volume_name):
+	return
+
+OP_MODE = ['--list', '--map', '--unmap']
+nas_long_opt = ['list', 'volume=', 'map', 'udv=', 'unmap']
+
+def nas_main():
+	try:
+		opts, args = getopt.gnu_getopt(sys.argv[1:], '', nas_long_opt)
+	except getopt.GetoptError, e:
+		iscsiExit(False, '%s' % e)
+
+	arg_op_mode = ''
+	arg_volume = ''
+	arg_udv = ''
+	for opt,arg in opts:
+		if opt in OP_MODE:
+			arg_op_mode = opt
+			continue
+		if opt == '--volume':
+			arg_volume = arg
+		elif opt == '--udv':
+			arg_udv = arg
+
+	if arg_op_mode == '--list':
+		nasListProc(arg_volume)
+	elif arg_op_mode == '--map':
+		nasMapProc(arg_udv)
+	elif arg_op_mode == '--unmap':
+		nasUnmapProc(arg_volume)
+
+	nasUsage()
+
+
+if __name__ == '__main__':
+	nas_main()
