@@ -1,0 +1,14 @@
+#!/bin/sh
+
+export PATH=/usr/local/bin:$PATH
+
+nohup /usr/local/bin/us_d &
+
+modprobe scst
+modprobe scst_vdisk
+modprobe iscsi-scst
+/usr/local/sbin/iscsi-scstd
+
+# add target
+cd /sys/kernel/scst_tgt/targets/iscsi
+echo "add_target iqn.2006-10.net.vlnb:tgt" > mgmt
