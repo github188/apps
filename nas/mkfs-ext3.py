@@ -7,7 +7,10 @@ import time
 import re
 import sys
 import threading
-from libnascommon import *
+from libnas import *
+
+#----------------------------- Global ----------------------------
+TMP_DIR = '/tmp/.nas_info'
 
 """
 需要记录的有：
@@ -17,20 +20,8 @@ from libnascommon import *
 设备名称 dev
 """
 
-# Global
-fmt_obj = NasVolumeAttr()
-
 """
-mkfs_ext3.py --udv [udv_name] --dev [dev_name] --mount-point [mount_name]
-"""
-
-"""
-cmmand:
-	get path (c)
-	get fmt_percent (c)
-	get volume_name (c)
-	get dev (c)
-	get fs_type (c)
+mkfs_ext3.py --udv [udv_name] --dev [dev_name] --mount [mount_point]
 """
 
 """
@@ -45,23 +36,33 @@ state:
 	conf-error	设置配置文件失败
 """
 
+#-------------- 辅助函数 ---------------
+def __tmpfs_set_value(key, value):
+	return
+
+def __tmpfs_get_dir():
+	return
+
+def __tmpfs_mkdir():
+	return
+
 def mkfs_ext3(dev):
-	global fmt_obj
 	cmd = 'mkfs-ext3.sh %s' % dev
 	args = shlex.split(cmd)
 	calc_start = False  # 检查 Writing inode tables
 	progress = 0.00
 
-	fmt_obj.state = 'format-starting'
+	__tmpfs_mkfir()
+	__tmpfs_set_value('state', 'format-starting')
 	p = sp.Popen(args, stdout=sp.PIPE)
 
-	fmt_obj.state = 'formating'
+	__tmpfs_set_value('state', 'formating')
 	while True:
 		ret = sp.Popen.poll(p)
 		if ret == 0:	# 程序正常结束
 			progress = 100.00
-			fmt_obj.fmt_percent = progress
-			fmt_obj.state = 'format-finshed'
+			__tmpfs_set_value('fmt_percent', '%.2f' % progress)
+			__tmpfs_set_value('state', 'format-finished')
 			return True
 		elif ret is None:	# 程序正在运行
 			p.stdout.flush()
@@ -77,52 +78,58 @@ def mkfs_ext3(dev):
 				curr = float(progress[0])
 				total = float(progress[1])
 				progress = ((curr / total) * 100.0)
-				fmt_obj.fmt_percent = progress
+				__tmpfs_set_value('fmt_percent', '%.2f' % progress)
 		else:	# 程序异常退出
 			return False
 
-# 业务线程
-class work_thread(threading.Thread):
-	def __init__(self):
-		threading.Thread.__init__(self)
-	def run(self, dev, mnt):
-		try:
-			# 格式化
-			if not mkfs_ext3(dev):
-				fmt_obj.state = 'format-error'
-				return
-			# 挂载
-			fmt_obj.state = 'mounting'
-			ret,msg = commands.getstatusoutput('mount %s %s' % (dev, mnt))
-			if ret != 0:
-				fmt_obj.state = 'mount-error'
-				return
+def do_run(dev, mnt):
+	try:
+		# 格式化
+		if not mkfs_ext3(dev):
+			__tmpfs_set_value('state', 'format-error')
+			return
+		# 挂载
+		__tmpfs_set_value('state', 'mounting')
+		ret,msg = commands.getstatusoutput('mount %s %s' % (dev, mnt))
+		if ret != 0:
+			__tmpfs_set_value('state', 'mount-error')
+			return
 
-			# 加入配置文件
-			ret,msg = nas_conf_add(dev, mnt)
-			if not ret:
-				fmt_obj.state = 'mount-conf-error'
+		# 加入配置文件
+		ret,msg = nas_conf_add(dev, mnt)
+		if not ret:
+			__tmpfs_set_value('state', 'conf-error')
 
-			# 操作成功，退出
-			fmt_obj.state = 'mounted'
-			sys.exit(0)
-		except:
-			pass
+		# 操作成功，退出
+		__tmpfs_set_value('state', 'mounted')
+		sys.exit(0)
+	except:
+		pass
 
-# 后台通信线程
-class communicate(threading.Thread):
-	def __init__(self):
-		threading.Thread.__init__(self)
-	def run(self):
+mkfs_long_opt = ['udv', 'dev', 'mount']
 
 # 主函数入口
 def main():
-	worker = work_thread()
-	comm = communicate()
-	worker.start()
-	comm.start()
-	worker.join()
-	comm.join()
+	try:
+		opts,args = getopt.gnu_getopt(sys.argv[1:], '', mkfs_log_opt)
+	except getopt.GetoptError,e:
+		sys.exit(-1)
+	for opt,arg in opts:
+		if opt == '--udv':
+			udv = arg
+		elif opt == '--dev':
+			dev = arg
+		elif opt == '--mount':
+			mount = arg
+
+	if dev!='' and udv!='' and mount!='':
+		__tmpfs_mkdir()
+		__tmpfs_set_value('volume_name', udv)
+		__tmpfs_set_value('path', mount)
+		__tmpfs_set_value('fs_type', 'ext3')
+		do_run(dev, mount)
+	else:
+		sys.exit(-1)
 
 if __name__ == '__main__':
 	#mkfs_ext3('/dev/sda1')
