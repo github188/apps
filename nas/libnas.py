@@ -5,12 +5,40 @@ import os
 import statvfs
 import json
 import commands
-from libnascommon import *
 
 NAS_CONF_FILE = '/etc/rc.local'
 NAS_CONF_START_SEP = '# *** JW-NAS-CONF-START ***'
 NAS_CONF_END_SEP = '# *** JW-NAS-CONF-END ***'
 NAS_CONF_TMP = '/tmp/.nas_tmp_conf'
+TMP_DIR = '/tmp/.nas_info'
+
+#-------------- 辅助函数 ---------------
+def __tmpfs_set_value(key, value):
+	__tmpfs_mkdir()
+	mkfs_tmp_dir = __tmpfs_get_dir()
+	try:
+		f = open('%s/%s' % (mkfs_tmp_dir, key), 'w')
+		f.write(value)
+		f.close()
+	except:
+		pass
+	return
+
+def __tmpfs_get_value(key):
+	return
+
+def __tmpfs_get_dir():
+	global TMP_DIR
+	if not os.path.exists(TMP_DIR):
+		os.mkdir(TMP_DIR)
+	return '%s/%d' % (TMP_DIR, os.getpid())
+
+def __tmpfs_mkdir():
+	mkfs_tmp_dir = __tmpfs_get_dir()
+	if not os.path.exists(mkfs_tmp_dir):
+		os.mkdir(mkfs_tmp_dir)
+	return
+
 
 #------------------------------------------------------------------------------
 #  实用函数
@@ -100,8 +128,6 @@ def nas_conf_add(dev, mnt):
 		old_f.close()
 		new_f.close()
 		os.rename(new_file_name, NAS_CONF_FILE)
-	#except RuntimeWarning, e:  # 消除os.tmpnam()带来的运行时安全警告
-	#	pass
 	except:
 		return False, '增加记录失败!'
 	return True, '增加记录成功!'
@@ -122,8 +148,6 @@ def nas_conf_remove(mnt):
 		old_f.close()
 		new_f.close()
 		os.rename(new_file_name, NAS_CONF_FILE)
-	#except RuntimeWarning, e:  # 消除os.tmpnam()带来的运行时安全警告
-	#	pass
 	except:
 		return False,'删除配置文件记录失败!'
 	return True, '删除配置文件记录成功!'
@@ -181,7 +205,27 @@ def nas_conf_get_list():
 """
 # 获取格式化列表
 def nas_fmt_get_list():
-	return
+	nas_fmt_list = []
+	try:
+		text = commands.getoutput('ps -e')
+		for x in text.split('\n'):
+			if x.find('mkfs-ext3.py') < 0:
+				continue
+			mkfs_pid = x.split()[0]
+			mkfs_tmp_dir = '%s/%s' % (TMP_DIR, mkfs_pid)
+			nas_fmt = NasVolumeAttr()
+			nas_fmt.path = __tmpfs_get_value('path')
+			nas_fmt.volume_name = __tmpfs_get_value('volume_name')
+			nas_fmt.state = __tmpfs_get_value('state')
+			nas_fmt.fmt_percent = float(__tmpfs_get_value('fmt_percent'))
+			nas_fmt.fs_type = __tmpfs_get_value('fs_type')
+			nas_fmt.capacity = __get_nas_volume_capacity(nas_fmt.path)
+			nas_fmt.occupancy = __get_nas_volume_occupancy(nas_fmt.path)
+			nas_fmt.remain = __get_nas_volume_remain(nas_fmt.path)
+			nas_fmt_list.append(nas_fmt)
+	except:
+		pass
+	return nas_fmt_list
 
 """
 已经加载卷相关函数
@@ -216,15 +260,19 @@ def nasGetList(volume_name):
 	return
 
 # 映射NAS卷
-def nasMapping(udv):
+def nasMapping(udv_name):
 	# 检查udv是否存在
 
 	# 检查是否已经映射
-	nas_volume_path = '/mnt/Share/%s' % udv
+	mount_dir = '/mnt/Share/%s' % udv
 	if isNasVolume(volume_path):
 		return False,'用户数据卷 %s 已经映射为NAS卷!' % udv
+	# 获取udv对应的设备节点
+	dev = __get_udv_dev_by_name(udv)
 	# 调用外部程序映射
-	# ext
+	if dev=='':
+		return False, '无法获取用户数据卷对应的设备节点名称!'
+	os.popen('/usr/local/bin/mkfs-ext3.py --udv %s --dev %s --mount %s' % (udv_name, dev, mount_dir))
 	return True, '映射NAS卷开始，请耐心等待格式化结束!'
 
 # 解除NAS卷映射

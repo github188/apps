@@ -7,10 +7,9 @@ import time
 import re
 import sys
 import threading
+import getopt
 from libnas import *
 
-#----------------------------- Global ----------------------------
-TMP_DIR = '/tmp/.nas_info'
 
 """
 需要记录的有：
@@ -18,10 +17,6 @@ TMP_DIR = '/tmp/.nas_info'
 格式化进度 fmt_percent
 卷名称 volume_name
 设备名称 dev
-"""
-
-"""
-mkfs_ext3.py --udv [udv_name] --dev [dev_name] --mount [mount_point]
 """
 
 """
@@ -36,15 +31,6 @@ state:
 	conf-error	设置配置文件失败
 """
 
-#-------------- 辅助函数 ---------------
-def __tmpfs_set_value(key, value):
-	return
-
-def __tmpfs_get_dir():
-	return
-
-def __tmpfs_mkdir():
-	return
 
 def mkfs_ext3(dev):
 	cmd = 'mkfs-ext3.sh %s' % dev
@@ -52,7 +38,6 @@ def mkfs_ext3(dev):
 	calc_start = False  # 检查 Writing inode tables
 	progress = 0.00
 
-	__tmpfs_mkfir()
 	__tmpfs_set_value('state', 'format-starting')
 	p = sp.Popen(args, stdout=sp.PIPE)
 
@@ -106,14 +91,24 @@ def do_run(dev, mnt):
 	except:
 		pass
 
-mkfs_long_opt = ['udv', 'dev', 'mount']
+def mkfs_ext3_usage():
+	print """
+mkfs_ext3.py --udv <udv_name> --dev <dev_name> --mount <mount_dir>
+"""
+	sys.exit(-1)
+
+mkfs_long_opt = ['udv=', 'dev=', 'mount=']
 
 # 主函数入口
 def main():
+	dev = ''
+	udv = ''
+	mount = ''
 	try:
-		opts,args = getopt.gnu_getopt(sys.argv[1:], '', mkfs_log_opt)
+		opts,args = getopt.gnu_getopt(sys.argv[1:], '', mkfs_long_opt)
 	except getopt.GetoptError,e:
-		sys.exit(-1)
+		mkfs_ext3_usage()
+
 	for opt,arg in opts:
 		if opt == '--udv':
 			udv = arg
@@ -123,13 +118,12 @@ def main():
 			mount = arg
 
 	if dev!='' and udv!='' and mount!='':
-		__tmpfs_mkdir()
 		__tmpfs_set_value('volume_name', udv)
 		__tmpfs_set_value('path', mount)
 		__tmpfs_set_value('fs_type', 'ext3')
 		do_run(dev, mount)
 	else:
-		sys.exit(-1)
+		mkfs_ext3_usage()
 
 if __name__ == '__main__':
 	#mkfs_ext3('/dev/sda1')
