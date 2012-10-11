@@ -34,8 +34,8 @@ state:
 """
 
 
-def mkfs_ext3(dev):
-	cmd = 'mkfs-ext3.sh %s' % dev
+def nas_mkfs(dev, filesystem):
+	cmd = 'nas-mkfs.sh %s %s' % (dev, filesystem)
 	args = shlex.split(cmd)
 	calc_start = False  # 检查 Writing inode tables
 	progress = 0.00
@@ -69,10 +69,10 @@ def mkfs_ext3(dev):
 		else:	# 程序异常退出
 			return False
 
-def do_run(dev, mnt):
+def do_run(dev, mnt, filesystem):
 	try:
 		# 格式化
-		if not mkfs_ext3(dev):
+		if not nas_mkfs(dev, filesystem):
 			nas_tmpfs_set_value('state', 'format-error')
 			return
 		# 挂载
@@ -93,23 +93,24 @@ def do_run(dev, mnt):
 	except:
 		pass
 
-def mkfs_ext3_usage():
+def nas_mkfs_usage():
 	print """
-mkfs_ext3.py --udv <udv_name> --dev <dev_name> --mount <mount_dir>
+nas_mkfs.py --udv <udv_name> --dev <dev_name> --mount <mount_dir> --filesystem <ext3|ext4>
 """
 	sys.exit(-1)
 
-mkfs_long_opt = ['udv=', 'dev=', 'mount=']
+mkfs_long_opt = ['udv=', 'dev=', 'mount=', 'filesystem=']
 
 # 主函数入口
 def main():
 	dev = ''
 	udv = ''
 	mount = ''
+	filesystem = 'ext4'	# set default to ext4
 	try:
 		opts,args = getopt.gnu_getopt(sys.argv[1:], '', mkfs_long_opt)
 	except getopt.GetoptError,e:
-		mkfs_ext3_usage()
+		nas_mkfs_usage()
 
 	for opt,arg in opts:
 		if opt == '--udv':
@@ -118,15 +119,16 @@ def main():
 			dev = arg
 		elif opt == '--mount':
 			mount = arg
+		elif opt == '--filesystem':
+			filesystem = arg
 
 	if dev!='' and udv!='' and mount!='':
 		nas_tmpfs_set_value('volume_name', udv)
 		nas_tmpfs_set_value('path', mount)
-		nas_tmpfs_set_value('fs_type', 'ext3')
-		do_run(dev, mount)
+		nas_tmpfs_set_value('fs_type', filesystem)
+		do_run(dev, mount, filesystem)
 	else:
-		mkfs_ext3_usage()
+		nas_mkfs_usage()
 
 if __name__ == '__main__':
-	#mkfs_ext3('/dev/sda1')
 	main()
