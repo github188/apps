@@ -9,14 +9,6 @@ os.chdir(os.path.dirname(sys.argv[0]))
 
 from libnas import *
 
-def nasUsage():
-	print """
-nas --list [--volume <name>]
-    --map --udv <name>
-    --unmap --volume <name>
-"""
-	sys.exit(-1)
-
 def nasExit(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
@@ -27,26 +19,33 @@ def nasExit(ret = True, msg = ''):
 	sys.exit(-1)
 
 def nasListProc(volume_name):
-	return
+	nas_list = {'total':0, 'rows':[]}
+	nas_list['rows'] = nasGetList(volume_name)
+	nas_list['total'] = len(nas_list['rows'])
+	print json.dumps(nas_list, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent = 4)
+	sys.exit(0)
 
-def nasMapProc(udv):
-	return
-
-def nasUnmapProc(volume_name):
-	return
+def nasUsage():
+	print """
+nas --list [--volume <name>]
+    --map --udv <name> [--filesystem <ext3|ext4>]
+    --unmap --volume <name>
+"""
+	sys.exit(-1)
 
 OP_MODE = ['--list', '--map', '--unmap']
-nas_long_opt = ['list', 'volume=', 'map', 'udv=', 'unmap']
+nas_long_opt = ['list', 'volume=', 'map', 'udv=', 'unmap', 'filesystem=']
 
 def nas_main():
 	try:
 		opts, args = getopt.gnu_getopt(sys.argv[1:], '', nas_long_opt)
 	except getopt.GetoptError, e:
-		iscsiExit(False, '%s' % e)
+		nasExit(False, '未识别的命令参数: %s' % e)
 
 	arg_op_mode = ''
 	arg_volume = ''
 	arg_udv = ''
+	arg_fs = 'ext4'
 	for opt,arg in opts:
 		if opt in OP_MODE:
 			arg_op_mode = opt
@@ -55,13 +54,17 @@ def nas_main():
 			arg_volume = arg
 		elif opt == '--udv':
 			arg_udv = arg
+		elif opt == '--filesystem':
+			arg_fs = arg
 
 	if arg_op_mode == '--list':
 		nasListProc(arg_volume)
 	elif arg_op_mode == '--map':
-		nasMapProc(arg_udv)
+		ret,msg = nasMapping(arg_udv, arg_fs)
+		nasExit(ret, msg)
 	elif arg_op_mode == '--unmap':
-		nasUnmapProc(arg_volume)
+		ret,msg = nasUnmapping(arg_volume)
+		nasExit(ret, msg)
 
 	nasUsage()
 

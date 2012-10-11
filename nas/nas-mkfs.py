@@ -12,6 +12,7 @@ import sys, os
 
 from libnas import *
 
+MOUNT_ROOT = '/mnt/Share'
 
 """
 需要记录的有：
@@ -77,6 +78,10 @@ def do_run(dev, mnt, filesystem):
 			return
 		# 挂载
 		nas_tmpfs_set_value('state', 'mounting')
+		if not os.path.exists(MOUNT_ROOT):
+			os.mkdir(MOUNT_ROOT)
+		if not os.path.exists(mnt):
+			os.mkdir(mnt)
 		ret,msg = commands.getstatusoutput('mount %s %s' % (dev, mnt))
 		if ret != 0:
 			nas_tmpfs_set_value('state', 'mount-error')

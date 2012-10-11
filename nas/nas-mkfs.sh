@@ -6,5 +6,5 @@ filesystem="$2"
 # set default filesystem to ext4
 [ -z "$filesystem" ] && filesystem="ext4"
 
-mkfs."$filesystem" $dev | tr-simple
+2>/dev/null mkfs."$filesystem" $dev | tr-simple
 
