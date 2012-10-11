@@ -37,6 +37,6 @@ int udv_main(int argc, char *argv[]);
 
 int external_main(int argc, char *argv[]);
 
-int iscsi_main(int argc, char *argv[]);
+int python_cmd_main(int argc, char *argv[]);
 
 #endif/*__WEB_IFACE_H__*/

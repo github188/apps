@@ -4,13 +4,20 @@ struct cmd_map cmd_map[] = {
   {"udv", udv_main},
   {"disk", external_main},
   {"vg", external_main},
-  {"iscsi", iscsi_main},
+  {"iscsi", python_cmd_main},
+  {"nas", python_cmd_main},
   {"", NULL}
 };
 
 void usage()
 {
-  printf("帮助信息\n");
+  printf("请输入子命令!\n");
+  printf("    支持的子命令:\n");
+  printf("      disk  - 磁盘接口\n");
+  printf("      vg    - 卷组接口\n");
+  printf("      udv   - 用户数据卷接口\n");
+  printf("      iscsi - iSCSI接口\n");
+  printf("      nas   - NAS接口\n");
   exit(0);
 }
 

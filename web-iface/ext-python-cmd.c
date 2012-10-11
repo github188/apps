@@ -1,12 +1,12 @@
 #include "web-iface.h"
 #include "common.h"
 
-int iscsi_main(int argc, char *argv[])
+int python_cmd_main(int argc, char *argv[])
 {
 	int i;
 	char cmd[1024];
 
-	strcpy(cmd, "iscsi");
+	strcpy(cmd, argv[0]);
 	for (i=1; i<argc; i++)
 	{
 		strcat(cmd, " ");
