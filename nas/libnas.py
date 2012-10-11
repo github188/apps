@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+import os, sys
 import statvfs
 import json
 import commands
@@ -13,28 +13,32 @@ NAS_CONF_TMP = '/tmp/.nas_tmp_conf'
 TMP_DIR = '/tmp/.nas_info'
 
 #-------------- 辅助函数 ---------------
-def __tmpfs_set_value(key, value):
-	__tmpfs_mkdir()
-	mkfs_tmp_dir = __tmpfs_get_dir()
+def nas_tmpfs_set_value(key, value):
+	nas_tmpfs_mkdir()
+	mkfs_tmp_dir = nas_tmpfs_get_dir()
 	try:
-		f = open('%s/%s' % (mkfs_tmp_dir, key), 'w')
+		file_name = '%s/%s' % (mkfs_tmp_dir, key)
+		f = open(file_name, 'w')
 		f.write(value)
 		f.close()
+	except IOError, e:
+		print 'IO Error while write file', e
+		sys.exit(-1)
 	except:
 		pass
 	return
 
-def __tmpfs_get_value(key):
+def nas_tmpfs_get_value(key):
 	return
 
-def __tmpfs_get_dir():
+def nas_tmpfs_get_dir():
 	global TMP_DIR
 	if not os.path.exists(TMP_DIR):
 		os.mkdir(TMP_DIR)
 	return '%s/%d' % (TMP_DIR, os.getpid())
 
-def __tmpfs_mkdir():
-	mkfs_tmp_dir = __tmpfs_get_dir()
+def nas_tmpfs_mkdir():
+	mkfs_tmp_dir = nas_tmpfs_get_dir()
 	if not os.path.exists(mkfs_tmp_dir):
 		os.mkdir(mkfs_tmp_dir)
 	return

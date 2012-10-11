@@ -8,6 +8,8 @@ import re
 import sys
 import threading
 import getopt
+import sys, os
+
 from libnas import *
 
 
@@ -38,16 +40,16 @@ def mkfs_ext3(dev):
 	calc_start = False  # 检查 Writing inode tables
 	progress = 0.00
 
-	__tmpfs_set_value('state', 'format-starting')
+	nas_tmpfs_set_value('state', 'format-starting')
 	p = sp.Popen(args, stdout=sp.PIPE)
 
-	__tmpfs_set_value('state', 'formating')
+	nas_tmpfs_set_value('state', 'formating')
 	while True:
 		ret = sp.Popen.poll(p)
 		if ret == 0:	# 程序正常结束
 			progress = 100.00
-			__tmpfs_set_value('fmt_percent', '%.2f' % progress)
-			__tmpfs_set_value('state', 'format-finished')
+			nas_tmpfs_set_value('fmt_percent', '%.2f' % progress)
+			nas_tmpfs_set_value('state', 'format-finished')
 			return True
 		elif ret is None:	# 程序正在运行
 			p.stdout.flush()
@@ -63,7 +65,7 @@ def mkfs_ext3(dev):
 				curr = float(progress[0])
 				total = float(progress[1])
 				progress = ((curr / total) * 100.0)
-				__tmpfs_set_value('fmt_percent', '%.2f' % progress)
+				nas_tmpfs_set_value('fmt_percent', '%.2f' % progress)
 		else:	# 程序异常退出
 			return False
 
@@ -71,22 +73,22 @@ def do_run(dev, mnt):
 	try:
 		# 格式化
 		if not mkfs_ext3(dev):
-			__tmpfs_set_value('state', 'format-error')
+			nas_tmpfs_set_value('state', 'format-error')
 			return
 		# 挂载
-		__tmpfs_set_value('state', 'mounting')
+		nas_tmpfs_set_value('state', 'mounting')
 		ret,msg = commands.getstatusoutput('mount %s %s' % (dev, mnt))
 		if ret != 0:
-			__tmpfs_set_value('state', 'mount-error')
+			nas_tmpfs_set_value('state', 'mount-error')
 			return
 
 		# 加入配置文件
 		ret,msg = nas_conf_add(dev, mnt)
 		if not ret:
-			__tmpfs_set_value('state', 'conf-error')
+			nas_tmpfs_set_value('state', 'conf-error')
 
 		# 操作成功，退出
-		__tmpfs_set_value('state', 'mounted')
+		nas_tmpfs_set_value('state', 'mounted')
 		sys.exit(0)
 	except:
 		pass
@@ -118,9 +120,9 @@ def main():
 			mount = arg
 
 	if dev!='' and udv!='' and mount!='':
-		__tmpfs_set_value('volume_name', udv)
-		__tmpfs_set_value('path', mount)
-		__tmpfs_set_value('fs_type', 'ext3')
+		nas_tmpfs_set_value('volume_name', udv)
+		nas_tmpfs_set_value('path', mount)
+		nas_tmpfs_set_value('fs_type', 'ext3')
 		do_run(dev, mount)
 	else:
 		mkfs_ext3_usage()
