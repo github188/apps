@@ -29,5 +29,7 @@ rsync -av iscsi/* /usr/local/bin
 
 rsync -av extra/* /usr/local/bin
 
+rsync -av nas/* /usr/local/bin
+
 #reset_sd
 ldconfig
