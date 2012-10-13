@@ -12,3 +12,6 @@ modprobe iscsi-scst
 # add target
 cd /sys/kernel/scst_tgt/targets/iscsi
 echo "add_target iqn.2006-10.net.vlnb:tgt" > mgmt
+
+# *** JW-NAS-CONF-START ***'
+# *** JW-NAS-CONF-END ***'
