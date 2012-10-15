@@ -86,10 +86,7 @@ def write_xml_file(path, xmlDom, option = {'encoding':'utf-8'}):
 		return True
 	except:
 		return False
-	
-dom = xml.dom.minidom.parse(FILEPATH)#打开DOM
-root = dom.documentElement #获取根接点
-item = root.getElementsByTagName('nic')
+
 
 #~ 设置网关
 def SET_GW(nic,value):
@@ -109,7 +106,7 @@ def SET_GW(nic,value):
 			else:
 				if value.default_gw_set ==  True:
 					i.setAttribute('default', 'yes')
-				
+
 	if int(coxx) > 0:
 		for x in range(int(coxx)):
 			os.system('route delete default')
@@ -119,7 +116,7 @@ def SET_GW(nic,value):
 def SET_IFCONFIG(nic,str):
 	if nic in BOND_LIST:
 		sys.exit(-1)
-		
+
 	for x in item:
 		if x.getAttribute('name') == nic:
 			x.setAttribute('mode', 'static') 
@@ -133,7 +130,7 @@ def SET_IFCONFIG(nic,str):
 			x.setAttribute('mask', str.mask_set)
 			os.system('ifconfig ' + nic + ' '  + str.ip_set +' netmask '  + str.mask_set)
 			SET_GW(str.iface_set, str)
-	
+
 def SET_DHCP(nic,str):
 	for x in item:
 		if x.getAttribute('name') == nic and x.getAttribute('name') != 'bond0' and x.getAttribute('name') != 'bond1':
@@ -143,7 +140,7 @@ def SET_DHCP(nic,str):
 			os.system('ifdown '+ nic +' > /dev/null; ifup '+ nic +' > /dev/null')
 
 #~ 设置bond
-def BOND_SET(bond, value):	
+def BOND_SET(bond, value):
 	inter_split = value.inter_set.split(',')
 	comm = 'echo +' + bond + ' > /sys/class/net/bonding_masters; echo ' + value.mode_set + ' > /sys/class/net/' + bond + '/bonding/mode; '
 	nic_set = ''
@@ -164,13 +161,13 @@ def BOND_SET(bond, value):
 					bond_strator = True
 				if value.mode_set == '':
 					Export(False, '负载均衡模式没有设置，请参考命令参数：')
-					networkUsage()					
+					networkUsage()
 				if value.ip_set == '':
 					Export(False, 'ip地址没有设置，请参考命令参数：')
-					networkUsage()					
+					networkUsage()
 				if value.mask_set == '':
 					Export(False, '子网掩码没有设置，请参考命令参数：')
-					networkUsage()					
+					networkUsage()
 				x.setAttribute('iflist', value.inter_set)
 				x.setAttribute('ip', value.ip_set)
 				x.setAttribute('mask', value.mask_set)
@@ -184,7 +181,6 @@ def BOND_SET(bond, value):
 	else:
 		os.system(comm + nic_set)
 	SET_GW(bond, value)
-				
 
 #~ 卸载bond
 def BOND_REMOVE(bond):	
@@ -208,8 +204,6 @@ def BOND_REMOVE(bond):
 	#~ else:
 		#~ Export(False, '%s 接口没有启用！' % bond)
 
-	
-	
 
 #item = root.getElementsByTagName('eth0')[0] #获取第一个等于名称的接点
 #item.setAttribute('ip', '192.168.70.10') #设置接点的属性
@@ -219,7 +213,7 @@ def BOND_REMOVE(bond):
 #~ item = root.getElementsByTagName('nic')
 #~ for x in item:
 	#~ print x.getAttribute('name'),x.getAttribute('ip'), x.getAttribute('mode')
-	
+
 #~ write_xml_file('/opt/network_conf.xml', dom)
 
 class IArgs:
@@ -245,7 +239,7 @@ class IArgs:
 	def setMode(self, mode):
 		if self.mode == '':
 			self.mode = mode
-			
+
 class nic_info():
 	def __init__(self):
 		self.Network_Name = ''
@@ -295,7 +289,7 @@ def nic_list(value):
 		else:
 			if x.getAttribute('name') == value.iface_set:
 				json_info = {'Network_Name':''+x.getAttribute('name')+'', 'Network_Mode':''+x.getAttribute('mode')+'', 'Network_IP':''+x.getAttribute('ip')+'', 'Network_Mask':''+x.getAttribute('mask')+'', 'Network_Gateway':''+x.getAttribute('gw')+'', 'Network_Bond':''+x.getAttribute('bond')+'', 'Network_Default':''+x.getAttribute('default')+'', 'Network_iflist':''+x.getAttribute('iflist')+''}
-			
+
 	json_list['total'] = i
 	json_list['rows'] = list
 
@@ -303,8 +297,8 @@ def nic_list(value):
 		print json.dumps(json_list, encoding="UTF-8", ensure_ascii=False)
 	else:
 		print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
-		
-	
+
+
 	#~ for x in item:
 		#~ if x.getAttribute('name') == 'dns':
 			#~ x.setAttribute('addr', value.dnsvar_set)
@@ -349,7 +343,7 @@ iface eth5 inet static
 address 192.168.15.100
 netmask 255.255.255.0
 """
-	
+
 	xml_str = """<?xml version="1.0" encoding="utf-8"?>
 <network>
 	<nic bond="" default="yes" gw="192.168.10.1" ip="192.168.10.100" mask="255.255.255.0" mode="static" name="eth0"/>
@@ -376,7 +370,7 @@ netmask 255.255.255.0
 		xml_conf_file.close()
 	finally:
 		xml_conf_file.close()
-	
+
 	bond_conf_str = ''
 	bond_conf_file = open(BOND_CONF, 'w')
 	try:
@@ -418,7 +412,7 @@ def bondAlter(value):
 	else:
 		Export(False, '请输入一个接口名称,如：<bond0|bond1>')
 		networkUsage()
-			
+
 def networkUsage():
 	print """
 network --list < [--iface <name>] | [--filter] >
@@ -429,6 +423,12 @@ network --list < [--iface <name>] | [--filter] >
 	--default
 """
 	sys.exit(-1)
+
+if os.path.exists(FILEPATH):
+	dom = xml.dom.minidom.parse(FILEPATH)#打开DOM
+	root = dom.documentElement #获取根接点
+	item = root.getElementsByTagName('nic')
+
 
 OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default']
 network_long_opt = ['list', 'filter', 'ifconfig', 'bond', 'dns', 'default', 'iface=', 'dhcp', 'ip=', 'mask=', 'gw=', 'inter=', 'mode=', 'remove', 'default_gw']

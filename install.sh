@@ -31,5 +31,7 @@ rsync -av extra/* /usr/local/bin
 
 rsync -av nas/* /usr/local/bin
 
+rsync -av sys-conf/* /usr/local/bin
+
 #reset_sd
 ldconfig
