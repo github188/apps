@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+import commands
+import json
+import xml.dom.minidom
+import codecs
+
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+os.chdir(os.path.dirname(sys.argv[0]))
+DNS_CONFIG_PATH = '/run/resolvconf/resolv.conf'
+DNS_CONFIG_PATH_HEAD = '/etc/resolvconf/resolv.conf.d/head'
+INTERFACES_CONFIG_PATH = '/etc/network/interfaces'
+BOND_CONFIG_PATH = '/opt/bond_conf.sh'
+
+FILEPATH='/opt/network_conf.xml'
+dom = xml.dom.minidom.parse(FILEPATH)#打开DOM
+root = dom.documentElement #获取根接点
+
+def LICENSE_SER():
+	return 4
+
+def nic_config_list():
+	conf = """#请不要直接修改本配置文件
+#修改IP地址请使用 network 命令\n
+auto lo
+iface lo inet loopback\n
+"""
+	item = root.getElementsByTagName('nic')
+	i = 1
+	for x in item:
+		if x.getAttribute('name') != 'bond0' and x.getAttribute('name') != 'bond1':
+			conf = conf + 'auto ' + x.getAttribute('name')  + '\n'
+			conf = conf + 'iface ' + x.getAttribute('name')  + ' inet ' + x.getAttribute('mode')  + '\n'
+			if x.getAttribute('mode') != 'dhcp':
+				conf = conf + 'address ' + x.getAttribute('ip')  + '\n'
+				conf = conf + 'netmask ' + x.getAttribute('mask')  + '\n'
+				if x.getAttribute('default') == 'yes':
+					conf = conf + 'gateway ' + x.getAttribute('gw')  + '\n'				
+			conf = conf + '\n'
+			i = i + 1
+			if i > LICENSE_SER():
+				break
+	ip_conf_file = open(INTERFACES_CONFIG_PATH, 'w')
+	try:
+		ip_conf_file.write(conf)
+		ip_conf_file.close()
+	finally:
+		ip_conf_file.close()
+
+def dns_config_list():
+	item = root.getElementsByTagName('dns')[0]
+	dns = item.getAttribute('addr').split(',')
+	addr = ''
+	if len(dns) > 0:
+		for x in dns:
+			addr = addr + 'nameserver ' + x + '\n'
+
+	dns_conf_head = open(DNS_CONFIG_PATH_HEAD, 'w')
+	dns_conf = open(DNS_CONFIG_PATH, 'w')
+	try:
+		dns_conf_head.write(addr)
+		dns_conf_head.close()
+		dns_conf.write(addr)
+		dns_conf.close()
+	finally:
+		dns_conf_head.close()
+		dns_conf.close()
+
+
+def bond_config_list():
+	item = root.getElementsByTagName('nic')
+	bond_str = '#!/bin/bash\n\n'
+	for x in item:
+		if x.getAttribute('name') == 'bond0' or x.getAttribute('name') == 'bond1':
+			if x.getAttribute('mode') != 'no':
+				bond_str = bond_str + 'echo +' + x.getAttribute('name')  + ' > /sys/class/net/bonding_masters\n'
+				bond_str = bond_str + 'echo ' + x.getAttribute('mode')  + ' > /sys/class/net/' + x.getAttribute('name')  + '/bonding/mode\n'
+				bond_str = bond_str + 'ifconfig ' + x.getAttribute('name')  + ' ' + x.getAttribute('ip')  + ' netmask ' + x.getAttribute('mask')  + ' up\n'
+				bond_str = bond_str + 'echo 100 > /sys/class/net/' + x.getAttribute('name')  + '/bonding/miimon\n'
+				iflist = x.getAttribute('iflist').split(',')
+				if len(iflist) > 0:
+					for i in iflist:
+						bond_str = bond_str + 'ifdown ' + i + ' > /dev/null\n'
+						bond_str = bond_str + 'echo +' + i + ' > /sys/class/net/' + x.getAttribute('name')  + '/bonding/slaves\n'
+				bond_str = bond_str + '\n'
+				if x.getAttribute('default') == 'yes':
+						bond_str = bond_str + 'count=`ip route|grep "default"|wc -l`\n'
+						bond_str = bond_str + 'for i in `seq 1 $count`;do\n'
+						bond_str = bond_str + '	route delete default\n'
+						bond_str = bond_str + 'done\n'
+						bond_str = bond_str + 'route add default gw '+x.getAttribute('gw')+'\n\n\n'
+	bond_conf_file = open(BOND_CONFIG_PATH, 'w')
+	try:
+		bond_conf_file.write(bond_str)
+		bond_conf_file.close()
+	finally:
+		bond_conf_file.close()
+	
+if __name__ == '__main__':
+	nic_config_list()
+	dns_config_list()
+	bond_config_list()
+
