@@ -86,6 +86,8 @@ size_t getVGDev_ByName(const char *vg_name, char *vg_dev);
 
 int isISCSIVolume(const char *udv_dev);
 
+int isNasVolume(const char *volume_name);
+
 ssize_t udv_get_free_list(const char *vg_name, struct list *list);
 
 /**
