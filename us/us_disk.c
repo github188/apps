@@ -201,6 +201,14 @@ static int us_disk_on_event(const char *path, const char *dev, int act)
 	if (!is_sata_sas(path))
 		return MA_NONE;
 
+	// 调用磁盘上下线处理脚本
+	char cmd[128];
+	sprintf(cmd, "%s %s %s",
+		DISK_SCRIPT, dev,
+		act == MA_ADD ? "add" :
+		act == MA_REMOVE ? "remove" : "change");
+	safe_system(cmd);
+
 	printf("%s: %d\n", dev, act);
 
 	if (act == MA_ADD)
