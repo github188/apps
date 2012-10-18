@@ -1,15 +1,88 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import sys
+# -----------------------------------------------------------------------------
+# 文件名称: handle_disk
+# 作用: 处理磁盘上下线事件
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# 输入参数格式:
+#     argv[0] - (this program)
+#     argv[1] - disk dev (eg. /dev/sdb)
+#     argv[2] - action <add|remove|change>
+# -----------------------------------------------------------------------------
+
+import sys,os
+from libmd import *
+from libdiskud import *
+
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+# -------- 磁盘信息定义 -----------
+class DiskInfo():
+	def __init__(self):
+		self.dev = ''
+		self.slot = ''
+		self.uuid = ''
+		self.md_uuid = ''
+
+def get_disk_info(disk_dev):
+	info = DiskInfo()
+	info.dev = disk_dev
+	info.slot = disk_slot(disk_dev)
+	ret,txt = commands.getstatusoutput('mdadm -E %s' % disk_dev)
+	if ret == 0:
+		for line in txt.split('\n'):
+			if line.find('Device UUID : ') >= 0:
+				info.uuid = line.split('Device UUID : ')[-1]
+			elif line.fine('Array UUID : ') >= 0:
+				info.md_uuid = line.split('Array UUID : ')[-1]
+	return info
+
+def handle_disk_add_event(disk_dev):
+	disk_info = get_disk_info(disk_dev)
+	if disk_info.slot == '':
+		return
+	# (TODO)记录磁盘上线信息
+
+	# 检查磁盘是否包含md信息
+	if disk_info.md_uuid == '':
+		return
+
+	for md_dev in md_list_mddevs():
+		md_info = mddev_get_attr(md_dev)
+
+		# 目前仅处理RAID5,6的上线
+		if md_info['raid_level'] != '5' and md_info['raid_level'] != '6':
+			continue
+
+		if md_info['raid_uuid'] == disk_info.md_uuid:
+			# 检查是否可以加入到md设备
+			if md_info['disk_woring'] >= md_info['disk_cnt']:
+				continue
+			# 增加磁盘到md设备
+			commands.getoutput('mdadm --add %s %s' % (md_info['dev'], disk_info.dev))
+			# (TODO)记录日志
+			return
+
+def handle_disk_remove_event(disk_dev):
+	return
 
 def main():
-    if len(sys.argv) < 2:
-        action = "Unknown"
-    else:
-        action = argv[1]
-    print "%s called, action: %s" % (sys.argv[0], sys.argv[1])
+	# 参数检查
+	if len(sys.argv) < 2:
+		# 记录日志，返回
+		return
+
+	disk_dev = sys.argv[1]
+	action = sys.argv[2]
+
+	if action == 'add':
+		handle_disk_add_event(disk_dev)
+	elif action == 'remove':
+		handle_disk_remove_event(disk_dev)
 
 if __name__ == "__main__":
     main()
-
-        
