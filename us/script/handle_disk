@@ -44,7 +44,31 @@ def get_disk_info(disk_dev):
 				info.md_uuid = line.split('Array UUID : ')[-1]
 	return info
 
+# -----------------------------
+# 公用函数
+# -----------------------------
+def __tmpfs_read_value(key):
+	v = ''
+	try:
+		f = open(key)
+		v = f.readline().strip()
+		f.close()
+	except:
+		pass
+	return v
+
+def __tmpfs_write_value(key, value):
+	try:
+		f = open(key, 'w')
+		f.write(value)
+		f.close()
+	except:
+		pass
+	return
+
+# ------------------------------
 # 增加磁盘到待重组列表
+# ------------------------------
 def __prepare_listdir_check():
 	try:
 		if not os.path.exists(PREPARE_LIST_DIR):
@@ -61,7 +85,9 @@ def __parpare_list_get():
 		pass
 	return p_list
 
+# --------------------
 # 尝试重组md设备
+# --------------------
 def __get_mddev():
 	_ret,_md_list = commands.getoutput('ls /dev/md[0-9]*')
 	if _ret != 0:
@@ -113,6 +139,9 @@ def __prepare_list_add(disk_info):
 		pass
 	sys.exit(0)
 
+# ------------------------------------
+# 处理磁盘上线事件
+# ------------------------------------
 def handle_disk_add_event(disk_dev):
 	disk_info = get_disk_info(disk_dev)
 	if disk_info.slot == '':
@@ -147,9 +176,14 @@ def handle_disk_add_event(disk_dev):
 	# 不属于任何md设备的磁盘，加入到待重组列表，等待重组
 	prepare_list_add(disk_info)
 
+
+# ------------------------------------
+# 处理磁盘掉线事件
+# ------------------------------------
 def handle_disk_remove_event(disk_dev):
 	return
 
+# 主函数
 def main():
 	# 参数检查
 	if len(sys.argv) < 2:
