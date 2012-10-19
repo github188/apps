@@ -62,8 +62,43 @@ def __parpare_list_get():
 	return p_list
 
 # 尝试重组md设备
+def __get_mddev():
+	_ret,_md_list = commands.getoutput('ls /dev/md[0-9]*')
+	if _ret != 0:
+		return ''
+	_tmp_max = 0
+	try:
+		for x in _md_list:
+			if x.find('p') >= 0:
+				continue
+			_tmp = int(x.split('md')[-1])
+			if _tmp_max < _tmp:
+				_tmp_max = _tmp
+	except:
+		return ''
+	return '/dev/md%d' % _tmp_max
+
 def __try_md_assume(md_uuid):
-	return
+	_prepare_md_dir = '%s/%s' % (PREPARE_LIST_DIR, md_uuid)
+	try:
+		# 获取待重组md的磁盘列表
+		_disk_list = os.listdir(_prepare_md_dir)
+		if len(_disk_list) <= 0:
+			return
+
+		# 如果符合重组条件，则重组
+		if __mdinfo_get_disks(_disk_list[0]) == len(_disk_list):
+			for x in _disk_list:
+				_disks = _disks + ' ' + __tmpfs_read_value('%s/%s/dev' % (_prepare_md_dir, x))
+			_new_md_dev = __get_mddev()
+			_assume_cmd = 'mdadm --assume %s %s' % (_new_md_dev, _disks)
+			ret,msg = commands.getoutputstatus(_assume_cmd)
+			if ret == 0:
+				# (TODO)记录日志，重组md成功
+			else:
+				# (TODO)记录日志，重组md失败
+	except:
+		pass
 
 def __prepare_list_add(disk_info):
 	try:
