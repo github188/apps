@@ -20,6 +20,9 @@ from libdiskud import *
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+DISK_EVENT_ROOT = '/tmp/.disk-event'
+PREPARE_LIST_DIR = '%s/md-prepare-list' % DISK_EVENT_ROOT
+
 # -------- 磁盘信息定义 -----------
 class DiskInfo():
 	def __init__(self):
@@ -41,16 +44,54 @@ def get_disk_info(disk_dev):
 				info.md_uuid = line.split('Array UUID : ')[-1]
 	return info
 
+# 增加磁盘到待重组列表
+def __prepare_listdir_check():
+	try:
+		if not os.path.exists(PREPARE_LIST_DIR):
+			os.makedirs(PREPARE_LIST_DIR)
+	except:
+		pass
+
+def __parpare_list_get():
+	__prepare_listdir_check()
+	p_list = []
+	try:
+		p_list = os.listdir(PREPARE_LIST_DIR)
+	except:
+		pass
+	return p_list
+
+# 尝试重组md设备
+def __try_md_assume(md_uuid):
+	return
+
+def __prepare_list_add(disk_info):
+	try:
+		# 如果磁盘所属md uuid存在，更新磁盘信息到列表，并且检查是否满足重组条件
+		_disk_dir = '%s/%s/%s' % (PREPARE_LIST_DIR, disk_info.md_uuid, disk_info.uuid)
+		if disk_info.md_uuid not in __get_prepare_list():
+			os.makedirs(_disk_dir)
+		__tmpfs_write_value('%s/dev' % _disk_dir, disk_info.dev)
+		__tmpfs_write_value('%s/slot' % _disk_dir, disk_info.slot)
+		__try_md_assume(disk_info.md_uuid)
+	except:
+		pass
+	sys.exit(0)
+
 def handle_disk_add_event(disk_dev):
 	disk_info = get_disk_info(disk_dev)
 	if disk_info.slot == '':
 		return
 	# (TODO)记录磁盘上线信息
+	print '磁盘 %s(%s) 上线' % (disk_info.dev, disk_info.slot)
 
 	# 检查磁盘是否包含md信息
 	if disk_info.md_uuid == '':
+		print '磁盘不包含md信息，退出处理脚本'
 		return
+	print '磁盘包含md信息'
 
+	# 检查是否属于某个md设备，如果是，加入
 	for md_dev in md_list_mddevs():
 		md_info = mddev_get_attr(md_dev)
 
@@ -65,7 +106,11 @@ def handle_disk_add_event(disk_dev):
 			# 增加磁盘到md设备
 			commands.getoutput('mdadm --add %s %s' % (md_info['dev'], disk_info.dev))
 			# (TODO)记录日志
-			return
+			print '增加磁盘 %s(%s) 到卷组 %s' % (disk_info.dev, disk_info.slot, md_info['dev'])
+			sys.exit(0)
+
+	# 不属于任何md设备的磁盘，加入到待重组列表，等待重组
+	prepare_list_add(disk_info)
 
 def handle_disk_remove_event(disk_dev):
 	return
