@@ -180,7 +180,52 @@ def handle_disk_add_event(disk_dev):
 # ------------------------------------
 # 处理磁盘掉线事件
 # ------------------------------------
+
+# 删除无效的md设备
+def __remove_md(md_info):
+	cmd_stop_md = 'mdadm --stop %s' % md_info['dev']
+	cmd_rm_dev = 'rm -f %s' % md_info['dev']
+	ret_stop_md = commands.getstatus(cmd)
+	ret_rm_dev = commands.getstatus(cmd)
+
+	if ret_stop_md == 0 and ret_rm_dev == 0:
+		# (TODO) 写日志
+		print '卷组 %s 所有磁盘已经掉线，删除卷组成功!' % md_info['name']
+	else:
+		print '卷组 %s 所有磁盘已经掉线，删除卷组成功!' % md_info['name']
+	return
+
+# 从指定卷组删除掉盘的磁盘
+def __remove_disk_from_md(md_info, disk_info):
+	cmd = 'mdadm --remove %s %s' % (md_info['dev'], disk_info.dev)
+	ret,msg = commands.getstatusoutput(cmd)
+	if ret == 0:
+		# (TODO)写日志
+		print '从卷组 %s 删除掉线磁盘 %s 成功!' % (md_info['name'], disk_info.slot)
+	else:
+		print '从卷组 %s 删除掉线磁盘 %s 失败!' % (md_info['name'], disk_info.slot)
+	return
+
 def handle_disk_remove_event(disk_dev):
+	disk_info = get_disk_info(disk_dev)
+	if disk_info.slot == '':
+		return
+	# (TODO)记录磁盘上线信息
+	print '磁盘 %s(%s) 掉线' % (disk_info.dev, disk_info.slot)
+
+	for mddev in md_list_mddevs():
+		md_info = mddev_get_attr(mddev)
+
+		# 目前仅处理raid5,6
+		if md_info['raid_level'] != '5' and md_info['raid_level'] != '6':
+			continue
+		# 如果磁盘在md设备的磁盘列表中，则手动删除
+		if disk_info.slot in md_info['disk_list']:
+			if len(md_info['disk_list']) <= 1:
+				__remove_md(md_info)
+			else:
+				__remove_disk_from_md(md_info, disk_info)
+			break
 	return
 
 # 主函数
