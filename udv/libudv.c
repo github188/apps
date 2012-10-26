@@ -345,6 +345,10 @@ ssize_t udv_delete(const char *name)
         if (!name)
                 return E_FMT_ERROR;
 
+	// 检查是否已经映射
+	if (isISCSIVolume(name) || isNasVolume(name))
+		return E_UDV_MOUNTED;
+
         // 查找UDV
         if (!(udv=get_udv_by_name(name)))
                 return E_UDV_NONEXIST;
@@ -363,12 +367,12 @@ ssize_t udv_delete(const char *name)
                 ped_disk_commit(disk))
                 goto success;
 
+success:
+        return E_OK;
 error:
         ped_device_destroy(device);
 error_eio:
         return E_SYS_ERROR;
-success:
-        return E_OK;
 }
 
 size_t udv_list(udv_info_t *list, size_t n)
