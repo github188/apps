@@ -130,12 +130,12 @@ void list_udv(list_type_t t)
 
 		if (print)
 		{
-			if (i+1==udv_cnt)
+			if (printed==0)
 				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
 						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
 						udv->name, (unsigned long long)udv->geom.capacity);
 			else
-				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"},",
+				printf(",\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
 						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
 						udv->name, (unsigned long long)udv->geom.capacity);
 			printed++;
@@ -209,7 +209,7 @@ int get_name_bydev(const char *udv_dev)
 		}
 		udv++;
 	}
-	
+
 	return_json_msg(MSG_ERROR, "用户数据卷不存在!");
 	return -1;
 }
