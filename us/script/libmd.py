@@ -12,7 +12,7 @@ def __def_post(p):
 
 def __level_post(p):
     if len(p) == 0:
-        return "NaN"
+        return "None"
     level = p[0].lower().replace("raid", "")
     if level == "linear":
         level = "JBOD"
@@ -111,8 +111,10 @@ def __md_fill_attr(str):
     attr["disk_cnt"] = int(__find_attr(str, "Total Devices : ([0-9]+)"))
     attr["disk_list"] = __find_attr(str, "([0-9]+\s*){4}.*(/dev/.+)",
                                     __disk_post)
+    # 增加uuid供磁盘上下线使用
+    attr["raid_uuid"] = __find_attr(str, "UUID : (.*)")
+    attr["disk_woring"] = int(__find_attr(str, "Working Devices : ([0-9+)"))
 
-    #注：需要用户卷完成后，该位才有效
     return attr
 
 def mddev_get_attr(mddev):

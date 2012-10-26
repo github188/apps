@@ -52,6 +52,8 @@ void test_list()
 int main(int argc, char *argv[])
 {
 	udv_info_t list[MAX_UDV];
+
+	printf("is nas: %d\n", isNasVolume("abc"));
 	/*
 	if (argc!=2)
 	{

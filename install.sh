@@ -17,7 +17,7 @@ reset_sd()
 #	fi
 #fi
 
-file_list='us/us_d us/us_cmd us/mon_test us/script/*'
+file_list='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assume.sh us/md-auto-resume/mdscan/mdinfo'
 rsync -av $file_list /usr/local/bin/
 
 rsync -av web-iface/sys-manager /usr/local/bin/
@@ -30,6 +30,8 @@ rsync -av iscsi/* /usr/local/bin
 rsync -av extra/* /usr/local/bin
 
 rsync -av nas/* /usr/local/bin
+
+rsync -av sys-conf/* /usr/local/bin
 
 #reset_sd
 ldconfig

@@ -4,6 +4,9 @@
 
 const static int DFT_SECTOR_SIZE = 512;
 
+/*
+ * import from libpyext_udv.py
+ */
 size_t getVGDevByName(const char *vg_name, char *vg_dev)
 {
 	PyObject *pModule, *pFunc, *pArg, *pRetVal;
@@ -40,6 +43,9 @@ size_t getVGDevByName(const char *vg_name, char *vg_dev)
 	return PYEXT_RET_OK;
 }
 
+/*
+ * import from libpyext_udv.py
+ */
 int isISCSIVolume(const char *udv_dev)
 {
 	int ret = 1;
@@ -71,7 +77,50 @@ int isISCSIVolume(const char *udv_dev)
 	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
 		return PYEXT_ERR_RUN;
 
-	//strcpy(vg_dev, PyString_AsString(pRetVal));
+	ret = PyInt_AsLong(pRetVal);
+
+	// Clean up
+	Py_DECREF(pModule);
+	Py_DECREF(pFunc);
+
+	Py_Finalize();
+
+	return ret;
+}
+
+/*
+ *  import from libnas.py
+ */
+int isNasVolume(const char *volume_name)
+{
+	int ret = 1;
+	PyObject *pModule, *pFunc, *pArg, *pRetVal;
+
+	if (!volume_name)
+		return PYEXT_ERR_INPUT_ARG;
+
+	Py_Initialize();
+	if (!Py_IsInitialized())
+		return PYEXT_ERR_INIT;
+
+	pModule = pFunc = pArg = pRetVal = NULL;
+
+	PyRun_SimpleString("import sys");
+	PyRun_SimpleString("sys.path.append('./')");
+	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
+
+	if (!(pModule = PyImport_ImportModule("libnas")))
+		return PYEXT_ERR_LOAD_MODULE;
+
+	pFunc = PyObject_GetAttrString(pModule, "isNasVolume");
+	if(!PyCallable_Check(pFunc))
+		return PYEXT_ERR_LOAD_FUNC;
+
+	if (!(pArg = Py_BuildValue("(s)", volume_name)))
+		return PYEXT_ERR_SET_ARG;
+
+	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
+		return PYEXT_ERR_RUN;
 
 	ret = PyInt_AsLong(pRetVal);
 
@@ -362,7 +411,7 @@ size_t udv_list(udv_info_t *list, size_t n)
                                 break;
 
                         strcpy(udv->name, part_name);
-			
+
 			if (dev->type == PED_DEVICE_MD)
 				sprintf(udv->dev, "%sp%d", dev->path, part->num);
 			else
@@ -377,7 +426,7 @@ size_t udv_list(udv_info_t *list, size_t n)
 
 			if (isISCSIVolume(udv->dev))
 				udv->state = UDV_ISCSI;
-			else if (part->fs_type)
+			else if (isNasVolume(udv->name))
 				udv->state = UDV_NAS;
 			else
 				udv->state = UDV_RAW;

@@ -6,6 +6,7 @@ struct cmd_map cmd_map[] = {
   {"vg", external_main},
   {"iscsi", python_cmd_main},
   {"nas", python_cmd_main},
+  {"network", python_cmd_main},
   {"", NULL}
 };
 
@@ -18,6 +19,7 @@ void usage()
   printf("      udv   - 用户数据卷接口\n");
   printf("      iscsi - iSCSI接口\n");
   printf("      nas   - NAS接口\n");
+  printf("      network   - NAS接口\n");
   exit(0);
 }
 
