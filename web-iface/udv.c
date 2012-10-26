@@ -209,7 +209,7 @@ int get_name_bydev(const char *udv_dev)
 		}
 		udv++;
 	}
-	
+
 	return_json_msg(MSG_ERROR, "用户数据卷不存在!");
 	return -1;
 }
