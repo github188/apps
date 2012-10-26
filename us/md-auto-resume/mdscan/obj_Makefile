@@ -1,0 +1,11 @@
+#CROSS_COMPILE = arm-none-linux-gnueabi-
+CFLAGS = -Wall -O2 -D_LARGEFILE64_SOURCE
+# -march=armv5te -mtune=xscale
+
+MD_OBJ = dev_manage.o super1.o md_super.o pdm_info.o
+progs = mdscan mdinfo
+
+mdscan-obj = mdscan.o $(MD_OBJ)
+mdinfo-obj = mdinfo.o $(MD_OBJ)
+
+

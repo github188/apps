@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><network>
+	<nic bond="" default="yes" gw="192.168.70.254" ip="192.168.70.4" mask="255.255.255.0" mode="static" name="eth0"/>
+	<nic bond="" default="" gw="" ip="10.1.2.22" mask="255.255.255.0" mode="dhcp" name="eth1"/>
+	<nic bond="bond0" default="" gw="" ip="192.168.80.35" mask="255.255.255.0" mode="static" name="eth2"/>
+	<nic bond="bond0" default="" gw="" ip="192.168.13.100" mask="255.255.255.0" mode="static" name="eth3"/>
+	<nic bond="" default="" gw="" ip="192.168.14.100" mask="255.255.255.0" mode="static" name="eth4"/>
+	<nic bond="" default="" gw="" ip="192.168.15.100" mask="255.255.255.0" mode="static" name="eth5"/>
+	<nic bond="" default="" gw="" iflist="eth2,eth3" ip="192.168.70.88" mask="255.255.255.0" mode="0" name="bond0"/>
+	<nic bond="" default="" gw="" iflist="" ip="192.168.80.35" mask="255.255.255.0" mode="no" name="bond1"/>
+	<dns addr="192.168.70.254"/>
+</network>

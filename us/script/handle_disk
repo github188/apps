@@ -1,15 +1,247 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import sys
+# -----------------------------------------------------------------------------
+# 文件名称: handle_disk
+# 作用: 处理磁盘上下线事件
+# -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# 输入参数格式:
+#     argv[0] - (this program)
+#     argv[1] - disk dev (eg. /dev/sdb)
+#     argv[2] - action <add|remove|change>
+# -----------------------------------------------------------------------------
+
+import sys,os
+from libmd import *
+from libdiskud import *
+
+reload(sys)
+sys.setdefaultencoding('utf8')
+
+DISK_EVENT_ROOT = '/tmp/.disk-event'
+PREPARE_LIST_DIR = '%s/md-prepare-list' % DISK_EVENT_ROOT
+
+# -------- 磁盘信息定义 -----------
+class DiskInfo():
+	def __init__(self):
+		self.dev = ''
+		self.slot = ''
+		self.uuid = ''
+		self.md_uuid = ''
+
+def get_disk_info(disk_dev):
+	info = DiskInfo()
+	info.dev = disk_dev
+	info.slot = disk_slot(disk_dev)
+	ret,txt = commands.getstatusoutput('mdadm -E %s' % disk_dev)
+	if ret == 0:
+		for line in txt.split('\n'):
+			if line.find('Device UUID : ') >= 0:
+				info.uuid = line.split('Device UUID : ')[-1]
+			elif line.fine('Array UUID : ') >= 0:
+				info.md_uuid = line.split('Array UUID : ')[-1]
+	return info
+
+# -----------------------------
+# 公用函数
+# -----------------------------
+def __tmpfs_read_value(key):
+	v = ''
+	try:
+		f = open(key)
+		v = f.readline().strip()
+		f.close()
+	except:
+		pass
+	return v
+
+def __tmpfs_write_value(key, value):
+	try:
+		f = open(key, 'w')
+		f.write(value)
+		f.close()
+	except:
+		pass
+	return
+
+# ------------------------------
+# 增加磁盘到待重组列表
+# ------------------------------
+def __prepare_listdir_check():
+	try:
+		if not os.path.exists(PREPARE_LIST_DIR):
+			os.makedirs(PREPARE_LIST_DIR)
+	except:
+		pass
+
+def __parpare_list_get():
+	__prepare_listdir_check()
+	p_list = []
+	try:
+		p_list = os.listdir(PREPARE_LIST_DIR)
+	except:
+		pass
+	return p_list
+
+# --------------------
+# 尝试重组md设备
+# --------------------
+def __get_mddev():
+	_ret,_md_list = commands.getoutput('ls /dev/md[0-9]*')
+	if _ret != 0:
+		return ''
+	_tmp_max = 0
+	try:
+		for x in _md_list:
+			if x.find('p') >= 0:
+				continue
+			_tmp = int(x.split('md')[-1])
+			if _tmp_max < _tmp:
+				_tmp_max = _tmp
+	except:
+		return ''
+	return '/dev/md%d' % _tmp_max
+
+def __try_md_assume(md_uuid):
+	_prepare_md_dir = '%s/%s' % (PREPARE_LIST_DIR, md_uuid)
+	try:
+		# 获取待重组md的磁盘列表
+		_disk_list = os.listdir(_prepare_md_dir)
+		if len(_disk_list) <= 0:
+			return
+
+		# 如果符合重组条件，则重组
+		if __mdinfo_get_disks(_disk_list[0]) == len(_disk_list):
+			for x in _disk_list:
+				_disks = _disks + ' ' + __tmpfs_read_value('%s/%s/dev' % (_prepare_md_dir, x))
+			_new_md_dev = __get_mddev()
+			_assume_cmd = 'mdadm --assume %s %s' % (_new_md_dev, _disks)
+			ret,msg = commands.getoutputstatus(_assume_cmd)
+			if ret == 0:
+				# (TODO)记录日志，重组md成功
+			else:
+				# (TODO)记录日志，重组md失败
+	except:
+		pass
+
+def __prepare_list_add(disk_info):
+	try:
+		# 如果磁盘所属md uuid存在，更新磁盘信息到列表，并且检查是否满足重组条件
+		_disk_dir = '%s/%s/%s' % (PREPARE_LIST_DIR, disk_info.md_uuid, disk_info.uuid)
+		if disk_info.md_uuid not in __get_prepare_list():
+			os.makedirs(_disk_dir)
+		__tmpfs_write_value('%s/dev' % _disk_dir, disk_info.dev)
+		__tmpfs_write_value('%s/slot' % _disk_dir, disk_info.slot)
+		__try_md_assume(disk_info.md_uuid)
+	except:
+		pass
+	sys.exit(0)
+
+# ------------------------------------
+# 处理磁盘上线事件
+# ------------------------------------
+def handle_disk_add_event(disk_dev):
+	disk_info = get_disk_info(disk_dev)
+	if disk_info.slot == '':
+		return
+	# (TODO)记录磁盘上线信息
+	print '磁盘 %s(%s) 上线' % (disk_info.dev, disk_info.slot)
+
+	# 检查磁盘是否包含md信息
+	if disk_info.md_uuid == '':
+		print '磁盘不包含md信息，退出处理脚本'
+		return
+	print '磁盘包含md信息'
+
+	# 检查是否属于某个md设备，如果是，加入
+	for md_dev in md_list_mddevs():
+		md_info = mddev_get_attr(md_dev)
+
+		# 目前仅处理RAID5,6的上线
+		if md_info['raid_level'] != '5' and md_info['raid_level'] != '6':
+			continue
+
+		if md_info['raid_uuid'] == disk_info.md_uuid:
+			# 检查是否可以加入到md设备
+			if md_info['disk_woring'] >= md_info['disk_cnt']:
+				continue
+			# 增加磁盘到md设备
+			commands.getoutput('mdadm --add %s %s' % (md_info['dev'], disk_info.dev))
+			# (TODO)记录日志
+			print '增加磁盘 %s(%s) 到卷组 %s' % (disk_info.dev, disk_info.slot, md_info['dev'])
+			sys.exit(0)
+
+	# 不属于任何md设备的磁盘，加入到待重组列表，等待重组
+	prepare_list_add(disk_info)
+
+
+# ------------------------------------
+# 处理磁盘掉线事件
+# ------------------------------------
+
+# 删除无效的md设备
+def __remove_md(md_info):
+	cmd_stop_md = 'mdadm --stop %s' % md_info['dev']
+	cmd_rm_dev = 'rm -f %s' % md_info['dev']
+	ret_stop_md = commands.getstatus(cmd)
+	ret_rm_dev = commands.getstatus(cmd)
+
+	if ret_stop_md == 0 and ret_rm_dev == 0:
+		# (TODO) 写日志
+		print '卷组 %s 所有磁盘已经掉线，删除卷组成功!' % md_info['name']
+	else:
+		print '卷组 %s 所有磁盘已经掉线，删除卷组成功!' % md_info['name']
+	return
+
+# 从指定卷组删除掉盘的磁盘
+def __remove_disk_from_md(md_info, disk_info):
+	cmd = 'mdadm --remove %s %s' % (md_info['dev'], disk_info.dev)
+	ret,msg = commands.getstatusoutput(cmd)
+	if ret == 0:
+		# (TODO)写日志
+		print '从卷组 %s 删除掉线磁盘 %s 成功!' % (md_info['name'], disk_info.slot)
+	else:
+		print '从卷组 %s 删除掉线磁盘 %s 失败!' % (md_info['name'], disk_info.slot)
+	return
+
+def handle_disk_remove_event(disk_dev):
+	disk_info = get_disk_info(disk_dev)
+	if disk_info.slot == '':
+		return
+	# (TODO)记录磁盘上线信息
+	print '磁盘 %s(%s) 掉线' % (disk_info.dev, disk_info.slot)
+
+	for mddev in md_list_mddevs():
+		md_info = mddev_get_attr(mddev)
+
+		# 目前仅处理raid5,6
+		if md_info['raid_level'] != '5' and md_info['raid_level'] != '6':
+			continue
+		# 如果磁盘在md设备的磁盘列表中，则手动删除
+		if disk_info.slot in md_info['disk_list']:
+			if len(md_info['disk_list']) <= 1:
+				__remove_md(md_info)
+			else:
+				__remove_disk_from_md(md_info, disk_info)
+			break
+	return
+
+# 主函数
 def main():
-    if len(sys.argv) < 2:
-        action = "Unknown"
-    else:
-        action = argv[1]
-    print "%s called, action: %s" % (sys.argv[0], sys.argv[1])
+	# 参数检查
+	if len(sys.argv) < 2:
+		# 记录日志，返回
+		return
+
+	disk_dev = sys.argv[1]
+	action = sys.argv[2]
+
+	if action == 'add':
+		handle_disk_add_event(disk_dev)
+	elif action == 'remove':
+		handle_disk_remove_event(disk_dev)
 
 if __name__ == "__main__":
     main()
-
-        

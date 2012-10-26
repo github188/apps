@@ -183,7 +183,7 @@ def nas_conf_is_exist(mnt):
 	return exist
 
 # 获取配置项列表
-def nas_conf_get_list():
+def __nas_conf_get_list():
 	nas_conf_list = []
 	conf_start = False
 	conf_end = False
@@ -200,22 +200,34 @@ def nas_conf_get_list():
 			# load conf line:
 			# (FORMAT): mount /dev/md1p1 /mnt/Share/udv1
 			if conf_start and not conf_end:
-				tmp_nas_dev = line.split()[1]
-				nas_conf = NasVolumeAttr()
-				nas_conf.path = line.split()[-1]
-				nas_conf.volume_name = __get_udv_name_by_dev(tmp_nas_dev) # conv /dev/md1p1 => udv1
-				nas_conf.state = 'mounted'
-				nas_conf.fmt_percent = 0
-				nas_conf.capacity = __get_nas_volume_capacity(nas_conf.path)
-				nas_conf.occupancy = __get_nas_volume_occupancy(nas_conf.path)
-				nas_conf.remain = __get_nas_volume_remain(nas_conf.path)
-				nas_conf.fs_type = 'ext3'
-				nas_conf_list.append(nas_conf.__dict__)
+				nas_dev = line.split()[1]
+				mnt_path = line.split()[-1]
+				nas_conf_list.append((nas_dev, mnt_path))
 	except:
 		pass
 	finally:
 		f.close()
 	return nas_conf_list
+
+def nas_conf_get_list():
+	nas_conf_list = []
+	try:
+		for nas_dev,mnt_path in __nas_conf_get_list():
+			nas_conf = NasVolumeAttr()
+			nas_conf.path = mnt_path
+			nas_conf.volume_name = __get_udv_name_by_dev(nas_dev) # conv /dev/md1p1 => udv1
+			nas_conf.state = 'mounted'
+			nas_conf.fmt_percent = 0
+			nas_conf.capacity = __get_nas_volume_capacity(nas_conf.path)
+			nas_conf.occupancy = __get_nas_volume_occupancy(nas_conf.path)
+			nas_conf.remain = __get_nas_volume_remain(nas_conf.path)
+			nas_conf.fs_type = 'ext3'
+			nas_conf_list.append(nas_conf.__dict__)
+	except:
+		pass
+	return nas_conf_list
+
+
 
 """
 格式化相关函数
@@ -329,8 +341,8 @@ def nasUnmapping(volume_name):
 
 # 检查是否为NAS卷
 def isNasVolume(volume_name):
-	for x in nas_conf_get_list():
-		if x['volume_name'] == volume_name:
+	for nas_dev,mnt_path in __nas_conf_get_list():
+		if mnt_path.find(volume_name) >= 0:
 			return True
 	for x in nas_fmt_get_list():
 		if x['volume_name'] == volume_name:
@@ -345,6 +357,10 @@ if __name__ == '__main__':
 	#	print x.__dict__
 	#for x in nas_mount_get_list():
 	#	print x.__dict__
+	for x in nas_conf_get_list():
+		print x
+
+	sys.exit(0)
 	ret,msg = nas_conf_add('/dev/md1p2', '/mnt/Share/udv2')
 	print msg
 	ret,msg = nas_conf_remove('/mnt/Share/udv2')
