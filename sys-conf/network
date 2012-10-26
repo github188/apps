@@ -32,7 +32,6 @@ def SYSTEM_OUT(com):
 
 #~ print SYSTEM_OUT('ifconfig -a |grep \' Link \'|sed \'/^lo/d\'|awk \'{print $1 ","}\'|awk \'{printf $0}\'|sed \'s/.$//\'')
 
-
 def LICENSE_SER():
 	return 4
 
@@ -122,9 +121,13 @@ def write_xml_file(path, xmlDom, option = {'encoding':'utf-8'}):
 #~ 设置网关
 def SET_GW(nic,value):
 	Status = False
+	DHCP_DEF_GW =False
 	coxx = SYSTEM_OUT('ip route|grep "default"|wc -l')
 	for i in item:
-		i.setAttribute('default','') 
+		if value.dhcp_set == True and value.default_gw_set == True:
+			i.setAttribute('default','') 
+		elif value.dhcp_set == False and value.gw_set != '':
+			i.setAttribute('default','') 
 		if i.getAttribute('name') == nic:
 			if i.getAttribute('mode') != 'dhcp':
 				if value.gw_set != '':
@@ -137,17 +140,18 @@ def SET_GW(nic,value):
 			else:
 				if value.default_gw_set ==  True:
 					i.setAttribute('default', 'yes')
-
-	if int(coxx) > 0:
-		for x in range(int(coxx)):
-			os.system('route delete default')
+					DHCP_DEF_GW = True
+	if Status == True or DHCP_DEF_GW == True:
+		if int(coxx) > 0:
+			for x in range(int(coxx)):
+				os.system('route delete default')
 	if Status == True:
-		os.system('route add default gw '+value.gw_set)	
+		os.system('route add default gw '+value.gw_set+' dev '+nic)
+		
 
 def SET_IFCONFIG(nic,str):
 	if nic in BOND_LIST:
 		sys.exit(-1)
-
 	for x in item:
 		if x.getAttribute('name') == nic:
 			x.setAttribute('mode', 'static') 
@@ -161,6 +165,8 @@ def SET_IFCONFIG(nic,str):
 			x.setAttribute('mask', str.mask_set)
 			os.system('ifconfig ' + nic + ' '  + str.ip_set +' netmask '  + str.mask_set)
 			SET_GW(str.iface_set, str)
+	write_xml_file(FILEPATH, dom)
+	os.system('netconfig_get')
 
 def SET_DHCP(nic,str):
 	for x in item:
@@ -168,6 +174,8 @@ def SET_DHCP(nic,str):
 			x.setAttribute('mode', 'dhcp') 
 			if str.default_gw_set == True:
 				SET_GW(str.iface_set, str)
+			write_xml_file(FILEPATH, dom)
+			os.system('netconfig_get')
 			os.system('ifdown '+ nic +' > /dev/null; ifup '+ nic +' > /dev/null')
 
 #~ 设置bond
@@ -175,9 +183,12 @@ def BOND_SET(bond, value):
 	inter_split = value.inter_set.split(',')
 	comm = 'echo +' + bond + ' > /sys/class/net/bonding_masters; echo ' + value.mode_set + ' > /sys/class/net/' + bond + '/bonding/mode; '
 	nic_set = ''
+	editbond = 'echo ' + value.mode_set + ' > /sys/class/net/' + bond + '/bonding/mode; '
+	edit = ''
+	bondremove = 'ifconfig ' + bond + ' down > /dev/null;'
 	bond_strator = False
-	if len(inter_split) > 1:
-		for x in item:
+	for x in item:
+		if len(inter_split) > 1:
 			for nic in inter_split:
 				if nic in INCLIST() and nic != 'bond0' and nic != 'bond1':
 					if x.getAttribute('name') == nic:
@@ -186,49 +197,77 @@ def BOND_SET(bond, value):
 				else:
 					Export(False, '输入的接口名不正确--')
 					sys.exit(-1)
-			if x.getAttribute('name') == bond:
-				if x.getAttribute('mode') != 'no':
-					editbond = 'echo ' + value.mode_set + ' > /sys/class/net/' + bond + '/bonding/mode; ifconfig ' + bond + ' ' + value.ip_set + ' netmask ' + value.mask_set 
-					bond_strator = True
-				if value.mode_set == '':
-					Export(False, '负载均衡模式没有设置，请参考命令参数：')
-					networkUsage()
-				if value.ip_set == '':
-					Export(False, 'ip地址没有设置，请参考命令参数：')
-					networkUsage()
-				if value.mask_set == '':
-					Export(False, '子网掩码没有设置，请参考命令参数：')
-					networkUsage()
+		if x.getAttribute('name') == bond:
+			if x.getAttribute('mode') != 'no':
+				bond_strator = True
+				etc_split = x.getAttribute('iflist').split(',')
+				for etc in etc_split:
+					edit = edit + 'echo +' + etc + ' > /sys/class/net/' + bond + '/bonding/slaves; '
+					bondremove = 'echo -'+etc +' > /sys/class/net/' + bond + '/bonding/slaves; ' + bondremove
+			if value.mode_set == '':
+				Export(False, '负载均衡模式没有设置，请参考命令参数：')
+				networkUsage()
+			if value.ip_set == '':
+				Export(False, 'ip地址没有设置，请参考命令参数：')
+				networkUsage()
+			if value.mask_set == '':
+				Export(False, '子网掩码没有设置，请参考命令参数：')
+				networkUsage()
+			if bond_strator == False:
 				x.setAttribute('iflist', value.inter_set)
-				x.setAttribute('ip', value.ip_set)
-				x.setAttribute('mask', value.mask_set)
-				x.setAttribute('mode', value.mode_set)
-				comm = comm + 'ifconfig ' + bond + ' ' + value.ip_set + ' netmask ' + value.mask_set + ' up; '
-	else:
-		Export(False, '启用负载均衡至少需要2块网卡')
-		sys.exit(-1)
+			x.setAttribute('ip', value.ip_set)
+			x.setAttribute('mask', value.mask_set)
+			x.setAttribute('mode', value.mode_set)
+			comm = comm + 'ifconfig ' + bond + ' ' + value.ip_set + ' netmask ' + value.mask_set + ' up; '
+			editbond = editbond + 'ifconfig ' + bond + ' ' + value.ip_set + ' netmask ' + value.mask_set + ' up; '
 	if bond_strator == True:
-		os.system(editbond)
+		os.system(bondremove + editbond + edit)
 	else:
-		os.system(comm + nic_set)
+		if len(inter_split) > 1:
+			os.system(comm + nic_set)
+		else:
+			Export(False, '启用负载均衡至少需要2块网卡')
+			sys.exit(-1)
 	SET_GW(bond, value)
 
 #~ 卸载bond
 def BOND_REMOVE(bond):	
-	IFUP = 'echo -' + bond + ' > /sys/class/net/bonding_masters '
+	IFUP = 'echo -' + bond + ' > /sys/class/net/bonding_masters; '
 	xremove = 'ifconfig ' + bond + ' down > /dev/null; '
 	Status = False
+	inti = 1
+	ip = ''
+	mask = ''
+	gw = ''
+	default = ''
 	for x in item:
 		if x.getAttribute('name') == bond:
 			if x.getAttribute('mode') != 'no':
 				Status = True
+				ip =  x.getAttribute('ip')
+				mask = x.getAttribute('mask')
+				gw = x.getAttribute('gw')
+				default = x.getAttribute('default')
 				x.setAttribute('mode', 'no') 
 				x.setAttribute('iflist', '') 
 			x.setAttribute('default', '') 
-		if x.getAttribute('bond') != '':
+		if x.getAttribute('bond') == bond:
+			if inti == 1:
+				nic = x.getAttribute('name')
 			IFUP = "ifup "+ x.getAttribute('name') +" > /dev/null; " + IFUP
-			xremove = 'echo -'+ x.getAttribute('name') +' > /sys/class/net/bond0/bonding/slaves; ' + xremove
+			xremove = 'echo -'+ x.getAttribute('name') +' > /sys/class/net/' + bond + '/bonding/slaves; ' + xremove
 			x.setAttribute('bond', '') 
+			inti = inti + 1
+	for i in item:
+		if i.getAttribute('name') == nic:
+			i.setAttribute('mode', 'static')
+			i.setAttribute('ip', ip)
+			i.setAttribute('mask', mask)
+			i.setAttribute('gw', gw)
+			i.setAttribute('default', default)
+			IFUP = IFUP + 'ifconfig '+nic+' '+ip+' netmask '+mask+'; '
+			if default == 'yes':
+				IFUP = IFUP + 'route add default gw '+gw+' dev '+nic
 	if Status == True:
 		os.system(xremove + IFUP)
 		#~ Export(True, '负载均衡接口" %s "卸载成功！' % bond)
@@ -255,15 +294,18 @@ class IArgs:
 		self.ifconfig_set = False
 		self.bond_set = False
 		self.dns_set = False
-		self.dnsvar_set = ''
+		self.var_set = ''
 		self.iface_set = ''
-		self.dhcp_set = False
+		self.iface_set = ''
+		self.intbond_set = False
 		self.default_gw_set = False
 		self.ip_set = ''
 		self.mask_set = ''
 		self.gw_set = ''
+		self.niccoun_set = False
 		self.inter_set = ''
 		self.remove_set = False
+		self.dhcp_set = False
 		self.mode_set = ''
 		self.filter_set = False
 
@@ -285,54 +327,92 @@ class nic_info():
 #~ 输出列表
 def nic_list(value):
 	list = []
+	json_bond = []
 	json_list = {'total':0, 'rows':[]}
 	i = 0
 	for x in item:
 		if value.iface_set == '':
 			if value.filter_set == False:
-				if x.getAttribute('name') in INCLIST():
+				if x.getAttribute('name') in INCLIST() and x.getAttribute('bond') == '':
 					nic = nic_info()
-					nic.Network_Name = x.getAttribute('name')
 					nic.Network_Mode = x.getAttribute('mode')
-					nic.Network_IP = x.getAttribute('ip')
-					nic.Network_Mask = x.getAttribute('mask')
-					nic.Network_Gateway = x.getAttribute('gw')
+					nic.Network_Name = x.getAttribute('name')
+					if nic.Network_Mode == 'dhcp':
+						ipconfig_out_list = SYSTEM_OUT('ifconfig ' + x.getAttribute('name') + '|grep \'inet addr:\'|tr -s \' \'|tr -d \'\n\'')
+						ip_analysis = ipconfig_out_list.split(' ')
+						if len(ip_analysis) == 5:
+							nic.Network_IP = ip_analysis[2].split(':')[1]
+							nic.Network_Mask = ip_analysis[4].split(':')[1]
+							if x.getAttribute('default') == 'yes':
+								iproute_out = SYSTEM_OUT('ip route|grep \'dev ' + x.getAttribute('name') + '\'|grep \'^default\'|awk \'{print $3}\'|tr -d \'\n\'')
+								if re.match(ipre_str, iproute_out):
+									nic.Network_Gateway = iproute_out
+						else:
+							nic.Network_IP = ''
+							nic.Network_Mask = ''
+							nic.Network_Gateway = ''
+					else:
+						nic.Network_IP = x.getAttribute('ip')
+						nic.Network_Mask = x.getAttribute('mask')
+						if x.getAttribute('default') == 'yes':
+							nic.Network_Gateway = x.getAttribute('gw')						
 					nic.Network_Bond = x.getAttribute('bond')
 					nic.Network_Default = x.getAttribute('default')
 					if x.getAttribute('name') in BOND_LIST:
-						nic.Network_iflist = x.getAttribute('iflist')
+						nic.Network_Iflist = x.getAttribute('iflist')
 					list.append(nic.__dict__)
 					i = i + 1
 			else:
-				if x.getAttribute('name') != 'bond0' and x.getAttribute('name') != 'bond1':
-					nic = nic_info()
-					nic.Network_Name = x.getAttribute('name')
-					nic.Network_Mode = x.getAttribute('mode')
-					nic.Network_IP = x.getAttribute('ip')
-					nic.Network_Mask = x.getAttribute('mask')
-					nic.Network_Gateway = x.getAttribute('gw')
-					nic.Network_Bond = x.getAttribute('bond')
-					nic.Network_Default = x.getAttribute('default')
-					if x.getAttribute('name') in BOND_LIST:
-						nic.Network_iflist = x.getAttribute('iflist')
-					list.append(nic.__dict__)
-					i = i + 1
+				if x.getAttribute('name') in INCLIST() and x.getAttribute('name') != 'bond0' and x.getAttribute('name') != 'bond1':
+					if value.intbond_set == False:
+						nic = nic_info()
+						nic.Network_Mode = x.getAttribute('mode')
+						nic.Network_Name = x.getAttribute('name')
+						if nic.Network_Mode == 'dhcp':
+							ipconfig_out_list = SYSTEM_OUT('ifconfig ' + x.getAttribute('name') + '|grep \'inet addr:\'|tr -s \' \'|tr -d \'\n\'')
+							ip_analysis = ipconfig_out_list.split(' ')
+							if len(ip_analysis) == 5:
+								nic.Network_IP = ip_analysis[2].split(':')[1]
+								nic.Network_Mask = ip_analysis[4].split(':')[1]
+								if x.getAttribute('default') == 'yes':
+									iproute_out = SYSTEM_OUT('ip route|grep \'dev ' + x.getAttribute('name') + '\'|grep \'^default\'|awk \'{print $3}\'|tr -d \'\n\'')
+									if re.match(ipre_str, iproute_out):
+										nic.Network_Gateway = iproute_out
+							else:
+								nic.Network_IP = ''
+								nic.Network_Mask = ''
+								nic.Network_Gateway = ''
+						else:
+							nic.Network_IP = x.getAttribute('ip')
+							nic.Network_Mask = x.getAttribute('mask')
+							if x.getAttribute('default') == 'yes':
+								nic.Network_Gateway = x.getAttribute('gw')						
+						nic.Network_Bond = x.getAttribute('bond')
+						nic.Network_Default = x.getAttribute('default')
+						list.append(nic.__dict__)
+						i = i + 1
+					else:
+						if x.getAttribute('bond') != '':
+							json_bond.append(x.getAttribute('name'))
+							
+						i = i + 1
 		else:
 			if x.getAttribute('name') == value.iface_set:
-				json_info = {'Network_Name':''+x.getAttribute('name')+'', 'Network_Mode':''+x.getAttribute('mode')+'', 'Network_IP':''+x.getAttribute('ip')+'', 'Network_Mask':''+x.getAttribute('mask')+'', 'Network_Gateway':''+x.getAttribute('gw')+'', 'Network_Bond':''+x.getAttribute('bond')+'', 'Network_Default':''+x.getAttribute('default')+'', 'Network_iflist':''+x.getAttribute('iflist')+''}
+				json_info = {'Network_Name':''+x.getAttribute('name')+'', 'Network_Mode':''+x.getAttribute('mode')+'', 'Network_IP':''+x.getAttribute('ip')+'', 'Network_Mask':''+x.getAttribute('mask')+'', 'Network_Gateway':''+x.getAttribute('gw')+'', 'Network_Bond':''+x.getAttribute('bond')+'', 'Network_Default':''+x.getAttribute('default')+'', 'Network_Iflist':''+x.getAttribute('iflist')+''}
 
 	json_list['total'] = i
 	json_list['rows'] = list
 
 	if value.iface_set == '':
-		print json.dumps(json_list, encoding="UTF-8", ensure_ascii=False)
+		if value.intbond_set == False:
+			print json.dumps(json_list, encoding="UTF-8", ensure_ascii=False)
+		else:
+			json_bond = json.dumps(json_bond, encoding="UTF-8", ensure_ascii=False)
+			print str(json_bond).replace('[','').replace(']','').replace('"','')
 	else:
 		print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
 
 
-	#~ for x in item:
-		#~ if x.getAttribute('name') == 'dns':
-			#~ x.setAttribute('addr', value.dnsvar_set)
 #~ 恢复默认置
 def get_default(value):
 	conf = """#请不要直接修改本配置文件
@@ -415,10 +495,19 @@ netmask 255.255.255.0
 #~ 修改DNS
 def DNSAlter(value):
 	item = root.getElementsByTagName('dns')[0]
-	item.setAttribute('addr', value.dnsvar_set)
-	#~ for x in item:
-		#~ if x.getAttribute('name') == 'dns':
-			#~ x.setAttribute('addr', value.dnsvar_set)
+	if value.var_set != '' and value.remove_set == False:
+		item.setAttribute('addr', value.var_set)
+		write_xml_file(FILEPATH, dom)
+		os.system('netconfig_get')
+		Export(True, '设置成功！')
+	elif  value.var_set == '' and value.remove_set == True:
+		item.setAttribute('addr', '')
+		write_xml_file(FILEPATH, dom)
+		os.system('netconfig_get')
+		Export(True, '设置成功！')		
+	else:
+		dns_out = {'dns':item.getAttribute('addr')}
+		print json.dumps(dns_out, encoding="UTF-8", ensure_ascii=False)
 
 #~ 修改IP
 def ifconfigAlter(value):
@@ -446,12 +535,13 @@ def bondAlter(value):
 
 def networkUsage():
 	print """
-network --list < [--iface <name>] | [--filter] >
+network --list < --iface <name> | --filter [--intbond] >
 	--ifconfig --iface <name> << --dhcp [ --default_gw ] >|< [ --ip <address> --mask <netmask> --gw <gateway> ] >> 
-	--bond --iface <bond0|bond1> --inter <eth0,eth1,eth2,eth3,.....> --mode <bonding mode> --ip <address> --mask <netmask> [--gw<gateway>] 
+	--bond --iface <bond0|bond1> --inter <eth0,eth1,eth2,eth3,.....> --mode <bonding mode(0|1|4)> --ip <address> --mask <netmask> [--gw<gateway>] 
 	--bond --remove --iface <bond0|bond1>
-	--dns <nameserver1,nameserver2>
+	--dns < --var <nameserver1,nameserver2 > | --remove >
 	--default
+	--niccoun
 """
 	sys.exit(-1)
 
@@ -461,8 +551,8 @@ if os.path.exists(FILEPATH):
 	item = root.getElementsByTagName('nic')
 
 
-OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default']
-network_long_opt = ['list', 'filter', 'ifconfig', 'bond', 'dns', 'default', 'iface=', 'dhcp', 'ip=', 'mask=', 'gw=', 'inter=', 'mode=', 'remove', 'default_gw']
+OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default', '--niccoun']
+network_long_opt = ['list', 'filter', 'ifconfig', 'bond', 'dns', 'default', 'iface=', 'dhcp', 'ip=', 'mask=', 'gw=', 'inter=', 'mode=', 'var=', 'remove', 'intbond', 'niccoun', 'default_gw']
 
 def network_main():
 	try:
@@ -486,8 +576,8 @@ def network_main():
 			iArgs.bond_set = True
 		elif opt == '--dns':
 			iArgs.dns_set = True
-			if len(args) >= 1:
-				iArgs.dnsvar_set = args[0]
+		elif opt == '--var':
+			iArgs.var_set = arg
 		elif opt == '--iface':
 			iArgs.iface_set = arg
 		elif opt == '--dhcp':
@@ -513,25 +603,26 @@ def network_main():
 			iArgs.inter_set = arg
 		elif opt == '--remove':
 			iArgs.remove_set = True
+		elif opt == '--intbond':
+			iArgs.intbond_set = True
+		elif opt == '--niccoun':
+			iArgs.niccoun_set = True
 		elif opt == '--filter':
 			iArgs.filter_set = True
 		elif opt == '--default':
 			iArgs.default_set = True
 		elif opt == '--default_gw':
 			iArgs.default_gw_set = True
-			if iArgs.gw_set == '':
-				Export(False, '网关不能为空！')
-				sys.exit(-1)
 	if iArgs.gw_set != "":
 		ipToInt(iArgs.ip_set, iArgs.mask_set, iArgs.gw_set)
 	if iArgs.list_set == True:
 		nic_list(iArgs)
 	elif iArgs.default_set == True:
 		get_default(iArgs)
+	elif iArgs.niccoun_set == True:
+		print LICENSE_SER()
 	elif iArgs.ifconfig_set == True:
 		ifconfigAlter(iArgs)
-		write_xml_file(FILEPATH, dom)
-		os.system('netconfig_get')
 		Export(True, '设置成功！')
 	elif iArgs.bond_set == True:
 		bondAlter(iArgs)
@@ -540,9 +631,6 @@ def network_main():
 		Export(True, '设置成功！')
 	elif iArgs.dns_set == True:
 		DNSAlter(iArgs)
-		write_xml_file(FILEPATH, dom)
-		os.system('netconfig_get')
-		Export(True, '设置成功！')
 	else:
 		Export(False, '命令参数不正确，请检查要执行的命令模式！')
 		networkUsage()

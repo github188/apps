@@ -12,8 +12,8 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 os.chdir(os.path.dirname(sys.argv[0]))
-DNS_CONFIG_PATH = '/run/resolvconf/resolv.conf'
-DNS_CONFIG_PATH_HEAD = '/etc/resolvconf/resolv.conf.d/head'
+DNS_CONFIG_PATH = '/etc/resolv.conf'
+DNS_CONFIG_PATH_HEAD = '/opt/dns.conf'
 INTERFACES_CONFIG_PATH = '/etc/network/interfaces'
 BOND_CONFIG_PATH = '/opt/bond_conf.sh'
 
@@ -34,6 +34,7 @@ iface lo inet loopback\n
 	i = 1
 	for x in item:
 		if x.getAttribute('name') != 'bond0' and x.getAttribute('name') != 'bond1':
+			#~ if x.getAttribute('bond') == '':
 			conf = conf + 'auto ' + x.getAttribute('name')  + '\n'
 			conf = conf + 'iface ' + x.getAttribute('name')  + ' inet ' + x.getAttribute('mode')  + '\n'
 			if x.getAttribute('mode') != 'dhcp':
@@ -56,14 +57,20 @@ def dns_config_list():
 	item = root.getElementsByTagName('dns')[0]
 	dns = item.getAttribute('addr').split(',')
 	addr = ''
+	conf = '#!/bin/bash\n\n'
+	init = 1
 	if len(dns) > 0:
 		for x in dns:
 			addr = addr + 'nameserver ' + x + '\n'
-
+			if init == 1:
+				conf = conf + 'echo "nameserver ' + x + '" > /etc/resolv.conf\n'
+			else:
+				conf = conf + 'echo "nameserver ' + x + '" >> /etc/resolv.conf\n'
+			init = init +1
 	dns_conf_head = open(DNS_CONFIG_PATH_HEAD, 'w')
 	dns_conf = open(DNS_CONFIG_PATH, 'w')
 	try:
-		dns_conf_head.write(addr)
+		dns_conf_head.write(conf)
 		dns_conf_head.close()
 		dns_conf.write(addr)
 		dns_conf.close()
@@ -93,7 +100,7 @@ def bond_config_list():
 						bond_str = bond_str + 'for i in `seq 1 $count`;do\n'
 						bond_str = bond_str + '	route delete default\n'
 						bond_str = bond_str + 'done\n'
-						bond_str = bond_str + 'route add default gw '+x.getAttribute('gw')+'\n\n\n'
+						bond_str = bond_str + 'route add default gw '+x.getAttribute('gw')+' dev ' + x.getAttribute('name')  + '\n\n\n'
 	bond_conf_file = open(BOND_CONFIG_PATH, 'w')
 	try:
 		bond_conf_file.write(bond_str)
