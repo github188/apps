@@ -40,7 +40,7 @@ def do_create(argv):
 def main(argv):
     ret = ""
     if len(argv) < 2:
-        return usage()
+        usage()
 
     cmd = argv[1]
     res = ""
@@ -56,22 +56,24 @@ def main(argv):
         res = do_create(argv[2:])
     elif cmd == "--delete":
         if len(argv) < 3:
-            res = usage()
+            usage()
         else:
             mdname = argv[2]
             res = md_del(mdname)
     else:
-        res = usage()
+        usage()
     return res;
 
 def usage():
     help_str="""
 Usage:
-        --list [mdname]
-        --create <mdname> <level> <chunk> <slots> [size]
+	--create --name=<vg_name> --level=<0|1|5|6> --strip=<64|128|256> --disk='<disk-slot-list>'
         --delete <mdname>
+        --list [mdname]
 """
-    return False,help_str
+    #return False,help_str
+    print help_str
+    sys.exit(-1)
 
 if __name__ == "__main__":
     res = main(sys.argv)
