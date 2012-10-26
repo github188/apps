@@ -113,7 +113,7 @@ def __md_fill_attr(str):
                                     __disk_post)
     # 增加uuid供磁盘上下线使用
     attr["raid_uuid"] = __find_attr(str, "UUID : (.*)")
-    attr["disk_woring"] = int(__find_attr(str, "Working Devices : ([0-9+)"))
+    attr["disk_working"] = int(__find_attr(str, "Working Devices : ([0-9]+)"))
 
     return attr
 
