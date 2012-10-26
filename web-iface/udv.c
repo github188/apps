@@ -31,7 +31,7 @@ struct option udv_options[] = {
 void udv_usage()
 {
   printf(_T("\nsys-udv\n\n"));
-  printf(_T("Usage: --list [--raw | --iscsi | --nas]\n"));
+  printf(_T("Usage: --list [ [--raw | --iscsi | --nas] | --name <udv_name> ]\n"));
   printf(_T("       --create --vg <vg_name> --name <udv_name> --capacity <size>\n"));
   printf(_T("       --delete <udv_name>\n"));
   printf(_T("       --modify --old-name <udv_name> --new-name <udv_name>\n"));
@@ -112,24 +112,26 @@ void list_udv(list_type_t t)
 	{
 		print = false;
 
-		if (t.raw && (udv->state == UDV_RAW))
+		// 获取指定udv的信息优先级最高
+		if (udv_name[0]!=0)
 		{
-			print = true;
-			strcpy(udv_state, "raw");
+			if (!strcmp(udv->name, udv_name))
+				print = true;
+			else
+				print = false;
 		}
-		else if (t.nas && (udv->state == UDV_NAS))
-		{
+		else if (t.raw || t.nas || t.iscsi)
 			print = true;
-			strcpy(udv_state, "nas");
-		}
-		else if (t.iscsi && (udv->state == UDV_ISCSI))
-		{
-			print = true;
-			strcpy(udv_state, "iscsi");
-		}
 
 		if (print)
 		{
+			if (udv->state == UDV_RAW)
+				strcpy(udv_state, "raw");
+			else if (udv->state == UDV_NAS)
+				strcpy(udv_state, "nas");
+			else if (udv->state == UDV_ISCSI)
+				strcpy(udv_state, "iscsi");
+
 			if (printed==0)
 				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
 						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
