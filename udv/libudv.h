@@ -36,7 +36,8 @@ enum {
 	E_UDV_EXIST = -5,
 	E_SYS_ERROR = -6,
 	E_NO_FREE_SPACE = -7,
-	E_DEVICE_NOTMD = -8
+	E_DEVICE_NOTMD = -8,
+	E_UDV_MOUNTED
 };
 
 typedef enum _udv_state udv_state;
