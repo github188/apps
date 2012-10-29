@@ -120,18 +120,24 @@ void list_udv(list_type_t t)
 			else
 				print = false;
 		}
-		else if (t.raw || t.nas || t.iscsi)
+		else if ( t.raw && (udv->state == UDV_RAW) )
+		{
 			print = true;
+			strcpy(udv_state, "raw");
+		}
+		else if ( t.nas && (udv->state == UDV_NAS) )
+		{
+			print = true;
+			strcpy(udv_state, "nas");
+		}
+		else if ( t.iscsi && (udv->state == UDV_ISCSI) )
+		{
+			print = true;
+			strcpy(udv_state, "iscsi");
+		}
 
 		if (print)
 		{
-			if (udv->state == UDV_RAW)
-				strcpy(udv_state, "raw");
-			else if (udv->state == UDV_NAS)
-				strcpy(udv_state, "nas");
-			else if (udv->state == UDV_ISCSI)
-				strcpy(udv_state, "iscsi");
-
 			if (printed==0)
 				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
 						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
