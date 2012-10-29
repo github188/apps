@@ -187,17 +187,25 @@ def md_create(mdname, level, chunk, slots):
         return False, "创建卷组失败"
     return True, "创建卷组成功"
 
+def __md_remove_devnode(mddev):
+    try:
+        os.remove(mddev)
+    except:
+        pass
+    return
+
 def md_del(mdname):
     mddev = md_get_mddev(mdname)
     if (mddev == None):
-        return "Can't find %s" % mdname
+	    return False, "卷组 %s 不存在!" % mdname
     disks = mddev_get_disks(mddev)
     sts = md_stop(mddev)
     if sts != 0:
-        return False,"停止%s失败" % mdname
+	    return False,"停止%s失败" % mdname
+    __md_remove_devnode(mddev)
     res = set_disks_free(disks)
     if res != "":
-        return False,"清除磁盘信息失败，请手动清除"
+	    return False,"清除磁盘信息失败，请手动清除"
     return True,"删除卷组成功"
 
 def md_info_mddevs(mddevs=None):
