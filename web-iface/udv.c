@@ -51,10 +51,6 @@ enum {
 	UDV_MODE_NONE
 };
 
-enum {
-	MSG_OK = 1,
-	MSG_ERROR
-};
 
 static int mode = UDV_MODE_NONE;	// for create & rename
 
@@ -67,19 +63,6 @@ static uint64_t capacity = 0;
 static char m_old_name[128] = {0};
 static char m_new_name[128] = {0};
 
-void return_json_msg(const int type, const char *msg)
-{
-	if (MSG_OK == type)
-	{
-		fprintf(stdout, "{\"status\":true, \"msg\":\"%s\"}\n", msg);
-		exit(0);
-	}
-	else
-	{
-		fprintf(stdout, "{\"status\":false, \"msg\":\"%s\"}\n", msg);
-		exit(-1);
-	}
-}
 
 typedef struct _list_type list_type_t;
 struct _list_type{
@@ -89,7 +72,8 @@ struct _list_type{
 void list_udv(list_type_t t)
 {
 	udv_info_t list[MAX_UDV], *udv;
-	size_t udv_cnt = 0, i, printed = 0;
+	size_t udv_cnt = 0, i;
+	int printed = 0;
 
 	char udv_state[128];
 	bool print = false;
@@ -182,7 +166,7 @@ int get_udv_remain()
 	}
 
 	return printf("{\"vg\":\"%s\",\"max_avaliable\":%llu,\"max_single\":%llu}\n",
-			vg_name, max_remain, max_single);
+			vg_name, (unsigned long long)max_remain, (unsigned long long)max_single);
 }
 
 

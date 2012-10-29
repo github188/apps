@@ -39,4 +39,6 @@ int external_main(int argc, char *argv[]);
 
 int python_cmd_main(int argc, char *argv[]);
 
+int log_main(int argc, char *argv[]);
+
 #endif/*__WEB_IFACE_H__*/

@@ -12,4 +12,11 @@
 
 void error_out(const char *fmt, ...);
 
+enum {
+	MSG_OK = 1,
+	MSG_ERROR
+};
+
+void return_json_msg(const int type, const char *msg);
+
 #endif/*__WEB_IFACE_COMMON*/
