@@ -345,13 +345,13 @@ ssize_t udv_delete(const char *name)
         if (!name)
                 return E_FMT_ERROR;
 
-	// 检查是否已经映射
-	if (isISCSIVolume(name) || isNasVolume(name))
-		return E_UDV_MOUNTED;
-
         // 查找UDV
         if (!(udv=get_udv_by_name(name)))
                 return E_UDV_NONEXIST;
+
+	// 检查是否已经映射
+	if (isISCSIVolume(name) || isNasVolume(name))
+		return E_UDV_MOUNTED;
 
         // 删除分区
         if (!(device = ped_device_get(udv->vg_dev)))
@@ -363,11 +363,15 @@ ssize_t udv_delete(const char *name)
         if (!(part = ped_disk_get_partition(disk, udv->part_num)))
                 goto error;
 
-        if (ped_disk_delete_partition(disk, part) &&
-                ped_disk_commit(disk))
-                goto success;
+        if (! (ped_disk_delete_partition(disk, part) &&
+                ped_disk_commit(disk)) )
+                goto error;
 
-success:
+	// 删除设备节点
+	if (unlink(udv->dev))
+		goto error;
+
+//success:
         return E_OK;
 error:
         ped_device_destroy(device);
@@ -491,8 +495,14 @@ udv_info_t* get_udv_by_name(const char *name)
                                 udv->geom.capacity = part->geom.length * DFT_SECTOR_SIZE;
                                 udv->geom.end = udv->geom.start + udv->geom.capacity - 1;
 
-                                // TODO: udv->state;
-				udv->state = UDV_RAW; // for debug
+				sprintf(udv->dev, "%sp%d", udv->vg_dev, udv->part_num);
+
+				if (isISCSIVolume(udv->dev))
+					udv->state = UDV_ISCSI;
+				else if (isNasVolume(udv->name))
+					udv->state = UDV_NAS;
+				else
+					udv->state = UDV_RAW;
 
 				ped_disk_destroy(disk);
 				return udv;
