@@ -97,8 +97,8 @@ def __md_fill_attr(str):
     attr["raid_state"] = __find_attr(str, "State : (.*)", __state_post)
     attr["raid_strip"] = __find_attr(str, "Chunk Size : ([0-9]+[KMG])",
                                      __chunk_post)
-    rebuild_per = __find_attr(str, "Rebuild Status : ([0-9])\%")
-    resync_per = __find_attr(str, "Resync Status : ([0-9])\%")
+    rebuild_per = __find_attr(str, "Rebuild Status : ([0-9]+)\%")
+    resync_per = __find_attr(str, "Resync Status : ([0-9]+)\%")
     if rebuild_per:
         attr["raid_rebuild"] = rebuild_per
     elif resync_per:
