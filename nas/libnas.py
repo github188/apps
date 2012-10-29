@@ -107,6 +107,20 @@ def __get_nas_volume_remain(nas_volume):
 def __get_nas_volume_occupancy(nas_volume):
 	return __get_nas_volume_capacity(nas_volume) - __get_nas_volume_remain(nas_volume)
 
+# 获取nas卷的文件系统类型
+def __get_nas_volume_fstype(nas_volume):
+	fstype = 'unknown'
+	try:
+		f = open('/proc/mounts')
+		for x in f.readlines():
+			if x.find(nas_volume) >= 0:
+				fstype = x.split()[2]
+				break
+		f.close()
+	except:
+		pass
+	return fstype
+
 #------------------------------------------------------------------------------
 
 """
@@ -221,7 +235,7 @@ def nas_conf_get_list():
 			nas_conf.capacity = __get_nas_volume_capacity(nas_conf.path)
 			nas_conf.occupancy = __get_nas_volume_occupancy(nas_conf.path)
 			nas_conf.remain = __get_nas_volume_remain(nas_conf.path)
-			nas_conf.fs_type = 'ext3'
+			nas_conf.fs_type = __get_nas_volume_fstype(nas_conf.path)
 			nas_conf_list.append(nas_conf.__dict__)
 	except:
 		pass
