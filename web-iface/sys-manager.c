@@ -77,10 +77,7 @@ int main(int argc, char *argv[])
 	while (p->cmd)
 	{
 		if (!strcmp(cmd_name, p->name))
-		{
-			p->cmd(cmd_argc, cmd_argv);
-			break;
-		}
+			return p->cmd(cmd_argc, cmd_argv);
 		p++;
 	}
 
