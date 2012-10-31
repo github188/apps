@@ -1,14 +1,14 @@
 #include "web-iface.h"
 
 struct cmd_map cmd_map[] = {
-	{"udv", udv_main},
-	{"disk", external_main},
-	{"vg", external_main},
-	{"iscsi", python_cmd_main},
-	{"nas", python_cmd_main},
-	{"network", python_cmd_main},
-	{"log", log_main},
-	{"", NULL}
+  {"udv", udv_main},
+  {"disk", external_main},
+  {"vg", external_main},
+  {"iscsi", python_cmd_main},
+  {"nas", python_cmd_main},
+  {"network", python_cmd_main},
+  {"nasconf", python_cmd_main},
+  {"", NULL}
 };
 
 void usage()
@@ -20,7 +20,7 @@ void usage()
 	printf("      iscsi     - iSCSI接口\n");
 	printf("      nas       - NAS接口\n");
 	printf("      network   - 网络管理\n");
-	printf("      log       - 日志命令接口\n");
+  	printf("      nasconf   - NAS配置文件接口\n");
 	exit(0);
 }
 
