@@ -87,6 +87,9 @@ def do_run(dev, mnt, filesystem):
 			nas_tmpfs_set_value('state', 'mount-error')
 			return
 
+		# 设置访问权限 777
+		os.chmod(mnt, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+
 		# 加入配置文件
 		ret,msg = nas_conf_add(dev, mnt)
 		if not ret:
