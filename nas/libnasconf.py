@@ -4,6 +4,8 @@
 import os
 import statvfs
 import sys
+import stat
+import shutil
 import commands
 import json
 import codecs
@@ -35,15 +37,15 @@ def SYSTEM_OUT(com):
 	s = s.replace('\n','')
 	return s
 
-def networkUsage(err=""):
+def AUsage(err=""):
 	if err != "":
 		print '##命令参数不正确，错误提示： %s' % err
 	else:
 		print '##命令参数不正确，请检查要执行的命令模式！'
 	print """
-network --list [ --name <nas_name>]
+nasconf --list [ --name <nas_name>]
 	--add --name <nas_name> --path <nas_path> [--write  <write list> --read <read list> --invalid <invalid users> --browsable <yes|no> --oplocks <yes|no> --ftpwrite <yes|no> --public <yes|no> --inherit <yes|no> --comment <Remark>]
-	--edit --basic [-name <nas_name> [--new <New name> --comment <Remark> --browsable <yes|no> --oplocks <yes|no>] ##基本信息修改
+	--edit --basic [--name <nas_name> [--new <New name> --comment <Remark> --browsable <yes|no> --oplocks <yes|no>] ##基本信息修改
 	--edit --access --name <nas_name> [--write  <write list> --read <read list> --invalid <invalid users>]##修改访问权限
 	--edit --nasallow --name <nas_name> --allow <hosts allow[format: (192.168.11.10 * EXCEPT 192.188.22.* 10.11.20.22)]> ##修改NAS访问控制列表
 	--edit --nfsallow --name <nas_name> --allow <hosts allow[format: (192.168.*(rw,async,no_root_squash,insecure) 10.1.0*(ro,async,no_root_squash,insecure))]> ##修改NFS访问控制列表
@@ -79,15 +81,15 @@ def censor(name):
 def check(value):	if value.new_set == '':
 		Export(False, '共享名称不能为空！')
 	if value.name_set == '':		if config.has_section(value.new_set) == True:
-			Export(False, '新共享名称已存在！')
+			Export(False, '新共享名称 "'+value.new_set+'" 已存在！')
 		else:
-			Export(True, '新共享名称可用！')
+			Export(True, '新共享名称 "'+value.new_set+'" 可用！')
 	else:
 		if value.name_set != value.new_set:
 			if config.has_section(value.new_set) == True:
-				Export(False, '新共享名称已存在！')
+				Export(False, '新共享名称 "'+value.new_set+'" 已存在！')
 			else:
-				Export(True, '新共享名称可用！')
+				Export(True, '新共享名称 "'+value.new_set+'" 可用！')
 		else:
 			Export(True, '新共享名称可用！')
 
@@ -160,6 +162,19 @@ def nas_list(value):
 		json_info['valid users'] = deviant(value.name_set, "valid users")
 		json_info['inherit permissions'] = deviant(value.name_set, "inherit permissions")
 		json_info['hosts allow'] = deviant(value.name_set, "hosts allow")
+		nfs_conf = open (NFS_CONF_PATH, 'r')
+		nfs_allow = ''
+		try:
+			fileList = nfs_conf.readlines()
+			path = json_info['path']+' '
+			for fileLine in fileList:
+				if len(fileLine.split(path)) > 1:
+					nfs_allow = fileLine.replace(path,'')
+					exist = False
+			nfs_conf.close()
+		except:
+			nfs_conf.close()
+		json_info['nfs_allow'] = nfs_allow
 	else:
 		list = []
 		json_info = {'total':0, 'rows':[]}
@@ -178,7 +193,7 @@ def nas_list(value):
 			Catalog = 0
 			browsable = 0
 			if os.path.exists(Path) == True:
-				nfs_stat = SYSTEM_OUT('cat '+NFS_CONF_PATH+'|grep "^'+Path+'"|wc -l')
+				nfs_stat = SYSTEM_OUT('cat '+NFS_CONF_PATH+'|grep "^'+Path+' "|wc -l')
 				space = '%d/%d' % (get_dir_size(Path),get_nas_remain(deviant(name, "path")))
 				Catalog = SYSTEM_OUT('find '+Path+' -type d|wc -l')
 				browsable = SYSTEM_OUT('find '+Path+' -type f|wc -l')
@@ -231,9 +246,11 @@ def add(value):
 		config.set(value.name_set, 'inherit permissions', value.inherit_set)
 		config.set(value.name_set, 'hosts allow', '*')
 		config.write(open(SMB_CONF_PATH, 'w'))
-		Export(True, '增加NAS成功！')
+		os.mkdir(value.path_set) 
+		os.chmod(value.path_set, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+		Export(True, '增加共享 "'+value.name_set+'" 成功！')
 	else:
-		Export(False, '共享名称已经存在！')
+		Export(False, '共享 "'+value.name_set+'" 的名称已经存在！')
 
 def edit(value):
 	censor(value.name_set)
@@ -264,7 +281,7 @@ def edit(value):
 				config.set(value.new_set, 'hosts allow', deviant(value.name_set, "hosts allow"))
 				config.remove_section(value.name_set)
 			else:
-				 Export(False, '新共享名称已存在！')
+				 Export(False, '共享 "'+value.new_set+ '" 的名称已存在！')
 		else:	
 			if value.comment_state == True:
 				config.set(value.name_set, 'comment', value.comment_set) 
@@ -273,7 +290,7 @@ def edit(value):
 			if value.oplocks_state == True:
 				config.set(value.name_set, 'oplocks', value.oplocks_set) 
 		config.write(open(SMB_CONF_PATH, 'w'))
-		Export(True, 'NAS基本信息修改成功！')
+		Export(True, 'NAS "'+value.name_set+'" 的基本信息修改成功！')
 	elif value.access_set == True:
 		if value.write_set.strip() != "":
 			value.write_set = 'root,'+value.write_set.strip()
@@ -296,25 +313,25 @@ def edit(value):
 		config.set(value.name_set, 'write list', ','.join(write)) 
 		config.set(value.name_set, 'valid users', ','.join(list(set(valid))))
 		config.write(open(SMB_CONF_PATH, 'w'))
-		Export(True, 'NAS访问权限修改成功！')
+		Export(True, '共享NAS "'+value.name_set+'" 的安全策略修改成功！')
 	elif value.nasallow_set == True:
 		if value.allow_set == '':
 			value.allow_set = '*'
 		config.set(value.name_set, 'hosts allow', value.allow_set)
 		config.write(open(SMB_CONF_PATH, 'w'))
-		Export(True, 'NAS安全策略修改成功！')
+		Export(True, '共享NAS "'+value.name_set+'" 的安全策略修改成功！')
 	elif value.nfsallow_set == True:
 		nfs_conf = open (NFS_CONF_PATH, 'r')
 		try:
 			fileList = nfs_conf.readlines()
-			path = config.get(value.name_set, "path")
+			path = config.get(value.name_set, "path")+' '
 			file = ''
 			exist = True
 			for fileLine in fileList:
 				if len(fileLine) > 2:
 					if len(fileLine.split(path)) > 1:
 						if value.allow_set != '':
-							file = file + path + ' '+ value.allow_set +'\n'
+							file = file + path + value.allow_set +'\n'
 							exist = False
 						else:
 							exist = False
@@ -327,9 +344,9 @@ def edit(value):
 		if exist == True:
 			operating = open(NFS_CONF_PATH, 'a')
 			try:
-				operating.write(path + ' '+ value.allow_set +'\n')
+				operating.write(path +  value.allow_set +'\n')
 				operating.close()
-				Export(True, 'NFS安全策略修改成功！')
+				Export(True, '共享NFS "'+value.name_set+'" 的安全策略修改成功！')
 			except:
 				operating.close()
 		else:
@@ -337,7 +354,7 @@ def edit(value):
 			try:
 				operating.write(file)
 				operating.close()
-				Export(True, 'NFS安全策略修改成功！')
+				Export(True, '共享NFS "'+value.name_set+'" 的安全策略修改成功！')
 			except:
 				operating.close()
 		SYSTEM_OUT('exportfs -r')
@@ -345,11 +362,11 @@ def edit(value):
 		print xix.read()
 		xix.close()
 	else:
-		networkUsage()
+		AUsage()
 
 def NASdel(value):
 	censor(value.name_set)
-	path = config.get(value.name_set, "path")
+	path = config.get(value.name_set, "path")+' '
 	result = config.remove_section(value.name_set)
 	exist = True
 	if result == True:
@@ -376,8 +393,8 @@ def NASdel(value):
 				operating.close()
 			
 		if os.path.exists(path) == True:
-			os.system('rm -rf ' +path)
-		Export(True, 'NAS共享删除成功！')
+			shutil.rmtree(path)
+		Export(True, '删除" '+value.name_set+' "共享成功！')
 	else:
-		Export(False, '删除失败，请重新操作！')
+		Export(False, '删除" '+value.name_set+' "共享失败，请重新操作！')
 	
