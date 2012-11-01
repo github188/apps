@@ -331,10 +331,10 @@ int udv_main(int argc, char *argv[])
 				capacity = atoll(optarg);
 				continue;
 			case 'd':  // --delete <udv_name>
-				//x = udv_delete(optarg);
+				x = udv_delete(optarg);
 				//printf("x = %d\n", x);
-				//if (x>=0)
-				if (udv_delete(optarg)>=0)
+				if (x>=0)
+				//if (udv_delete(optarg)>=0)
 					return_json_msg(MSG_OK, "删除用户数据卷成功!");
 				else
 					return_json_msg(MSG_ERROR, "删除用户数据卷失败!");
