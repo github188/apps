@@ -308,6 +308,7 @@ int udv_main(int argc, char *argv[])
 	char err_msg[256];
 
 	t.raw = t.iscsi = t.nas = false;
+	int x;
 
 	//opterr = 0;  // 关闭错误提示
 	while( (c=getopt_long(argc, argv, "", udv_options, NULL)) != -1 )
@@ -330,6 +331,9 @@ int udv_main(int argc, char *argv[])
 				capacity = atoll(optarg);
 				continue;
 			case 'd':  // --delete <udv_name>
+				//x = udv_delete(optarg);
+				//printf("x = %d\n", x);
+				//if (x>=0)
 				if (udv_delete(optarg)>=0)
 					return_json_msg(MSG_OK, "删除用户数据卷成功!");
 				else
