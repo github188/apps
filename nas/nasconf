@@ -106,7 +106,7 @@ local master = yes
 		conf_file.close()
 
 	print '##恢复出厂设置成功。\n'
-	networkUsage()
+	AUsage()
 	sys.exit(-1)
 
 
@@ -120,7 +120,7 @@ def main():
 	try:
 		opts, args = getopt.gnu_getopt(sys.argv[1:], '', long_opt)
 	except getopt.GetoptError, e:
-		networkUsage(e)
+		AUsage(e)
 
 	iArgs = IArgs()
 	for opt,arg in opts:
@@ -194,7 +194,7 @@ def main():
 	elif iArgs.default_set == True:
 		get_default()
 	else:
-		networkUsage()
+		AUsage()
 
 if __name__ == '__main__':
 	main()
