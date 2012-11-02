@@ -7,6 +7,9 @@ import json
 import commands
 import stat
 
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 NAS_CONF_FILE = '/etc/rc.local'
 NAS_CONF_START_SEP = '# *** JW-NAS-CONF-START ***'
 NAS_CONF_END_SEP = '# *** JW-NAS-CONF-END ***'
@@ -311,7 +314,7 @@ def nasGetList(volume_name):
 		return nas_list
 	tmp_list = []
 	for x in nas_list:
-		if x.volume_name == volume_name:
+		if x['volume_name'] == volume_name:
 			tmp_list.append(x)
 			break
 	return tmp_list
@@ -371,6 +374,8 @@ if __name__ == '__main__':
 	#	print x.__dict__
 	#for x in nas_mount_get_list():
 	#	print x.__dict__
+	print nasGetList('Udv299_1')
+"""
 	for x in nas_conf_get_list():
 		print x
 
@@ -379,6 +384,7 @@ if __name__ == '__main__':
 	print msg
 	ret,msg = nas_conf_remove('/mnt/Share/udv2')
 	print msg
+"""
 """
 
 	if nas_conf_is_exist('/mnt/Share/udv2'):
