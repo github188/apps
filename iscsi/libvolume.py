@@ -37,6 +37,34 @@ def isDevNodeUsed(udv_dev):
 			return True
 	return False
 
+# 返回udv name ，如果不存在，则返回为空
+def __get_udv_name_bydev(udv_dev):
+	udv_name = ''
+	try:
+		ext_cmd = 'sys-manager udv --get-name-bydev %s' % udv_dev
+		result = commands.getoutput(ext_cmd)
+		udv_info = json.loads(result)
+		if udv_info['status']:
+			udv_name = udv_info['udv_name']
+	except:
+		pass
+	return udv_name
+
+# 返回获取结果和出错原因
+def __get_udv_dev_byname(udv_name):
+	try:
+		ext_cmd = 'sys-manager udv --get-dev-byname %s' % udv_name
+		result = commands.getoutput(ext_cmd)
+		udv_info = json.loads(result)
+		if not udv_info['status']:
+			return (False, udv_info['msg'])
+		else:
+			return (True, udv_info['udv_dev'])
+	except IOError, e:
+		return (False, '获取用户数据卷信息失败:' + e)
+	except:
+		return (False, '获取用户数据卷信息失败:未知错误')
+
 def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', nv_cache = 'enable'):
 	if not blocksize in VOL_BLOCK_SIZE:
 		return (False, '映射iSCSI数据卷失败！Block Size参数不正确！')
@@ -44,7 +72,10 @@ def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', nv_cache = 'enable
 		return (False, '映射iSCSI数据卷失败！Read Only参数不正确！')
 	if not nv_cache in VOL_BOOL_MAP:
 		return (False, '映射iSCSI数据卷失败！NV CACHE参数不正确！')
-	udv_dev = getUdvDevByName(udv_name)
+	udv_ok,msg = __get_udv_dev_byname(udv_name)
+	if not udv_ok:
+		return (False, '映射iSCSI数据卷失败！%s' % msg)
+	udv_dev = msg
 	if isDevNodeUsed(udv_dev):
 		return (False, '映射iSCSI数据卷失败！用户数据卷 %s 已经被使用！' % udv_name)
 
@@ -89,7 +120,7 @@ def getVolumeInfo(volume_name):
 	vol = iSCSIVolume()
 	vol.volume_name = volume_name
 	vol.udv_dev = AttrRead(vol_full_path, 'filename')
-	vol.udv_name = getUdvNameByDev(vol.udv_dev)
+	vol.udv_name = __get_udv_name_bydev(vol.udv_dev)
 	vol.capacity = int(AttrRead(vol_full_path, 'size_mb')) * 1024 * 1024
 	vol.blocksize = int(AttrRead(vol_full_path, 'blocksize'))
 	vol.read_only = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'read_only')]
