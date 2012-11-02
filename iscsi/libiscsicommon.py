@@ -100,34 +100,6 @@ def getISCSIProto(tgt_name):
 	proto.MaxXmitDataSegmentLength = int(AttrRead(tgt_full_path, 'MaxXmitDataSegmentLength'))
 	return proto
 
-def getUdvNameByDev(udv_dev):
-	udv_name = ''
-	try:
-		result = commands.getoutput('sys-manager udv --get-name-bydev %s' % udv_dev)
-		udv_info = json.loads(result)
-		if udv_info['status']:
-			udv_name = udv_info['udv_name']
-	except IOError, e:
-		msg = e
-	except:
-		msg = 'unknow error'
-	finally:
-		return udv_name
-
-def getUdvDevByName(udv_name):
-	udv_dev = ''
-	try:
-		result = commands.getoutput('sys-manager udv --get-dev-byname %s' % udv_name)
-		udv_info = json.loads(result)
-		if udv_info['status']:
-			udv_dev = udv_info['udv_dev']
-	except IOError, e:
-		msg = e
-	except:
-		msg = 'unknow error'
-	finally:
-		return udv_dev
-
 def iscsiExit(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
