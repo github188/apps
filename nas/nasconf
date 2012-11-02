@@ -23,6 +23,7 @@ class IArgs:
 		self.access_set = False
 		self.nasallow_set = False
 		self.nfsallow_set = False
+		self.sync_set = False
 		self.level_set = 3
 		self.name_set = ''
 		self.new_set = ''
@@ -113,8 +114,8 @@ local master = yes
 if os.path.exists(SMB_CONF_PATH) == False:
 	get_default()
 
-OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default']
-long_opt = ['list', 'add', 'edit', 'del', 'check', 'default', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'oplocks=', 'ftpwrite=', 'public=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'nfsallow']
+OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default', '--sync']
+long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','sync', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'oplocks=', 'ftpwrite=', 'public=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'nfsallow']
 
 def main():
 	try:
@@ -147,6 +148,8 @@ def main():
 			iArgs.nasallow_set = True
 		elif opt == '--nfsallow':
 			iArgs.nfsallow_set = True
+		elif opt == '--sync':
+			iArgs.sync_set = True
 		elif opt == '--level':
 			iArgs.level_set = arg
 		elif opt == '--name':
@@ -193,6 +196,8 @@ def main():
 		check(iArgs)
 	elif iArgs.default_set == True:
 		get_default()
+	elif iArgs.sync_set == True:
+		get_sync(iArgs)
 	else:
 		AUsage()
 

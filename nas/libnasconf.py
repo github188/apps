@@ -51,6 +51,7 @@ nasconf --list [ --name <nas_name>]
 	--edit --nfsallow --name <nas_name> --allow <hosts allow[format: (192.168.*(rw,async,no_root_squash,insecure) 10.1.0*(ro,async,no_root_squash,insecure))]> ##修改NFS访问控制列表
 	--del --name <nas_name> ##删除
 	--check --new <New name> [--name <nas_name>] ##重名验证
+	--sync --path <volume path>
 	--default
 """
 	sys.exit(-1)
@@ -397,4 +398,36 @@ def NASdel(value):
 		Export(True, '删除" '+value.name_set+' "共享成功！')
 	else:
 		Export(False, '删除" '+value.name_set+' "共享失败，请重新操作！')
-	
+
+#~ 删除NAS卷时，同时 SMB和NFS 删除配置文件
+def get_sync(value):
+	out_list = config.sections()
+	out_list= [i for i in out_list if i!='global']
+	Path = value.path_set+'/'
+	for name in out_list:
+		if len(deviant(name, "path").split(Path)) > 1:
+			config.remove_section(name)
+			nfs_conf = open (NFS_CONF_PATH, 'r')
+	exist = True
+	nfs_conf = open (NFS_CONF_PATH, 'r')
+	try:
+		fileList = nfs_conf.readlines()
+		file = ''
+		for fileLine in fileList:
+			if len(fileLine.split(Path)) > 1:
+				exist = False
+			else:
+				file = file + fileLine
+		nfs_conf.close()
+	except:
+		nfs_conf.close()
+	config.write(open(SMB_CONF_PATH, 'w'))
+	if exist == False:
+		operating = open(NFS_CONF_PATH, 'w')
+		try:
+			operating.write(file)
+			operating.close()
+			SYSTEM_OUT('exportfs -r')
+		except:
+			operating.close()
+
