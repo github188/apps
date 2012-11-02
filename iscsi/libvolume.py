@@ -55,9 +55,27 @@ def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', nv_cache = 'enable
 		return (True, '添加iSCSI数据卷 %s 成功！' % vol_name)
 	return (False, '添加iSCSI数据卷 %s 失败！' % vol_name)
 
+# 检查Vdisk是否有lun在使用
+def isLunExported(volume_name):
+	exp_dir = SCST.VDISK_DIR + os.sep + volume_name + os.sep + 'exported'
+	exported = False
+	try:
+		if os.listdir(exp_dir) == []:
+			exported = False
+		else:
+			exported = True
+	#except OSError:
+	#	exported = False
+	except:
+		exported = False
+	return exported
+
 def iSCSIVolumeRemove(volume_name):
 	if not isVolumeExist(volume_name):
 		return (False, 'iSCSI数据卷 %s 不存在！' % volume_name)
+
+	if isLunExported(volume_name):
+		return (False, '删除iSCSI数据卷失败！iSCSI数据卷正在被其他LUN使用！')
 
 	iscsi_cmd = 'del_device %s' % volume_name
 	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):

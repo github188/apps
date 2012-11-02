@@ -96,15 +96,32 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto'):
 		return (True, '添加LUN映射成功！')
 	return (False, '添加LUN映射失败！')
 
+def __get_vdisk_by_lun(lun_dir):
+	volume = ''
+	try:
+		lun_dev = lun_dir + os.sep + 'device'
+		volume = os.path.basename(os.readlink(lun_dev))
+	except:
+		pass
+	return volume
+
 def iSCSILunUnmap(tgt, lun_id):
 	if not isTargetExist(tgt):
 		return (False, '解除LUN %d 映射失败！Target %s 不存在！' % (lun_id, tgt))
 	if not isLunIdExist(tgt, lun_id):
 		return (False, '解除LUN %d 映射失败！LUN不存在！' % lun_id)
+
 	lun_cmd = 'del %d' % lun_id
 	tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt + '/luns'
+	volume = __get_vdisk_by_lun('%s/%d' % (tgt_luns_dir, lun_id))	# 保留vdisk名称供删除后检查
 	if AttrWrite(tgt_luns_dir, 'mgmt', lun_cmd):
-		return (True, '解除LUN %d 映射成功！' % lun_id)
+		if not isLunExported(volume):
+			if iSCSIVolumeRemove(volume):
+				return (True, '解除LUN %d 映射成功！' % lun_id)
+			else:
+				return (False, '解除LUN %d 映射成功！删除VDISK %s失败！' % (lun_id, volume))
+		else:
+			return (True, '解除LUN %d 映射成功！' % lun_id)
 	return (False, '解除LUN %d 映射失败！' % lun_id)
 
 def iSCSILunGetList(tgt = ''):
