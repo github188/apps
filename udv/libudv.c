@@ -467,6 +467,7 @@ udv_info_t* get_udv_by_name(const char *name)
 	PedDevice *dev = NULL;
 	PedDisk *disk;
 	PedPartition *part;
+	PedDiskType *type = NULL;
 
 	const char *part_name;
 	static udv_info_t udv_info;
@@ -486,7 +487,12 @@ udv_info_t* get_udv_by_name(const char *name)
 #endif
 
 		// 获取当前MD分区信息
-		if ( !(disk=ped_disk_new(dev)) )
+		if ( (type = ped_disk_probe(dev)) && !strcmp(type->name, "gpt") )
+			disk = ped_disk_new(dev);
+		else
+			disk = _create_disk_label(dev, ped_disk_type_get("gpt"));
+
+		if (!disk)
 			continue;
 
 		for (part=ped_disk_next_partition(disk, NULL); part;
