@@ -289,6 +289,8 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	                (unsigned long long)di->size);
 	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim,
 	                disk_get_state(&disk->ri));
+	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim,
+	                disk_get_raid_name(&disk->dev_node));
 	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
 	                disk_get_smart_status(di));
 
