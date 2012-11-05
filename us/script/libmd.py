@@ -196,10 +196,21 @@ def __md_remove_devnode(mddev):
         pass
     return
 
+def __md_used(mdname):
+	try:
+		d = json.loads(commands.getoutput('sys-manager udv --remain-capacity --vg %s' % mdname))
+		if d['max_avaliable'] == d['max_single']:
+			return False
+	except:
+		pass
+	return True
+
 def md_del(mdname):
     mddev = md_get_mddev(mdname)
     if (mddev == None):
 	    return False, "卷组 %s 不存在!" % mdname
+    if __md_used(mdname):
+	    return False, '卷组 %s 存在未删除的用户数据卷，请先删除！' % mdname
     disks = mddev_get_disks(mddev)
     sts = md_stop(mddev)
     if sts != 0:
