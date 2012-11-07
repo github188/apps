@@ -2,6 +2,8 @@
 
 export PATH=/usr/local/bin:$PATH
 
+/usr/local/bin/md-assume.sh
+
 nohup /usr/local/bin/us_d &
 
 modprobe scst
@@ -13,5 +15,9 @@ modprobe iscsi-scst
 cd /sys/kernel/scst_tgt/targets/iscsi
 echo "add_target iqn.2006-10.net.vlnb:tgt" > mgmt
 
-# *** JW-NAS-CONF-START ***'
-# *** JW-NAS-CONF-END ***'
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# *** JW-NAS-CONF-START ***
+# *** JW-NAS-CONF-END ***
