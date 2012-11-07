@@ -29,7 +29,12 @@ rsync -av iscsi/* /usr/local/bin
 
 rsync -av extra/* /usr/local/bin
 
-rsync -av nas/* /usr/local/bin
+rsync -av nas/nas /usr/local/bin
+rsync -av nas/nasconf /usr/local/bin
+rsync -av nas/tr-simple /usr/local/bin
+rsync -av nas/*.py /usr/local/bin
+rsync -av nas/*.sh /usr/local/bin
+rsync -av nas/lib*.py /usr/local/bin
 
 rsync -av sys-conf/* /usr/local/bin
 
