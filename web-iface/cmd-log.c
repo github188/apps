@@ -84,9 +84,9 @@ key_value_s category_map[] = {
 };
 
 key_value_s event_map[] = {
-	{LOG_INFO,	"info"},
-	{LOG_WARNING,	"warning"},
-	{LOG_ERROR,	"error"}
+	{LOG_EV_INFO,	"info"},
+	{LOG_EV_WARNING,	"warning"},
+	{LOG_EV_ERROR,	"error"}
 };
 
 #define __SIZE(map_name) \
