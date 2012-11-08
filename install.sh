@@ -47,4 +47,4 @@ rsync -av sys-conf/* "$target"/usr/local/bin
 rsync -av conf/* "$target"/
 
 #reset_sd
-ldconfig
+[ -z "$target" ] && ldconfig
