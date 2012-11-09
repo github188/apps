@@ -68,8 +68,8 @@ def usage():
     help_str="""
 Usage:
 	--create --name=<vg_name> --level=<0|1|5|6> --strip=<64|128|256> --disk='<disk-slot-list>'
-        --delete <mdname>
-        --list [mdname]
+        --delete <vg_name>
+        --list [vg_name]
 """
     #return False,help_str
     print help_str
