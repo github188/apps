@@ -29,7 +29,7 @@ def __state_post(p):
         return "Unknown"
     state = p[0]
     if state.find("degraded") != -1 :
-        if state.find("recovering"):
+        if state.find("recovering") != -1:
             return "rebuild"
         return "degraded"
     elif state.find("FAILED") != -1:
