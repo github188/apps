@@ -12,8 +12,9 @@ modprobe iscsi-scst
 /usr/local/sbin/iscsi-scstd
 
 # add target
-cd /sys/kernel/scst_tgt/targets/iscsi
-echo "add_target iqn.2006-10.net.vlnb:tgt" > mgmt
+echo "add_target iqn.2006-10.net.vlnb:tgt" > /sys/kernel/scst_tgt/targets/iscsi/mgmt
+echo "1" > /sys/kernel/scst_tgt/targets/iscsi/enabled
+echo "1" > /sys/kernel/scst_tgt/targets/iscsi/iqn.2006-10.net.vlnb:tgt/enabled
 
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
