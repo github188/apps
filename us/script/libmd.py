@@ -165,11 +165,15 @@ def md_get_disks(mdname):
     return mddev_get_disks(mddev)
 
 def md_stop(mddev):
-    cmd = "mdadm -S %s >/dev/null 2>&1" % mddev
+    cmd = "mdadm -S %s 2>&1" % mddev
     sts, out = commands.getstatusoutput(cmd)
+    if out.find('mdadm: stopped') < 0:
+	    return -1,'设备正在被占用!'
     cmd = "rm -f %s >/dev/null 2>&1" % mddev
-    commands.getstatusoutput(cmd)
-    return sts
+    sts,out = commands.getstatusoutput(cmd)
+    if sts != 0:
+	    return -1,'无法删除设备节点!'
+    return sts,''
 
 def md_create(mdname, level, chunk, slots):
     #create raid
@@ -212,9 +216,9 @@ def md_del(mdname):
     if __md_used(mdname):
 	    return False, '卷组 %s 存在未删除的用户数据卷，请先删除！' % mdname
     disks = mddev_get_disks(mddev)
-    sts = md_stop(mddev)
+    sts,msg = md_stop(mddev)
     if sts != 0:
-	    return False,"停止%s失败" % mdname
+	    return False,"停止%s失败!%s" % (mdname, msg)
     __md_remove_devnode(mddev)
     res = set_disks_free(disks)
     if res != "":
