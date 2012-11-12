@@ -21,7 +21,7 @@ do
                 let "disks=disks-1"
         fi
         if [ $disks -eq 0 ] && [ ! -z "$disk_list" ]; then
-                2>/dev/null mdadm -A /dev/md$md_num $disk_list
+                2>/dev/null mdadm -Af /dev/md$md_num $disk_list
                 disks=0
                 disk_list=''
         fi
