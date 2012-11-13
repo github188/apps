@@ -45,13 +45,13 @@ def disks_from_slot(slots):
     return devs,failed_slot
 
 def md_get_mddev(mdname):
-    mddevs = list_files("/dev", "md[0-9]+")
-    for md in mddevs:
-        cmd = "mdadm -Ds %s |grep %s" % (md, mdname)
-        sts,out = commands.getstatusoutput(cmd)
-        if sts == 0:
-            return md
-    return None
+	mddevs = list_files("/dev", "md[0-9]+")
+	for md in mddevs:
+		cmd = "mdadm -Ds %s |grep %s" % (md, mdname)
+	sts,out = commands.getstatusoutput(cmd)
+	if sts == 0:
+		return md
+	return None
 
 def set_disk_free(diskname):
     cmd = "mdadm --zero-superblock %s 2>&1" % diskname
@@ -112,5 +112,3 @@ def set_disks_free(disks):
             res += " " + dev
     disk_name_update(disks)
     return res
-
-
