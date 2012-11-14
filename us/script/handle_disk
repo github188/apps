@@ -15,7 +15,7 @@
 
 import sys,os
 from libmd import *
-from libdiskud import *
+from libdisk import *
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -40,7 +40,7 @@ def get_disk_info(disk_dev):
 		for line in txt.split('\n'):
 			if line.find('Device UUID : ') >= 0:
 				info.uuid = line.split('Device UUID : ')[-1]
-			elif line.fine('Array UUID : ') >= 0:
+			elif line.find('Array UUID : ') >= 0:
 				info.md_uuid = line.split('Array UUID : ')[-1]
 	return info
 
@@ -121,8 +121,10 @@ def __try_md_assume(md_uuid):
 			ret,msg = commands.getoutputstatus(_assume_cmd)
 			if ret == 0:
 				# (TODO)记录日志，重组md成功
+				print '重组VG成功'
 			else:
 				# (TODO)记录日志，重组md失败
+				print '重组VG失败'
 	except:
 		pass
 
@@ -148,6 +150,8 @@ def handle_disk_add_event(disk_dev):
 		return
 	# (TODO)记录磁盘上线信息
 	print '磁盘 %s(%s) 上线' % (disk_info.dev, disk_info.slot)
+	print disk_info.__dict__
+	return
 
 	# 检查磁盘是否包含md信息
 	if disk_info.md_uuid == '':
@@ -184,15 +188,15 @@ def handle_disk_add_event(disk_dev):
 # 删除无效的md设备
 def __remove_md(md_info):
 	cmd_stop_md = 'mdadm --stop %s' % md_info['dev']
-	cmd_rm_dev = 'rm -f %s' % md_info['dev']
-	ret_stop_md = commands.getstatus(cmd)
-	ret_rm_dev = commands.getstatus(cmd)
+	cmd_rm_dev = 'rm -f %s*' % md_info['dev']
+	ret_stop_md,txt = commands.getstatusoutput(cmd_stop_md)
+	ret_rm_dev,txt = commands.getstatusoutput(cmd_rm_dev)
 
 	if ret_stop_md == 0 and ret_rm_dev == 0:
 		# (TODO) 写日志
-		print '卷组 %s 所有磁盘已经掉线，删除卷组成功!' % md_info['name']
+		print '卷组所有磁盘已经掉线，删除卷组成功!'
 	else:
-		print '卷组 %s 所有磁盘已经掉线，删除卷组成功!' % md_info['name']
+		print '卷组所有磁盘已经掉线，删除卷组成功!'
 	return
 
 # 从指定卷组删除掉盘的磁盘
@@ -204,6 +208,12 @@ def __remove_disk_from_md(md_info, disk_info):
 		print '从卷组 %s 删除掉线磁盘 %s 成功!' % (md_info['name'], disk_info.slot)
 	else:
 		print '从卷组 %s 删除掉线磁盘 %s 失败!' % (md_info['name'], disk_info.slot)
+	return
+
+# 仅处理磁盘掉线后产生的md事件
+def __handle_md_event(md_info):
+	# 目前仅处理raid 5,6的事件
+	# 如果是降级，则查看是否配置了全局或者专用热备盘，试图进行重建
 	return
 
 def handle_disk_remove_event(disk_dev):
@@ -225,6 +235,7 @@ def handle_disk_remove_event(disk_dev):
 				__remove_md(md_info)
 			else:
 				__remove_disk_from_md(md_info, disk_info)
+				__handle_md_event(md_info)
 			break
 	return
 

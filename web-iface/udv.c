@@ -69,6 +69,18 @@ struct _list_type{
 	bool iscsi, nas, raw;
 };
 
+static inline void __udv_set_state(char *udv_state_str, udv_state state)
+{
+	if (UDV_RAW == state)
+		strcpy(udv_state_str, "raw");
+	else if (UDV_ISCSI == state)
+		strcpy(udv_state_str, "iscsi");
+	else if (UDV_NAS == state)
+		strcpy(udv_state_str, "nas");
+	else
+		strcpy(udv_state_str, "N/A");
+}
+
 void list_udv(list_type_t t)
 {
 	udv_info_t list[MAX_UDV], *udv;
@@ -105,23 +117,17 @@ void list_udv(list_type_t t)
 				print = false;
 		}
 		else if ( t.raw && (udv->state == UDV_RAW) )
-		{
 			print = true;
-			strcpy(udv_state, "raw");
-		}
 		else if ( t.nas && (udv->state == UDV_NAS) )
-		{
 			print = true;
-			strcpy(udv_state, "nas");
-		}
 		else if ( t.iscsi && (udv->state == UDV_ISCSI) )
-		{
 			print = true;
-			strcpy(udv_state, "iscsi");
-		}
+
 
 		if (print)
 		{
+			__udv_set_state(udv_state, udv->state);
+
 			if (printed==0)
 				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
 						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
@@ -308,7 +314,6 @@ int udv_main(int argc, char *argv[])
 	char err_msg[256];
 
 	t.raw = t.iscsi = t.nas = false;
-	int x;
 
 	//opterr = 0;  // 关闭错误提示
 	while( (c=getopt_long(argc, argv, "", udv_options, NULL)) != -1 )
@@ -331,10 +336,7 @@ int udv_main(int argc, char *argv[])
 				capacity = atoll(optarg);
 				continue;
 			case 'd':  // --delete <udv_name>
-				x = udv_delete(optarg);
-				//printf("x = %d\n", x);
-				if (x>=0)
-				//if (udv_delete(optarg)>=0)
+				if (udv_delete(optarg)>=0)
 					return_json_msg(MSG_OK, "删除用户数据卷成功!");
 				else
 					return_json_msg(MSG_ERROR, "删除用户数据卷失败!");

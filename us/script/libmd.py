@@ -29,7 +29,7 @@ def __state_post(p):
         return "Unknown"
     state = p[0]
     if state.find("degraded") != -1 :
-        if state.find("recovering"):
+        if state.find("recovering") != -1:
             return "rebuild"
         return "degraded"
     elif state.find("FAILED") != -1:
@@ -165,9 +165,15 @@ def md_get_disks(mdname):
     return mddev_get_disks(mddev)
 
 def md_stop(mddev):
-    cmd = "mdadm -S %s >/dev/null 2>&1" % mddev
+    cmd = "mdadm -S %s 2>&1" % mddev
     sts, out = commands.getstatusoutput(cmd)
-    return sts
+    if out.find('mdadm: stopped') < 0:
+	    return -1,'设备正在被占用!'
+    cmd = "rm -f %s >/dev/null 2>&1" % mddev
+    sts,out = commands.getstatusoutput(cmd)
+    if sts != 0:
+	    return -1,'无法删除设备节点!'
+    return sts,''
 
 def md_create(mdname, level, chunk, slots):
     #create raid
@@ -178,7 +184,7 @@ def md_create(mdname, level, chunk, slots):
     if len(devs) == 0:
         return False, "没有磁盘"
     dev_list = " ".join(devs)
-    cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --homehost=%s -f" % (mddev, level, chunk, len(devs), dev_list, mdname)
+    cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, chunk, len(devs), dev_list, mdname)
     if level in ('3', '4', '5', '6', '10', '50', '60'):
         cmd += " --bitmap=internal"
     sts,out = commands.getstatusoutput(cmd)
@@ -194,14 +200,25 @@ def __md_remove_devnode(mddev):
         pass
     return
 
+def __md_used(mdname):
+	try:
+		d = json.loads(commands.getoutput('sys-manager udv --remain-capacity --vg %s' % mdname))
+		if d['max_avaliable'] == d['max_single']:
+			return False
+	except:
+		pass
+	return True
+
 def md_del(mdname):
     mddev = md_get_mddev(mdname)
     if (mddev == None):
 	    return False, "卷组 %s 不存在!" % mdname
+    if __md_used(mdname):
+	    return False, '卷组 %s 存在未删除的用户数据卷，请先删除！' % mdname
     disks = mddev_get_disks(mddev)
-    sts = md_stop(mddev)
+    sts,msg = md_stop(mddev)
     if sts != 0:
-	    return False,"停止%s失败" % mdname
+	    return False,"停止%s失败!%s" % (mdname, msg)
     __md_remove_devnode(mddev)
     res = set_disks_free(disks)
     if res != "":

@@ -7,6 +7,9 @@
 #define _SYS_LOG_H
 
 #define LOG_INVALID_ARG -1
+#define LOG_FILE "/opt/log/jw-log.db"
+#define LOG_TABLE "jwlog"
+#define LOCAL_ADDR "/tmp/.log_socket_do_not_remove"
 
 typedef enum _module log_module_e;
 enum _module
@@ -21,20 +24,50 @@ enum _module
 	LOG_MOD_SYSCONF
 };
 
+static inline const char *_IntToStr(char *name[], int value)
+{
+	int x = 0;
+	while(name[x] != NULL)
+	{
+		if (x==value)
+			return name[x];
+		x++;
+	}
+	return "N/A";
+}
+
+static inline const char *LogModuleStr(log_module_e module)
+{
+	static char *_mod_name[] = {"Unknown", "Web", "Disk", "VG", "UDV", "iSCSI", "NAS", "SysConf", NULL};
+	return _IntToStr(_mod_name, module);
+}
+
 typedef enum _category log_category_e;
 enum _category
 {
-	LOG_CATG_AUTO = 1,
+	LOG_CATG_AUTO = 0,
 	LOG_CATG_MANUAL
 };
+
+static inline const char *LogCategoryStr(log_category_e category)
+{
+	static char *_mod_category[] = {"auto", "manual", NULL};
+	return _IntToStr(_mod_category, category);
+}
 
 typedef enum _event log_event_e;
 enum _event
 {
-	LOG_INFO = 1,
-	LOG_WARNING,
-	LOG_ERROR
+	LOG_EV_INFO = 0,
+	LOG_EV_WARNING,
+	LOG_EV_ERROR
 };
+
+static inline const char *LogEventStr(log_event_e event)
+{
+	static char *_mod_event[] = {"Info", "Warning", "Error", NULL};
+	return _IntToStr(_mod_event, event);
+}
 
 typedef struct _log_stru log_info_s;
 struct _log_stru
@@ -157,6 +190,19 @@ struct _msg_header
 	int req_mode;		// 记录获取模式
 };
 
+enum
+{
+	LOG_REQ_WRITE = 1,
+	LOG_REQ_UNKNOWN
+};
+
+#define MSG_HEADER_INIT(msg, req) \
+	msg->magic = LOG_MAGIC; \
+	msg->req_mode = req;
+
+#define MSG_HEADER_CORRECT(msg) \
+	(msg->magic == LOG_MAGIC)
+
 typedef struct _msg_request msg_request_t;
 struct _msg_request
 {
@@ -170,15 +216,12 @@ struct _msg_request
 	char content[0];		// 内容 (本地传输不考虑报文分片问题)
 };
 
-/* 连接到日志数据库 */
-int db_connect();
+/* -------------------------------------------------------------------------- */
+/* Log Utils                                                                  */
+/* -------------------------------------------------------------------------- */
+bool log_db_exist();
 
-/* 写日志记录 */
-bool db_write(log_module_e module, log_category_e category, log_event_e event, const char *content);
-
-/* 关闭日志数据库 */
-void db_close(int db_handle);
-
+bool log_db_create();
 
 /* -------------------------------------------------------------------------- */
 /*   API                                                                      */

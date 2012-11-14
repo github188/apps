@@ -1,10 +1,16 @@
 CC=gcc
-OBJECTS=log.o
+OBJECTS=log.o log-utils.o
+
+all: liblog.a daemon
 
 liblog.a: $(OBJECTS)
 	ar -rcs liblog.a $(OBJECTS)
 
-all: liblog.a
+daemon: log-daemon.c
+	gcc -o log-daemon log-daemon.c -L$(PWD) -llog -lsqlite3
+
+test: test.c
+	gcc -g -o test-log test.c -L$(PWD) -llog -lsqlite3
 
 clean:
-	rm -fr liblog.a
+	rm -fr liblog.a $(OBJECTS) log-daemon test-log

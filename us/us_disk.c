@@ -18,6 +18,7 @@ struct us_disk {
 	int		slot;
 	int             is_exist :1;
 	int             is_raid : 1;
+	int             is_removed : 1;	// 供磁盘掉线后查询磁盘槽位号信息使用
 	char            dev_node[64];
 	struct disk_info di;
 	struct disk_md_info ri;
@@ -160,6 +161,7 @@ static void add_disk(struct us_disk_pool *dp, const char *dev)
 	}
 
 	disk = &dp->disks[slot];
+	memset(disk, 0, sizeof(*disk));	// 磁盘掉线后会设置is_removed标志，需要清除
 	n = sizeof(disk->dev_node);
 	strncpy(disk->dev_node, dev, n);
 	disk->dev_node[n - 1] = '\0';
@@ -182,6 +184,10 @@ static void remove_disk(struct us_disk_pool *dp, const char *dev)
 	disk = &dp->disks[slot];
 	disk->ref--;
 	memset(disk, 0, sizeof(*disk));
+	// 供磁盘掉线查询磁盘槽位号使用
+	disk->is_removed = 1;
+	disk->slot = slot;
+	strcpy(disk->dev_node, dev);
 }
 
 static int us_disk_on_event(const char *path, const char *dev, int act)
@@ -289,6 +295,8 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	                (unsigned long long)di->size);
 	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim,
 	                disk_get_state(&disk->ri));
+	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim,
+	                disk_get_raid_name(&disk->dev_node));
 	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
 	                disk_get_smart_status(di));
 
@@ -405,7 +413,7 @@ void us_disk_name_to_slot(int fd, char *name)
 	for (i = 0; i < ARRAY_SIZE(us_dp.disks); i++) {
 		struct us_disk *disk = &us_dp.disks[i];
 
-		if (disk->is_exist &&
+		if ((disk->is_removed || disk->is_exist) &&
 		    strcmp(disk->dev_node, name) == 0) {
 			char s[16];
 

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+export PATH=/usr/local/bin:$PATH
+
+/usr/local/bin/md-assume.sh
+
+nohup /usr/local/bin/us_d &
+
+modprobe scst
+modprobe scst_vdisk
+modprobe iscsi-scst
+/usr/local/sbin/iscsi-scstd
+
+# add target
+echo "add_target iqn.2006-10.net.vlnb:tgt" > /sys/kernel/scst_tgt/targets/iscsi/mgmt
+echo "1" > /sys/kernel/scst_tgt/targets/iscsi/enabled
+echo "1" > /sys/kernel/scst_tgt/targets/iscsi/iqn.2006-10.net.vlnb:tgt/enabled
+
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+# *** JW-NAS-CONF-START ***
+# *** JW-NAS-CONF-END ***
