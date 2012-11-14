@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 #include "clog.h"
 #include "us_ev.h"
 #include "types.h"
@@ -13,11 +15,15 @@
 #include "script.h"
 #include "safe_popen.h"
 
+#define DISK_HOTREP_CONF "/opt/disk/disk-hotreplace.xml"
+
 struct us_disk {
 	int		ref;
 	int		slot;
 	int             is_exist :1;
 	int             is_raid : 1;
+	int		is_special : 1;	// 专用热备盘
+	int		is_global : 1;	// 全局热备盘
 	int             is_removed : 1;	// 供磁盘掉线后查询磁盘槽位号信息使用
 	char            dev_node[64];
 	struct disk_info di;
@@ -98,6 +104,41 @@ static int find_disk(struct us_disk_pool *dp, const char *dev)
 	return -1;
 }
 
+const char* __disk_get_hotrep(const char *serial)
+{
+	xmlDocPtr doc;	// 定义文件指针
+	xmlNodePtr node;
+	static char __hotrep_type[128], *hotrep_type = NULL;
+
+	if ( (doc=xmlReadFile(DISK_HOTREP_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL)
+		return NULL;
+
+	// 获取根节点
+	if ((node=xmlDocGetRootElement(doc)) == NULL)
+		goto error_quit;
+
+	// 获取节点内容
+	node = node->xmlChildrenNode;
+	while (node)
+	{
+		xmlChar *type;
+		if( (!xmlStrcmp(node->name, BAD_CAST"disk")) &&
+			(type=xmlGetProp(node, "type"))!=NULL )
+		{
+			hotrep_type = __hotrep_type;
+			strcpy(hotrep_type, type);
+			xmlFree(type);
+			break;
+		}
+		node = node->next;
+	}
+
+error_quit:
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	return hotrep_type;
+}
+
 static void do_update_disk(struct us_disk *disk, int op)
 {
 	const char *dev = disk->dev_node;
@@ -117,6 +158,20 @@ static void do_update_disk(struct us_disk *disk, int op)
 			clog(LOG_ERR,
 			     "%s: get disk raid info failed\n", __func__);
 
+		}
+	}
+
+	if (op & DISK_UPDATE_STATE) {
+		// 从磁盘热备盘配置文件更新磁盘信息
+		const char *hotrep = __disk_get_hotrep(disk->di.serial);
+		printf("update disk, hotrep = %s\n", hotrep);
+		if (hotrep)
+		{
+			disk->is_special = disk->is_global = 0;
+			if (!strcmp(hotrep, "Special"))
+				disk->is_special = 1;
+			else if (!strcmp(hotrep, "Global"))
+				disk->is_global = 1;
 		}
 	}
 }
@@ -275,6 +330,15 @@ static struct us_disk *us_disk_find_by_slot(char *slot)
 
 }
 
+const char *disk_get_state(const struct us_disk *disk)
+{
+	if (disk->is_special)
+		return "Special";
+	else if (disk->is_global)
+		return "Global";
+	return disk_get_md_state(&(disk->ri));
+}
+
 void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 {
 	char buf[4096];
@@ -294,7 +358,7 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	pos += snprintf(pos, end - pos, "%s\"capacity\":%llu", delim,
 	                (unsigned long long)di->size);
 	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim,
-	                disk_get_state(&disk->ri));
+	                disk_get_state(disk));
 	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim,
 	                disk_get_raid_name(&disk->dev_node));
 	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
@@ -435,6 +499,8 @@ void us_disk_update_slot(char *slot, const char *op)
 		update = DISK_UPDATE_SMART;
 	} else if (strcmp(op, "md") == 0) {
 		update = DISK_UPDATE_RAID;
+	} else if (strcmp(op, "state") == 0) {
+		update = DISK_UPDATE_STATE;
 	}
 
 	if (slot == NULL) {

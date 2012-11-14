@@ -6,10 +6,10 @@ CFLAGS = -Wall -O2 -Dclog_level=CL_DEBUG -DDEBUG -g
 else
 CFLAGS = -Wall -O2 -Dclog_level=CL_NONE -DNDEBUG 
 endif
-CFLAGS += -Wstrict-aliasing=0
+CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
 LDFLAGS =
 LDLIBS =
-uslibs = -lev -ludev -latasmart
+uslibs = -lev -ludev -latasmart -lxml2
 progs = us_d mon_test us_cmd
 
 us_modules = us_regex.o us_ev.o us_mon.o us_disk.o us_cmd.o us_cl.o modules.o

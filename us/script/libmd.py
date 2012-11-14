@@ -190,21 +190,21 @@ def md_stop(mddev):
 
 def md_create(mdname, level, chunk, slots):
 	#create raid
-    mddev = md_find_free_mddev()
-    if mddev == None:
-	    return False,"没有空闲的RAID槽位"
-    devs,failed = disks_from_slot(slots)
-    if len(devs) == 0:
-	    return False, "没有磁盘"
-    dev_list = " ".join(devs)
-    cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, chunk, len(devs), dev_list, mdname)
-    if level in ('3', '4', '5', '6', '10', '50', '60'):
-	    cmd += " --bitmap=internal"
-    sts,out = commands.getstatusoutput(cmd)
-    disk_slot_update(slots)
-    if sts != 0 :
-	    return False, "创建卷组失败"
-    return True, "创建卷组成功"
+	mddev = md_find_free_mddev()
+	if mddev == None:
+		return False,"没有空闲的RAID槽位"
+	devs,failed = disks_from_slot(slots)
+	if len(devs) == 0:
+		return False, "没有磁盘"
+	dev_list = " ".join(devs)
+	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, chunk, len(devs), dev_list, mdname)
+	if level in ('3', '4', '5', '6', '10', '50', '60'):
+		cmd += " --bitmap=internal"
+	sts,out = commands.getstatusoutput(cmd)
+	disk_slot_update(slots)
+	if sts != 0 :
+		return False, "创建卷组失败"
+	return True, "创建卷组成功"
 
 def __md_remove_devnode(mddev):
 	try:
@@ -244,7 +244,7 @@ def md_info_mddevs(mddevs=None):
 	md_no = len(mddevs)
 	md_attrs = [];
 	for mddev in mddevs:
-	    attr = mddev_get_attr(mddev)
+		attr = mddev_get_attr(mddev)
 	if (attr):
 		md_attrs.append(attr)
 	return {"total": md_no, "rows": md_attrs}
@@ -253,7 +253,7 @@ def md_info(mdname=None):
 	if (mdname == None):
 		mddevs = None;
 	else:
-	    mddevs = [md_get_mddev(mdname)];
+		mddevs = [md_get_mddev(mdname)];
 	return md_info_mddevs(mddevs);
 
 # -----------------------------------------------------------------------------
@@ -281,12 +281,12 @@ def disk_name2serial(name):
 
 # 获取磁盘状态
 # 返回的状态:
-#    * Free  - 空闲盘         (*)
-#    * Special - 专用热备盘   (*)
-#    * Global  - 全局热备盘   (*)
-#    * Invalid - 无效RAID盘   (*)
-#    * RAID    - RAID数据盘
-#    * N/A     - 获取状态失败
+#	* Free  - 空闲盘		 (*)
+#	* Special - 专用热备盘   (*)
+#	* Global  - 全局热备盘   (*)
+#	* Invalid - 无效RAID盘   (*)
+#	* RAID	- RAID数据盘
+#	* N/A	 - 获取状态失败
 def disk_get_state(slot):
 	state = 'N/A'
 	try:
@@ -317,8 +317,8 @@ def __set_attrvalue(node, attr, value):
 	return node.setAttribute(attr, value)
 
 # 设置磁盘管理类型：
-#    * global   - 全局热备盘
-#    * special  -  专用热备盘
+#	* global   - 全局热备盘
+#	* special  -  专用热备盘
 def disk_set_type(slot, disk_type, mdname=''):
 
 	md_uuid = ''
@@ -384,13 +384,12 @@ def disk_set_type(slot, disk_type, mdname=''):
 		root.appendChild(disk_node)
 
 	# 更新xml配置文件
-	#f = open('/tmp/.disk-hot.xml', 'w')
 	f = open(DISK_HOTREP_CONF, 'w')
 	doc.writexml(f, encoding='utf-8')
 	f.close()
-	#os.rename('/tmp/.disk-hot.xml', DISK_HOTREP_CONF)
 
 	# 通知disk监控进程
+	disk_slot_update(slot)
 	return True, '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
 
 # 获取热备盘
@@ -453,11 +452,11 @@ if __name__ == "__main__":
 
 	ret,msg = disk_set_type('0:6', 'Global')
 	print msg
+	sys.exit(0)
 
 	ret,msg = disk_set_type('0:6', 'Special', 'RD2012117135019')
 	print msg
 
-	sys.exit(0)
 	ret,msg = disk_get_hotrep_by_md('RD2012117135019')
 	print msg
 
