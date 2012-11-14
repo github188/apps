@@ -245,8 +245,8 @@ def md_info_mddevs(mddevs=None):
 	md_attrs = [];
 	for mddev in mddevs:
 		attr = mddev_get_attr(mddev)
-	if (attr):
-		md_attrs.append(attr)
+		if (attr):
+			md_attrs.append(attr)
 	return {"total": md_no, "rows": md_attrs}
 
 def md_info(mdname=None):
@@ -321,33 +321,35 @@ def __set_attrvalue(node, attr, value):
 #	* special  -  专用热备盘
 def disk_set_type(slot, disk_type, mdname=''):
 
-	md_uuid = ''
+	disk_type_map = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
+
 	if slot == '':
 		return False, '请输入磁盘槽位号!'
-
-	if disk_type == 'Global':
-		if mdname != '':
-			return False, '参数不正确:全局热备盘不需要设置卷组名称!'
-	elif disk_type == 'Special':
-		if mdname == '':
-			return False, '参数不正确:专用热备盘必须指定卷组名称!'
-		for mdinfo in md_info(mdname)['rows']:
-			if mdinfo['name'] == mdname:
-				md_uuid = mdinfo["raid_uuid"]
-		if md_uuid == '':
-			return False, '卷组不存在，请检查参数!'
-	elif disk_type == 'Free':
-		if mdname != '':
-			return False, '参数不正确:设置磁盘空闲盘状态不需要指定卷组名称!'
-	else:
-		return False, '参数不正确:请指定需要设置的磁盘类型'
 
 	state = disk_get_state(slot)
 	if state == 'N/A':
 		return False, '无法获取槽位号为 %s 的磁盘状态!' % slot
-
-	if state == 'RAID':
+	elif state == 'RAID':
 		return False, '槽位号为 %s 的磁盘是RAID盘，无法设置热备盘!' % slot
+	elif state == disk_type:
+		return False, '槽位号为 %s 磁盘已经是%s，无需设置!' % (slot, disk_type_map[state])
+
+	md_uuid = ''
+	if disk_type == 'Special':
+		if mdname == '':
+			return False, '参数不正确,设置专用热备盘必须指定卷组名称!'
+		for mdinfo in md_info(mdname)['rows']:
+			if mdinfo['name'] == mdname:
+				md_uuid = mdinfo["raid_uuid"]
+		if md_uuid == '':
+			return False, '卷组 %s 不存在，请检查参数!' % mdname
+	elif disk_type == 'Free':
+		disk_clean_hotrep(slot)
+		set_disk_free(disk_name(slot))
+		disk_slot_update(slot)
+		return True, '设置槽位号为 %s 的磁盘为空闲盘成功!' % slot
+	elif disk_type != 'Global':
+		return False, '参数不正确:请指定需要设置的磁盘类型'
 
 	__check_disk_hotrep_conf()
 
@@ -419,7 +421,7 @@ def disk_get_hotrep_by_md(name):
 	return False, '未配置热备盘!'
 
 # 设置热备盘被使用
-def disk_set_hotrep_used(slot):
+def disk_clean_hotrep(slot):
 	try:
 		doc = minidom.parse(DISK_HOTREP_CONF)
 	except IOError,e:

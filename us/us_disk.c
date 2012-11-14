@@ -119,6 +119,7 @@ const char* __disk_get_hotrep(const char *serial)
 
 	// 获取节点内容
 	node = node->xmlChildrenNode;
+	memset(__hotrep_type, 0, sizeof(__hotrep_type));
 	while (node)
 	{
 		xmlChar *type;

@@ -54,19 +54,21 @@ def diskDetailProc(arg = diskArgs()):
 	listORdetailProc(arg)
 
 def diskSetProc(arg = diskArgs()):
+	disk_type_map = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 	if not arg.set_mode:
 		return
-	if arg.type_set != 'free':
-		diskExit(False, '目前暂不支持此操作!')
+	for slot in arg.slot_list:
+		ret,msg = disk_set_type(slot, arg.type_set, arg.vg_name)
+		if ret != True:
+			diskExit(ret, msg)
 
-	ret,msg = set_slots_free(arg.slot_list)
-	diskExit(ret, msg)
+	diskExit(True, '设置磁盘 %s 为%s成功!' % (str(arg.slot_list), disk_type_map[arg.type_set]))
 
 def diskUsage():
 	print """
 disk --list [--slot-id <id>]
      --get-detail <slot_id>
-     --set <slot_id>[,<slot_id>...] --type <special-spare|global-spare|free> [--vg <name>]
+     --set <slot_id>[,<slot_id>...] --type <Special|Global|Free> [--vg <name>]
 """
 
 def disk_main(argv):
@@ -91,8 +93,6 @@ def disk_main(argv):
 			disk_arg.type_set = arg
 		elif opt == '--vg':
 			disk_arg.vg_name = arg
-	if disk_arg.set_mode:
-		disk_arg.slot_list = disk_arg.slot_list + args
 
 	diskListProc(disk_arg)
 	diskDetailProc(disk_arg)
