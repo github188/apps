@@ -54,7 +54,6 @@ def diskDetailProc(arg = diskArgs()):
 	listORdetailProc(arg)
 
 def diskSetProc(arg = diskArgs()):
-	disk_type_map = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 	if not arg.set_mode:
 		return
 	for slot in arg.slot_list:
@@ -62,7 +61,7 @@ def diskSetProc(arg = diskArgs()):
 		if ret != True:
 			diskExit(ret, msg)
 
-	diskExit(True, '设置磁盘 %s 为%s成功!' % (str(arg.slot_list), disk_type_map[arg.type_set]))
+	diskExit(True, '设置磁盘 %s 为%s成功!' % (str(arg.slot_list), DISK_TYPE_MAP[arg.type_set]))
 
 def diskUsage():
 	print """

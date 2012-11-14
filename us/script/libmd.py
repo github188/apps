@@ -16,6 +16,7 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 <hot_replace>
 </hot_replace>
 """
+DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 
 def __def_post(p):
 	if len(p) == 0:
@@ -321,7 +322,6 @@ def __set_attrvalue(node, attr, value):
 #	* special  -  专用热备盘
 def disk_set_type(slot, disk_type, mdname=''):
 
-	disk_type_map = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 
 	if slot == '':
 		return False, '请输入磁盘槽位号!'
@@ -330,9 +330,9 @@ def disk_set_type(slot, disk_type, mdname=''):
 	if state == 'N/A':
 		return False, '无法获取槽位号为 %s 的磁盘状态!' % slot
 	elif state == 'RAID':
-		return False, '槽位号为 %s 的磁盘是RAID盘，无法设置热备盘!' % slot
+		return False, '槽位号为 %s 的磁盘是RAID盘，无法设置%s!' % (slot, DISK_TYPE_MAP[disk_type])
 	elif state == disk_type:
-		return False, '槽位号为 %s 磁盘已经是%s，无需设置!' % (slot, disk_type_map[state])
+		return False, '槽位号为 %s 磁盘已经是%s，无需设置!' % (slot, DISK_TYPE_MAP[state])
 
 	md_uuid = ''
 	if disk_type == 'Special':
@@ -396,29 +396,29 @@ def disk_set_type(slot, disk_type, mdname=''):
 
 # 获取热备盘
 # 优先返回专用热备盘，如果没有则返回全局热备盘，如果没有则返回None
-def disk_get_hotrep_by_md(name):
+def md_get_hotrep(md_uuid):
 
-	md_uuid = ''
+	disk_info = {}
 	try:
 		doc = minidom.parse(DISK_HOTREP_CONF)
 	except IOError,e:
-		return False, '读取配置分区出错！%s' % e
+		#return False, '读取配置分区出错！%s' % e
+		return disk_info
 	except xml.parsers.expat.ExpatError, e:
-		return False, '磁盘配置文件格式出错！%s' % e
+		#return False, '磁盘配置文件格式出错！%s' % e
+		return disk_info
 	except e:
-		return False, '无法解析磁盘配置文件！%s' % e
-
-	for mdinfo in md_info(name)['rows']:
-		if mdinfo['name'] == name:
-			md_uuid = mdinfo['raid_uuid']
-	if md_uuid == '':
-		return False, '卷组 %s 不存在，请检查参数!' % name
+		#return False, '无法解析磁盘配置文件！%s' % e
+		return disk_info
 
 	root = doc.documentElement
 	for item in __get_xmlnode(root, 'disk'):
+		disk_info['serial'] = __get_attrvalue(item, 'serial')
+		disk_info['type'] = __get_attrvalue(item, 'type')
 		if md_uuid == __get_attrvalue(item, 'md_uuid'):
-			return True, __get_attrvalue(item, 'serial')
-	return False, '未配置热备盘!'
+			return disk_info
+	#return False, '未配置热备盘!'
+	return disk_info
 
 # 设置热备盘被使用
 def disk_clean_hotrep(slot):
