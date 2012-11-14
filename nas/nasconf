@@ -24,6 +24,7 @@ class IArgs:
 		self.nasallow_set = False
 		self.nfsallow_set = False
 		self.sync_set = False
+		self.high_set = False
 		self.level_set = 3
 		self.name_set = ''
 		self.new_set = ''
@@ -36,12 +37,14 @@ class IArgs:
 		self.valid_set = ''
 		self.browsable_state = False
 		self.browsable_set = 'yes'
-		self.oplocks_state = False
-		self.oplocks_set = 'no'
-		self.ftpwrite_set = 'no'
-		self.public_set = 'yes'
-		self.inherit_set = 'yes'
 		self.allow_set = ''
+		self.guest_set = 'no'
+		self.guest_state = False
+		self.privacy_set = 'no'
+		self.privacy_state = False
+		self.page_set = 0
+		self.coun_set = 10
+		self.search_set = ''
 
 	def setMode(self, mode):
 		if self.mode == '':
@@ -49,73 +52,70 @@ class IArgs:
 
 #~ 恢复默认置
 def get_default():
-	conf = """[global]
-workgroup = WORKGROUP
-server string = %h
-security = share
-#security = user
-passdb backend = smbpasswd
-smb passwd file = /etc/samba/smbpasswd
-config file = /etc/samba/smb.conf
-username map = /etc/samba/smbusers
-encrypt passwords = Yes
-username level = 0
-map to guest = Bad User
-null password = yes
-max log size = 10
-name resolve order = bcast wins
-socket options = TCP_NODELAY SO_KEEPALIVE SO_SNDBUF=262144 SO_RCVBUF=131072
-os level = 20
-preferred master = no
-dns proxy = No
-guest account = guest
-directory mask = 0777
-create mask = 0777
-oplocks = no
-locking = yes
-disable spoolss = yes
-load printers = no
-dos charset = UTF8
-display charset = UTF8
-force directory security mode = 0000
-template shell = /bin/sh
-veto files = /.AppleDB/.AppleDouble/.AppleDesktop/:2eDS_Store/Network Trash Folder/Temporary Items/TheVolumeSettingsFolder/.@__thumb/.@__desc/:2e*/
-delete veto files = yes
-map archive = no
-map system = no
-map hidden = no
-map read only = no
-deadtime = 10
-use sendfile = yes
-unix extensions = no
-store dos attributes = yes
-client ntlmv2 auth = yes
-dos filetime resolution = no
-inherit acls = yes
-wide links = yes
-min receivefile size = 4096
-case sensitive = auto
-domain master = auto
-local master = yes
-
-"""
 	conf_file = open(SMB_CONF_PATH, 'w')
 	try:
-		conf_file.write(conf)
+		conf_file.write(SMB_CONF)
 		conf_file.close()
 	finally:
 		conf_file.close()
 
-	print '##恢复出厂设置成功。\n'
-	AUsage()
-	sys.exit(-1)
+	SYSTEM_OUT('rm -rf '+SMB_USER_CONF_PATH+'*')
+	os.chmod(SMB_CONF_PATH, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+	os.remove('/etc/samba/smb.conf')
+	os.symlink(SMB_CONF_PATH, '/etc/samba/smb.conf')
+
+	#~ 初始化SMBPASSWD文件
+	smbpwd = """root:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:32ED87BDB5FDC5E9CBA88547376818D4:[U          ]:LCT-509B7BAC:
+guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U          ]:LCT-509B3704:
+"""
+	conf_file = open(SMB_PATH+'smbpasswd', 'w')
+	try:
+		conf_file.write(smbpwd)
+		os.chmod(SMB_PATH+'smbpasswd', stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+		os.remove('/etc/samba/smbpasswd')
+		os.symlink(SMB_PATH+'smbpasswd', '/etc/samba/smbpasswd')
+		conf_file.close()
+	except:
+		conf_file.close()
+
+#~ 初始化NFS文件
+	try:
+		os.mknod(NFS_CONF_PATH)
+		os.chmod(NFS_CONF_PATH, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+		os.remove('/etc/exports')
+		os.symlink(NFS_CONF_PATH, '/etc/exports')
+	except:
+		pass
+	SYSTEM_OUT('exportfs -r')
+
+#~ 初始化GUEST用户配置
+	conf_file = open(SMB_USER_CONF_PATH+'guest', 'w')
+	guest_conf = """[系统设置]
+comment = 系统设置
+path = /opt/samba/conf
+browsable = yes
+directory mask = 0777
+create mask = 0777
+read list = guest
+write list = root
+valid users = root,guest
+inherit permissions = yes
+
+"""
+	try:
+		conf_file.write(guest_conf)
+		conf_file.close()
+	except:
+		conf_file.close()
+	SYSTEM_OUT(RESTART_SMB)
+	print '##恢复出厂设置成功,需要重启生效。\n'
 
 
 if os.path.exists(SMB_CONF_PATH) == False:
-	get_default()
+	print '##配置文件不在，请检查。\n'
 
-OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default', '--sync']
-long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','sync', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'oplocks=', 'ftpwrite=', 'public=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'nfsallow']
+OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default', '--sync', '--high']
+long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','sync','high', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'guest=', 'privacy=', 'nfsallow', 'page=', 'coun=', 'search=']
 
 def main():
 	try:
@@ -150,6 +150,8 @@ def main():
 			iArgs.nfsallow_set = True
 		elif opt == '--sync':
 			iArgs.sync_set = True
+		elif opt == '--high':
+			iArgs.high_set = True
 		elif opt == '--level':
 			iArgs.level_set = arg
 		elif opt == '--name':
@@ -172,17 +174,20 @@ def main():
 		elif opt == '--browsable':
 			iArgs.browsable_set = arg
 			iArgs.browsable_state = True
-		elif opt == '--oplocks':
-			iArgs.oplocks_set = arg
-			iArgs.oplocks_state = True
-		elif opt == '--ftpwrite':
-			iArgs.ftpwrite_set = arg
-		elif opt == '--public':
-			iArgs.public_set = arg
-		elif opt == '--inherit':
-			iArgs.inherit_set = arg
 		elif opt == '--allow':
 			iArgs.allow_set = arg
+		elif opt == '--guest':
+			iArgs.guest_set = arg
+			iArgs.guest_state = True
+		elif opt == '--privacy':
+			iArgs.privacy_set = arg
+			iArgs.privacy_state = True
+		elif opt == '--page':
+			iArgs.page_set = arg
+		elif opt == '--coun':
+			iArgs.coun_set = arg
+		elif opt == '--search':
+			iArgs.search_set = arg
 
 	if iArgs.list_set == True:
 		nas_list(iArgs)
@@ -198,6 +203,8 @@ def main():
 		get_default()
 	elif iArgs.sync_set == True:
 		get_sync(iArgs)
+	elif iArgs.high_set == True:
+		get_high(iArgs)
 	else:
 		AUsage()
 
