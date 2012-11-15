@@ -399,6 +399,9 @@ def disk_set_type(slot, disk_type, mdname=''):
 	doc.writexml(f, encoding='utf-8')
 	f.close()
 
+	# 清除磁盘上的superblock信息
+	set_disk_free(disk_name(slot))
+
 	# 通知disk监控进程
 	disk_slot_update(slot)
 	return True, '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
