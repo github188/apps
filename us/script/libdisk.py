@@ -47,10 +47,10 @@ def disks_from_slot(slots):
 def md_get_mddev(mdname):
 	mddevs = list_files("/dev", "md[0-9]+")
 	for md in mddevs:
-		cmd = "mdadm -Ds %s |grep %s" % (md, mdname)
-	sts,out = commands.getstatusoutput(cmd)
-	if sts == 0:
-		return md
+		cmd = "mdadm -Ds %s | grep %s" % (md, mdname)
+		sts,out = commands.getstatusoutput(cmd)
+		if sts == 0:
+			return md
 	return None
 
 def set_disk_free(diskname):

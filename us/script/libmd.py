@@ -461,9 +461,10 @@ def disk_clean_hotrep(slot):
 if __name__ == "__main__":
 	import sys
 
+	print md_get_mddev('slash')
+	sys.exit(0)
 	print disk_serial2name('S1D50WED')
 	print disk_serial2slot('S1D50WED')
-	sys.exit(0)
 	ret,msg = disk_set_type('0:6', 'Global')
 	print msg
 
