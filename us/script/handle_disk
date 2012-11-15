@@ -216,12 +216,9 @@ def __handle_md_event(md_info):
 	if md_info['raid_level'] != '5' and md_info['raid_level'] != '6':
 		return
 
-	print 'raid state: ', md_info['raid_state']
 	# 如果是降级，则查看是否配置了全局或者专用热备盘，试图进行重建
 	if md_info['raid_state'] == 'degraded':
-		print md_info['raid_uuid']
 		disk = md_get_hotrep(md_info['raid_uuid'])
-		print disk
 		if disk == {}:
 			return
 		slot = disk_serial2slot(disk['serial'])
@@ -229,18 +226,21 @@ def __handle_md_event(md_info):
 		cmd = 'mdadm --add %s %s' % (md_info['dev'], name)
 		commands.getoutput(cmd);
 
-		print 'debug:', slot, name, disk, cmd
 		# 记录日志
-		#print '使用槽位号为 %s 的%s重建卷组 %s !' % (slot, DISK_TYPE_MAP[disk['type'], md_info['name'])
+		print '使用槽位号为 %s 的%s重建卷组 %s !' % (slot, DISK_TYPE_MAP[disk['type']], md_info['name'])
 
 		# 更新热备盘配置
 		disk_clean_hotrep(slot)
+
+		# 更新磁盘状态
+		disk_slot_update(slot)
 	return
 
 def handle_disk_remove_event(disk_dev):
 	disk_info = get_disk_info(disk_dev)
 	if disk_info.slot == '':
 		return
+
 	# (TODO)记录磁盘上线信息
 	print '磁盘 %s(%s) 掉线' % (disk_info.dev, disk_info.slot)
 

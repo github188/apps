@@ -261,10 +261,20 @@ def md_info(mdname=None):
 # 供磁盘自动重建使用
 # -----------------------------------------------------------------------------
 
-def disk_serial2name(serial):
-	return
-
 def disk_serial2slot(serial):
+	try:
+		cmd = 'sys-manager disk --list'
+		disk_list = json.loads(commands.getoutput(cmd))
+		for disk in disk_list['rows']:
+			if disk['serial'] == serial:
+				return disk['slot']
+	except:
+		pass
+	return None
+
+def disk_serial2name(serial):
+	return disk_name(disk_serial2slot(serial))
+
 	return
 
 def disk_slot2serial(slot):
@@ -372,7 +382,6 @@ def disk_set_type(slot, disk_type, mdname=''):
 			__set_attrvalue(item, 'type', disk_type)
 			__set_attrvalue(item, 'md_uuid', md_uuid)
 			set_exist = True
-			# TODO 通知us_d进程
 			break
 
 	# 增加新节点
@@ -452,9 +461,11 @@ def disk_clean_hotrep(slot):
 if __name__ == "__main__":
 	import sys
 
+	print disk_serial2name('S1D50WED')
+	print disk_serial2slot('S1D50WED')
+	sys.exit(0)
 	ret,msg = disk_set_type('0:6', 'Global')
 	print msg
-	sys.exit(0)
 
 	ret,msg = disk_set_type('0:6', 'Special', 'RD2012117135019')
 	print msg

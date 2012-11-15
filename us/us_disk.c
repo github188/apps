@@ -166,9 +166,9 @@ static void do_update_disk(struct us_disk *disk, int op)
 		// 从磁盘热备盘配置文件更新磁盘信息
 		const char *hotrep = __disk_get_hotrep(disk->di.serial);
 		printf("update disk, hotrep = %s\n", hotrep);
+		disk->is_special = disk->is_global = 0;
 		if (hotrep)
 		{
-			disk->is_special = disk->is_global = 0;
 			if (!strcmp(hotrep, "Special"))
 				disk->is_special = 1;
 			else if (!strcmp(hotrep, "Global"))
