@@ -5,6 +5,7 @@ all:
 	$(MAKE) -C us
 	$(MAKE) -C nas
 	$(MAKE) -C us/md-auto-resume/mdscan
+	$(MAKE) -C common
 
 clean:
 	$(MAKE) -C udv clean
@@ -12,3 +13,4 @@ clean:
 	$(MAKE) -C us clean
 	$(MAKE) -C nas clean
 	$(MAKE) -C us/md-auto-resume/mdscan clean
+	$(MAKE) -C common clean

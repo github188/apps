@@ -62,69 +62,7 @@ static uint32_t g_session_id = -1;
 // 模式定义
 int mode = MODE_UNKNOWN;
 
-typedef struct _key_value_s key_value_s;
-struct _key_value_s {
-	int key;
-	char value[128];
-};
-
-key_value_s module_map[] = {
-	{LOG_MOD_WEB,		"web"},
-	{LOG_MOD_DISK,		"disk"},
-	{LOG_MOD_VG,		"vg"},
-	{LOG_MOD_UDV,		"udv"},
-	{LOG_MOD_ISCSI,		"iscsi"},
-	{LOG_MOD_NAS,		"nas"},
-	{LOG_MOD_SYSCONF,	"sysconf"}
-};
-
-key_value_s category_map[] = {
-	{LOG_CATG_AUTO,		"auto"},
-	{LOG_CATG_MANUAL,	"manual"}
-};
-
-key_value_s event_map[] = {
-	{LOG_EV_INFO,	"info"},
-	{LOG_EV_WARNING,	"warning"},
-	{LOG_EV_ERROR,	"error"}
-};
-
-#define __SIZE(map_name) \
-	(sizeof(map_name)/sizeof(key_value_s))
-
-int __get_key(key_value_s *map, size_t map_size, const char *value)
-{
-	int i;
-	for (i=0;i<map_size;i++)
-		if (!strcmp(map[i].value, value))
-			return map[i].key;
-	return LOG_INVALID_ARG;
-}
-
-const char* __get_value(key_value_s *map, size_t map_size, int key)
-{
-	int i;
-	for (i=0;i<map_size;i++)
-		if (map[i].key == key)
-			return map[i].value;
-	return NULL;
-}
-
-#define MODULE(str) \
-	__get_key(module_map, __SIZE(module_map), str)
-#define CATEGORY(str) \
-	__get_key(category_map, __SIZE(category_map), str)
-#define EVENT(str) \
-	__get_key(event_map, __SIZE(event_map), str)
-
-#define MODULE_STR(key) \
-	__get_value(module_map, __SIZE(module_map), key)
-#define CATEGORY_STR(key) \
-	__get_value(category_map, __SIZE(category_map), key)
-#define EVENT_STR(key) \
-	__get_value(event_map, __SIZE(event_map), key)
-
-#define _STR(str) (str[0]!='\0')
+#define _STR(x) (x[0]=='\0')
 
 /* 记录一条日志 */
 int log_insert()
@@ -133,8 +71,11 @@ int log_insert()
 	if ( _STR(g_ins_module) &&  _STR(g_ins_category) &&
 		_STR(g_ins_event) && _STR(g_ins_content) )
 	{
-		LogInsert(MODULE(g_ins_module), CATEGORY(g_ins_category),
-			EVENT(g_ins_event), g_ins_content);
+		if (LogInsert(g_ins_module, g_ins_category, g_ins_event, g_ins_content))
+		{
+			return_json_msg(MSG_ERROR, "日志参数不正确!请检查!");
+			return -1;
+		}
 		return 0;
 	}
 	return_json_msg(MSG_ERROR, "参数不完整，请检查!");
@@ -167,8 +108,8 @@ void log_print(log_info_s *info, size_t num)
 		if (i>0)
 			printf(",");
 		printf("\n\t\t{\"datetime\":\"%s\", \"module\":\"%s\", \"category\":\"%s\", \"event\":\"%s\", \"content\":\"%s\"",
-				asctime(gmtime(&info[i].datetime)), MODULE_STR(info[i].module),
-				CATEGORY_STR(info[i].category), EVENT_STR(info[i].event), info[i].content);
+				asctime(gmtime(&info[i].datetime)), LogModuleStr(info[i].module),
+				LogCategoryStr(info[i].category), LogEventStr(info[i].event), info[i].content);
 	}
 
 	if (num>0)

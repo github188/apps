@@ -24,7 +24,7 @@ int LogInsert(
 	msg_request_t *msg;
 
         if ( (sock_fd=socket(AF_UNIX, SOCK_DGRAM, 0)) < 0)
-		return;
+		return -1;
 
         serv_addr.sun_family = AF_UNIX;
         strcpy(serv_addr.sun_path, LOCAL_ADDR);
@@ -34,7 +34,7 @@ int LogInsert(
 	if (!(msg=(msg_request_t*)malloc(msg_len)))
 	{
 		close(sock_fd);
-		return;
+		return -1;
 	}
 
 	// 填充msg结构
@@ -53,7 +53,7 @@ int LogInsert(
         close(sock_fd);
 	free(msg);
 
-        return;
+        return 0;
 }
 
 /* 获取日志数量 */
