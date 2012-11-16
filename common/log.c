@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <sqlite3.h>
 
 #include "log.h"
 
@@ -59,7 +60,58 @@ int LogInsert(
 /* 获取日志数量 */
 ssize_t LogGetQuantity()
 {
-	return 0;
+	sqlite3 *db;
+	char *errmsg, **result;
+	char sql_cmd[256];
+	int col, row, pos;
+	ssize_t ret = -1;
+
+	if (SQLITE_OK != sqlite3_open_v2(LOG_FILE, &db, SQLITE_OPEN_READONLY, NULL))
+		return -1;
+
+	sprintf(sql_cmd, "SELECT count(id) FROM jwlog;");
+	if (SQLITE_OK == sqlite3_get_table(db, sql_cmd, &result, &col, &row, &errmsg))
+		ret = atol(result[col*row]);
+
+	sqlite3_free_table(result);
+	sqlite3_close(db);
+
+	return ret;
+}
+
+typedef struct _session_info session_s;
+struct _session_info {
+	uint32_t session_id;	// SESSION ID
+	int page_size;		// 每一页大小
+	uint64_t last_rec;	// 上一次获取的最大记录编号
+};
+
+bool __update_session(session_s *session)
+{
+}
+
+bool __session_get_info(session_s *session)
+{
+}
+
+ssize_t __get_header_id()
+{
+	sqlite3 *db;
+	char *errmsg, **result;
+	char sql_cmd[256];
+	int col, row;
+	ssize_t ret = -1;
+
+	if (SQLITE_OK != sqlite3_open_v2(LOG_FILE, &db, SQLITE_OPEN_READONLY, NULL))
+		return ret;
+
+	sprintf(sql_cmd, "SELECT min(id) FROM jwlog;");
+	if (SQLITE_OK == sqlite3_get_table(db, sql_cmd, &result, &col, &row, &errmsg))
+		ret = atol(result[col*row]);
+	sqlite3_free_table(result);
+	sqlite3_close(db);
+
+	return ret;
 }
 
 /* 获取日志
@@ -74,5 +126,60 @@ ssize_t LogGet(
 	log_info_s *log
 	)
 {
-	return 0;
+	sqlite3 *db;
+	int col, row;
+	char *errmsg, **result;
+	char sql_cmd[256];
+
+	session_s sess;
+	uint64_t header_id;
+
+#define ROW_MAX 6
+
+	/*
+	 * 支持两种查询方式
+	 * 1. 页方式：指定session_id和页大小，页大小仅在第一次指定时生效
+	 * 2. 范围方式：通过start,end指定获取记录的范围，此操作会尽量返回所满足的结果
+	 */
+
+	header_id = __get_header_id();
+
+	if (session_id)
+	{
+		sess.session_id = session_id;
+
+		/* 第一次创建Session */
+		if (!__session_get_info(&sess))
+		{
+			if (page_size <= 0)
+				return -1;
+			sess.page_size = page_size;
+			sess.last_rec = header_id;
+			if (!__update_session(&sess))
+				return -1;
+		}
+
+		/* Session已经存在 */
+		sprintf(sql_cmd, "SELECT * FROM jwlog WHERE (id>=%llu and id<%llu);",
+			sess.last_rec, sess.last_rec+sess.page_size);
+		if (SQLITE_OK == sqlite3_get_table(db, sql_cmd, &result, &col, &row, &errmsg))
+		{
+			/*
+			 * 10|2012-11-16 14:35:54|Web|Manual|Info|测试日志信息
+			 */
+			while(col>0)
+			{
+				log->idid = header_id - atoull(result[ROW_MAX*col]);
+				col--;
+			}
+		}
+	}
+	else if(start>0 && end>start)
+	{
+	}
+
+	sqlite3_free_table(result);
+	sqlite3_close(db);
+
+	return -1;
 }

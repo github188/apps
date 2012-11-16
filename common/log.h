@@ -40,6 +40,7 @@ static inline const int _StrToInt(const char *name[], const char *value)
 	return -1;
 }
 
+
 /*--------------------------------------------------------------------------- */
 
 typedef enum _module log_module_e;
@@ -59,6 +60,7 @@ static inline const char *LogModuleStr(log_module_e module)
 {
 	return _IntToStr(_mod_name, module);
 }
+
 static inline const int LogModuleInt(const char *module)
 {
 	return _StrToInt(_mod_name, module);
@@ -78,6 +80,7 @@ static inline const char *LogCategoryStr(log_category_e category)
 {
 	return _IntToStr(_mod_category, category);
 }
+
 static inline const int LogCategoryInt(const char *category)
 {
 	return _StrToInt(_mod_category, category);
@@ -93,10 +96,12 @@ enum _event
 	LOG_EV_ERROR,
 	LOG_EV_UNKNOWN = -1
 };
+
 static inline const char *LogEventStr(log_event_e event)
 {
 	return _IntToStr(_mod_event, event);
 }
+
 static inline const int LogEventInt(const char *event)
 {
 	return _StrToInt(_mod_event, event);
@@ -107,10 +112,11 @@ static inline const int LogEventInt(const char *event)
 typedef struct _log_stru log_info_s;
 struct _log_stru
 {
+	uint64_t idid;
 	time_t datetime;
-	log_module_e module;
-	log_category_e category;
-	log_event_e event;
+	char module[32];
+	char category[32];
+	char event[32];
 	char content[1024];
 };
 

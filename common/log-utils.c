@@ -43,7 +43,7 @@ bool log_db_create()
 	if (SQLITE_OK != sqlite3_open(LOG_FILE, &tmp_handle))
 		return false;
 
-	sprintf(sql_cmd, "CREATE TABLE %s(ID integer primary key autoincrement, date char(20), module char(20), category char(20), event char(20), content varchar(2048));", LOG_TABLE);
+	sprintf(sql_cmd, "CREATE TABLE %s(ID integer primary key autoincrement, date datetime, module char(20), category char(20), event char(20), content varchar(2048));", LOG_TABLE);
 	if (SQLITE_OK == sqlite3_exec(tmp_handle, sql_cmd, NULL, NULL, &errmsg))
 		retcode = true;
 	sqlite3_close(tmp_handle);
