@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include "log.h"
 
+const char *_mod_name[] = {"Web", "Disk", "VG", "UDV", "iSCSI", "NAS", "SysConf", "Unknown", NULL};
+const char *_mod_category[] = {"Auto", "Manual", NULL};
+const char *_mod_event[] = {"Info", "Warning", "Error", NULL};
+
 /* 检查日志文件是否存在
  *   存在条件:
  *   1. 文件存在
@@ -46,3 +50,4 @@ bool log_db_create()
 
 	return retcode;
 }
+

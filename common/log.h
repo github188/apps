@@ -11,20 +11,12 @@
 #define LOG_TABLE "jwlog"
 #define LOCAL_ADDR "/tmp/.log_socket_do_not_remove"
 
-typedef enum _module log_module_e;
-enum _module
-{
-	LOG_MOD_UNKNOWN = 0,
-	LOG_MOD_WEB,
-	LOG_MOD_DISK,
-	LOG_MOD_VG,
-	LOG_MOD_UDV,
-	LOG_MOD_ISCSI,
-	LOG_MOD_NAS,
-	LOG_MOD_SYSCONF
-};
 
-static inline const char *_IntToStr(char *name[], int value)
+extern const char *_mod_name[];
+extern const char *_mod_category[];
+extern const char *_mod_event[];
+
+static inline const char *_IntToStr(const char *name[], int value)
 {
 	int x = 0;
 	while(name[x] != NULL)
@@ -36,38 +28,81 @@ static inline const char *_IntToStr(char *name[], int value)
 	return "N/A";
 }
 
+static inline const int _StrToInt(const char *name[], const char *value)
+{
+	int x = 0;
+	while(name[x] != NULL)
+	{
+		if (!strcmp(name[x], value))
+			return x;
+		x++;
+	}
+	return -1;
+}
+
+/*--------------------------------------------------------------------------- */
+
+typedef enum _module log_module_e;
+enum _module
+{
+	LOG_MOD_WEB = 0,
+	LOG_MOD_DISK,
+	LOG_MOD_VG,
+	LOG_MOD_UDV,
+	LOG_MOD_ISCSI,
+	LOG_MOD_NAS,
+	LOG_MOD_SYSCONF,
+	LOG_MOD_UNKNOWN = -1
+};
+
 static inline const char *LogModuleStr(log_module_e module)
 {
-	static char *_mod_name[] = {"Unknown", "Web", "Disk", "VG", "UDV", "iSCSI", "NAS", "SysConf", NULL};
 	return _IntToStr(_mod_name, module);
 }
+static inline const int LogModuleInt(const char *module)
+{
+	return _StrToInt(_mod_name, module);
+}
+
+/*--------------------------------------------------------------------------- */
 
 typedef enum _category log_category_e;
 enum _category
 {
 	LOG_CATG_AUTO = 0,
-	LOG_CATG_MANUAL
+	LOG_CATG_MANUAL,
+	LOG_CATG_UNKNOWN = -1
 };
 
 static inline const char *LogCategoryStr(log_category_e category)
 {
-	static char *_mod_category[] = {"auto", "manual", NULL};
 	return _IntToStr(_mod_category, category);
 }
+static inline const int LogCategoryInt(const char *category)
+{
+	return _StrToInt(_mod_category, category);
+}
+
+/*--------------------------------------------------------------------------- */
 
 typedef enum _event log_event_e;
 enum _event
 {
 	LOG_EV_INFO = 0,
 	LOG_EV_WARNING,
-	LOG_EV_ERROR
+	LOG_EV_ERROR,
+	LOG_EV_UNKNOWN = -1
 };
-
 static inline const char *LogEventStr(log_event_e event)
 {
-	static char *_mod_event[] = {"Info", "Warning", "Error", NULL};
 	return _IntToStr(_mod_event, event);
 }
+static inline const int LogEventInt(const char *event)
+{
+	return _StrToInt(_mod_event, event);
+}
+
+/*--------------------------------------------------------------------------- */
 
 typedef struct _log_stru log_info_s;
 struct _log_stru
@@ -228,11 +263,12 @@ bool log_db_create();
 /* -------------------------------------------------------------------------- */
 
 /* 记录日志 */
-void LogInsert(
-		log_module_e module,		// 写入日志的模块
-		log_category_e category,	// 日志类型
-		log_event_e event,		// 日志事件
-		const char *content		// 日志内容
+/* 返回值不为0表示参数格式错误 */
+int LogInsert(
+		const char *module,	// 写入日志的模块
+		const char *category,	// 日志类型
+		const char *event,	// 日志事件
+		const char *content	// 日志内容
 	);
 
 /* 获取日志数量 */

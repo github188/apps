@@ -9,6 +9,7 @@ struct cmd_map cmd_map[] = {
   {"network", python_cmd_main},
   {"nasconf", python_cmd_main},
   {"version", version_main},
+  {"log", log_main},
   {"", NULL}
 };
 
@@ -22,6 +23,7 @@ void usage()
 	printf("      nas       - NAS接口\n");
 	printf("      network   - 网络管理\n");
   	printf("      nasconf   - NAS配置文件接口\n");
+	printf("      log       - 日志\n");
 	printf("      version   - 查看版本号\n");
 	exit(0);
 }

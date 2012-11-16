@@ -10,11 +10,11 @@
 #include "log.h"
 
 /* 记录日志 */
-void LogInsert(
-		log_module_e module,		// 写入日志的模块
-		log_category_e category,	// 日志类型
-		log_event_e event,		// 日志事件`
-		const char *content		// 日志内容
+int LogInsert(
+		const char *module,	// 写入日志的模块
+		const char *category,	// 日志类型
+		const char *event,	// 日志事件
+		const char *content	// 日志内容
 	)
 {
         int sock_fd;
@@ -39,9 +39,9 @@ void LogInsert(
 
 	// 填充msg结构
 	MSG_HEADER_INIT(msg, LOG_REQ_WRITE);
-	msg->module = module;
-	msg->category = category;
-	msg->event = event;
+	msg->module = LogModuleInt(module);
+	msg->category = LogCategoryInt(category);
+	msg->event = LogEventInt(event);
 	msg->content_length = strlen(content);
 	strcpy(msg->content, content);
 

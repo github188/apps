@@ -124,13 +124,14 @@ const char* __get_value(key_value_s *map, size_t map_size, int key)
 #define EVENT_STR(key) \
 	__get_value(event_map, __SIZE(event_map), key)
 
+#define _STR(str) (str[0]!='\0')
 
 /* 记录一条日志 */
 int log_insert()
 {
 	// 检查参数不能为空
-	if ( (g_ins_module[0] != '\0') &&  (g_ins_category[0] != '\0') &&
-		(g_ins_event[0] != '\0') && (g_ins_content[0] != '\0') )
+	if ( _STR(g_ins_module) &&  _STR(g_ins_category) &&
+		_STR(g_ins_event) && _STR(g_ins_content) )
 	{
 		LogInsert(MODULE(g_ins_module), CATEGORY(g_ins_category),
 			EVENT(g_ins_event), g_ins_content);
