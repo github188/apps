@@ -1,12 +1,15 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/fcntl.h>
 #include <unistd.h>
 #include <time.h>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <sqlite3.h>
+#include <limits.h>
 
 #include "log.h"
 
@@ -86,21 +89,23 @@ struct _session_info {
 	uint64_t last_rec;	// 上一次获取的最大记录编号
 };
 
-bool __update_session(session_s *session)
+static inline const char *__session_file(uint32_t session_id)
 {
+	static char file_name[PATH_MAX];
+
+	sprintf(file_name, "/tmp/.log/session-%.8x", session_id);
+	return file_name;
 }
 
-bool __session_get_info(session_s *session)
-{
-}
+#define LOG_DEFAULT_PAGE_SIZE 30
 
-ssize_t __get_header_id()
+uint64_t __get_header_id()
 {
 	sqlite3 *db;
 	char *errmsg, **result;
 	char sql_cmd[256];
 	int col, row;
-	ssize_t ret = -1;
+	uint64_t ret = 0;
 
 	if (SQLITE_OK != sqlite3_open_v2(LOG_FILE, &db, SQLITE_OPEN_READONLY, NULL))
 		return ret;
@@ -113,6 +118,55 @@ ssize_t __get_header_id()
 
 	return ret;
 }
+
+/*
+ * 更新指定SESSION的信息，不存在则创建
+ */
+bool __session_update(session_s *sess)
+{
+	int fd;
+	const char *fname = __session_file(sess->session_id);
+
+	if (access(fname, R_OK | W_OK))
+	{
+		// 文件不存在，设置默认值
+		if ( (fd=open(fname, O_CREAT | O_RDWR, S_IRUSR|S_IWUSR)) <= 0)
+			return false;
+		/*
+		bzero(sess, sizeof(sess));
+		sess->page_size = LOG_DEFAULT_PAGE_SIZE;
+		sess->last_rec = __get_header_id();
+		*/
+	}
+	else
+	{
+		if ((fd=open(fname, O_RDWR)) <= 0)
+			return false;
+	}
+
+	write(fd, sess, sizeof(session_s));
+	close(fd);
+	return true;
+}
+
+/*
+ * 获取指定SESSION ID的信息，不存在则返回NULL
+ */
+bool __session_info(session_s *sess)
+{
+	int fd;
+	const char *fname = __session_file(sess->session_id);
+
+	if (access(fname, R_OK | W_OK))
+		return false;
+
+	if ((fd=open(fname, O_RDONLY)) <= 0)
+		return false;
+	read(fd, sess, sizeof(session_s));
+	close(fd);
+	return true;
+}
+
 
 /* 获取日志
  * session_id 为0时，不关心page_size大小
@@ -127,9 +181,10 @@ ssize_t LogGet(
 	)
 {
 	sqlite3 *db;
-	int col, row;
+	int col, row, i;
 	char *errmsg, **result;
 	char sql_cmd[256];
+	ssize_t rec_num = 0;
 
 	session_s sess;
 	uint64_t header_id;
@@ -144,34 +199,46 @@ ssize_t LogGet(
 
 	header_id = __get_header_id();
 
+	if (SQLITE_OK != sqlite3_open_v2(LOG_FILE, &db, SQLITE_OPEN_READONLY, NULL))
+		goto err_quit;
+
 	if (session_id)
 	{
+		bzero(&sess, sizeof(session_s));
 		sess.session_id = session_id;
 
 		/* 第一次创建Session */
-		if (!__session_get_info(&sess))
+		if (!__session_info(&sess))
 		{
 			if (page_size <= 0)
 				return -1;
 			sess.page_size = page_size;
 			sess.last_rec = header_id;
-			if (!__update_session(&sess))
+			if (!__session_update(&sess))
 				return -1;
 		}
 
 		/* Session已经存在 */
-		sprintf(sql_cmd, "SELECT * FROM jwlog WHERE (id>=%llu and id<%llu);",
-			sess.last_rec, sess.last_rec+sess.page_size);
+		sprintf(sql_cmd, "SELECT * FROM jwlog WHERE (ID>=%llu and ID<%llu);",
+			(unsigned long long)sess.last_rec, (unsigned long long)sess.last_rec+sess.page_size);
 		if (SQLITE_OK == sqlite3_get_table(db, sql_cmd, &result, &col, &row, &errmsg))
 		{
 			/*
 			 * 10|2012-11-16 14:35:54|Web|Manual|Info|测试日志信息
 			 */
-			while(col>0)
+			for (i=1;(i<=col) && (i<=sess.page_size);i++)
 			{
-				log->idid = header_id - atoull(result[ROW_MAX*col]);
-				col--;
+				log[i-1].idid = atoll(result[ROW_MAX*i]) - header_id + 1;
+				strcpy(log[i-1].datetime, result[ROW_MAX*i+1]);
+				strcpy(log[i-1].module, result[ROW_MAX*i+2]);
+				strcpy(log[i-1].category, result[ROW_MAX*i+3]);
+				strcpy(log[i-1].event, result[ROW_MAX*i+4]);
+				strcpy(log[i-1].content, result[ROW_MAX*i+5]);
 			}
+			rec_num = col;
+
+			sess.last_rec += sess.page_size;
+			__session_update(&sess);
 		}
 	}
 	else if(start>0 && end>start)
@@ -179,7 +246,8 @@ ssize_t LogGet(
 	}
 
 	sqlite3_free_table(result);
+err_quit:
 	sqlite3_close(db);
 
-	return -1;
+	return rec_num;
 }

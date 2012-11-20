@@ -113,7 +113,7 @@ typedef struct _log_stru log_info_s;
 struct _log_stru
 {
 	uint64_t idid;
-	time_t datetime;
+	char datetime[32];
 	char module[32];
 	char category[32];
 	char event[32];
