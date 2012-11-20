@@ -41,8 +41,8 @@ def do_create(argv):
 def __get_mdname_list():
 	mdname_list = []
 	try:
-		mdinfo_devs = json.loads(md_info())
-		for mdinfo in mdinfo_list['rows']:
+		mdinfo_devs = md_info()
+		for mdinfo in mdinfo_devs['rows']:
 			mdname_list.append(mdinfo['name'])
 	except:
 		pass

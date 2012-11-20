@@ -123,9 +123,9 @@ const char* __disk_get_hotrep(const char *serial)
 	memset(__hotrep_type, 0, sizeof(__hotrep_type));
 	while (node)
 	{
-		xmlChar *xmlType, xmlSerial;
+		xmlChar *xmlType, *xmlSerial;
 		if( (!xmlStrcmp(node->name, BAD_CAST"disk")) &&
-			(xmlSerial=xmlGetProp(node, "serial"))!=NULL &&
+			((xmlSerial=xmlGetProp(node, "serial"))!=NULL ) &&
 			(!xmlStrcmp(xmlSerial, serial)) )
 		{
 			hotrep_type = __hotrep_type;
