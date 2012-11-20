@@ -87,7 +87,7 @@ def disk_main(argv):
 			disk_arg.slot_id = arg
 		elif opt == '--set':
 			disk_arg.set_mode = True
-			disk_arg.slot_list.append(arg)
+			disk_arg.slot_list = arg.split(',')
 		elif opt == '--type':
 			disk_arg.type_set = arg
 		elif opt == '--vg':

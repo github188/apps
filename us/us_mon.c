@@ -70,7 +70,7 @@ int us_mon_init(void)
 	struct udev *udev;
 	struct udev_monitor *mon;
 
-	memset(&us_mon, sizeof(us_mon), 0);
+	memset((void*)&us_mon, sizeof(struct us_mon), 0);
 	init_list(&us_mon.mon_list);
 
 	udev = udev_new();

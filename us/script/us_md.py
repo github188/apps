@@ -64,6 +64,13 @@ def do_generate_name(suffix):
 		check_max = check_max - 1
 	return False, '无法生成卷组名称!'
 
+def do_duplicate_check(mdname):
+	if mdname == '':
+		return False, '请输入卷组名称!'
+	if mdname in __get_mdname_list():
+		return True, '卷组 %s 已经存在!' % mdname
+	return False, '卷组 %s 不存在!' % mdname
+
 def main(argv):
 	ret = ""
 	if len(argv) < 2:
@@ -88,8 +95,9 @@ def main(argv):
 			mdname = argv[2]
 			res = md_del(mdname)
 	elif cmd == "--generate-name":
-		#suffix = argv[2] if len(argv) == 3 else ''
 		res = do_generate_name(argv[2] if len(argv)==3 else '')
+	elif cmd == "--duplicate-check":
+		res = do_duplicate_check(argv[2] if len(argv)==3 else '')
 	else:
 		usage()
 	return res;
@@ -101,6 +109,7 @@ Usage:
 	--delete <vg_name>
 	--list [vg_name]
 	--generate-name <suffix>
+	--duplicate-check <vg_name>
 """
 	#return False,help_str
 	print help_str
