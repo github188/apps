@@ -45,6 +45,7 @@ class IArgs:
 		self.page_set = 0
 		self.coun_set = 10
 		self.search_set = ''
+		self.nfs_set = False
 
 	def setMode(self, mode):
 		if self.mode == '':
@@ -115,7 +116,7 @@ if os.path.exists(SMB_CONF_PATH) == False:
 	print '##配置文件不在，请检查。\n'
 
 OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default', '--sync', '--high']
-long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','sync','high', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'guest=', 'privacy=', 'nfsallow', 'page=', 'coun=', 'search=']
+long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','sync','high', 'nfs', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'guest=', 'privacy=', 'nfsallow', 'page=', 'coun=', 'search=']
 
 def main():
 	try:
@@ -188,7 +189,9 @@ def main():
 			iArgs.coun_set = arg
 		elif opt == '--search':
 			iArgs.search_set = arg
-
+		elif opt == '--nfs':
+			iArgs.nfs_set = True
+	
 	if iArgs.list_set == True:
 		nas_list(iArgs)
 	elif iArgs.add_set == True:

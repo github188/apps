@@ -144,7 +144,7 @@ def AUsage(err=""):
 	else:
 		print '##命令参数不正确，请检查要执行的命令模式！'
 	print """
-nasconf --list [ --name <nas_name> --page <int> --coun <int> --search <Share_name> ]		###输出共享列表
+nasconf --list [ --name <nas_name> --page <int> --coun <int> --search <Share_name> --nfs <nfs Filter>]		###输出共享列表
 	--add --name <nas_name> --path <nas_path> [--write  <write list> --read <read list> --invalid <invalid users> --browsable <yes|no> --comment <Remark>]		###增加共享
 	--edit --basic [--name <nas_name> [--new <New name> --comment <Remark> --browsable <yes|no>]		###基本信息修改
 	--edit --access --name <nas_name> [--write  <write list> --read <read list> --invalid <invalid users>]		###修改访问权限
@@ -191,15 +191,6 @@ def check(value):
 		else:
 			Export(True, '新共享名称可用！')
 
-class list_info():
-	def __init__(self):
-		self.Folder_name = ''
-		self.Space = '0/0'
-		self.Catalog = ''
-		self.documents = 0
-		self.browsable = ''
-		self.manip = '0/0'
-
 #获得文件夹的父路径挂载点
 def imount(Path):
 	try:
@@ -242,6 +233,16 @@ def get_dir_size(dir):
 	for root, dirs, files in os.walk(dir):
 		size += sum( [getsize(join(root, name)) for name in files] )
 	return size
+
+class list_info():
+	def __init__(self):
+		self.Folder_name = ''
+		self.Remain = 0
+		self.Occupancy = 0
+		self.Catalog = 0
+		self.nasallow = 'no'
+		self.NFS = 'no'
+		self.State = 'no'
 	
 def nas_list(value):
 	if value.name_set != '':
@@ -269,7 +270,7 @@ def nas_list(value):
 			nfs_conf.close()
 		except:
 			nfs_conf.close()
-		json_info['nfs_allow'] = nfs_allow
+		json_info['NFS allow'] = nfs_allow.replace('\n','')
 	else:
 		list = []
 		json_info = {'total':0, 'rows':[]}
@@ -290,14 +291,25 @@ def nas_list(value):
 		for name in out_list:
 			if search_check > 0:
 				search_check = len(name.split(search))
-			if search_check == 0:
-				inti += 1
-				if inti >= Start and inti < StartEnd or Start == 0:
-					list.append(__Share_List_out__(name).__dict__)
-			elif search_check > 1:
-				inti += 1
-				if inti >= Start and inti < StartEnd or Start == 0:
-					list.append(__Share_List_out__(name).__dict__)
+			if value.nfs_set:
+				nfsSat = int(SYSTEM_OUT('cat '+NFS_CONF_PATH+'|grep "^'+deviant(name, "path")+' "|wc -l'))
+				if search_check == 0 and nfsSat > 0:
+					inti += 1
+					if inti >= Start and inti < StartEnd or Start == 0:
+						list.append(__Share_List_out__(name).__dict__)
+				elif search_check > 1 and nfsSat > 0:
+					inti += 1
+					if inti >= Start and inti < StartEnd or Start == 0:
+						list.append(__Share_List_out__(name).__dict__)
+			else:
+				if search_check == 0:
+					inti += 1
+					if inti >= Start and inti < StartEnd or Start == 0:
+						list.append(__Share_List_out__(name).__dict__)
+				elif search_check > 1:
+					inti += 1
+					if inti >= Start and inti < StartEnd or Start == 0:
+						list.append(__Share_List_out__(name).__dict__)
 		json_info['total'] = inti
 		json_info['rows'] = list
 		
@@ -307,27 +319,21 @@ def nas_list(value):
 #~ name为共享名称
 def __Share_List_out__(name):
 	Path = deviant(name, "path")
-	hosts = deviant(name, "hosts allow")
-	if hosts == '':
-		hosts = 1
-	else:
-		hosts = 0
-	nfs_stat = 0
-	space = '0/0'
-	Catalog = 0
-	browsable = 0
-	if os.path.exists(Path) == True:
-		nfs_stat = SYSTEM_OUT('cat '+NFS_CONF_PATH+'|grep "^'+Path+' "|wc -l')
-		space = '%d/%d' % (get_dir_size(Path),get_nas_remain(deviant(name, "path")))
-		Catalog = SYSTEM_OUT('find '+Path+' -type d|wc -l')
-		browsable = SYSTEM_OUT('find '+Path+' -type f|wc -l')
+	hosts = 'no'
+	if len(deviant(name, "hosts allow").strip()) > 0:
+		hosts = 'yes'
+	nfs_stat = 'no'
 	out = list_info()
 	out.Folder_name = name
-	out.Space = space
-	out.Catalog = Catalog
-	out.documents = browsable
-	out.browsable = deviant(name, "browsable")
-	out.manip = '%d,%s' % (hosts,nfs_stat)
+	if os.path.exists(Path) == True:
+		if int(SYSTEM_OUT('cat '+NFS_CONF_PATH+'|grep "^'+Path+' "|wc -l')) > 0:
+			nfs_stat = 'yes'
+		out.Occupancy = get_dir_size(Path)
+		out.Remain = get_nas_remain(deviant(name, "path"))
+		out.Catalog = SYSTEM_OUT('find '+Path+' -type d|wc -l')
+		out.State = 'yes'
+	out.nasallow = hosts
+	out.NFS = nfs_stat
 	return out
 
 #~ 列出组中的所有用户
@@ -360,9 +366,8 @@ def __User_List__(U_list):
 			else:
 				user_list = x
 	return user_list
-	#~ return ','.join(list(set(user_list.split(','))))
 
-#~ 列出所组的用户
+#~ 列出所有组的用户
 def __Group_List__(U_list):
 	if isinstance(U_list,list) != True:
 		U_list = U_list.split(',')
@@ -386,7 +391,16 @@ def __User_Group_List__(U_list):
 		uglist = userlist
 	elif  userlist == "" and grouplist != "":
 		uglist = grouplist
-	return  ','.join(list(set(uglist.split(','))))
+	return  __Exclude_Root_List__(list(set(uglist.split(','))))
+
+#~ 列出不包含ROOT所有用户
+def __Exclude_Root_List__(U_list):
+	if isinstance(U_list,list) != True:
+		U_list = U_list.split(',')
+	if 'root' in U_list:
+		U_list.remove('root')
+	return ','.join(list(set(U_list)))
+
 
 #~ 增加修改用户独立SAMBA配置文件
 def __user_purview__(value, u_list, rw):
@@ -498,8 +512,24 @@ def __user_conf__(value,user):
 						e_conf.set(value.new_set, x, e_conf.get(value.name_set, x))
 				e_conf.remove_section(value.name_set)
 		else:	
-			if value.comment_state == True:
-				e_conf.set(value.name_set, 'comment', value.comment_set) 
+			if e_conf.has_section(value.name_set) == False:
+				e_conf.add_section(value.name_set)
+				for x in e_conf.options(value.name_set):
+					if x == 'comment':
+						if value.comment_state == True:
+							e_conf.set(value.new_set, 'comment', value.comment_set) 
+						else:
+							e_conf.set(value.new_set, 'comment', e_conf.get(value.name_set, "comment"))
+					elif x == 'browsable':
+						if value.browsable_state == True:
+							e_conf.set(value.new_set, 'browsable', value.browsable_set) 
+						else:
+							e_conf.set(value.new_set, 'browsable', e_conf.get(value.name_set, "browsable"))
+					else:
+						e_conf.set(value.new_set, x, e_conf.get(value.name_set, x))
+			else:
+				if value.comment_state == True:
+					e_conf.set(value.name_set, 'comment', value.comment_set) 
 		e_conf.write(open(xpath, 'w'))
 
 #~ 修改一个共享的所有用户基本配置
@@ -566,7 +596,7 @@ def edit(value):
 		if value.new_set != "" and value.name_set != value.new_set:
 			if config.has_section(value.new_set) == False:
 				config.add_section(value.new_set) 
-				if value.comment_state == True:
+				if value.comment_state == True and value.comment_set == '':
 					config.set(value.new_set, 'comment', value.comment_set) 
 				else:
 					config.set(value.new_set, 'comment', deviant(value.name_set, "comment")) 				
@@ -690,7 +720,7 @@ def __Del_Share__(name, U_list):
 def NASdel(value):
 	censor(value.name_set)
 	User_List = deviant(value.name_set, "valid users")
-	path = config.get(value.name_set, "path")+' '
+	path = config.get(value.name_set, "path")
 	result = config.remove_section(value.name_set)
 	exist = True
 	if result == True:
@@ -699,7 +729,7 @@ def NASdel(value):
 			fileList = nfs_conf.readlines()
 			file = ''
 			for fileLine in fileList:
-				if len(fileLine.split(path)) > 1:
+				if len(fileLine.split(path+' ')) > 1:
 					exist = False
 				else:
 					file = file + fileLine
@@ -715,7 +745,6 @@ def NASdel(value):
 				SYSTEM_OUT('exportfs -r')
 			except:
 				operating.close()
-			
 		if os.path.exists(path) == True:
 			try:
 				shutil.rmtree(path)
@@ -783,7 +812,8 @@ def get_high(value):
 					except:
 						pass
 		config.write(open(SMB_CONF_PATH, 'w'))
-		SYSTEM_OUT('/etc/init.d/samba restart')
+		SYSTEM_OUT('/etc/init.d/samba restart &')
+		Export(True, 'NAS高级配置修改成功！')
 	else:
 		json_info = {}
 		if config.has_option('global', 'map to guest'):

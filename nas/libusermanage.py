@@ -170,7 +170,7 @@ def User_Edit(value):
 					SYSTEM_OUT('gpasswd -a '+value.name_set+' '+group_name)
 					__Edit_Group_User__(group_name, value.name_set, 'A')
 		SYSTEM_OUT(RESTART_SMB)			
-		Export(True, '用户 "'+value.name_set+'" 创建成功！')
+		Export(True, '用户 "'+value.name_set+'" 修改成功！')
 	else:
 		Export(False, '修改失败，用户名不存在！')
 
@@ -199,6 +199,7 @@ def User_List(value):
 			json_info['User_Group'] = __User_Group_List__(value.name_set)
 			json_info['User_Share_read'] = __User_Share_List__(value.name_set, 'r')
 			json_info['User_Share_write'] = __User_Share_List__(value.name_set, 'w')
+			json_info['User_Share_valid'] = __User_Share_List__(value.name_set, 'v')
 	else:
 		list = []
 		User_list = []
@@ -224,11 +225,11 @@ def User_List(value):
 					search_check = len(user.split(search))
 				if user != 'root' and user != 'guest' and user != 'pw' and search_check == 0:
 					inti += 1
-					if inti >= Start and inti < StartEnd or Start == 0:
+					if inti >= Start and inti < StartEnd and search_check == 0 or Start == 0:
 						list.append(__User_List_Property__(user).__dict__)
 				elif user != 'root' and user != 'guest' and user != 'pw' and search_check > 1:
 					inti += 1
-					if inti >= Start and inti < StartEnd or Start == 0:
+					if inti >= Start and inti < StartEnd and search_check > 0 or Start == 0:
 						list.append(__User_List_Property__(user).__dict__)
 			open_conf.close()
 		except:
@@ -340,6 +341,7 @@ def Group_List(value):
 			json_info['Group_user'] = __Group_User__(value.name_set)
 			json_info['Group_Share_read'] = __User_Share_List__(Group_name, 'r')
 			json_info['Group_Share_write'] = __User_Share_List__(Group_name, 'w')
+			json_info['Group_Share_valid'] = __User_Share_List__(Group_name, 'v')
 	else:
 		list = []
 		User_list = []
@@ -368,14 +370,14 @@ def Group_List(value):
 						search_check = len(group.split(search))
 					if search_check == 0:
 						inti += 1
-						if inti >= Start and inti < StartEnd or Start == 0:
+						if inti >= Start and inti < StartEnd and search_check == 0 or Start == 0:
 							out = Group_list_info()
 							out.Group_name = group
 							out.Group_User_List =  __Group_User__(group)
 							list.append(out.__dict__)
 					elif search_check > 1:
 						inti += 1
-						if inti >= Start and inti < StartEnd or Start == 0:
+						if inti >= Start and inti < StartEnd and search_check > 0 or Start == 0:
 							out = Group_list_info()
 							out.Group_name = group
 							out.Group_User_List =  __Group_User__(group)
