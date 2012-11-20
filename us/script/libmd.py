@@ -342,7 +342,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 	elif state == 'RAID':
 		return False, '槽位号为 %s 的磁盘是RAID盘，无法设置%s!' % (slot, DISK_TYPE_MAP[disk_type])
 	elif state == disk_type:
-		return False, '槽位号为 %s 磁盘已经是%s，无需设置!' % (slot, DISK_TYPE_MAP[state])
+		return True, '槽位号为 %s 磁盘已经是%s，无需设置!' % (slot, DISK_TYPE_MAP[state])
 
 	md_uuid = ''
 	if disk_type == 'Special':
