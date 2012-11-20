@@ -108,7 +108,8 @@ const char* __disk_get_hotrep(const char *serial)
 {
 	xmlDocPtr doc;	// 定义文件指针
 	xmlNodePtr node;
-	static char __hotrep_type[128], *hotrep_type = NULL;
+	static char __hotrep_type[128];
+	char *hotrep_type = NULL;
 
 	if ( (doc=xmlReadFile(DISK_HOTREP_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL)
 		return NULL;
@@ -122,13 +123,16 @@ const char* __disk_get_hotrep(const char *serial)
 	memset(__hotrep_type, 0, sizeof(__hotrep_type));
 	while (node)
 	{
-		xmlChar *type;
+		xmlChar *xmlType, *xmlSerial;
 		if( (!xmlStrcmp(node->name, BAD_CAST"disk")) &&
-			(type=xmlGetProp(node, "type"))!=NULL )
+			((xmlSerial=xmlGetProp(node, "serial"))!=NULL ) &&
+			(!xmlStrcmp(xmlSerial, serial)) )
 		{
 			hotrep_type = __hotrep_type;
-			strcpy(hotrep_type, type);
-			xmlFree(type);
+			xmlType = xmlGetProp(node, "type");
+			strcpy(hotrep_type, xmlType);
+			xmlFree(xmlType);
+			xmlFree(xmlSerial);
 			break;
 		}
 		node = node->next;
@@ -165,7 +169,7 @@ static void do_update_disk(struct us_disk *disk, int op)
 	if (op & DISK_UPDATE_STATE) {
 		// 从磁盘热备盘配置文件更新磁盘信息
 		const char *hotrep = __disk_get_hotrep(disk->di.serial);
-		printf("update disk, hotrep = %s\n", hotrep);
+		printf("update disk, serial = %s, hotrep = %s\n", disk->di.serial, hotrep);
 		disk->is_special = disk->is_global = 0;
 		if (hotrep)
 		{
