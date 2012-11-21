@@ -112,6 +112,7 @@ def __md_fill_attr(str):
 			__chunk_post)
 	rebuild_per = __find_attr(str, "Rebuild Status : ([0-9]+)\%")
 	resync_per = __find_attr(str, "Resync Status : ([0-9]+)\%")
+
 	if rebuild_per:
 		attr["raid_rebuild"] = rebuild_per
 	elif resync_per:
@@ -202,6 +203,11 @@ def md_create(mdname, level, chunk, slots):
 	if level in ('3', '4', '5', '6', '10', '50', '60'):
 		cmd += " --bitmap=internal"
 	sts,out = commands.getstatusoutput(cmd)
+	# 更新热备盘配置
+	for slot in slots.split():
+		disk_state = disk_get_state(slot)
+		if disk_state == 'Special' or disk_state == 'Global':
+			disk_clean_hotrep(slot)
 	disk_slot_update(slots)
 	if sts != 0 :
 		return False, "创建卷组失败"
