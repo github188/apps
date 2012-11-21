@@ -374,7 +374,7 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim, p_state);
 
 	const char *p_raid = disk_get_raid_name(disk->dev_node);
-	if (!strcmp(p_raid, "N/A"))
+	if (!strcmp(p_state, "Special") && !strcmp(p_raid, "N/A"))
 		__disk_get_hotrep(disk->di.serial, p_raid);
 	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim, p_raid);
 
