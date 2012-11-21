@@ -248,13 +248,12 @@ def md_del(mdname):
 def md_info_mddevs(mddevs=None):
 	if (mddevs == None):
 		mddevs = md_list_mddevs()
-	md_no = len(mddevs)
 	md_attrs = [];
 	for mddev in mddevs:
 		attr = mddev_get_attr(mddev)
 		if (attr):
 			md_attrs.append(attr)
-	return {"total": md_no, "rows": md_attrs}
+	return {"total": len(md_attrs), "rows": md_attrs}
 
 def md_info(mdname=None):
 	if (mdname == None):
