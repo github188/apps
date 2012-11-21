@@ -112,6 +112,7 @@ def __md_fill_attr(str):
 			__chunk_post)
 	rebuild_per = __find_attr(str, "Rebuild Status : ([0-9]+)\%")
 	resync_per = __find_attr(str, "Resync Status : ([0-9]+)\%")
+
 	if rebuild_per:
 		attr["raid_rebuild"] = rebuild_per
 	elif resync_per:
@@ -202,6 +203,11 @@ def md_create(mdname, level, chunk, slots):
 	if level in ('3', '4', '5', '6', '10', '50', '60'):
 		cmd += " --bitmap=internal"
 	sts,out = commands.getstatusoutput(cmd)
+	# 更新热备盘配置
+	for slot in slots.split():
+		disk_state = disk_get_state(slot)
+		if disk_state == 'Special' or disk_state == 'Global':
+			disk_clean_hotrep(slot)
 	disk_slot_update(slots)
 	if sts != 0 :
 		return False, "创建卷组失败"
@@ -242,13 +248,12 @@ def md_del(mdname):
 def md_info_mddevs(mddevs=None):
 	if (mddevs == None):
 		mddevs = md_list_mddevs()
-	md_no = len(mddevs)
 	md_attrs = [];
 	for mddev in mddevs:
 		attr = mddev_get_attr(mddev)
 		if (attr):
 			md_attrs.append(attr)
-	return {"total": md_no, "rows": md_attrs}
+	return {"total": len(md_attrs), "rows": md_attrs}
 
 def md_info(mdname=None):
 	if (mdname == None):
@@ -327,6 +332,9 @@ def __get_attrvalue(node, attrname):
 def __set_attrvalue(node, attr, value):
 	return node.setAttribute(attr, value)
 
+def __remove_attr(node, attr):
+	return node.removeAttribute(attr)
+
 # 设置磁盘管理类型：
 #	* global   - 全局热备盘
 #	* special  -  专用热备盘
@@ -381,6 +389,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 		if disk_serial == __get_attrvalue(item, 'serial'):
 			__set_attrvalue(item, 'type', disk_type)
 			__set_attrvalue(item, 'md_uuid', md_uuid)
+			__set_attrvalue(item, 'md_name', mdname);
 			set_exist = True
 			break
 
@@ -392,6 +401,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 		__set_attrvalue(disk_node, 'serial', disk_serial)
 		__set_attrvalue(disk_node, 'md_uuid', md_uuid)
 		__set_attrvalue(disk_node, 'type', disk_type)
+		__set_attrvalue(disk_node, 'md_name', mdname);
 		root.appendChild(disk_node)
 
 	# 更新xml配置文件

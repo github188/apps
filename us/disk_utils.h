@@ -140,8 +140,10 @@ static inline const char *disk_get_raid_name(const char *dev_node)
 {
 	int fd;
 	static struct mdp_superblock_1 info;
-	static char no_answer[128] = "N/A";
+	static char no_answer[128];
 	char *p = no_answer, *q;
+
+	strcpy(no_answer, "N/A");
 
 	fd = open(dev_node, O_RDONLY);
 	if (fd<0)

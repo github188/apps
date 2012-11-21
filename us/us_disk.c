@@ -104,7 +104,7 @@ static int find_disk(struct us_disk_pool *dp, const char *dev)
 	return -1;
 }
 
-const char* __disk_get_hotrep(const char *serial)
+const char* __disk_get_hotrep(const char *serial, char *raid_name)
 {
 	xmlDocPtr doc;	// 定义文件指针
 	xmlNodePtr node;
@@ -123,7 +123,7 @@ const char* __disk_get_hotrep(const char *serial)
 	memset(__hotrep_type, 0, sizeof(__hotrep_type));
 	while (node)
 	{
-		xmlChar *xmlType, *xmlSerial;
+		xmlChar *xmlType, *xmlSerial, *xmlRaidName;
 		if( (!xmlStrcmp(node->name, BAD_CAST"disk")) &&
 			((xmlSerial=xmlGetProp(node, "serial"))!=NULL ) &&
 			(!xmlStrcmp(xmlSerial, serial)) )
@@ -131,6 +131,13 @@ const char* __disk_get_hotrep(const char *serial)
 			hotrep_type = __hotrep_type;
 			xmlType = xmlGetProp(node, "type");
 			strcpy(hotrep_type, xmlType);
+			// 如果是专用热备盘，同时提供对应的raid名称
+			if (raid_name && !xmlStrcmp(xmlType, BAD_CAST"Special"))
+			{
+				xmlRaidName = xmlGetProp(node, "md_name");
+				strcpy(raid_name, xmlRaidName);
+				xmlFree(xmlRaidName);
+			}
 			xmlFree(xmlType);
 			xmlFree(xmlSerial);
 			break;
@@ -168,8 +175,8 @@ static void do_update_disk(struct us_disk *disk, int op)
 
 	if (op & DISK_UPDATE_STATE) {
 		// 从磁盘热备盘配置文件更新磁盘信息
-		const char *hotrep = __disk_get_hotrep(disk->di.serial);
-		printf("update disk, serial = %s, hotrep = %s\n", disk->di.serial, hotrep);
+		const char *hotrep = __disk_get_hotrep(disk->di.serial, NULL);
+		printf("------------update disk, serial = %s, hotrep = %s\n", disk->di.serial, hotrep);
 		disk->is_special = disk->is_global = 0;
 		if (hotrep)
 		{
@@ -228,7 +235,7 @@ static void add_disk(struct us_disk_pool *dp, const char *dev)
 	disk->slot = slot;
 	disk->is_exist = 1;
 	disk->ref = 1;
-	do_update_disk(disk, DISK_UPDATE_RAID |DISK_UPDATE_SMART);
+	do_update_disk(disk, DISK_UPDATE_RAID | DISK_UPDATE_SMART | DISK_UPDATE_STATE);
 }
 
 static void remove_disk(struct us_disk_pool *dp, const char *dev)
@@ -362,10 +369,15 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	                di->serial);
 	pos += snprintf(pos, end - pos, "%s\"capacity\":%llu", delim,
 	                (unsigned long long)di->size);
-	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim,
-	                disk_get_state(disk));
-	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim,
-	                disk_get_raid_name(&disk->dev_node));
+
+	const char *p_state = disk_get_state(disk);
+	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim, p_state);
+
+	const char *p_raid = disk_get_raid_name(disk->dev_node);
+	if (!strcmp(p_state, "Special") && !strcmp(p_raid, "N/A"))
+		__disk_get_hotrep(disk->di.serial, p_raid);
+	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim, p_raid);
+
 	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
 	                disk_get_smart_status(di));
 
