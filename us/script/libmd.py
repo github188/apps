@@ -332,6 +332,9 @@ def __get_attrvalue(node, attrname):
 def __set_attrvalue(node, attr, value):
 	return node.setAttribute(attr, value)
 
+def __remove_attr(node, attr):
+	return node.removeAttribute(attr)
+
 # 设置磁盘管理类型：
 #	* global   - 全局热备盘
 #	* special  -  专用热备盘
@@ -386,6 +389,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 		if disk_serial == __get_attrvalue(item, 'serial'):
 			__set_attrvalue(item, 'type', disk_type)
 			__set_attrvalue(item, 'md_uuid', md_uuid)
+			__set_attrvalue(item, 'md_name', mdname);
 			set_exist = True
 			break
 
@@ -397,6 +401,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 		__set_attrvalue(disk_node, 'serial', disk_serial)
 		__set_attrvalue(disk_node, 'md_uuid', md_uuid)
 		__set_attrvalue(disk_node, 'type', disk_type)
+		__set_attrvalue(disk_node, 'md_name', mdname);
 		root.appendChild(disk_node)
 
 	# 更新xml配置文件
