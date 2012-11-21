@@ -10,7 +10,7 @@ def getMdNameMap(md_dev):
 	md_map = {}
 	try:
 		md_map['dev'] = '/dev/%s' % md_dev
-		f = os.popen('mdadm -D %s' % md_map['dev'])
+		f = os.popen('mdadm -D %s 2>&1' % md_map['dev'])
 		x = f.readlines()
 		for y in x:
 			a = y.split('           Name : ')
