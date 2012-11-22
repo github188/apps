@@ -6,6 +6,8 @@ export PATH=/usr/local/bin:$PATH
 
 nohup /usr/local/bin/us_d &
 
+insmod /lib/modules/3.4.13/extra/nct6106.ko
+
 modprobe scst
 modprobe scst_vdisk
 modprobe iscsi-scst

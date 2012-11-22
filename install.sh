@@ -46,5 +46,7 @@ rsync -av sys-conf/* "$target"/usr/local/bin
 
 rsync -av conf/* "$target"/
 
+rsync -av driver-backup/* "$target"/lib/modules/3.4.13/extra
+
 #reset_sd
 [ -z "$target" ] && ldconfig
