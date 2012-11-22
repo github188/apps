@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-os.chdir(os.path.dirname(__file__))
+#os.chdir(os.path.dirname(__file__))
 
 from libiscsicommon import *
 from libtarget import *
