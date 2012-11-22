@@ -161,23 +161,18 @@ def iSCSILunGetList(tgt = ''):
 def iSCSILunGetPrivilage(udv_name):
 	priv_dict = {}
 	try:
-		for tgt_lun in iSCSILunGetList():
-			for lun in tgt_lun.lun_list:
-				if lun['udv_name'] == udv_name:
-					priv_dict['volume_name'] = lun['volume_name']
-					priv_dict['udv_name'] = udv_name
-					if lun['read_only'] == 'disable':
-						priv_dict['privilage'] = 'ro'
-					else:
-						priv_dict['privilage'] = 'rw'
+		for lun in iSCSILunGetList():
+			if lun['udv_name'] == udv_name:
+				priv_dict['volume_name'] = lun['volume_name']
+				priv_dict['udv_name'] = udv_name
+				priv_dict['status'] = True
+				if lun['read_only'] == 'disable':
+					priv_dict['privilage'] = 'ro'
+				else:
+					priv_dict['privilage'] = 'rw'
 	except:
 		pass
-	finally:
-		return priv_dict
+	return priv_dict
 
 if __name__ == '__main__':
-	for xx in iSCSILunGetList():
-		#print xx.__dict__
-		for yy in xx.lun_list:
-			print yy
-	print iSCSILunGetPrivilage('udv1')
+	print iSCSILunGetPrivilage('Udv326_1')

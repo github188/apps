@@ -76,7 +76,8 @@ class UniOutput:
 		self.rows = dump(row_list)
 		self.total = len(self.rows)
 
-		print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent = 4)
+		#print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
+		print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
 		sys.exit(0)
 
 # 处理Target相关参数
