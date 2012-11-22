@@ -108,8 +108,7 @@ void log_print(log_info_s *info, size_t num)
 		if (i>0)
 			printf(",");
 		printf("\n\t\t{\"datetime\":\"%s\", \"module\":\"%s\", \"category\":\"%s\", \"event\":\"%s\", \"content\":\"%s\"",
-				asctime(gmtime(&info[i].datetime)), LogModuleStr(info[i].module),
-				LogCategoryStr(info[i].category), LogEventStr(info[i].event), info[i].content);
+				info[i].datetime, info[i].module, info[i].category, info[i].event, info[i].content);
 	}
 
 	if (num>0)
