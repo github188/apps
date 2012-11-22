@@ -125,8 +125,12 @@ def iSCSILunUnmap(tgt, lun_id):
 	volume = __get_vdisk_by_lun('%s/%d' % (tgt_luns_dir, lun_id))	# 保留vdisk名称供删除后检查
 	if AttrWrite(tgt_luns_dir, 'mgmt', lun_cmd):
 		if not isLunExported(volume):
+			vol_info = getVolumeInfo(volume)
 			if iSCSIVolumeRemove(volume):
-				return (True, '解除LUN %d 映射成功！' % lun_id)
+				if iscsiExtRemoveUdv(vol_info.udv_name):
+					return (True, '解除LUN %d 映射成功！' % lun_id)
+				else:
+					return (False, '解除LUN %d映射成功！删除VDISK %s 成功！删除用户数据卷 % 失败！' % (lun_id, volume, vol_info.udv_name))
 			else:
 				return (False, '解除LUN %d 映射成功！删除VDISK %s失败！' % (lun_id, volume))
 		else:

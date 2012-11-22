@@ -115,6 +115,15 @@ def iSCSIVolumeRemove(volume_name):
 		return (True, '删除iSCSI数据卷 %s 成功！' % volume_name)
 	return (False, '删除iSCSI数据卷 %s 失败！' % volume_name)
 
+def iscsiExtRemoveUdv(udv):
+	try:
+		cmd = 'sys-manager udv --delete %s' % udv
+		result = json.loads(commands.getoutput(cmd))
+		return result['status']
+	except:
+		pass
+	return False
+
 def getVolumeInfo(volume_name):
 	if not isVolumeExist(volume_name):
 		return None
@@ -154,6 +163,8 @@ def getVolumeByUdv(udv_name):
 	return None
 
 if __name__ == '__main__':
+	print iscsiExtRemoveUdv('udv1')
+	sys.exit(0)
 	(ret, msg) = iSCSIVolumeAdd('udv1')
 	print 'add udv1 ret: ', ret
 	print 'msg: ', msg
