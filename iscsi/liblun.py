@@ -95,7 +95,7 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto'):
 	elif ro == 'disable':
 		if not lunRW:
 			return (False, '设置映射LUN读写属性失败，iSCSI数据卷 %s 只能映射为只读属性!' % volume_name)
-		lunRO = '1'
+		lunRO = '0'
 	else:
 		return (False, '添加LUN映射失败！ReadOnly属性设置不正确！')
 
