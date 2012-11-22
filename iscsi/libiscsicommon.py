@@ -104,7 +104,7 @@ def iscsiExit(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False, indent=-1)
+	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
 	if ret:
 		sys.exit(0)
 	sys.exit(-1)

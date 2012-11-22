@@ -53,17 +53,26 @@ def getFreeLunId(tgt):
 		return -1
 	return max_id
 
+# 检查指定的Volume当前映射的读写方式
+# 判断条件
+#   1. volume如果是只读，则返回False，表示只能读
+#   2. volume映射的lun中如果有一个是读写的，则返回False，表示只读
 def isLunMappedRw(volume_name):
 	for tgt in iSCSIGetTargetList():
 		tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt.name + '/luns'
 		for lun in getDirList(tgt_luns_dir):
+			# 检查Volume是否一致
 			lun_path = tgt_luns_dir + os.sep + lun
-			if AttrRead(lun_path, 'read_only') == '1':
-				return True
 			lun_device = lun_path + '/device'
+			if volume_name != os.path.basename(os.readlink(lun_device)):
+				continue
+			# 如果Volume是只读，则映射的所有卷都是只读
 			if AttrRead(lun_device, 'read_only') == '1':
-				return True
-	return False
+				return False
+			# 如果Volume映射的Lun有一个是读写，则返回只读
+			if AttrRead(lun_path, 'read_only') == '0':
+				return False
+	return True
 
 def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto'):
 	if not isTargetExist(tgt):
@@ -75,22 +84,22 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto'):
 		if lun_id == -1:
 			return (False, '添加LUN映射失败！LUN映射已经超出最大允许范围！')
 
-	isRo = isLunMappedRw(volume_name)
-	if isRo:
-		ro = '1'
-	elif ro == 'auto':
-		if isRo:
-			ro = '1'
+	lunRW = isLunMappedRw(volume_name)
+	if ro == 'auto':
+		if lunRW:
+			lunRO = '0'
 		else:
-			ro = '0'
+			lunRO = '1'
 	elif ro == 'enable':
-		ro = '1'
+		lunRO = '1'
 	elif ro == 'disable':
-		ro = '0'
+		if not lunRW:
+			return (False, '设置映射LUN读写属性失败，iSCSI数据卷 %s 只能映射为只读属性!' % volume_name)
+		lunRO = '1'
 	else:
 		return (False, '添加LUN映射失败！ReadOnly属性设置不正确！')
 
-	lun_cmd = 'add %s %d read_only=%s' % (volume_name, lun_id, ro)
+	lun_cmd = 'add %s %d read_only=%s' % (volume_name, lun_id, lunRO)
 	tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt + '/luns'
 	if AttrWrite(tgt_luns_dir, 'mgmt', lun_cmd):
 		return (True, '添加LUN映射成功！')
@@ -175,4 +184,5 @@ def iSCSILunGetPrivilage(udv_name):
 	return priv_dict
 
 if __name__ == '__main__':
-	print iSCSILunGetPrivilage('Udv326_1')
+	#print iSCSILunGetPrivilage('Udv326_1')
+	print isLunMappedRw('vd7a9e46f2')
