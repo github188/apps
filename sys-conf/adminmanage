@@ -19,6 +19,7 @@ class IArgs:
 		self.useredit_set = False
 		self.del_set = False
 		self.check_set = False
+		self.check_pwd_set = False
 		self.login_set = False
 		self.default_set = False
 		self.name_set = ''
@@ -45,8 +46,8 @@ class IArgs:
 if os.path.exists(Admin_CONF_PATH) == False:
 	Admin_default()
 
-OP_MODE = ['--list', '--add', '--edit', '--useredit', '--del', '--check', '--login', '--default']
-long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','useredit', 'login', 'name=', 'page=', 'coun=', 'search=', 'pwd=', 'new_pwd=', 'manage_pwd=', 'new_manage_pwd=', 'manage_type=', 'note=']
+OP_MODE = ['--list', '--add', '--edit', '--useredit', '--del', '--check',  '--check_pwd', '--login', '--default']
+long_opt = ['list', 'add', 'edit', 'del', 'check', 'check_pwd', 'default','useredit', 'login', 'name=', 'page=', 'coun=', 'search=', 'pwd=', 'new_pwd=', 'manage_pwd=', 'new_manage_pwd=', 'manage_type=', 'note=']
 
 def main():
 	try:
@@ -71,6 +72,8 @@ def main():
 			iArgs.useredit_set = True
 		elif opt == '--check':
 			iArgs.check_set = True
+		elif opt == '--check_pwd':
+			iArgs.check_pwd_set = True
 		elif opt == '--login':
 			iArgs.login_set = True
 		elif opt == '--default':
@@ -118,6 +121,8 @@ def main():
 		Admin_del(iArgs)
 	elif iArgs.check_set == True:
 		Admin_check(iArgs)
+	elif iArgs.check_pwd_set == True:
+		Admin_check_pwd(iArgs)
 	elif iArgs.default_set == True:
 		Admin_default()
 	elif iArgs.useredit_set == True:

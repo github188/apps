@@ -54,6 +54,7 @@ adminmanage --list [ <--name <admin_name> --page <int> --coun <int> --search <us
 	   --del --name <admin_name>		##删除管理员
 	   --check --name <admin_name>		##管理员重名验证
 	   --login --name <admin_name> --pwd <password>		##管理员登录
+	   --check_pwd --name <admin_name> --pwd <password>		##验证操作密码
 """
 	sys.exit(-1)
 
@@ -177,7 +178,7 @@ def Admin_del(value):
 
 #~#### 验证管理员是否重名主程序
 def Admin_check(value):
-	if config.has_section(name):
+	if config.has_section(value.name_set):
 		Export(False, '管理员名存在！')
 	else:
 		Export(True, '管理员名称可以用！')		
@@ -197,16 +198,23 @@ def Admin_useredit(value):
 			config.write(open(Admin_CONF_PATH, 'w'))
 			Export(True, '管理员"'+value.name_set+'"修改成功！')
 		else:
-			Export(False, '输入的管理管理密码不正确！')		
+			Export(False, '输入的操作密码不正确！')		
 	else:
 		Export(False, '输入的管理员名称不可用！')	
 
 #~#### 管理员登录主程序
 def Admin_login(value):
 	if config.has_section(value.name_set) and value.name_set != '' and deviant(value.name_set, 'password').strip() == hashlib.md5(value.pwd_set).hexdigest().upper():
-		Export(True, '登录成功！')
+		Export(True, deviant(value.name_set, 'manage_type'))
 	else:
 		Export(False, '登录失败！')
+
+#~#### 验证操作密码主程序
+def Admin_check_pwd(value):
+	if config.has_section(value.name_set) == False or (deviant(value.name_set, 'manage_pwd').strip() != hashlib.md5(value.pwd_set).hexdigest().upper()):
+		Export(False, '操作密码不正确！')
+	else:
+		Export(True, '登验证通过！')
 
 #~#### 恢复默认主程序
 def Admin_default():
