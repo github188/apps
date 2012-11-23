@@ -235,11 +235,21 @@ def md_del(mdname):
 		return False, "卷组 %s 不存在!" % mdname
 	if __md_used(mdname):
 		return False, '卷组 %s 存在未删除的用户数据卷，请先删除！' % mdname
+
+	try:
+		mdinfo = md_info(mdname)['rows'][0]
+		md_uuid = mdinfo['raid_uuid']
+	except:
+		md_uuid = ''
 	disks = mddev_get_disks(mddev)
 	sts,msg = md_stop(mddev)
 	if sts != 0:
 		return False,"停止%s失败!%s" % (mdname, msg)
+	# 删除设备节点
 	__md_remove_devnode(mddev)
+	# 专用热备盘设置为空闲盘
+	for slot in md_get_special(md_uuid):
+		disk_set_type(slot, 'Free')
 	res = set_disks_free(disks)
 	if res != "":
 		return False,"清除磁盘信息失败，请手动清除"
@@ -416,30 +426,38 @@ def disk_set_type(slot, disk_type, mdname=''):
 	disk_slot_update(slot)
 	return True, '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
 
+def __xml_load(fname):
+	try:
+		doc = minidom.parse(fname)
+	except e:
+		return None
+	return doc.documentElement
+
+# 获取指定RAID所有专用热备盘
+def md_get_special(md_uuid=''):
+	spec_list = []
+
+	if md_uuid == '':
+		return spec_list
+
+	doc_root = __xml_load(DISK_HOTREP_CONF)
+	try:
+		for item in __get_xmlnode(doc_root, 'disk'):
+			if __get_attrvalue(item, 'md_uuid') == md_uuid and __get_attrvalue(item, 'type') == 'Special':
+				spec_list.append(disk_serial2slot(__get_attrvalue(item, 'serial')))
+	except:
+		pass
+	return spec_list
+
 # 获取热备盘
 # 优先返回专用热备盘，如果没有则返回全局热备盘，如果没有则返回None
-def md_get_hotrep(md_uuid):
-
+def md_get_hotrep(md_uuid, disk_type='', get_list=False):
+	doc_root = __xml_load(DISK_HOTREP_CONF)
 	disk_info = {}
-	try:
-		doc = minidom.parse(DISK_HOTREP_CONF)
-	except IOError,e:
-		#return False, '读取配置分区出错！%s' % e
-		return disk_info
-	except xml.parsers.expat.ExpatError, e:
-		#return False, '磁盘配置文件格式出错！%s' % e
-		return disk_info
-	except e:
-		#return False, '无法解析磁盘配置文件！%s' % e
-		return disk_info
-
-	root = doc.documentElement
-	for item in __get_xmlnode(root, 'disk'):
+	for item in __get_xmlnode(doc_root, 'disk'):
 		disk_info['serial'] = __get_attrvalue(item, 'serial')
 		disk_info['type'] = __get_attrvalue(item, 'type')
-		if md_uuid == __get_attrvalue(item, 'md_uuid'):
-			return disk_info
-	#return False, '未配置热备盘!'
+		disk_info['md_uuid'] = __get_attrvalue(item, 'md_uuid')
 	return disk_info
 
 # 设置热备盘被使用
@@ -474,7 +492,13 @@ def disk_clean_hotrep(slot):
 if __name__ == "__main__":
 	import sys
 
-	print md_get_mddev('slash')
+	mdinfo = md_info('abc123')['rows'][0]
+	print mdinfo['raid_uuid']
+	sys.exit(0)
+
+	for slot in md_get_special('f11ee90f:548a70c7:bf5b57cf:91230c43'):
+		print 'slot = ', slot
+		disk_set_type(slot, 'Free')
 	sys.exit(0)
 	print disk_serial2name('S1D50WED')
 	print disk_serial2slot('S1D50WED')
