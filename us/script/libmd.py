@@ -451,13 +451,23 @@ def md_get_special(md_uuid=''):
 
 # 获取热备盘
 # 优先返回专用热备盘，如果没有则返回全局热备盘，如果没有则返回None
-def md_get_hotrep(md_uuid, disk_type='', get_list=False):
-	doc_root = __xml_load(DISK_HOTREP_CONF)
+def md_get_hotrep(md_uuid=''):
 	disk_info = {}
-	for item in __get_xmlnode(doc_root, 'disk'):
-		disk_info['serial'] = __get_attrvalue(item, 'serial')
-		disk_info['type'] = __get_attrvalue(item, 'type')
-		disk_info['md_uuid'] = __get_attrvalue(item, 'md_uuid')
+	tmp_info = {}
+	doc_root = __xml_load(DISK_HOTREP_CONF)
+	try:
+		for item in __get_xmlnode(doc_root, 'disk'):
+			tmp_info['serial'] = __get_attrvalue(item, 'serial')
+			tmp_info['type'] = __get_attrvalue(item, 'type')
+			# 专用热备盘
+			if md_uuid == __get_attrvalue(item, 'md_uuid'):
+				disk_info = tmp_info
+				break
+			# 全局热备盘
+			if tmp_info['type'] == 'Global':
+				disk_info = tmp_info
+	except:
+		pass
 	return disk_info
 
 # 设置热备盘被使用
@@ -492,6 +502,8 @@ def disk_clean_hotrep(slot):
 if __name__ == "__main__":
 	import sys
 
+	print '------', md_get_hotrep('f11ee90f:548a70c7:bf5b57cf:91230c43')
+	sys.exit(0)
 	mdinfo = md_info('abc123')['rows'][0]
 	print mdinfo['raid_uuid']
 	sys.exit(0)
