@@ -8,6 +8,9 @@ import uuid
 from libdisk import *
 from libmd import *
 
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 def do_create(argv):
 	opts = ["name=", "level=", "strip=", "disks="]
 	try:
