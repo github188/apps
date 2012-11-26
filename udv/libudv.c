@@ -133,6 +133,18 @@ int isNasVolume(const char *volume_name)
 	return ret;
 }
 
+static PedExceptionOption libudv_exception_handler(PedException *e)
+{
+	// TODO: 记录日志
+	return PED_EXCEPTION_OK;
+}
+
+void libudv_custom_init()
+{
+	// replace default exception handler
+	ped_exception_set_handler(libudv_exception_handler);
+}
+
 PedDisk* _create_disk_label (PedDevice *dev, PedDiskType *type)
 {
 	PedDisk* disk = NULL;
@@ -168,6 +180,8 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 	// 参数检查
 	if (!name)
 		return E_FMT_ERROR;
+
+	libudv_custom_init();
 
 	// 检查VG是否存在
 	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
@@ -262,6 +276,8 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 	if ( !(vg_name && list) )
 		return ret_code;
 
+	libudv_custom_init();
+
 	// 检查VG是否存在
 	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
 		return E_VG_NONEXIST;
@@ -345,6 +361,8 @@ ssize_t udv_delete(const char *name)
 	if (!name)
 		return E_FMT_ERROR;
 
+	libudv_custom_init();
+
 	// 检查是否已经映射
 	if (isISCSIVolume(name) || isNasVolume(name))
 		return E_UDV_MOUNTED;
@@ -399,6 +417,8 @@ size_t udv_list(udv_info_t *list, size_t n)
 
 	const char *part_name;
 	udv_info_t *udv = list;
+
+	libudv_custom_init();
 
 	ped_device_probe_all();
 
@@ -472,6 +492,8 @@ udv_info_t* get_udv_by_name(const char *name)
 	const char *part_name;
 	static udv_info_t udv_info;
 	udv_info_t *udv = NULL;
+
+	libudv_custom_init();
 
 	ped_device_probe_all();
 
@@ -555,6 +577,8 @@ ssize_t udv_rename(const char *name, const char *new_name)
 	// 参数检查
 	if (!(name && new_name))
 		return E_FMT_ERROR;
+
+	libudv_custom_init();
 
 	// 被修改的名称确保存在
 	if (!(udv=get_udv_by_name(name)))
