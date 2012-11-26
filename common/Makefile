@@ -7,7 +7,7 @@ liblog.a: $(OBJECTS)
 	ar -rcs liblog.a $(OBJECTS)
 
 daemon: log-daemon.c
-	gcc -o log-daemon log-daemon.c -L$(PWD) -llog -lsqlite3
+	gcc -o log-daemon log-daemon.c -L./ -llog -lsqlite3
 
 test: test.c
 	gcc -g -o test-log test.c -L$(PWD) -llog -lsqlite3

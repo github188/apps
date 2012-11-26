@@ -1,11 +1,11 @@
 all:
 	#$(MAKE) -C udv CFLAG=-D_UDV_DEBUG
 	$(MAKE) -C udv
-	$(MAKE) -C web-iface
 	$(MAKE) -C us
 	$(MAKE) -C nas
 	$(MAKE) -C us/md-auto-resume/mdscan
 	$(MAKE) -C common
+	$(MAKE) -C web-iface
 
 clean:
 	$(MAKE) -C udv clean
