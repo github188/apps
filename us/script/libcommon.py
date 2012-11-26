@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, re, json
+import os, re, json, sys
 
 def list_files(path, reg):
     if not path.endswith("/"):
@@ -19,4 +19,6 @@ def debug_status(res):
     if res:
         msg = {"status": res[0], "msg": res[1] }
         print json.dumps(msg, ensure_ascii=False)
+	if res[0] is False:
+		sys.exit(-1)
 
