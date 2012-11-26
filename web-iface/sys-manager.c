@@ -12,6 +12,7 @@ struct cmd_map cmd_map[] = {
   {"usermanage", python_cmd_main},
   {"version", version_main},
   {"log", log_main},
+  {"loglist", python_cmd_main},
   {"sysconfig", python_cmd_main},
   {"", NULL}
 };
@@ -27,6 +28,7 @@ void usage()
 	printf("      network   - 网络管理\n");
   	printf("      nasconf   - NAS配置文件接口\n");
 	printf("      log       - 日志\n");
+	printf("      loglist   - 获取日志\n");
 	printf("      adminmanage - WEB管理员管理\n");
 	printf("      usermanage - NAS用户管理\n");
 	printf("      sysconfig  - 配置系统参数\n");
