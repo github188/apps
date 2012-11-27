@@ -38,6 +38,9 @@ void log_usage()
 {
 	printf(_T("\nlog\n\n"));
 	printf(_T("Usage: --insert [--user <name>] --module <name> --category <auto|manual> --event <event_info> --content <content_text>\n"));
+	printf(_T("             module: Web,Disk,VG,UDV,iSCSI,NAS,SysConf\n"));
+	printf(_T("             category: Auto,Manual\n"));
+	printf(_T("             event: Info,Warning,Error\n"));
 	printf(_T("       --get-quantity\n"));
 	printf(_T("       --get --begin <rec_start> --end <rec_end>\n"));
 	printf(_T("       --get-next --amount-per-page <num> --session-id <random_number>\n\n"));
