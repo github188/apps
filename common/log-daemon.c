@@ -118,10 +118,11 @@ int log_daemon()
 			continue;
 		}
 
-		/* CREATE TABLE jwlog(ID integer primary key autoincrement, date char(20), module char(20), category char(20), event char(20), content varchar(2048)); */
-		sprintf(sql_cmd, "INSERT INTO %s(date, module, category, event, content) VALUES(datetime('now','localtime'), '%s', '%s', '%s', '%s');", LOG_TABLE,
-			LogModuleStr(msg->module), LogCategoryStr(msg->category),
-			LogEventStr(msg->event), msg->content);
+		/* CREATE TABLE jwlog(ID integer primary key autoincrement, date char(20), user char(32) null, module char(20), category char(20), event char(20), content varchar(2048)); */
+		if (msg->user[0] == '\0')
+			sprintf(msg->user, "INTERNAL");
+		sprintf(sql_cmd, "INSERT INTO %s(date, user, module, category, event, content) VALUES(datetime('now','localtime'), '%s', '%s', '%s', '%s');", LOG_TABLE,
+					msg->user, LogModuleStr(msg->module), LogCategoryStr(msg->category), LogEventStr(msg->event), msg->content);
 		if (SQLITE_OK != sqlite3_exec(db_handle, sql_cmd, NULL, NULL, &errmsg))
 			syslog(LOG_ERR, "insert error: %s\n", errmsg);
         }

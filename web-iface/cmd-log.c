@@ -13,6 +13,7 @@
 
 struct option log_options[] = {
 	{"insert",	no_argument,		NULL,	'i'},
+	{"user",	required_argument,	NULL,	'u'},
 	{"module",	required_argument,	NULL,	'm'},
 	{"category",	required_argument,	NULL,	'c'},
 	{"event",	required_argument,	NULL,	'v'},
@@ -36,7 +37,7 @@ enum {
 void log_usage()
 {
 	printf(_T("\nlog\n\n"));
-	printf(_T("Usage: --insert --module <name> --category <auto|manual> --event <event_info> --content <content_text>\n"));
+	printf(_T("Usage: --insert [--user <name>] --module <name> --category <auto|manual> --event <event_info> --content <content_text>\n"));
 	printf(_T("       --get-quantity\n"));
 	printf(_T("       --get --begin <rec_start> --end <rec_end>\n"));
 	printf(_T("       --get-next --amount-per-page <num> --session-id <random_number>\n\n"));
@@ -46,6 +47,7 @@ void log_usage()
 /* 全局变量 */
 
 // --insert
+static char g_ins_user[32] = {0};
 static char g_ins_module[128] = {0};
 static char g_ins_category[128] = {0};
 static char g_ins_event[128] = {0};
@@ -67,11 +69,15 @@ int mode = MODE_UNKNOWN;
 /* 记录一条日志 */
 int log_insert()
 {
+	char *user = NULL;
+
 	// 检查参数不能为空
 	if ( _STR(g_ins_module) &&  _STR(g_ins_category) &&
 		_STR(g_ins_event) && _STR(g_ins_content) )
 	{
-		if (LogInsert(g_ins_module, g_ins_category, g_ins_event, g_ins_content))
+		if (g_ins_user[0] != '\0')
+			user = g_ins_user;
+		if (LogInsert(user, g_ins_module, g_ins_category, g_ins_event, g_ins_content))
 		{
 			return_json_msg(MSG_ERROR, "日志参数不正确!请检查!");
 			return -1;
@@ -157,6 +163,9 @@ int log_main(int argc, char *argv[])
 {
 	char c;
 
+	// init basic
+	g_ins_user[0] = '\0';
+
 	opterr = 0;	// 关闭系统函数库的错误提示
 	while ( (c=getopt_long(argc, argv, "", log_options, NULL)) != -1 )
 	{
@@ -164,6 +173,9 @@ int log_main(int argc, char *argv[])
 		{
 		case 'i':	// --insert
 			mode = MODE_INSERT;
+			continue;
+		case 'u':
+			strcpy(g_ins_user, optarg);
 			continue;
 		case 'm':	// --module <>
 			strcpy(g_ins_module, optarg);
