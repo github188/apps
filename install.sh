@@ -47,6 +47,7 @@ rsync -av sys-conf/* "$target"/usr/local/bin
 rsync -av conf/* "$target"/
 
 rsync -v common/loglist "$target"/usr/local/bin
+rsync -v common/log-daemon "$target"/usr/local/bin
 
 rsync -av driver-backup/* "$target"/lib/modules/3.4.13/extra
 

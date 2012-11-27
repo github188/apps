@@ -64,7 +64,7 @@ static uint32_t g_session_id = -1;
 // 模式定义
 int mode = MODE_UNKNOWN;
 
-#define _STR(x) (x[0]=='\0')
+#define _STR(x) (x[0]!='\0')
 
 /* 记录一条日志 */
 int log_insert()
