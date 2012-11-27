@@ -17,8 +17,9 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 FILEPATH='/opt/network_conf.xml'
-DEFAULT_INTER_PATH = '/etc/network/interfaces'
+DEFAULT_INTER_PATH = '/opt/interfaces'
 BOND_CONF = '/opt/bond_conf.sh'
+DNS_CONFIG_PATH = '/opt/resolv.conf'
 
 BOND_LIST = ['bond0', 'bond1']
 
@@ -489,6 +490,16 @@ netmask 255.255.255.0
 		bond_conf_file.close()
 	finally:
 		bond_conf_file.close()
+
+	sys_inter = '/etc/network/interfaces'
+	if os.path.islink(sys_inter) == False:
+		os.remove(sys_inter)
+		os.symlink(DEFAULT_INTER_PATH, sys_inter)
+
+	sys_resolv = '/etc/resolv.conf'
+	if os.path.islink(sys_resolv) == False:
+		os.remove(sys_resolv)
+		os.symlink(DNS_CONFIG_PATH, sys_resolv)			
 
 	print '网络配置恢复出厂设置成功,需要重启设备才能生效。'
 

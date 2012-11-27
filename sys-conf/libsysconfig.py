@@ -55,10 +55,10 @@ def AUsage(err=""):
 		print '##命令参数不正确，请检查要执行的命令模式！'
 	print """
 sysconfig --switch <reboot|poweroff|check>		##系统重启，关机，验证状态
-	   --hosts <system_name> [--view]		##修改主机名称
+	   --hosts <system_name>		##修改主机名称
+	   --view		##取主机名称
 	   --date --output <this|conf>		##输出当前日期时间和星期
 	   --date --config [<--ntp <NTPServer> --interval <int> --unit <1|2> | --now <date> | --zone <Zoneinfo>>]		##输出当前日期时间和星期
-	   --check_pwd --name <admin_name> --pwd <password>		##验证操作密码
 """
 	sys.exit(-1)
 
@@ -72,7 +72,7 @@ def switch(value):
 		SYSTEM_OUT('poweroff')
 		Export(True, '关机命令执行成功！')
 	elif value.switch_set == 'check':
-		print 'true'
+		Export(True, '系统运行正常！')
 	else:
 		Export(False, '操作失败，未能识别的操作指令！')
 
