@@ -39,11 +39,11 @@ def AUsage(err=""):
 	else:
 		print '##命令参数不正确，请检查要执行的命令模式！'
 	print """
-loglist --list [ < --id <log_id> > | < --module <module> --category <category> --event <event> --page <int> --coun <int>  --user <user_name>  --search <content> --start <timeStart> --end <timeEnd> >]		##输出查询列表
+loglist --list [ < --id <log_id> > | < --module <module> --category <category> --event <event> --page <int> --coun <int> --user <user_name>  --search <content> --start <timeStart> --end <timeEnd> >]		##输出查询列表
 """
 	sys.exit(-1)
 
-long_opt = ['list', 'id=','user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=']
+long_opt = ['list', 'id=', 'user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=']
 
 def main():
 	try:
@@ -117,7 +117,7 @@ def __List__(value):
 		if value.event_set != "":
 			sqlwhere += ' and event = "'+value.event_set+'"'
 		if value.user_set != "":
-			sqlwhere += ' and user LIKE "%'+value.user_set+'%"'
+			sqlwhere += ' and user = "'+value.user_set+'"'
 		if value.search_set != "":
 			sqlwhere += ' and content LIKE "%'+value.search_set+'%"'
 		if value.timeStart_set != "":
