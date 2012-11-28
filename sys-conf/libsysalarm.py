@@ -182,8 +182,74 @@ def get_alarm_module():
 def get_alarm_category():
 	return str(_alarm_category)
 
-def alarm_set(module, switch, category):
-	return True, ''
+def alarm_set(module, switch=None, category=None):
+
+	if module not in _alarm_module:
+		return False, '告警模块 %s 不存在，请检查输入参数!' % module
+
+	if switch is None:
+		return False, '缺少switch参数!'
+	elif switch != 'enable' and 'disable':
+		return False, 'switch参数只能是enable或者disable!'
+
+	if category and category not in _alarm_category:
+		return False, '告警方式 %s 不正确，请检查输入参数!'
+
+	__check_alarm_conf()
+	ret,doc = __load_xml(ALARM_CONF_FILE)
+	if ret is False:
+		return False, '加载配置文件失败!'
+
+	_module = None
+	_root = doc.documentElement
+
+	for _node in __get_xmlnode(_root, 'module'):
+		if __get_attrvalue(_node, 'name') == module:
+			_module = _node
+			break
+
+	if _module is None:
+		_module = __add_xmlnode(_root, 'module')
+		__set_attrvalue(_module, 'name', module)
+		__set_attrvalue(_module, 'switch', 'disable')
+		__set_attrvalue(_module, 'buzzer', 'disable')
+		__set_attrvalue(_module, 'sys-led', 'disable')
+		__set_attrvalue(_module, 'email', 'disable')
+
+	if category is None:
+		__set_attrvalue(_module, 'switch', switch)
+	#elif category == 'sys-led':
+	#	__set_attrvalue(_module, 'sys_led', switch)
+	else:
+		__set_attrvalue(_module, category, switch)
+
+	try:
+		f = open(ALARM_CONF_FILE, 'w')
+		doc.writexml(f, encoding='UTF-8')
+		f.close()
+	except:
+		return False, '更新配置文件失败!'
+
+	return True, '修改告警设置成功!'
+
+def alarm_get(module=None):
+
+	ret,doc = __load_xml(ALARM_CONF_FILE)
+	if ret is False:
+		return False, '加载配置文件失败!'
+
+	_root = doc.documentElement
+	_mod_list = []
+	for _node in __get_xmlnode(_root, 'module'):
+		_mod = {}
+		_mod['module'] = __get_attrvalue(_node, 'name')
+		_mod['status'] = __get_attrvalue(_node, 'switch')
+		_mod['buzzer'] = __get_attrvalue(_node, 'buzzer')
+		_mod['sys-led'] = __get_attrvalue(_node, 'sys-led')
+		_mod['email'] = __get_attrvalue(_node, 'email')
+		_mod_list.append(_mod)
+
+	return True, _mod_list
 
 if __name__ == '__main__':
 	import sys

@@ -53,11 +53,11 @@ def __system_usage():
 	print '       --alarm --set <module> --switch <enable|disable> [--category <buzzer|sys-led|email>]'
 	print '            module: %s' % get_alarm_module()
 	print '            category: %s' % get_alarm_category()
-	print '       --alarm --get'
+	print '       --alarm --get [--module <name>]'
 	sys.exit(-1)
 
 OP_MODE = ['--get-info', '--get-status', '--alarm']
-system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email', 'receiver=', 'smtp-host=', 'smtp-port=', 'with-ssl=', 'with-auth=', 'auth-user=', 'auth-password=', 'get', 'test']
+system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email', 'receiver=', 'smtp-host=', 'smtp-port=', 'with-ssl=', 'with-auth=', 'auth-user=', 'auth-password=', 'get', 'test', 'module=', 'category=', 'switch=']
 
 
 def system_main():
@@ -69,6 +69,9 @@ def system_main():
 	_get_arg = None
 	_email_arg = None
 	_test_arg = None
+	_module = None
+	_category = None
+	_switch = None
 	_email = email_conf()
 
 	try:
@@ -110,6 +113,12 @@ def system_main():
 			_email.auth_user = arg
 		elif opt == '--auth-password':
 			_email.auth_password = arg
+		elif opt == '--module':
+			_module = arg
+		elif opt == '--category':
+			_category = arg
+		elif opt == '--switch':
+			_switch = arg
 
 	# mode check
 	if _mode == '--get-info':
@@ -119,23 +128,33 @@ def system_main():
 		print json.dumps(sys_global(get_sys_stat(_sys_item)))
 		sys.exit(0)
 	elif _mode == '--alarm':
-		if not _email_arg:
-			__systemExit(False, '请输入需要获取或者设置的告警项目!')
-		if _get_arg:
-			ret,msg = alarm_email_get()
-			if ret:
-				print json.dumps(__alarm_email_conf_todict(msg))
+		if _email_arg:
+			if _get_arg:
+				ret,msg = alarm_email_get()
+				if ret:
+					print json.dumps(__alarm_email_conf_todict(msg))
+					sys.exit(0)
+				__systemExit(_ret, _msg)
+			elif _set_arg:
+				print _email.__dict__
+				_ret,_msg = alarm_email_set(_email)
+				__systemExit(_ret, _msg)
+			elif _test_arg:
+				_ret,_msg = alarm_email_test()
+				__systemExit(_ret, _msg)
+			else:
+				__systemExit(False, '请输入email的配置项')
+		elif _get_arg:
+			_ret,_msg = alarm_get(_module)
+			if _ret:
+				print json.dumps(sys_global(_msg))
 				sys.exit(0)
 			__systemExit(_ret, _msg)
 		elif _set_arg:
-			print _email.__dict__
-			_ret,_msg = alarm_email_set(_email)
-			__systemExit(_ret, _msg)
-		elif _test_arg:
-			_ret,_msg = alarm_email_test()
+			_ret,_msg = alarm_set(_set_arg, _switch, _category)
 			__systemExit(_ret, _msg)
 		else:
-			__systemExit(False, '请输入email的配置项')
+			__systemExit(False, '请输入正确的告警参数!')
 	elif _set_arg:
 		_ret,_msg = sys_param_set(_set_arg, _value_arg)
 		__systemExit(_ret, _msg)
