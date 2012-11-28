@@ -97,7 +97,11 @@ def system_main():
 		if not _email_arg:
 			__systemExit(False, '请输入需要获取或者设置的告警项目!')
 		if _get_arg:
-			return alarm_email_get()
+			ret,msg = alarm_email_get()
+			if ret:
+				print json.dumps(msg)
+				sys.exit(0)
+			__systemExit(_ret, _msg)
 		elif _set_arg:
 			_ret,_msg = alarm_email_set(_email)
 			__systemExit(_ret, _msg)
