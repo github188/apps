@@ -295,6 +295,7 @@ class IArgs:
 		self.ifconfig_set = False
 		self.bond_set = False
 		self.dns_set = False
+		self.status_set = False
 		self.var_set = ''
 		self.iface_set = ''
 		self.iface_set = ''
@@ -313,6 +314,31 @@ class IArgs:
 	def setMode(self, mode):
 		if self.mode == '':
 			self.mode = mode
+
+class net_info():
+	def __init__(self):
+		self.Interface_Name = ''
+		self.Interface_MAC = ''
+		self.Interface_Velocity = ''
+		self.Interface_Status = '1'
+
+def NetStatus():
+	list = []
+	json_info = {'total':0, 'rows':[]}
+	com_net = subprocess.Popen('ifconfig -a|grep "^eth"|tr -s " "|sort -f|cut -d " " -f1', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	net_list = com_net.stdout.readlines()
+	for inc_name in net_list:
+		inc_name = inc_name.replace('\n','')
+		out = net_info()
+		out.Interface_Name = inc_name
+		out.Interface_MAC =  SYSTEM_OUT('cat /sys/class/net/%s/address' % inc_name).replace('\n','')
+		out.Interface_Velocity = SYSTEM_OUT('dmesg |grep %s|grep "NIC Link is Up"|awk -F \':\' \'{print $2}\'|tr -s \' \'|cut -d \' \' -f7,8' % inc_name).replace('\n','')
+		if SYSTEM_OUT('ifconfig -a %s|grep "UP BROADCAST MULTICAST"|wc -l' % inc_name).replace('\n','') == '1':
+			out.Interface_Status =  '0'
+		list.append(out.__dict__)
+	json_info['total'] = len(net_list)
+	json_info['rows'] = list
+	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
 
 class nic_info():
 	def __init__(self):
@@ -551,6 +577,7 @@ network --list < --iface <name> | --filter [--intbond] >
 	--bond --iface <bond0|bond1> --inter <eth0,eth1,eth2,eth3,.....> --mode <bonding mode(0|1|4)> --ip <address> --mask <netmask> [--gw<gateway>] 
 	--bond --remove --iface <bond0|bond1>
 	--dns < --var <nameserver1,nameserver2 > | --remove >
+	--status
 	--default
 	--niccoun
 """
@@ -562,8 +589,8 @@ if os.path.exists(FILEPATH):
 	item = root.getElementsByTagName('nic')
 
 
-OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default', '--niccoun']
-network_long_opt = ['list', 'filter', 'ifconfig', 'bond', 'dns', 'default', 'iface=', 'dhcp', 'ip=', 'mask=', 'gw=', 'inter=', 'mode=', 'var=', 'remove', 'intbond', 'niccoun', 'default_gw']
+OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default', '--niccoun', '--status']
+network_long_opt = ['list', 'filter', 'ifconfig', 'bond', 'dns', 'default', 'status', 'iface=', 'dhcp', 'ip=', 'mask=', 'gw=', 'inter=', 'mode=', 'var=', 'remove', 'intbond', 'niccoun', 'default_gw']
 
 def network_main():
 	try:
@@ -587,6 +614,8 @@ def network_main():
 			iArgs.bond_set = True
 		elif opt == '--dns':
 			iArgs.dns_set = True
+		elif opt == '--status':
+			iArgs.status_set = True
 		elif opt == '--var':
 			iArgs.var_set = arg
 		elif opt == '--iface':
@@ -642,6 +671,8 @@ def network_main():
 		Export(True, '设置成功！')
 	elif iArgs.dns_set == True:
 		DNSAlter(iArgs)
+	elif iArgs.status_set == True:
+		NetStatus()
 	else:
 		Export(False, '命令参数不正确，请检查要执行的命令模式！')
 		networkUsage()
