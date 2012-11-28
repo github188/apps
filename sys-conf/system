@@ -25,6 +25,7 @@ def __system_usage():
 	print '       --get-status [--item <name>]'
 	print '            status item support: %s' % get_stat_item()
 	print '       --set <module> --value <module-dependent-value>'
+	print '            module: %s' % get_param_item()
 	print '       --alarm --email --set <enable|disable> [--receiver <email_list> --smtp-host <ip|domain> --smtp-port <xx> --with-ssl <enable|disable> --with-auth <enable|disable> [--auth-user <xx> --auth-password <xx>]]'
 	print '       --alarm --email --get'
 	print '       --alarm --test'
