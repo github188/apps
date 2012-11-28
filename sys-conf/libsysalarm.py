@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import xml
-from xml.dom import minidom
 import json
+import xml
+import os
+from xml.dom import minidom
 
 ALARM_CONF_FILE = '/opt/sys/alarm-conf.xml'
+ALARM_CONF_DFT_CONTENT = """<?xml version="1.0" encoding="UTF-8"?>
+<alarm>
+</alarm>
+"""
 
 # ----------------------------------------
 # xml操作
@@ -26,6 +31,13 @@ def __load_xml(filename):
 
 def __get_xmlnode(node, name):
 	return node.getElementsByTagName(name) if node else None
+
+def __add_xmlnode(root, name):
+	_impl = minidom.getDOMImplementation()
+	_dom = _impl.createDocument(None, name, None)
+	_node = _dom.createElement(name)
+	root.appendChild(_node)
+	return _node
 
 def __get_attrvalue(node, attrname):
 	return node.getAttribute(attrname) if node else None
@@ -56,7 +68,10 @@ def alarm_email_get():
 		return ret,doc
 
 	_email = email_conf()
-	for node in __get_xmlnode(doc, 'category'):
+	_root = doc.documentElement
+
+	for node in __get_xmlnode(_root, 'category'):
+
 		if __get_attrvalue(node, 'name') != 'email':
 			continue
 		# load conf
@@ -81,27 +96,75 @@ def alarm_email_get():
 			_email.auth_user = __get_attrvalue(_auth[0], 'user')
 			_email.auth_password = __get_attrvalue(_auth[0], 'password')
 		break
-	_email_dict = {}
-	_email_dict['alarm'] = 'email'
-	_email_dict['value'] = _email.switch
-	if _email.switch:
-		_email_attr = {}
-		_email_attr['receiver'] = _email.receiver
-		_email_attr['smtp_host'] = _email.smtp_host
-		_email_attr['smtp_port'] = _email.smtp_port
-		_email_attr['with_ssl'] = _email.ssl
-		if _email.auth == 'enable':
-			_attr_auth = {}
-			_attr_auth['user'] = _email.auth_user
-			_attr_auth['password'] = _email.auth_password
-			_email_attr['auth'] = _attr_auth
-		_email_dict['attrs'] = _email_attr
+	return True,_email
 
-	#print json.dumps(_email_dict, indent = 4)
-
-	return True,_email_dict
+def __check_alarm_conf():
+	if not os.path.isfile(ALARM_CONF_FILE):
+		d,f = os.path.split(ALARM_CONF_FILE)
+		os.makedirs(d) if not os.path.isdir(d) else None
+		fd = open(ALARM_CONF_FILE, 'w')
+		fd.write(ALARM_CONF_DFT_CONTENT)
+		fd.close()
+	return
 
 def alarm_email_set(email=email_conf()):
+
+	__check_alarm_conf()
+
+	ret,doc = __load_xml(ALARM_CONF_FILE)
+	if not ret:
+		return ret,doc
+
+	root = doc.documentElement
+
+	# remove old node
+	for _categroy in __get_xmlnode(doc, 'category'):
+		if __get_attrvalue(_categroy, 'name') == 'email':
+			root.removeChild(_categroy)
+			break
+
+	# add new node
+	_email = __add_xmlnode(root, 'category')
+	__set_attrvalue(_email, 'name', 'email')
+
+	# update node
+	if email.switch:
+		if email.switch != 'enable' and email.switch != 'disable':
+			return False, '--set参数的取值只能是enable或者disable'
+		__set_attrvalue(_email, 'switch', email.switch)
+	else:
+		__set_attrvalue(_email, 'switch', 'disable')
+
+	if email.receiver:
+		for recv in email.receiver.split(';'):
+			_recv = __add_xmlnode(_email, 'receiver')
+			__set_attrvalue(_recv, 'value', recv)
+
+	if email.smtp_host and email.smtp_port:
+		_smtp = __add_xmlnode(_email, 'smtp')
+		__set_attrvalue(_smtp, 'host', email.smtp_host)
+		__set_attrvalue(_smtp, 'port', email.smtp_port)
+
+	if email.ssl:
+		if email.ssl != 'enable' and email.ssl != 'disable':
+			return False, 'ssl参数的取值只能是enable或者disable'
+		_ssl = __add_xmlnode(_email, 'ssl')
+		__set_attrvalue(_ssl, 'switch', email.ssl)
+
+	if email.auth:
+		if email.auth != 'enable' and email.auth != 'disable':
+			return False, 'auth参数的取值只能是enable或者disable'
+		_auth = __add_xmlnode(_email, 'auth')
+		__set_attrvalue(_auth, 'switch', email.auth)
+		__set_attrvalue(_auth, 'user', email.auth_user)
+		__set_attrvalue(_auth, 'password', email.auth_password)
+
+	try:
+		f = open(ALARM_CONF_FILE, 'w')
+		doc.writexml(f, encoding='utf-8')
+		f.close()
+	except:
+		return False, '设置电子邮件参数出错,写入配置文件失败!'
 	return True,'设置电子邮件参数成功'
 
 def alarm_email_test():
@@ -123,4 +186,16 @@ def alarm_set(module, switch, category):
 	return True, ''
 
 if __name__ == '__main__':
+	import sys
 	print alarm_email_get()
+	sys.exit(0)
+	email = email_conf()
+	email.switch = 'enable'
+	email.receiver = 'abc@gmail.com;def@gmail.com;slash@163.com'
+	email.smtp_host = 'smtp.test.com'
+	email.smtp_port = '25'
+	email.ssl = 'disable'
+	email.auth = 'enable'
+	email.auth_user = 'auth-test@user.com'
+	email.auth_password = 'auth-test-password'
+	print alarm_email_set(email)
