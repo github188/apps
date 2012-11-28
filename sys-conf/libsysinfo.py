@@ -8,6 +8,7 @@ from libsyscommon import *
 
 ERROR_VALUE = 'error-occurs'
 VER_SEP = '.'
+NCT_ROOT = '/sys/devices/platform/nct6106.656'
 
 def __get_cpu_info(mod):
 	_item = {}
@@ -42,6 +43,13 @@ def __get_cpu_temp(mod):
 def __get_fan_speed(mod):
 	_item = {}
 	_item['item'] = mod
+	try:
+		f = open('%s/fan1_input' % NCT_ROOT)
+		content = f.read()
+		f.close()
+		_item['value'] = content.replace('\n', '\0')
+	except:
+		_item['value'] = 0
 	return _item
 
 def __get_mem_util(mod):
