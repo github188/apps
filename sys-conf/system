@@ -29,6 +29,10 @@ def __system_usage():
 	print '       --alarm --email --set <enable|disable> [--receiver <email_list> --smtp-host <ip|domain> --smtp-port <xx> --with-ssl <enable|disable> --with-auth <enable|disable> [--auth-user <xx> --auth-password <xx>]]'
 	print '       --alarm --email --get'
 	print '       --alarm --email --test'
+	print '       --alarm --set <module> --switch <enable|disable> [--category <buzzer|sys-led|email>]'
+	print '            module: %s' % get_alarm_module()
+	print '            category: %s' % get_alarm_category()
+	print '       --alarm --get'
 	sys.exit(-1)
 
 OP_MODE = ['--get-info', '--get-status', '--alarm']
