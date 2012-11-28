@@ -54,6 +54,8 @@ _info_list = {'cpu-info':__get_cpu_info,
 		'last-run': __get_lastrun,
 		'version': __get_version}
 
+def get_info_item():
+	return str(_info_list.keys())
 
 def get_sys_info(item=None):
 	global _info_list
@@ -113,6 +115,9 @@ _stat_list = {'disk': __get_stat_disk,
 		'fan': __get_stat_fan,
 		'buzzer': __get_stat_buzzer}
 
+def get_stat_item():
+	return str(_stat_list.keys())
+
 def get_sys_stat(item=None):
 	global _stat_list
 	_stat_rows = []
@@ -130,4 +135,5 @@ def get_sys_stat(item=None):
 if __name__ == '__main__':
 	#print json.dumps(sys_global(get_sys_info('cpu-info')))
 	#print json.dumps(sys_global(get_sys_info()))
-	print json.dumps(sys_global(get_sys_stat()))
+	print json.dumps(sys_global(get_sys_stat('disk')))
+	#print json.dumps(sys_global(get_sys_stat()))
