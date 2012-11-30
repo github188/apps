@@ -136,7 +136,6 @@ def system_main():
 					sys.exit(0)
 				__systemExit(_ret, _msg)
 			elif _set_arg:
-				print _email.__dict__
 				_ret,_msg = alarm_email_set(_email)
 				__systemExit(_ret, _msg)
 			elif _test_arg:
