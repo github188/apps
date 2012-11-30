@@ -117,15 +117,16 @@ def alarm_email_set(email=email_conf()):
 
 	root = doc.documentElement
 
-	# remove old node
-	for _categroy in __get_xmlnode(doc, 'category'):
-		if __get_attrvalue(_categroy, 'name') == 'email':
-			root.removeChild(_categroy)
+	_email = None
+	for _category in __get_xmlnode(doc, 'category'):
+		if __get_attrvalue(_category, 'name') == 'email':
+			#root.removeChild(_category)
+			_email = _category
 			break
 
-	# add new node
-	_email = __add_xmlnode(root, 'category')
-	__set_attrvalue(_email, 'name', 'email')
+	if _email is None:
+		_email = __add_xmlnode(root, 'category')
+		__set_attrvalue(_email, 'name', 'email')
 
 	# update node
 	if email.switch:
