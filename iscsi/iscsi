@@ -10,6 +10,7 @@ import json
 from libtarget import *
 from libvolume import *
 from liblun import *
+from libsession import *
 
 
 class iSCSIArgs:
@@ -49,8 +50,7 @@ class iSCSIArgs:
 		self.volume_name_str = ''
 		self.udv_set = False
 		self.udv_str = ''
-		self.force_close_set = False
-		self.force_close_str = ''
+		self.force_close_sid = None
 		self.get_privilage_set = False
 
 	def setMode(self, mode):
@@ -201,9 +201,19 @@ def iscsiLunProc(args = iSCSIArgs()):
 
 # 处理Session相关参数
 def iscsiSessionProc(args = iSCSIArgs()):
-	if args.mode == '--session':
-		icsiExit(False, '暂不支持此操作')
-	return
+	if args.mode != '--session':
+		return
+
+	if args.list_set:
+		if args.target_name_set:
+			UniOutput(iSCSIGetSessionList(args.target_name_str))
+		else:
+			UniOutput(iSCSIGetSessionList())
+
+	if args.force_close_sid != None:
+		ret,msg = iSCSIDeleteSession(args.force_close_sid)
+		iscsiExit(ret, msg)
+	iscsiExit(False, '请输入正确的session操作!')
 
 def iscsiUsage():
 	print """
@@ -235,7 +245,7 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'add', 'remove=', 'name=', 'get-detail=',
 	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
-	'session', 'volume-name=', 'lun-read-only=']
+	'session', 'volume-name=', 'lun-read-only=', 'force-close=']
 
 def iscsi_main():
 	try:
@@ -304,6 +314,8 @@ def iscsi_main():
 			iscsiArgs.unmap_set = True
 		elif opt == '--get-privilage':
 			iscsiArgs.get_privilage_set = True
+		elif opt =='--force-close':
+			iscsiArgs.force_close_sid = arg
 
 	iscsiTargetProc(iscsiArgs)
 	iscsiVolumeProc(iscsiArgs)
