@@ -89,12 +89,18 @@ def alarm_email_get():
 		_ssl = __get_xmlnode(node, 'ssl')
 		if _ssl:
 			_email.ssl = __get_attrvalue(_ssl[0], 'switch')
+		else:
+			_email.ssl = 'disable'
 
 		_auth = __get_xmlnode(node, 'auth')
 		if _auth:
 			_email.auth = __get_attrvalue(_auth[0], 'switch')
 			_email.auth_user = __get_attrvalue(_auth[0], 'user')
 			_email.auth_password = __get_attrvalue(_auth[0], 'password')
+		else:
+			_email.auth = 'disable'
+			_email.auth_user = ''
+			_email.auth_password = ''
 		break
 	return True,_email
 
@@ -115,47 +121,75 @@ def alarm_email_set(email=email_conf()):
 	if not ret:
 		return ret,doc
 
+	if email.switch is None:
+		return False, '缺少--set参数!'
+
+	if email.switch != 'enable' and email.switch != 'disable':
+		return False, '--set参数的取值只能是enable或者disable'
+
+	if email.switch == 'enable':
+		if email.receiver is None:
+			return False, '缺少--receiver参数!'
+		if email.smtp_host is None:
+			return False, '缺少--smtp-host参数!'
+		if email.smtp_port is None:
+			return False, '缺少--smtp-port参数!'
+		if email.auth:
+			if email.auth != 'enable' and email.auth != 'disable':
+				return False, '--auth参数取值只能是enable或者disable'
+			if email.auth == 'enable':
+				if email.auth_user is None:
+					return False, '缺少--auth-user参数!'
+				if email.auth_pass is None:
+					return False, '缺少--auth-pass参数!'
+
 	root = doc.documentElement
 
 	_email = None
 	for _category in __get_xmlnode(doc, 'category'):
 		if __get_attrvalue(_category, 'name') == 'email':
-			#root.removeChild(_category)
 			_email = _category
 			break
 
 	if _email is None:
 		_email = __add_xmlnode(root, 'category')
 		__set_attrvalue(_email, 'name', 'email')
-
-	# update node
-	if email.switch:
-		if email.switch != 'enable' and email.switch != 'disable':
-			return False, '--set参数的取值只能是enable或者disable'
-		__set_attrvalue(_email, 'switch', email.switch)
-	else:
-		__set_attrvalue(_email, 'switch', 'disable')
+	__set_attrvalue(_email, 'switch', email.switch)
 
 	if email.receiver:
+		for _tmp in __get_xmlnode(_email, 'receiver'):
+			_email.removeChild(_tmp)
 		for recv in email.receiver.split(';'):
 			_recv = __add_xmlnode(_email, 'receiver')
 			__set_attrvalue(_recv, 'value', recv)
 
 	if email.smtp_host and email.smtp_port:
-		_smtp = __add_xmlnode(_email, 'smtp')
+		_tmp = __get_xmlnode(_email, 'smtp')
+		if _tmp == []:
+			_smtp = __add_xmlnode(_email, 'smtp')
+		else:
+			_smtp = _tmp[0]
 		__set_attrvalue(_smtp, 'host', email.smtp_host)
 		__set_attrvalue(_smtp, 'port', email.smtp_port)
 
 	if email.ssl:
 		if email.ssl != 'enable' and email.ssl != 'disable':
 			return False, 'ssl参数的取值只能是enable或者disable'
-		_ssl = __add_xmlnode(_email, 'ssl')
+		_tmp = __get_xmlnode(_email, 'ssl')
+		if _tmp == []:
+			_ssl = __add_xmlnode(_email, 'ssl')
+		else:
+			_ssl = _tmp[0]
 		__set_attrvalue(_ssl, 'switch', email.ssl)
 
 	if email.auth:
 		if email.auth != 'enable' and email.auth != 'disable':
 			return False, 'auth参数的取值只能是enable或者disable'
-		_auth = __add_xmlnode(_email, 'auth')
+		_tmp = __get_xmlnode(_email, 'auth')
+		if _tmp == []:
+			_auth = __add_xmlnode(_email, 'auth')
+		else:
+			_auth = _tmp[0]
 		__set_attrvalue(_auth, 'switch', email.auth)
 		__set_attrvalue(_auth, 'user', email.auth_user)
 		__set_attrvalue(_auth, 'password', email.auth_password)
