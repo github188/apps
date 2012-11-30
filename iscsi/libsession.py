@@ -23,6 +23,7 @@ class iSCSI_Session():
 		self.initiator_name = ''
 		self.luns = 0
 		self.target_name = ''
+		self.ip_addr = ''
 		self.iscsi_protocol = {}  # iSCSI_Protocol()
 		self.statistics = {}      # SessionStat()
 
@@ -39,6 +40,15 @@ def __sess_get_stat(sess_path):
 	_stat.write_io_count_kb = int(AttrRead(sess_path, 'write_io_count_kb'))
 	return _stat
 
+def __sess_get_ip(sess_path):
+	ip = ''
+	for d in os.listdir(sess_path):
+		if not os.path.isdir('%s/%s' % (sess_path, d)):
+			continue
+		if os.path.exists('%s/%s/ip' % (sess_path, d)):
+			ip = AttrRead('%s/%s' % (sess_path, d), 'ip')
+			break
+	return ip
 
 def iSCSIGetSessionList(spec_tgt=None):
 	_session_list = []
@@ -56,6 +66,7 @@ def iSCSIGetSessionList(spec_tgt=None):
 			_session.sid = AttrRead(_sess_path, 'sid')
 			_session.luns = len(os.listdir('%s/luns' % _sess_path)) -1
 			_session.target_name = tgt.name
+			_session.ip_addr = __sess_get_ip(_sess_path)
 			_session.statistics = __sess_get_stat(_sess_path).__dict__
 			_session_list.append(_session)
 	return _session_list
