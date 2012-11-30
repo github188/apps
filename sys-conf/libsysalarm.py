@@ -189,7 +189,7 @@ def alarm_set(module, switch=None, category=None):
 
 	if switch is None:
 		return False, '缺少switch参数!'
-	elif switch != 'enable' and 'disable':
+	elif switch != 'enable' and switch != 'disable':
 		return False, 'switch参数只能是enable或者disable!'
 
 	if category and category not in _alarm_category:
