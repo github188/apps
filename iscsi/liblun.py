@@ -35,11 +35,8 @@ def isLunIdExist(tgt, lun_id):
 		return False
 	return os.path.isdir(SCST.TARGET_DIR + os.sep + tgt + '/luns/' + '%d' % lun_id)
 
-def getFreeLunId(tgt):
-	if not isTargetExist(tgt):
-		return -1
-	tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt + '/luns'
-	luns = getDirList(tgt_luns_dir)
+def __getFreeLunId(lun_dir):
+	luns = getDirList(lun_dir)
 	if not len(luns) or not '0' in luns:
 		return 0
 	idx = 0
@@ -74,13 +71,41 @@ def isLunMappedRw(volume_name):
 				return False
 	return True
 
-def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto'):
+def __set_initiator(tgt, initor):
+	try:
+		grp_dir = '%s/%s/ini_groups' % (SCST.TARGET_DIR, tgt)
+		initor_grp = '%s/%s-grp' % (grp_dir, initor)
+		if not os.path.exists(initor_grp):
+			_cmd = 'create %s-grp' % initor
+			if not AttrWrite(grp_dir, 'mgmt', _cmd):
+				return False
+		if not os.path.isdir(initor_grp):
+			return False
+		initor_dir = '%s/initiators' % initor_grp
+		if not os.path.isfile('%s/%s' % (initor_dir, initor)):
+			_cmd = 'add %s' % initor
+			return True if AttrWrite(initor_dir, 'mgmt', _cmd) else False
+	except:
+		return False
+	return True
+
+def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
+
 	if not isTargetExist(tgt):
 		return (False, '添加LUN映射失败！Target %s 不存在！' % tgt)
+
 	if not isVolumeExist(volume_name):
 		return (False, '添加LUN映射失败！iSCSI数据卷 %s 不存在！' % volume_name)
+
+	lun_dir = '%s/%s/luns' % (SCST.TARGET_DIR, tgt)
+	print 'initor: ', initor
+	if initor != '*' and __set_initiator(tgt, initor):
+		lun_dir = '%s/%s/ini_groups/%s-grp/luns' % (SCST.TARGET_DIR, tgt, initor)
+	else:
+		return False, '增加Initiator配置到Target出错!'
+
 	if lun_id == 'auto':
-		lun_id = getFreeLunId(tgt)
+		lun_id = __getFreeLunId(lun_dir)
 		if lun_id == -1:
 			return (False, '添加LUN映射失败！LUN映射已经超出最大允许范围！')
 
@@ -93,15 +118,16 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto'):
 	elif ro == 'enable':
 		lunRO = '1'
 	elif ro == 'disable':
+		"""
 		if not lunRW:
 			return (False, '设置映射LUN读写属性失败，iSCSI数据卷 %s 只能映射为只读属性!' % volume_name)
+		"""
 		lunRO = '0'
 	else:
 		return (False, '添加LUN映射失败！ReadOnly属性设置不正确！')
 
 	lun_cmd = 'add %s %d read_only=%s' % (volume_name, lun_id, lunRO)
-	tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt + '/luns'
-	if AttrWrite(tgt_luns_dir, 'mgmt', lun_cmd):
+	if AttrWrite(lun_dir, 'mgmt', lun_cmd):
 		return (True, '添加LUN映射成功！')
 	return (False, '添加LUN映射失败！')
 
@@ -189,4 +215,5 @@ def iSCSILunGetPrivilage(udv_name):
 
 if __name__ == '__main__':
 	#print iSCSILunGetPrivilage('Udv326_1')
-	print isLunMappedRw('vd7a9e46f2')
+	#print isLunMappedRw('vd7a9e46f2')
+	print __set_initiator('iqn.2006-10.net.vlnb:tgt', 'abc')
