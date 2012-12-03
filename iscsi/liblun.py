@@ -98,11 +98,11 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
 		return (False, '添加LUN映射失败！iSCSI数据卷 %s 不存在！' % volume_name)
 
 	lun_dir = '%s/%s/luns' % (SCST.TARGET_DIR, tgt)
-	print 'initor: ', initor
-	if initor != '*' and __set_initiator(tgt, initor):
-		lun_dir = '%s/%s/ini_groups/%s-grp/luns' % (SCST.TARGET_DIR, tgt, initor)
-	else:
-		return False, '增加Initiator配置到Target出错!'
+	if initor != '*':
+		if __set_initiator(tgt, initor):
+			lun_dir = '%s/%s/ini_groups/%s-grp/luns' % (SCST.TARGET_DIR, tgt, initor)
+		else:
+			return False, '增加Initiator配置到Target出错!'
 
 	if lun_id == 'auto':
 		lun_id = __getFreeLunId(lun_dir)
@@ -140,16 +140,40 @@ def __get_vdisk_by_lun(lun_dir):
 		pass
 	return volume
 
-def iSCSILunUnmap(tgt, lun_id):
+def __isInitiatorExists(tgt, initor):
+	initor = '%s/%s/ini_groups/%s-grp/initiators/%s' % (SCST.TARGET_DIR, tgt, initor, initor)
+	return True if os.path.isfile(initor) else False
+
+def __delInitiatorConf(tgt, initor):
+	grp_mgr = '%s/%s/ini_groups' % (SCST.TARGET_DIR, tgt)
+	grp_cmd = 'del %s-grp' % initor
+	return True if AttrWrite(grp_mgr, 'mgmt', grp_cmd) else False
+
+def iSCSILunUnmap(tgt, lun_id, initor = '*'):
 	if not isTargetExist(tgt):
 		return (False, '解除LUN %d 映射失败！Target %s 不存在！' % (lun_id, tgt))
 	if not isLunIdExist(tgt, lun_id):
 		return (False, '解除LUN %d 映射失败！LUN不存在！' % lun_id)
+	if initor != '*' and not __isInitiatorExists(tgt, initor):
+		return Flase, '解除 %s 映射失败！Initiator不存在！' % lun_id
 
 	lun_cmd = 'del %d' % lun_id
-	tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt + '/luns'
-	volume = __get_vdisk_by_lun('%s/%d' % (tgt_luns_dir, lun_id))	# 保留vdisk名称供删除后检查
-	if AttrWrite(tgt_luns_dir, 'mgmt', lun_cmd):
+	if initor != '*':
+		luns_dir = '%s/%s/ini_groups/%s-grp/luns' % (SCST.TARGET_DIR, tgt, initor)
+	else:
+		luns_dir = '%s/%s/luns' % (SCST.TARGET_DIR, tgt)
+
+	print luns_dir
+	print getDirList(luns_dir)
+	sys.exit(0)
+
+	volume = __get_vdisk_by_lun('%s/%d' % (luns_dir, lun_id))	# 保留vdisk名称供删除后检查
+
+	if AttrWrite(luns_dir, 'mgmt', lun_cmd):
+		# 检查initiator配置，如果是最后一个lun，删除initiator组配置
+		if initor != '*' and getDirList(luns_dir) == []:
+			if not __delInitiatorConf(tgt, initor):
+				return False, '解除LUN %d 映射失败!无法删除Initiator %s 配置!' % (lun_id, initor)
 		if not isLunExported(volume):
 			vol_info = getVolumeInfo(volume)
 			if iSCSIVolumeRemove(volume):
@@ -167,11 +191,9 @@ def iSCSILunGetList(tgt = ''):
 	tgt_lun_list = []
 	try:
 		for t in iSCSIGetTargetList(tgt):
-			#tgt_lun = iSCSITargetLun()
-			#tgt_lun.target = t.name
-			tgt_luns_dir = SCST.TARGET_DIR + os.sep + t.name + '/luns'
-			#tgt_lun.luns = len(lun_list)
 
+			# get target luns
+			tgt_luns_dir = SCST.TARGET_DIR + os.sep + t.name + '/luns'
 			for l in getDirList(tgt_luns_dir):
 				volume_path = tgt_luns_dir + os.sep + l + '/device'
 				volume_name = os.path.basename(os.readlink(volume_path))
@@ -179,6 +201,7 @@ def iSCSILunGetList(tgt = ''):
 				lun = vol.__dict__
 				lun['lun_id'] = int(l)
 				lun['target_name'] = t.name
+				lun['initiator'] = '*'
 				if vol.read_only == 'enable':
 					lun['read_only'] = vol.read_only
 				else:
@@ -189,8 +212,27 @@ def iSCSILunGetList(tgt = ''):
 				#tgt_lun.lun_list.append(lun)
 				tgt_lun_list.append(lun)
 
-			#tgt_lun.luns = len(tgt_lun.lun_list)
-			#tgt_lun_list.append(tgt_lun)
+			# get initiator luns
+			ini_grp_dir = '%s/%s/ini_groups' % (SCST.TARGET_DIR, t.name)
+			for l in getDirList(ini_grp_dir):
+				luns_dir = '%s/%s/luns' % (ini_grp_dir, l)
+				for k in getDirList(luns_dir):
+					volume_path = '%s/%s/device' % (luns_dir, k)
+					volume_name = os.path.basename(os.readlink(volume_path))
+					vol = getVolumeInfo(volume_name)
+					lun = vol.__dict__
+					lun['lun_id'] = int(k)
+					lun['target_name'] = t.name
+					lun['initiator'] = l.split('-')[0]
+					if vol.read_only == 'enable':
+						lun['read_only'] = vol.read_only
+					else:
+						if AttrRead('%s/%s' % (luns_dir, k), 'read_only') == '0':
+							lun['read_only'] == 'disable'
+						else:
+							lun['read_only'] = 'enable'
+					tgt_lun_list.append(lun)
+
 	except IOError, e:
 		msg = e
 	finally:
@@ -216,4 +258,6 @@ def iSCSILunGetPrivilage(udv_name):
 if __name__ == '__main__':
 	#print iSCSILunGetPrivilage('Udv326_1')
 	#print isLunMappedRw('vd7a9e46f2')
-	print __set_initiator('iqn.2006-10.net.vlnb:tgt', 'abc')
+	#print __set_initiator('iqn.2006-10.net.vlnb:tgt', 'abc')
+	#print __isInitiatorExists('iqn.2006-10.net.vlnb:tgt', 'abc')
+	print __delInitiatorConf('iqn.2006-10.net.vlnb:tgt', 'abc')
