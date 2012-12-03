@@ -46,6 +46,7 @@ class iSCSIArgs:
 		self.lun_set = False
 		self.lun_id_set = False
 		self.lun_id_str = ''
+		self.initor = '*'
 		self.volume_name_set = False
 		self.volume_name_str = ''
 		self.udv_set = False
@@ -175,7 +176,7 @@ def iscsiLunProc(args = iSCSIArgs()):
 			iscsiExit(False, '请输入读写属性!')
 		else:
 			ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
-					args.lun_id_str, args.lun_read_only_str)
+					args.lun_id_str, args.lun_read_only_str, args.initor)
 			iscsiExit(ret, msg)
 	elif args.unmap_set:
 		if not len(args.target_name_str):
@@ -227,9 +228,9 @@ iscsi --target --list [--target-name <name>]
       --volume --remove <volume_name>
 
       --lun --list [--target-name <name> [--lun-id <id>]]
-      --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --lun-read-only <enable|disable|auto>
-      --lun --map --target-name <name> --add --udv <name> [--block-size <size> --nv-cache <enable|disable>] --lun-id <id|auto> --lun-read-only <enable|disable|auto>
-      --lun --unmap --target-name <target_name> --lun-id <id>
+      --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
+      --lun --map --target-name <name> --add --udv <name> [--block-size <size> --nv-cache <enable|disable>] --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
+      --lun --unmap --target-name <target_name> --lun-id <id> [--initiator <name>]
       --lun --get-privilage --udv <name>
 
       --session --list [--target-name <name>]
@@ -245,7 +246,7 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'add', 'remove=', 'name=', 'get-detail=',
 	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
-	'session', 'volume-name=', 'lun-read-only=', 'force-close=']
+	'session', 'volume-name=', 'lun-read-only=', 'force-close=', 'initiator=']
 
 def iscsi_main():
 	try:
@@ -308,6 +309,8 @@ def iscsi_main():
 		elif opt == '--target-name':
 			iscsiArgs.target_name_set = True
 			iscsiArgs.target_name_str = arg
+		elif opt == '--initiator':
+			iscsiArgs.initor = arg
 		elif opt == '--map':
 			iscsiArgs.map_set = True
 		elif opt == '--unmap':
