@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <libudev.h>
 #include <stdint.h>
 #include <regex.h>
@@ -6,6 +7,7 @@
 #include <unistd.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <ctype.h>
 #include "clog.h"
 #include "us_ev.h"
 #include "types.h"
@@ -38,6 +40,7 @@ extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
 extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
+extern regex_t mv_disk_slot_regex;
 
 static struct us_disk_pool us_dp;
 
@@ -74,6 +77,91 @@ static int is_sata_sas(const char *path)
 	return is_sd(path) && !is_usb(path) && !is_dom_disk(path);
 }
 
+static int to_int(const char *buf, int *v)
+{
+	int i = 0;
+	char c;
+
+	*v = -1;
+
+	while ((c = *buf)) {
+		if (!isdigit(c))
+			return -1;
+		i *= 10;
+		i += c - '0';
+		buf++;
+	}
+	*v = i;
+
+	return 0;
+}
+
+static int find_slot_from_path(const char *path)
+{
+	regmatch_t pmatch[2];
+	char slot_digit[4];
+
+	if (regexec(&mv_disk_slot_regex, path,
+	            ARRAY_SIZE(pmatch), pmatch, 0) == 0) {
+		int l = pmatch[1].rm_eo - pmatch[1].rm_so;
+		int slot;
+
+		if (l <= 0 || l > 2) {
+			/* Only deal with 00-99 slots */
+			clog(LOG_ERR, "%s: Invalidate slot\n", __func__);
+			return -1;
+		}
+		strncpy(slot_digit, &path[pmatch[1].rm_so], l);
+		slot_digit[l] = 0;
+		to_int(slot_digit, &slot);
+		return slot;
+	} else {
+		clog(LOG_ERR, "%s: match %s failed\n", __func__, path);
+		return -1;
+	}
+}
+
+static int map_slot(int slot)
+{
+	int col, row;
+	/**
+	 * Marvell sata槽位号映射：
+	 * 4    8    12    16
+	 * 5    9    13    17
+	 * 6    10   14    18
+	 * 7    11   15    19
+	 */
+	if (slot < 4 || slot > 19)
+		return -1;
+	slot -= 4;
+	row = slot % 4;
+	col = slot / 4;
+
+	return row * 4 + col + 1;
+}
+
+static int find_slot(struct us_disk_pool *dp, const char *dev, const char *path)
+{
+	int slot;
+	int cook_slot = -1;
+
+	 /**
+	 * 槽位号在/sys/block/sd[b-z]的链接里面
+	 */
+	slot = find_slot_from_path(path);
+	if (slot < 0) {
+		clog(LOG_ERR, "%s: can't find slot from %s\n", __func__, path);
+		return -1;
+	}
+	cook_slot = map_slot(slot);
+	if (cook_slot < 0) {
+		clog(LOG_ERR, "%s: can't map slot %d\n", __func__, slot);
+	}
+
+	return cook_slot;
+}
+
+#if 0
 static int find_free_slot(struct us_disk_pool *dp)
 {
 	int i;
@@ -87,6 +175,7 @@ static int find_free_slot(struct us_disk_pool *dp)
 
 	return -1;
 }
+#endif
 
 static int find_disk(struct us_disk_pool *dp, const char *dev)
 {
@@ -214,16 +303,16 @@ static void us_disk_update_all(int op)
 	}
 }
 
-static void add_disk(struct us_disk_pool *dp, const char *dev)
+static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 {
 	int slot;
 	struct us_disk *disk;
 	size_t n;
 	extern int disk_get_size(const char *dev, uint64_t *sz);
 
-	slot = find_free_slot(dp);
+	slot = find_slot(dp, dev, path);
 	if (slot < 0) {
-		clog(LOG_ERR, "%s: no free slots\n", __func__);
+		clog(LOG_ERR, "%s: can't find slot for %s\n", __func__, path);
 		return;
 	}
 
@@ -285,7 +374,7 @@ static int us_disk_on_event(const char *path, const char *dev, int act)
 	printf("%s: %d\n", dev, act);
 
 	if (act == MA_ADD)
-		add_disk(&us_dp, dev);
+		add_disk(&us_dp, dev, path);
 	else if (act == MA_REMOVE)
 		remove_disk(&us_dp, dev);
 	else if (act == MA_CHANGE)
