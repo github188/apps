@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mon>
+	<!--
+	     说明：
+	     1. 每个target标签定义一个监控项目
+	     	支持的项目有：
+		cpu-temp   -  CPU温度
+		env-temp   -  环境温度
+		case-temp  -  机箱温度
+	     2. 参数含义和取值
+	        min_threshold  -  最小阀值
+		max_threshold  -  最大阀值
+		min_alarm      -  最小告警值
+		max_alarm      -  最大告警值
+		    以上四个参数取值：(数值)代表阀值，ignore表示忽略
+		check_interval -  检查的间隔，单位（秒），最小取值30秒，最大取值3600秒
+	-->
+	<target name="cpu-temp" check_interval="60" min_threshold="25" max_threshold="65" min_alarm="30" max_alarm="60"/>
+</mon>
