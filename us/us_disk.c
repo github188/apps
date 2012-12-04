@@ -123,7 +123,6 @@ static int find_slot_from_path(const char *path)
 
 static int map_slot(int slot)
 {
-	int col, row;
 	/**
 	 * Marvell sata槽位号映射：
 	 * 4    8    12    16
@@ -133,11 +132,8 @@ static int map_slot(int slot)
 	 */
 	if (slot < 4 || slot > 19)
 		return -1;
-	slot -= 4;
-	row = slot % 4;
-	col = slot / 4;
-
-	return row * 4 + col + 1;
+	slot -= 3;
+	return slot;
 }
 
 static int find_slot(struct us_disk_pool *dp, const char *dev, const char *path)
