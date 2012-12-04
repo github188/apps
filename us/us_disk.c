@@ -214,17 +214,17 @@ const char* __disk_get_hotrep(const char *serial, char *raid_name)
 	{
 		xmlChar *xmlType, *xmlSerial, *xmlRaidName;
 		if( (!xmlStrcmp(node->name, BAD_CAST"disk")) &&
-			((xmlSerial=xmlGetProp(node, "serial"))!=NULL ) &&
-			(!xmlStrcmp(xmlSerial, serial)) )
+		    ((xmlSerial=xmlGetProp(node, (const xmlChar *)"serial"))!=NULL ) &&
+		    (!xmlStrcmp(xmlSerial, (const xmlChar *)serial)) )
 		{
 			hotrep_type = __hotrep_type;
-			xmlType = xmlGetProp(node, "type");
-			strcpy(hotrep_type, xmlType);
+			xmlType = xmlGetProp(node, (const xmlChar *)"type");
+			strcpy(hotrep_type, (const char *)xmlType);
 			// 如果是专用热备盘，同时提供对应的raid名称
 			if (raid_name && !xmlStrcmp(xmlType, BAD_CAST"Special"))
 			{
-				xmlRaidName = xmlGetProp(node, "md_name");
-				strcpy(raid_name, xmlRaidName);
+				xmlRaidName = xmlGetProp(node, (const xmlChar *)"md_name");
+				strcpy(raid_name, (const char *)xmlRaidName);
 				xmlFree(xmlRaidName);
 			}
 			xmlFree(xmlType);
