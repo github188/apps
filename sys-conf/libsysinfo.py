@@ -35,9 +35,32 @@ def __get_cpu_util(mod):
 		_item['value'] = ERROR_VALUE
 	return _item
 
-def __get_cpu_temp(mod):
+def __read_value(path, fil):
+	content = ''
+	try:
+		f = open('%s/%s' % (path, fil))
+		content = f.readline()
+		f.close
+	except:
+		pass
+	return content.strip()
+
+def __get_temp(mod):
 	_item = {}
 	_item['item'] = mod
+	try:
+		_item['value'] = ''
+		temp = __read_value(NCT_ROOT, 'temp17_input')
+		if temp != '':
+			_item['value'] = _item['value'] + 'CPU温度: %d' % (int(temp)/1000)
+		temp = __read_value(NCT_ROOT, 'temp18_input')
+		if temp != '':
+			_item['value'] = _item['value'] + ' 机箱温度: %d' % (int(temp)/1000)
+		temp = __read_value(NCT_ROOT, 'temp20_input')
+		if temp != '':
+			_item['value'] = _item['value'] + ' 环境温度: %d' % (int(temp)/1000)
+	except:
+		_item['value'] = ERROR_VALUE
 	return _item
 
 def __get_fan_speed(mod):
@@ -160,7 +183,7 @@ def __get_version(mod):
 
 _info_list = {'cpu-info':__get_cpu_info,
 		'cpu-util': __get_cpu_util,
-		'cpu-temp': __get_cpu_temp,
+		'temp': __get_temp,
 		'fan-speed': __get_fan_speed,
 		'mem-util': __get_mem_util,
 		'runtime': __get_runtime,
@@ -282,4 +305,5 @@ if __name__ == '__main__':
 	#print __get_cpu_util('cpu-util')
 	#print __get_stat_disk('disk')
 	#print __get_stat_vg('vg')
-	print __calc_mem(500620.0)
+	#print __calc_mem(500620.0)
+	print __read_value(NCT_ROOT, 'temp20_input')
