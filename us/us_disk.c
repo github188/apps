@@ -546,8 +546,8 @@ void us_disk_dump(int fd, char *slot, int detail)
 		if (disk->is_exist) {
 			write(fd, delim, strlen(delim));
 			us_dump_disk(fd, disk, detail);
+			delim = ",\n";
 		}
-		delim = ",\n";
 	}
 	sprintf(s, "]\n}\n");
 	write(fd, s, strlen(s));
