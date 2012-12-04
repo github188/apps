@@ -47,10 +47,26 @@ def __get_fan_speed(mod):
 		f = open('%s/fan1_input' % NCT_ROOT)
 		content = f.read()
 		f.close()
-		_item['value'] = content.replace('\n', '\0')
+		_item['value'] = content.replace('\n', '\0') + " RPM"
 	except:
-		_item['value'] = 0
+		_item['value'] = '0 RPM'
 	return _item
+
+def __calc_mem(mem_bytes):
+	# check kb
+	_tmp1 = mem_bytes / 1000
+	if _tmp1 < 1.0:
+		return '%d KB' % int(mem_bytes)
+	_tmp2 = _tmp1 / 1000
+	if _tmp2 < 1.0:
+		return '%d MB' % int(_tmp1)
+	_tmp1 = tmp2 / 10000
+	if tmp1 < 1.0:
+		return '%d GB' % int(tmp2)
+	_tmp2 = tmp1 / 1000
+	if _tmp2 < 1.0:
+		return '%d TB' % int(tmp1)
+	return ''
 
 def __get_mem_util(mod):
 	_item = {}
@@ -60,7 +76,7 @@ def __get_mem_util(mod):
 		mem_total = float(re.findall('MemTotal: (.*) kB', mem_info)[0])
 		mem_free = float(re.findall('MemFree: (.*) kB', mem_info)[0])
 		mem_used = mem_total - mem_free
-		_item['value'] = '%.2f%%' % (mem_used/mem_total*100)
+		_item['value'] = '%s  %.2f%%' % (__calc_mem(mem_total), mem_used/mem_total*100)
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item
@@ -265,4 +281,5 @@ if __name__ == '__main__':
 	#print __get_runtime('runtime')
 	#print __get_cpu_util('cpu-util')
 	#print __get_stat_disk('disk')
-	print __get_stat_vg('vg')
+	#print __get_stat_vg('vg')
+	print __calc_mem(500620.0)
