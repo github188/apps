@@ -462,9 +462,15 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	const char *p_state = disk_get_state(disk);
 	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim, p_state);
 
-	const char *p_raid = disk_get_raid_name(disk->dev_node);
-	if (!strcmp(p_state, "Special") && !strcmp(p_raid, "N/A"))
+	const char *raid_name = disk_get_raid_name(disk->dev_node);
+	char p_raid[128];
+	if (!strcmp(p_state, "Special") && !strcmp(raid_name, "N/A")) {
 		__disk_get_hotrep(disk->di.serial, p_raid);
+	} else {
+		strncpy(p_raid, raid_name, sizeof(p_raid) - 1);
+		p_raid[sizeof(p_raid) - 1] = 0;
+	}
+
 	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim, p_raid);
 
 	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
