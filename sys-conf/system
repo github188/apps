@@ -130,9 +130,9 @@ def system_main():
 	elif _mode == '--alarm':
 		if _email_arg:
 			if _get_arg:
-				ret,msg = alarm_email_get()
+				_ret,_msg = alarm_email_get()
 				if ret:
-					print json.dumps(__alarm_email_conf_todict(msg))
+					print json.dumps(__alarm_email_conf_todict(_msg))
 					sys.exit(0)
 				__systemExit(_ret, _msg)
 			elif _set_arg:
