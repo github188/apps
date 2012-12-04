@@ -452,6 +452,8 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	                di->model);
 	pos += snprintf(pos, end - pos, "%s\"serial\":\"%s\"", delim,
 	                di->serial);
+	pos += snprintf(pos, end - pos, "%s\"firmware\":\"%s\"", delim,
+	                di->firmware);
 	pos += snprintf(pos, end - pos, "%s\"capacity\":%llu", delim,
 	                (unsigned long long)di->size);
 
