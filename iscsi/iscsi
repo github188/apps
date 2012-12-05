@@ -47,6 +47,8 @@ class iSCSIArgs:
 		self.lun_id_set = False
 		self.lun_id_str = ''
 		self.initor = '*'
+		self.cur_initor = None
+		self.fre_initor = None	# 修改LUN映射使用
 		self.volume_name_set = False
 		self.volume_name_str = ''
 		self.udv_set = False
@@ -178,13 +180,16 @@ def iscsiLunProc(args = iSCSIArgs()):
 			ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
 					args.lun_id_str, args.lun_read_only_str, args.initor)
 			iscsiExit(ret, msg)
+	elif args.modify_set:
+		ret,msg = iSCSILunModify(args.target_name_str, args.lun_id_str, args.cur_initor, args.fre_initor)
+		iscsiExit(ret, msg)
 	elif args.unmap_set:
 		if not len(args.target_name_str):
 			iscsiExit(False, '请输入Target名称!')
 		elif not len(args.lun_id_str):
 			iscsiExit(False, '请输入LUN ID!')
 		try:
-			ret,msg = iSCSILunUnmap(args.target_name_str, int(args.lun_id_str))
+			ret,msg = iSCSILunUnmap(args.target_name_str, int(args.lun_id_str), args.initor)
 			iscsiExit(ret, msg)
 		except:
 			sys.exit(-1)
@@ -230,6 +235,7 @@ iscsi --target --list [--target-name <name>]
       --lun --list [--target-name <name> [--lun-id <id>]]
       --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
       --lun --map --target-name <name> --add --udv <name> [--block-size <size> --nv-cache <enable|disable>] --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
+      --lun --modify --target-name <name> --current-initiator <name> --lun-id <id> --fresh-initiator <name>
       --lun --unmap --target-name <target_name> --lun-id <id> [--initiator <name>]
       --lun --get-privilage --udv <name>
 
@@ -246,7 +252,8 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'add', 'remove=', 'name=', 'get-detail=',
 	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
-	'session', 'volume-name=', 'lun-read-only=', 'force-close=', 'initiator=']
+	'session', 'volume-name=', 'lun-read-only=', 'force-close=', 'initiator=',
+	'modify', 'current-initiator=', 'fresh-initiator=']
 
 def iscsi_main():
 	try:
@@ -317,8 +324,12 @@ def iscsi_main():
 			iscsiArgs.unmap_set = True
 		elif opt == '--get-privilage':
 			iscsiArgs.get_privilage_set = True
-		elif opt =='--force-close':
+		elif opt == '--force-close':
 			iscsiArgs.force_close_sid = arg
+		elif opt == '--current-initiator':
+			iscsiArgs.cur_initor = arg
+		elif opt == '--fresh-initiator':
+			iscsiArgs.fre_initor = arg
 
 	iscsiTargetProc(iscsiArgs)
 	iscsiVolumeProc(iscsiArgs)
