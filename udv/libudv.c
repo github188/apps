@@ -1,3 +1,4 @@
+#include <syslog.h>
 #include <Python.h>
 #include <parted/parted.h>
 #include "libudv.h"
@@ -136,6 +137,9 @@ int isNasVolume(const char *volume_name)
 static PedExceptionOption libudv_exception_handler(PedException *e)
 {
 	// TODO: 记录日志
+	openlog("libudv", LOG_NDELAY|LOG_PID, LOG_USER);
+	syslog(LOG_ERR, "exception: %s\n", e->message);
+	closelog();
 	return PED_EXCEPTION_OK;
 }
 
@@ -197,7 +201,10 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 
 	// 创建用户数据卷
 	if (!(device = ped_device_get(vg_dev)))
+	{
+		//printf("load device error!\n");
 		return E_SYS_ERROR;
+	}
 	constraint = ped_constraint_any(device);
 
 #ifndef _UDV_DEBUG
@@ -210,13 +217,19 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 #endif
 
 	if ( (type = ped_disk_probe(device)) && !strcmp(type->name, "gpt") )
+	{
 		disk = ped_disk_new(device);
+	}
 	else
+	{
+		//printf("old label!\n");
 		disk = _create_disk_label(device, ped_disk_type_get("gpt"));
+	}
 
 	if (!disk)
 	{
 		ret_code = E_SYS_ERROR;
+		//printf("get disk info error!\n");
 		goto error;
 	}
 
