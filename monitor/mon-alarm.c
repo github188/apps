@@ -1,20 +1,141 @@
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 #include "sys-mon.h"
 
-static struct list *galarm = NULL;
+static struct list galarm;
+
+static const char *__alarm_list[] = {
+	"power", "disk", "vg", "temperature", "fan", NULL
+};
+
+bool __alarm_supported(const char *mod)
+{
+	const char *p = __alarm_list[0];
+	while(p)
+	{
+		if (!strcmp(p, mod))
+			return true;
+		p++;
+	}
+	return false;
+}
+
 static const char *__cap_alarm_map[] = {
 	"cpu-temp", "temperature",
 	"env-temp", "temperature",
 	"case-temp", "temperature",
 	NULL};
 
+void dump_alarm_conf()
+{
+	struct list *n, *nt;
+	alarm_conf_t *tmp;
+
+	list_iterate_safe(n, nt, &galarm)
+	{
+		tmp = list_struct_base(n, alarm_conf_t, list);
+		printf("name: %s ", tmp->name);
+		if (tmp->action & ALARM_BUZZER)
+			puts(" BUZZER ");
+		if (tmp->action & ALARM_SYSLED)
+			puts(" SYSLED ");
+		if (tmp->action & ALARM_EMAIL)
+			puts(" EMAIL ");
+	}
+}
+
 size_t mon_alarm_load()
 {
-	return 0;
+	xmlDocPtr doc;
+	xmlNodePtr node;
+
+	DBGP("into load conf! %s\n", ALARM_CONF);
+
+	if ( (doc=xmlReadFile(ALARM_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL )
+	{
+		DBGP("load xml fail\n");
+		return -1;
+	}
+
+	list_init(&galarm);
+
+	if ( (node=xmlDocGetRootElement(doc)) == NULL )
+	{
+		DBGP("get root fail!\n");
+		goto _mon_load_error;
+	}
+
+	node = node->xmlChildrenNode;
+	while(node)
+	{
+		/* <module buzzer="disable" email="disable" name="power" switch="disable" sys-led="enable"/> */
+		// concern about label 'module'
+		if (xmlStrcmp(node->name, BAD_CAST"module"))
+		{
+			node = node->next;
+			continue;
+		}
+
+		xmlChar *modName = xmlGetProp(node, "name"),
+			*modSwitch = xmlGetProp(node, "switch"),
+			*modFuncEmail = xmlGetProp(node, "email"),
+			*modFuncSysLed = xmlGetProp(node, "sys-led"),
+			*modFuncBuzzer = xmlGetProp(node, "buzzer");
+
+		alarm_conf_t *tmp = NULL;
+		if ( modName && modSwitch && __alarm_supported(modName) &&
+			!strcmp(modSwitch, "enable") )
+		{
+			if ((tmp=(alarm_conf_t*)malloc(sizeof(alarm_conf_t))) != NULL)
+			{
+				bzero(tmp, sizeof(alarm_conf_t));
+				strcpy(tmp->name, modName);
+				if (!xmlStrcmp(modFuncEmail, "enable"))
+					tmp->action |= ALARM_EMAIL;
+				if (!xmlStrcmp(modFuncSysLed, "enable"))
+					tmp->action |= ALARM_SYSLED;
+				if (!xmlStrcmp(modFuncBuzzer, "enable"))
+					tmp->action |= ALARM_BUZZER;
+				list_add(&galarm, &tmp->list);
+			}
+		}
+
+		if (modName) xmlFree(modName);
+		if (modSwitch) xmlFree(modSwitch);
+		if (modFuncEmail) xmlFree(modFuncEmail);
+		if (modFuncSysLed) xmlFree(modFuncSysLed);
+		if (modFuncBuzzer) xmlFree(modFuncBuzzer);
+
+		node = node->next;
+	}
+
+_mon_load_error:
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+
+#ifndef NDEBUG
+	dump_alarm_conf();
+#endif
+
+	return (ssize_t)list_size(&galarm);
 }
 
 size_t mon_alarm_reload()
 {
-	return 0;
+	mon_alarm_release();
+	return mon_alarm_load();
+}
+
+void mon_alarm_release()
+{
+	struct list *n, *nt;
+	alarm_conf_t *tmp;
+
+	list_iterate_safe(n, nt, &galarm)
+	{
+		tmp = list_struct_base(n, alarm_conf_t, list);
+		list_del(n); free(tmp);
+	}
 }
 
 /*
@@ -39,7 +160,7 @@ int __get_alarm_action(const char *mod)
 	if (!alarm_mod)
 		return 0;
 
-	list_iterate_safe(n, nt, galarm)
+	list_iterate_safe(n, nt, &galarm)
 	{
 		tmp = list_struct_base(n, alarm_conf_t, list);
 		if (!strcmp(tmp->name, alarm_mod))
