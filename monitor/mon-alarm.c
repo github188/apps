@@ -14,7 +14,21 @@ size_t mon_alarm_load()
 
 size_t mon_alarm_reload()
 {
-	return 0;
+	mon_alarm_release();
+	galarm = NULL;
+	return mon_alarm_load();
+}
+
+void mon_alarm_release()
+{
+	struct list *n, *nt;
+	alarm_conf_t *tmp;
+
+	list_iterate_safe(n, nt, galarm)
+	{
+		tmp = list_struct_base(n, alarm_conf_t, list);
+		list_del(n); free(tmp);
+	}
 }
 
 /*

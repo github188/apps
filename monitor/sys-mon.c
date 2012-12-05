@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include "sys-mon.h"
 
-struct list *gconf = NULL;
-
 void mon_event(mon_conf_t *conf, int value)
 {
 	char msg[256] = {0};
@@ -38,43 +36,54 @@ void int_check(int sig)
 	if (sig!=SIGALRM)
 		return;
 
-	if (list_empty(gconf))
+	if (list_empty(&gconf))
 		return;
 
-	list_iterate_safe(n, nt, gconf)
-	{
-		item = list_struct_base(n, mon_conf_t, list);
-		if (!isExecutable(item))
-			continue;
-		if (!isExpried(item))
-			continue;
-		value = execute(item);
-		mon_event(item, value);
-		update(item);
-	}
+	list_iterate_safe(n, nt, &gconf);
+	log_release();
 }
-
 
 void mon_init()
 {
 	log_init();
-	mon_conf_load(&gconf);
+	mon_conf_load();
 }
 
 void mon_fini()
 {
 	syslog(LOG_ERR, "监控进程出错退出!");
+	mon_conf_release();
 	log_release();
 }
 
+/* -------------------------------------------------------------------------- */
+/*  test                                                                      */
+/* -------------------------------------------------------------------------- */
+
+#ifndef NDEBUG
+void test()
+{
+	printf("test load conf!\n");
+	printf("load: %d\n", mon_conf_load());
+	//dump_mon_conf();
+
+	mon_conf_reload();
+	//dump_mon_conf();
+
+	mon_conf_release();
+}
+#endif
+
 int main()
 {
+#ifdef NDEBUG
 	daemon(0, 0);
-
 
 	signal(SIGALRM, int_check);
 	signal(SIGTERM, mon_fini);
 	signal(SIGINT, mon_fini);
-
+#else
+	test();
+#endif
 	return 0;
 }

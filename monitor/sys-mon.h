@@ -1,6 +1,7 @@
 #include <syslog.h>
 #include <stdbool.h>
 #include "list.h"
+#include "../common/debug.h"
 
 #ifndef _SYS_MON_H_
 #define _SYS_MON_H_
@@ -18,7 +19,7 @@
 #define update(item) item->_last_update = time(NULL)
 #define execute(item) item->_capture()
 
-extern struct list *gconf;
+extern struct list gconf;
 
 /*---------------------------------------------------------------------------*/
 /*   Alarm                                                                   */
@@ -31,15 +32,17 @@ extern struct list *gconf;
 
 typedef struct _alarm_conf alarm_conf_t;
 struct _alarm_conf {
-	struct list *list;
+	struct list list;
 	char name[64];
 	int action;
 };
 
 size_t mon_alarm_load();
 size_t mon_alarm_reload();
+void mon_alarm_release();
 void raise_alarm(const char *module, const char *msg);
 
+#define ALARM_CONF "/opt/sys/alarm-conf.xml"
 
 /*---------------------------------------------------------------------------*/
 /*   Capture                                                                 */
@@ -56,7 +59,7 @@ capture_func capture_get(const char *mod);
 /*---------------------------------------------------------------------------*/
 typedef struct _mon_conf mon_conf_t;
 struct _mon_conf {
-	struct list *list;
+	struct list list;
 	char name[64];
 	int check_int;
 	int min_thr, max_thr;
@@ -65,7 +68,10 @@ struct _mon_conf {
 	capture_func _capture;	// 获取系统信息的函数
 };
 
-size_t mon_conf_load(struct list **conf);
-size_t mon_conf_reload(struct list **conf);
+size_t mon_conf_load();
+size_t mon_conf_reload();
+void mon_conf_release();
+
+#define MON_CONF "/opt/sys/sys-mon-conf.xml"
 
 #endif/*_SYS_MON_H_*/
