@@ -30,10 +30,14 @@ class iSCSITargetLun:
 		self.luns = 0
 		self.lun_list = []
 
-def isLunIdExist(tgt, lun_id):
+def isLunIdExist(tgt, initor, lun_id):
 	if not isTargetExist(tgt):
 		return False
-	return os.path.isdir(SCST.TARGET_DIR + os.sep + tgt + '/luns/' + '%d' % lun_id)
+	if initor == '*':
+		_check_path = '%s/%s/luns/%d' % (SCST.TARGET_DIR, tgt, lun_id)
+	else:
+		_check_path = '%s/%s/ini_groups/%s-grp/luns/%d' % (SCST.TARGET_DIR, tgt, initor, lun_id)
+	return os.path.isdir(_check_path)
 
 def __getFreeLunId(lun_dir):
 	luns = getDirList(lun_dir)
@@ -131,6 +135,31 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
 		return (True, '添加LUN映射成功！')
 	return (False, '添加LUN映射失败！')
 
+def iSCSILunModify(tgt, lun_id, cur_initor, fre_initor):
+
+	_lun_id = int(lun_id)
+	_volume_name = None
+	_read_only = None
+
+	# 获取当前LUN的读写属性以及volume_name
+	for x in iSCSILunGetList(tgt):
+		if x['initiator']==cur_initor and x['lun_id']==_lun_id:
+			_volume_name = x['volume_name']
+			_read_only = x['read_only']
+	if (_volume_name==None) or (_read_only==None):
+		return False, '修改LUN映射失败! LUN_ID %d 不存在!' % _lun_id
+
+	if not isLunIdExist(tgt, cur_initor, _lun_id):
+		return (False, '解除LUN %d 映射失败！LUN不存在！' % _lun_id)
+
+	# 删除当前Lun映射
+	ret, msg = iSCSILunUnmap(tgt, _lun_id, cur_initor, remove_volume = False)
+	if not ret:
+		return ret,msg
+
+	# 增加新映射
+	return iSCSILunMap(tgt, _volume_name, 'auto', _read_only, fre_initor)
+
 def __get_vdisk_by_lun(lun_dir):
 	volume = ''
 	try:
@@ -149,10 +178,10 @@ def __delInitiatorConf(tgt, initor):
 	grp_cmd = 'del %s-grp' % initor
 	return True if AttrWrite(grp_mgr, 'mgmt', grp_cmd) else False
 
-def iSCSILunUnmap(tgt, lun_id, initor = '*'):
+def iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 	if not isTargetExist(tgt):
 		return (False, '解除LUN %d 映射失败！Target %s 不存在！' % (lun_id, tgt))
-	if not isLunIdExist(tgt, lun_id):
+	if not isLunIdExist(tgt, initor, lun_id):
 		return (False, '解除LUN %d 映射失败！LUN不存在！' % lun_id)
 	if initor != '*' and not __isInitiatorExists(tgt, initor):
 		return Flase, '解除 %s 映射失败！Initiator不存在！' % lun_id
@@ -163,10 +192,6 @@ def iSCSILunUnmap(tgt, lun_id, initor = '*'):
 	else:
 		luns_dir = '%s/%s/luns' % (SCST.TARGET_DIR, tgt)
 
-	print luns_dir
-	print getDirList(luns_dir)
-	sys.exit(0)
-
 	volume = __get_vdisk_by_lun('%s/%d' % (luns_dir, lun_id))	# 保留vdisk名称供删除后检查
 
 	if AttrWrite(luns_dir, 'mgmt', lun_cmd):
@@ -174,7 +199,7 @@ def iSCSILunUnmap(tgt, lun_id, initor = '*'):
 		if initor != '*' and getDirList(luns_dir) == []:
 			if not __delInitiatorConf(tgt, initor):
 				return False, '解除LUN %d 映射失败!无法删除Initiator %s 配置!' % (lun_id, initor)
-		if not isLunExported(volume):
+		if not isLunExported(volume) and remove_volume:
 			vol_info = getVolumeInfo(volume)
 			if iSCSIVolumeRemove(volume):
 				if iscsiExtRemoveUdv(vol_info.udv_name):
