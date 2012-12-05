@@ -19,6 +19,8 @@
 #define update(item) item->_last_update = time(NULL)
 #define execute(item) item->_capture()
 
+#define CHECK_INTVAL 5
+
 extern struct list gconf;
 
 /*---------------------------------------------------------------------------*/

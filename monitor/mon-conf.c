@@ -15,8 +15,9 @@ void dump_mon_conf()
 	list_iterate_safe(n, nt, &gconf)
 	{
 		tmp = list_struct_base(n, mon_conf_t, list);
+		printf("tmp addr: %.8x\n", tmp);
 		printf("name: %s\n", tmp->name);
-		printf("check_int: %d\n", tmp->name);
+		printf("check_int: %d\n", tmp->check_int);
 		printf("min_thr: %d\n", tmp->min_thr);
 		printf("max_thr: %d\n", tmp->max_thr);
 		printf("min_alr: %d\n", tmp->min_alr);
@@ -67,21 +68,32 @@ size_t mon_conf_load()
 			&& tgtMinAlr && tgtMaxAlr)
 		{
 			mon_conf_t *tmp = NULL;
-			if ( (tmp=(mon_conf_t*)malloc(sizeof(mon_conf_t))) != NULL)
+			if (!isCaptureSupported(tgtName))
+			{
+				printf("module not supported!\n");
+			}
+			else if ( (tmp=(mon_conf_t*)malloc(sizeof(mon_conf_t))) != NULL)
 			{
 				bzero(tmp, sizeof(mon_conf_t));
 				strcpy(tmp->name, tgtName);
 				tmp->check_int = atoi(tgtChkInt);
 				tmp->min_thr = atoi(tgtMinThr);
 				tmp->max_thr = atoi(tgtMaxThr);
-				tmp->min_alr = atoi(tgtMinThr);
-				tmp->max_alr = atoi(tgtMaxThr);
+				tmp->min_alr = atoi(tgtMinAlr);
+				tmp->max_alr = atoi(tgtMaxAlr);
+				tmp->_last_update = time(NULL);
+				tmp->_capture = capture_get(tgtName);
 				list_add(&gconf, &tmp->list);
 
 #ifndef NDEBUG
 				DBGP("check_int: %d / %s\n", tmp->check_int, tgtChkInt);
+				DBGP("tmp addr: %.8x\n", tmp);
 				dump_mon_conf();
 #endif
+			}
+			else
+			{
+				printf("alloc mem fail!\n");
 			}
 		}
 

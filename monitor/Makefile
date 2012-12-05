@@ -1,5 +1,5 @@
-#ARGS=-DNDEBUG
-CFLAGS=-I/usr/include/libxml2
+ARGS=-DNDEBUG
+CFLAGS=-I/usr/include/libxml2 -g
 CFLAGS+=$(ARGS)
 
 all:
