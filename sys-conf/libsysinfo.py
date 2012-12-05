@@ -35,22 +35,67 @@ def __get_cpu_util(mod):
 		_item['value'] = ERROR_VALUE
 	return _item
 
-def __get_cpu_temp(mod):
+def __read_value(path, fil):
+	content = ''
+	try:
+		f = open('%s/%s' % (path, fil))
+		content = f.readline()
+		f.close
+	except:
+		pass
+	return content.strip()
+
+def __get_temp(mod):
 	_item = {}
 	_item['item'] = mod
+	try:
+		_item['value'] = ''
+		temp = __read_value(NCT_ROOT, 'temp17_input')
+		if temp != '':
+			_item['value'] = _item['value'] + 'CPU温度: %d' % (int(temp)/1000)
+		temp = __read_value(NCT_ROOT, 'temp18_input')
+		if temp != '':
+			_item['value'] = _item['value'] + ' 机箱温度: %d' % (int(temp)/1000)
+		temp = __read_value(NCT_ROOT, 'temp20_input')
+		if temp != '':
+			_item['value'] = _item['value'] + ' 环境温度: %d' % (int(temp)/1000)
+	except:
+		_item['value'] = ERROR_VALUE
 	return _item
 
 def __get_fan_speed(mod):
 	_item = {}
 	_item['item'] = mod
 	try:
-		f = open('%s/fan1_input' % NCT_ROOT)
-		content = f.read()
-		f.close()
-		_item['value'] = content.replace('\n', '\0')
+		_item['value'] = ''
+		temp = __read_value(NCT_ROOT, 'fan1_input')
+		if temp != '' and temp != '0':
+			_item['value'] = _item['value'] + '机箱风扇1: %s RPM' % temp
+		temp = __read_value(NCT_ROOT, 'fan3_input')
+		if temp != '' and temp != '0':
+			_item['value'] = _item['value'] + '  机箱风扇2: %s RPM' % temp
+		temp = __read_value(NCT_ROOT, 'fan2_input')
+		if temp != '' and temp != '0':
+			_item['value'] = _item['value'] + '  CPU风扇: %s RPM' % temp
 	except:
-		_item['value'] = 0
+		_item['value'] = ERROR_VALUE
 	return _item
+
+def __calc_mem(mem_bytes):
+	# check kb
+	_tmp1 = mem_bytes / 1000
+	if _tmp1 < 1.0:
+		return '%d KB' % int(mem_bytes)
+	_tmp2 = _tmp1 / 1000
+	if _tmp2 < 1.0:
+		return '%d MB' % int(_tmp1)
+	_tmp1 = tmp2 / 10000
+	if tmp1 < 1.0:
+		return '%d GB' % int(tmp2)
+	_tmp2 = tmp1 / 1000
+	if _tmp2 < 1.0:
+		return '%d TB' % int(tmp1)
+	return ''
 
 def __get_mem_util(mod):
 	_item = {}
@@ -60,7 +105,7 @@ def __get_mem_util(mod):
 		mem_total = float(re.findall('MemTotal: (.*) kB', mem_info)[0])
 		mem_free = float(re.findall('MemFree: (.*) kB', mem_info)[0])
 		mem_used = mem_total - mem_free
-		_item['value'] = '%.2f%%' % (mem_used/mem_total*100)
+		_item['value'] = '%s  %.2f%%' % (__calc_mem(mem_total), mem_used/mem_total*100)
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item
@@ -144,7 +189,7 @@ def __get_version(mod):
 
 _info_list = {'cpu-info':__get_cpu_info,
 		'cpu-util': __get_cpu_util,
-		'cpu-temp': __get_cpu_temp,
+		'temp': __get_temp,
 		'fan-speed': __get_fan_speed,
 		'mem-util': __get_mem_util,
 		'runtime': __get_runtime,
@@ -265,4 +310,6 @@ if __name__ == '__main__':
 	#print __get_runtime('runtime')
 	#print __get_cpu_util('cpu-util')
 	#print __get_stat_disk('disk')
-	print __get_stat_vg('vg')
+	#print __get_stat_vg('vg')
+	#print __calc_mem(500620.0)
+	print __read_value(NCT_ROOT, 'temp20_input')
