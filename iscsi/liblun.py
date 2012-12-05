@@ -274,6 +274,7 @@ def iSCSILunGetPrivilage(udv_name):
 				priv_dict['status'] = True
 				if lun['read_only'] == 'disable':
 					priv_dict['privilage'] = 'ro'
+					break
 				else:
 					priv_dict['privilage'] = 'rw'
 	except:
