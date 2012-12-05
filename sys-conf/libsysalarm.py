@@ -127,6 +127,7 @@ def alarm_email_set(email=email_conf()):
 	if email.switch != 'enable' and email.switch != 'disable':
 		return False, '--set参数的取值只能是enable或者disable'
 
+	"""
 	if email.switch == 'enable':
 		if email.receiver is None:
 			return False, '缺少--receiver参数!'
@@ -142,6 +143,7 @@ def alarm_email_set(email=email_conf()):
 					return False, '缺少--auth-user参数!'
 				if email.auth_pass is None:
 					return False, '缺少--auth-pass参数!'
+	"""
 
 	root = doc.documentElement
 
