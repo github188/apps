@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -g ${CFLAG} -I/usr/include/python2.7 -I/usr/lib/python2.7/config -lpthread -ldl -lutil -lm -lpython2.7
+CFLAGS=-Wall -g ${CFLAG} -I/usr/include/python2.6 -I/usr/lib/python2.6/config -lpthread -ldl -lutil -lm -lpython2.6
 objects=libudv.o list.o
 
 libudv.a : $(objects)
