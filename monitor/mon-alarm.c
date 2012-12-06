@@ -50,6 +50,7 @@ size_t mon_alarm_load()
 	xmlNodePtr node;
 
 	DBGP("into load conf! %s\n", ALARM_CONF);
+	syslog(LOG_INFO, "%s", __func__);
 
 	if ( (doc=xmlReadFile(ALARM_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL )
 	{
@@ -97,6 +98,7 @@ size_t mon_alarm_load()
 				if (!xmlStrcmp(modFuncBuzzer, "enable"))
 					tmp->action |= ALARM_BUZZER;
 				list_add(&galarm, &tmp->list);
+				syslog(LOG_INFO, "Load: %s action: %.8x\n", tmp->name, tmp->action);
 			}
 		}
 
@@ -130,6 +132,8 @@ void mon_alarm_release()
 {
 	struct list *n, *nt;
 	alarm_conf_t *tmp;
+
+	syslog(LOG_INFO, "%s\n", __func__);
 
 	list_iterate_safe(n, nt, &galarm)
 	{
@@ -176,14 +180,17 @@ int __get_alarm_action(const char *mod)
 
 void action_buzzer()
 {
+	syslog(LOG_ERR, "*** buzzer action ***");
 }
 
 void action_sysled()
 {
+	syslog(LOG_ERR, "*** sysled action ***");
 }
 
 void action_email(const char *mod, const char *msg)
 {
+	syslog(LOG_ERR, "*** email action ***");
 }
 
 
@@ -194,6 +201,8 @@ void action_email(const char *mod, const char *msg)
 void raise_alarm(const char *mod, const char *msg)
 {
 	int action;
+
+	// TODO: log
 
 	if ( !(action = __get_alarm_action(mod)) )
 		return;

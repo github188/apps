@@ -15,6 +15,8 @@ void mon_event(mon_conf_t *conf)
 		return;
 	}
 
+	syslog(LOG_INFO, "%s (capture: %s)", __func__, conf->name);
+
 	value = conf->_capture();
 
 	if ( isValid(conf->min_alr) && (value < conf->min_alr) )
@@ -55,13 +57,23 @@ void mon_init()
 {
 	log_init();
 	mon_conf_load();
+	mon_alarm_load();
 }
 
 void mon_fini()
 {
-	syslog(LOG_ERR, "监控进程出错退出!");
+	syslog(LOG_ERR, "SIGINT or SIGTERM received!");
 	mon_conf_release();
+	mon_alarm_release();
 	log_release();
+	exit(0);
+}
+
+void mon_reload()
+{
+	syslog(LOG_INFO, "SIGHUP recieved!\n");
+	mon_conf_reload();
+	mon_alarm_reload();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -90,12 +102,19 @@ void test()
 int main()
 {
 #ifdef NDEBUG
-	daemon(0, 0);
+	//daemon(0, 0);
 
 	mon_init();
 	signal(SIGALRM, sig_alarm);
 	signal(SIGTERM, mon_fini);
 	signal(SIGINT, mon_fini);
+	signal(SIGHUP, mon_reload);
+
+	while(true)
+	{
+		check_interval();
+		sleep(5);
+	}
 #else
 	test();
 #endif
