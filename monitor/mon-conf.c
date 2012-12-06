@@ -33,6 +33,8 @@ size_t mon_conf_load()
 
 	DBGP("into load conf! %s\n", MON_CONF);
 
+	syslog(LOG_INFO, "%s", __func__);
+
 	if ( (doc=xmlReadFile(MON_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL )
 	{
 		DBGP("load xml fail\n");
@@ -50,6 +52,8 @@ size_t mon_conf_load()
 	node = node->xmlChildrenNode;
 	while(node)
 	{
+		syslog(LOG_DEBUG, "get : %s\n", node->name);
+
 		// concern about label 'target'
 		if (xmlStrcmp(node->name, BAD_CAST"target"))
 		{
@@ -70,7 +74,7 @@ size_t mon_conf_load()
 			mon_conf_t *tmp = NULL;
 			if (!isCaptureSupported(tgtName))
 			{
-				printf("module not supported!\n");
+				syslog(LOG_ERR, "%s : module not supported!", __func__);
 			}
 			else if ( (tmp=(mon_conf_t*)malloc(sizeof(mon_conf_t))) != NULL)
 			{
@@ -85,6 +89,9 @@ size_t mon_conf_load()
 				tmp->_capture = capture_get(tgtName);
 				list_add(&gconf, &tmp->list);
 
+				syslog(LOG_INFO, "Load: %s (min_thr: %d, max_thr: %d, min_alr: %d, max_thr: %d, check_int: %d)",
+						tmp->name, tmp->min_thr, tmp->max_thr, tmp->min_alr, tmp->max_alr, tmp->check_int);
+
 #ifndef NDEBUG
 				DBGP("check_int: %d / %s\n", tmp->check_int, tgtChkInt);
 				DBGP("tmp addr: %.8x\n", tmp);
@@ -93,8 +100,12 @@ size_t mon_conf_load()
 			}
 			else
 			{
-				printf("alloc mem fail!\n");
+				syslog(LOG_ERR, "%s : alloc mem fail!", __func__);
 			}
+		}
+		else
+		{
+			syslog(LOG_ERR, "%s : %s : get attr error!", __func__, node->name);
 		}
 
 		if (tgtName) xmlFree(tgtName);
@@ -125,9 +136,12 @@ void mon_conf_release()
 	struct list *n, *nt;
 	mon_conf_t *tmp;
 
+	syslog(LOG_INFO, "%s", __func__);
+
 	list_iterate_safe(n, nt, &gconf)
 	{
 		tmp = list_struct_base(n, mon_conf_t, list);
+		syslog(LOG_INFO, "Release: %s\n", tmp->name);
 		list_del(n); free(tmp);
 		DBGP("free node!\n");
 	}
