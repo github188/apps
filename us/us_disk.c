@@ -489,7 +489,7 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"smart_attr\":{", delim);
 		pos += snprintf(pos, end - pos, "\"read_err\":%llu",
-		                (unsigned long long)di->si.spin_up);
+		                (unsigned long long)di->si.read_error);
 		pos += snprintf(pos, end - pos, "%s\"spin_up\":%llu",
 		                delim, (unsigned long long)di->si.spin_up);
 		pos += snprintf(pos, end - pos,

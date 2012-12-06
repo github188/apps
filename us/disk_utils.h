@@ -10,7 +10,7 @@
 
 struct disk_smart_info {
 	int		health_good;	/* 0: bad, 1: good */
-	uint8_t		read_error;
+	uint64_t	read_error;
 	uint64_t	spin_up;
 	uint64_t	reallocate_sectors;
 	uint64_t	pending_sectors;
