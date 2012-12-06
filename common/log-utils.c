@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "log.h"
 
-const char *_mod_name[] = {"Web", "Disk", "VG", "UDV", "iSCSI", "NAS", "SysConf", "Unknown", NULL};
+const char *_mod_name[] = {"Web", "Disk", "VG", "UDV", "iSCSI", "NAS", "SysConf", "SysMon", "Unknown", NULL};
 const char *_mod_category[] = {"Auto", "Manual", NULL};
 const char *_mod_event[] = {"Info", "Warning", "Error", NULL};
 

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdbool.h>
+#include "debug.h"
 
 #ifndef _SYS_LOG_H
 #define _SYS_LOG_H
@@ -53,16 +54,19 @@ enum _module
 	LOG_MOD_ISCSI,
 	LOG_MOD_NAS,
 	LOG_MOD_SYSCONF,
+	LOG_MOD_SYSMON,
 	LOG_MOD_UNKNOWN = -1
 };
 
 static inline const char *LogModuleStr(log_module_e module)
 {
+	DBGP("%s : %d, %s\n", __func__, module, _IntToStr(_mod_name, module));
 	return _IntToStr(_mod_name, module);
 }
 
 static inline const int LogModuleInt(const char *module)
 {
+	DBGP("%s : %s %d\n", __func__, module, _StrToInt(_mod_name, module));
 	return _StrToInt(_mod_name, module);
 }
 

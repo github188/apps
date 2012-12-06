@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "list.h"
 #include "../common/debug.h"
+#include "../common/log.h"
 
 #ifndef _SYS_MON_H_
 #define _SYS_MON_H_

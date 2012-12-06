@@ -10,14 +10,12 @@ void mon_event(mon_conf_t *conf)
 
 	if (!conf)
 	{
-		// TODO: log
-		printf("conf not invalid!\n");
+		syslog(LOG_ERR, "%s : conf not invalid!", __func__);
 		return;
 	}
 
-	syslog(LOG_INFO, "%s (capture: %s)", __func__, conf->name);
-
 	value = conf->_capture();
+	syslog(LOG_INFO, "%s (capture: %s value: %d)", __func__, conf->name, value);
 
 	if ( isValid(conf->min_alr) && (value < conf->min_alr) )
 		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最低告警值 %d !",

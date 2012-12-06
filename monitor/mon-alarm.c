@@ -202,7 +202,7 @@ void raise_alarm(const char *mod, const char *msg)
 {
 	int action;
 
-	// TODO: log
+	LogInsert(NULL, "SysMon", "Auto", "Warning", msg);
 
 	if ( !(action = __get_alarm_action(mod)) )
 		return;

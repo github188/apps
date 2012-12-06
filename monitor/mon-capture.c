@@ -36,14 +36,22 @@ const char *__read_file_line(const char *file)
 	else
 	{
 		syslog(LOG_INFO, "%s : fail to read %s", __func__, file);
+		return NULL;
 	}
 
 	return line;
 }
 
+int __atoi(const char *p)
+{
+	if (p)
+		return atoi(p);
+	return -1;
+}
+
 int __read_int_value(const char *file)
 {
-	return atoi(__read_file_line(file));
+	return __atoi(__read_file_line(file));
 }
 
 int capture_cpu_temp()
