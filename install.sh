@@ -51,5 +51,7 @@ rsync -v common/log-daemon "$target"/usr/local/bin
 
 rsync -av driver-backup/* "$target"/lib/modules/3.4.13/extra
 
+rsync -av monitor/sys-mon "$target"/usr/local/bin
+
 #reset_sd
 [ -z "$target" ] && ldconfig
