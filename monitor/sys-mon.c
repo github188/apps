@@ -8,9 +8,12 @@ void mon_event(mon_conf_t *conf)
 	char msg[256] = {0};
 	int value;
 
+	syslog(LOG_INFO, "last update: %f", conf->_last_update);
+	syslog(LOG_INFO, "diff: %f", difftime(time(NULL), conf->_last_update));
+
 	if (!isExpried(conf))
 		return;
-	
+
 	if (!isExecutable(conf))
 	{
 		syslog(LOG_ERR, "mod: %s , the capture function is not executable!", conf->name);
