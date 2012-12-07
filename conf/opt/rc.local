@@ -8,7 +8,7 @@ nohup /usr/local/bin/us_d &
 
 /usr/local/bin/log-daemon
 
-/usr/local/bin/sys-mon &
+/usr/local/bin/sys-mon
 
 insmod /lib/modules/3.4.13/extra/nct6106.ko
 
