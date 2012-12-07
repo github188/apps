@@ -3,7 +3,7 @@
 #include <parted/parted.h>
 #include "libudv.h"
 
-const static int DFT_SECTOR_SIZE = 4096;
+const static int DFT_SECTOR_SIZE = 512;
 
 /*
  * import from libpyext_udv.py
@@ -163,6 +163,8 @@ PedDisk* _create_disk_label (PedDevice *dev, PedDiskType *type)
 	return disk;
 }
 
+#define _fix_4k(size) ((uint64_t)((size)/4096)) * 8
+
 /**
  * API
  */
@@ -238,11 +240,15 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 		elem = list_struct_base(n, struct geom_stru, list);
 		if (elem->geom.capacity >= capacity)
 		{
-			part = ped_partition_new(disk, PED_PARTITION_NORMAL,
-					NULL,
-					(elem->geom.start/DFT_SECTOR_SIZE),
-					(uint64_t)((elem->geom.start + capacity)/DFT_SECTOR_SIZE));
+			uint64_t _start_sect, _end_sect;
 
+			_start_sect = _fix_4k(elem->geom.start);
+			_end_sect = _fix_4k(elem->geom.start + capacity) - 1;
+
+			//printf("ss: %llu, cap: %llu\n", elem->geom.start, capacity);
+			//printf("s: %llu, e: %llu\n", _start_sect, _end_sect);
+
+			part = ped_partition_new(disk, PED_PARTITION_NORMAL, NULL, _start_sect, _end_sect);
 			ped_partition_set_name(part, name);
 			ped_disk_add_partition(disk, part, constraint);
 			ped_disk_commit(disk);
@@ -317,6 +323,10 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 
 				gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
 				gs->geom.start = last_geom.end;
+				if (gs->geom.start == 0)
+				{
+					gs->geom.start = DFT_ALIGN_BEGIN;
+				}
 				gs->geom.end = part->geom.start * DFT_SECTOR_SIZE - 1;
 				gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
 				list_add(list, &gs->list);
@@ -335,6 +345,10 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 		gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
 
 		gs->geom.start = last_geom.end;
+		if (gs->geom.start == 0)
+		{
+			gs->geom.start = DFT_ALIGN_BEGIN;
+		}
 		gs->geom.end = end_pos;
 		gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
 
