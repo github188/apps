@@ -52,8 +52,6 @@ size_t mon_conf_load()
 	node = node->xmlChildrenNode;
 	while(node)
 	{
-		syslog(LOG_DEBUG, "get : %s\n", node->name);
-
 		// concern about label 'target'
 		if (xmlStrcmp(node->name, BAD_CAST"target"))
 		{

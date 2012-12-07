@@ -8,14 +8,20 @@ void mon_event(mon_conf_t *conf)
 	char msg[256] = {0};
 	int value;
 
-	if (!conf)
+	if (!isExpried(conf))
+		return;
+	
+	if (!isExecutable(conf))
 	{
-		syslog(LOG_ERR, "%s : conf not invalid!", __func__);
+		syslog(LOG_ERR, "mod: %s , the capture function is not executable!", conf->name);
 		return;
 	}
 
-	value = conf->_capture();
-	syslog(LOG_INFO, "%s (capture: %s value: %d)", __func__, conf->name, value);
+	if ( (value = conf->_capture()) < 0 )
+	{
+		syslog(LOG_INFO, "capture value invalid! (mod: %s val: %d)", conf->name, value);
+		return;
+	}
 
 	if ( isValid(conf->min_alr) && (value < conf->min_alr) )
 		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最低告警值 %d !",
@@ -29,6 +35,9 @@ void mon_event(mon_conf_t *conf)
 	else if ( isValid(conf->max_thr) && (value > conf->max_thr) )
 		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最高阀值 %d !",
 				conf->name, value, conf->max_thr);
+
+	update(conf);
+
 	if (msg[0] != '\0')
 		raise_alarm(conf->name, msg);
 }
