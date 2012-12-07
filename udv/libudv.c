@@ -2,7 +2,7 @@
 #include <parted/parted.h>
 #include "libudv.h"
 
-const static int DFT_SECTOR_SIZE = 512;
+const static int DFT_SECTOR_SIZE = 4096;
 
 /*
  * import from libpyext_udv.py
