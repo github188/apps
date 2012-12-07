@@ -52,13 +52,12 @@ size_t mon_alarm_load()
 	DBGP("into load conf! %s\n", ALARM_CONF);
 	syslog(LOG_INFO, "%s", __func__);
 
+	list_init(&galarm);
 	if ( (doc=xmlReadFile(ALARM_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL )
 	{
-		DBGP("load xml fail\n");
+		syslog(LOG_ERR, "load alarm conf fail!");
 		return -1;
 	}
-
-	list_init(&galarm);
 
 	if ( (node=xmlDocGetRootElement(doc)) == NULL )
 	{

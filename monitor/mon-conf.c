@@ -35,17 +35,16 @@ size_t mon_conf_load()
 
 	syslog(LOG_INFO, "%s", __func__);
 
+	list_init(&gconf);
 	if ( (doc=xmlReadFile(MON_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL )
 	{
 		DBGP("load xml fail\n");
 		return -1;
 	}
 
-	list_init(&gconf);
-
 	if ( (node=xmlDocGetRootElement(doc)) == NULL )
 	{
-		DBGP("get root fail!\n");
+		syslog(LOG_INFO, "load capture conf fail!");
 		goto _mon_load_error;
 	}
 

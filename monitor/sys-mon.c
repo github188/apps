@@ -112,7 +112,7 @@ void test()
 int main()
 {
 #ifdef NDEBUG
-	//daemon(0, 0);
+	daemon(0, 0);
 
 	mon_init();
 	signal(SIGALRM, sig_alarm);
