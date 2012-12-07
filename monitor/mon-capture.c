@@ -56,17 +56,26 @@ int __read_int_value(const char *file)
 
 int capture_cpu_temp()
 {
-	return __read_int_value(NCT_ROOT"/temp17_input");
+	int val = __read_int_value(NCT_ROOT"/temp17_input");
+	if (val>0)
+		return (int)(val/1000);
+	return val;
 }
 
 int capture_env_temp()
 {
-	return __read_int_value(NCT_ROOT"/temp20_input");
+	int val = __read_int_value(NCT_ROOT"/temp20_input");
+	if (val > 0)
+		return (int)(val/1000);
+	return val;
 }
 
 int capture_case_temp()
 {
-	return __read_int_value(NCT_ROOT"/temp18_input");
+	int val = __read_int_value(NCT_ROOT"/temp18_input");
+	if (val > 0)
+		return (int)(val/1000);
+	return val;
 }
 
 capture_func capture_get(const char *mod)
