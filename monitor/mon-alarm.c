@@ -53,6 +53,18 @@ size_t mon_alarm_load()
 	syslog(LOG_INFO, "%s", __func__);
 
 	list_init(&galarm);
+
+	if (access(ALARM_CONF, R_OK))
+	{
+		syslog(LOG_ERR, "the default alarm conf file %s not exist! this will be created!", ALARM_CONF);
+		if (!create_default_conf(ALARM_CONF, ALARM_CONF_CONTENT))
+		{
+			syslog(LOG_ERR, "create default alarm conf file error!");
+			kill(getpid(), SIGTERM);
+			return -1;
+		}
+	}
+
 	if ( (doc=xmlReadFile(ALARM_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL )
 	{
 		syslog(LOG_ERR, "load alarm conf fail!");
@@ -61,7 +73,7 @@ size_t mon_alarm_load()
 
 	if ( (node=xmlDocGetRootElement(doc)) == NULL )
 	{
-		DBGP("get root fail!\n");
+		syslog(LOG_ERR, "load alarm conf fail! nothing to load!");
 		goto _mon_load_error;
 	}
 

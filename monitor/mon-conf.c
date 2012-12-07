@@ -12,6 +12,7 @@
 		item = atoi(prop); \
 }
 
+
 struct list gconf;
 
 #ifndef NDEBUG
@@ -34,6 +35,29 @@ void dump_mon_conf()
 }
 #endif
 
+bool create_default_conf(const char *file, const char *content)
+{
+	char _conf_dir[PATH_MAX], *p = NULL;
+	int fd;
+
+	strcpy(_conf_dir, file);
+	if (! (p = strrchr(_conf_dir, '/')) )
+		return false;
+
+	*(p+1) = '\0';
+	if (!mkdir_p(_conf_dir))
+		return false;
+
+	if ( (fd=open(file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) > 0 )
+	{
+		write(fd, content, strlen(content));
+		close(fd);
+		return true;
+	}
+
+	return false;
+}
+
 size_t mon_conf_load()
 {
 	xmlDocPtr doc;
@@ -44,15 +68,27 @@ size_t mon_conf_load()
 	syslog(LOG_INFO, "%s", __func__);
 
 	list_init(&gconf);
+
+	if (access(MON_CONF, R_OK))
+	{
+		syslog(LOG_ERR, "the mon conf file %s not exists! default conf file will be created!", MON_CONF);
+		if (!create_default_conf(MON_CONF, MON_CONF_CONTENT))
+		{
+			syslog(LOG_ERR, "create default conf file error!");
+			kill(getpid(), SIGTERM);
+			return -1;
+		}
+	}
+
 	if ( (doc=xmlReadFile(MON_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL )
 	{
-		DBGP("load xml fail\n");
+		syslog(LOG_ERR, "fail to load xml conf!");
 		return -1;
 	}
 
 	if ( (node=xmlDocGetRootElement(doc)) == NULL )
 	{
-		syslog(LOG_INFO, "load capture conf fail!");
+		syslog(LOG_ERR, "load capture conf fail! nothing to load!");
 		goto _mon_load_error;
 	}
 

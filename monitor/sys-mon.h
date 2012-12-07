@@ -1,5 +1,10 @@
 #include <syslog.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdbool.h>
+#include <signal.h>
 #include "list.h"
 #include "../common/debug.h"
 #include "../common/log.h"
@@ -46,6 +51,15 @@ void raise_alarm(const char *module, const char *msg);
 
 #define ALARM_CONF "/opt/sys/alarm-conf.xml"
 
+#define ALARM_CONF_CONTENT "\
+<?xml version=\"1.0\" encoding=\"UTF-8\"?><alarm> \
+<category name=\"email\" switch=\"disable\"></category> \
+<module buzzer=\"disable\" email=\"disable\" name=\"temperature\" switch=\"enable\" sys-led=\"enable\"/> \
+</alarm> \
+"
+
+bool create_default_conf(const char *file, const char *content);
+
 /*---------------------------------------------------------------------------*/
 /*   Capture                                                                 */
 /*---------------------------------------------------------------------------*/
@@ -75,5 +89,14 @@ size_t mon_conf_reload();
 void mon_conf_release();
 
 #define MON_CONF "/opt/sys/sys-mon-conf.xml"
+
+#define MON_CONF_CONTENT "\
+<?xml version=\"1.0\" encoding=\"UTF-8\"?> \
+<mon> \
+	<target name=\"cpu-temp\" check_interval=\"60\" min_threshold=\"ignore\" max_threshold=\"65\" min_alarm=\"ignore\" max_alarm=\"60\"/> \
+	<target name=\"env-temp\" check_interval=\"60\" min_threshold=\"ignore\" max_threshold=\"65\" min_alarm=\"ignore\" max_alarm=\"60\"/> \
+	<target name=\"case-temp\" check_interval=\"60\" min_threshold=\"ignore\" max_threshold=\"65\" min_alarm=\"ignore\" max_alarm=\"60\"/> \
+</mon> \
+"
 
 #endif/*_SYS_MON_H_*/

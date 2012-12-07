@@ -92,6 +92,9 @@ void mon_reload()
 void test()
 {
 #if 1
+	create_default_conf("/tmp/sys/abc/test.xml", MON_CONF_CONTENT);
+	return;
+
 	printf("test load conf!\n");
 	printf("load: %d\n", mon_conf_load());
 	//dump_mon_conf();
@@ -110,7 +113,7 @@ void test()
 int main()
 {
 #ifdef NDEBUG
-	//daemon(0, 0);
+	daemon(0, 0);
 
 	mon_init();
 	signal(SIGALRM, sig_alarm);
