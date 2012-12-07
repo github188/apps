@@ -8,11 +8,10 @@ void mon_event(mon_conf_t *conf)
 	char msg[256] = {0};
 	int value;
 
-	syslog(LOG_INFO, "last update: %f", conf->_last_update);
-	syslog(LOG_INFO, "diff: %f", difftime(time(NULL), conf->_last_update));
 
 	if (!isExpried(conf))
 		return;
+	update(conf);
 
 	if (!isExecutable(conf))
 	{
@@ -39,7 +38,6 @@ void mon_event(mon_conf_t *conf)
 		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最高阀值 %d !",
 				conf->name, value, conf->max_thr);
 
-	update(conf);
 
 	if (msg[0] != '\0')
 		raise_alarm(conf->name, msg);
@@ -112,7 +110,7 @@ void test()
 int main()
 {
 #ifdef NDEBUG
-	daemon(0, 0);
+	//daemon(0, 0);
 
 	mon_init();
 	signal(SIGALRM, sig_alarm);

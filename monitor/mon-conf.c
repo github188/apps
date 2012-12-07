@@ -3,6 +3,14 @@
 #include <libxml/tree.h>
 #include "sys-mon.h"
 
+#define _IGNORE BAD_CAST"ignore"
+#define _ASSIGN(prop, item) \
+{ \
+	if (!xmlStrcmp(prop, _IGNORE)) \
+		item = VAL_IGNORE; \
+	else \
+		item = atoi(prop); \
+}
 
 struct list gconf;
 
@@ -76,13 +84,14 @@ size_t mon_conf_load()
 			else if ( (tmp=(mon_conf_t*)malloc(sizeof(mon_conf_t))) != NULL)
 			{
 				bzero(tmp, sizeof(mon_conf_t));
+
 				strcpy(tmp->name, tgtName);
 				tmp->check_int = atoi(tgtChkInt);
-				tmp->min_thr = atoi(tgtMinThr);
-				tmp->max_thr = atoi(tgtMaxThr);
-				tmp->min_alr = atoi(tgtMinAlr);
-				tmp->max_alr = atoi(tgtMaxAlr);
-				tmp->_last_update = time(NULL);
+				_ASSIGN(tgtMinThr, tmp->min_thr);
+				_ASSIGN(tgtMaxThr, tmp->max_thr);
+				_ASSIGN(tgtMinAlr, tmp->min_alr);
+				_ASSIGN(tgtMaxAlr, tmp->max_alr);
+				update(tmp);
 				tmp->_capture = capture_get(tgtName);
 				list_add(&gconf, &tmp->list);
 
