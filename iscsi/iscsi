@@ -10,6 +10,7 @@ import json
 from libtarget import *
 from libvolume import *
 from liblun import *
+from libsession import *
 
 
 class iSCSIArgs:
@@ -45,12 +46,14 @@ class iSCSIArgs:
 		self.lun_set = False
 		self.lun_id_set = False
 		self.lun_id_str = ''
+		self.initor = '*'
+		self.cur_initor = None
+		self.fre_initor = None	# 修改LUN映射使用
 		self.volume_name_set = False
 		self.volume_name_str = ''
 		self.udv_set = False
 		self.udv_str = ''
-		self.force_close_set = False
-		self.force_close_str = ''
+		self.force_close_sid = None
 		self.get_privilage_set = False
 
 	def setMode(self, mode):
@@ -175,15 +178,18 @@ def iscsiLunProc(args = iSCSIArgs()):
 			iscsiExit(False, '请输入读写属性!')
 		else:
 			ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
-					args.lun_id_str, args.lun_read_only_str)
+					args.lun_id_str, args.lun_read_only_str, args.initor)
 			iscsiExit(ret, msg)
+	elif args.modify_set:
+		ret,msg = iSCSILunModify(args.target_name_str, args.lun_id_str, args.cur_initor, args.fre_initor)
+		iscsiExit(ret, msg)
 	elif args.unmap_set:
 		if not len(args.target_name_str):
 			iscsiExit(False, '请输入Target名称!')
 		elif not len(args.lun_id_str):
 			iscsiExit(False, '请输入LUN ID!')
 		try:
-			ret,msg = iSCSILunUnmap(args.target_name_str, int(args.lun_id_str))
+			ret,msg = iSCSILunUnmap(args.target_name_str, int(args.lun_id_str), args.initor)
 			iscsiExit(ret, msg)
 		except:
 			sys.exit(-1)
@@ -201,9 +207,19 @@ def iscsiLunProc(args = iSCSIArgs()):
 
 # 处理Session相关参数
 def iscsiSessionProc(args = iSCSIArgs()):
-	if args.mode == '--session':
-		icsiExit(False, '暂不支持此操作')
-	return
+	if args.mode != '--session':
+		return
+
+	if args.list_set:
+		if args.target_name_set:
+			UniOutput(iSCSIGetSessionList(args.target_name_str))
+		else:
+			UniOutput(iSCSIGetSessionList())
+
+	if args.force_close_sid != None:
+		ret,msg = iSCSIDeleteSession(args.force_close_sid)
+		iscsiExit(ret, msg)
+	iscsiExit(False, '请输入正确的session操作!')
 
 def iscsiUsage():
 	print """
@@ -217,9 +233,10 @@ iscsi --target --list [--target-name <name>]
       --volume --remove <volume_name>
 
       --lun --list [--target-name <name> [--lun-id <id>]]
-      --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --lun-read-only <enable|disable|auto>
-      --lun --map --target-name <name> --add --udv <name> [--block-size <size> --nv-cache <enable|disable>] --lun-id <id|auto> --lun-read-only <enable|disable|auto>
-      --lun --unmap --target-name <target_name> --lun-id <id>
+      --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
+      --lun --map --target-name <name> --add --udv <name> [--block-size <size> --nv-cache <enable|disable>] --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
+      --lun --modify --target-name <name> --current-initiator <name> --lun-id <id> --fresh-initiator <name>
+      --lun --unmap --target-name <target_name> --lun-id <id> [--initiator <name>]
       --lun --get-privilage --udv <name>
 
       --session --list [--target-name <name>]
@@ -235,7 +252,8 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'add', 'remove=', 'name=', 'get-detail=',
 	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
-	'session', 'volume-name=', 'lun-read-only=']
+	'session', 'volume-name=', 'lun-read-only=', 'force-close=', 'initiator=',
+	'modify', 'current-initiator=', 'fresh-initiator=']
 
 def iscsi_main():
 	try:
@@ -298,12 +316,20 @@ def iscsi_main():
 		elif opt == '--target-name':
 			iscsiArgs.target_name_set = True
 			iscsiArgs.target_name_str = arg
+		elif opt == '--initiator':
+			iscsiArgs.initor = arg
 		elif opt == '--map':
 			iscsiArgs.map_set = True
 		elif opt == '--unmap':
 			iscsiArgs.unmap_set = True
 		elif opt == '--get-privilage':
 			iscsiArgs.get_privilage_set = True
+		elif opt == '--force-close':
+			iscsiArgs.force_close_sid = arg
+		elif opt == '--current-initiator':
+			iscsiArgs.cur_initor = arg
+		elif opt == '--fresh-initiator':
+			iscsiArgs.fre_initor = arg
 
 	iscsiTargetProc(iscsiArgs)
 	iscsiVolumeProc(iscsiArgs)
