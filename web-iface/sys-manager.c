@@ -12,11 +12,17 @@ struct cmd_map cmd_map[] = {
   {"usermanage", python_cmd_main},
   {"version", version_main},
   {"log", log_main},
+  {"loglist", python_cmd_main},
+  {"sysconfig", python_cmd_main},
+  {"system", python_cmd_main},
   {"", NULL}
 };
 
+int g_debug = 0;
+
 void usage()
 {
+	printf("Usage: [--debug] 子命令 用于调试子命令参数输出\n");
 	printf("请输入子命令!\n");
 	printf("      disk      - 磁盘接口\n");
 	printf("      vg        - 卷组接口\n");
@@ -26,8 +32,11 @@ void usage()
 	printf("      network   - 网络管理\n");
   	printf("      nasconf   - NAS配置文件接口\n");
 	printf("      log       - 日志\n");
+	printf("      loglist   - 获取日志\n");
 	printf("      adminmanage - WEB管理员管理\n");
 	printf("      usermanage - NAS用户管理\n");
+	printf("      sysconfig  - 配置系统参数\n");
+	printf("      system    - 系统信息、系统状态、系统参数、告警\n");
 	printf("      version   - 查看版本号\n");
 	exit(0);
 }
@@ -48,6 +57,7 @@ int main(int argc, char *argv[])
 	char *cmd_name;
 	char **cmd_argv;
 	int cmd_argc;
+	int offset = 1;
 	struct cmd_map *p = &cmd_map[0];
 
 	//DUMP_PARM(argc, argv);
@@ -62,14 +72,17 @@ int main(int argc, char *argv[])
 		if ( argc < 2 )
 			usage();
 
-		// 检查是否远程调用
 		if ( !strncmp(argv[1], "-h", 2))
 			remote_exec(argc-2, (argv+2));
 
-		// 本地调用
-		cmd_name = argv[1];
-		cmd_argc = argc - 1;
-		cmd_argv = argv + 1;
+		if ( !strncmp(argv[1], "--debug", 7) )
+		{
+			g_debug = 1;
+			offset = 2;
+		}
+		cmd_name = argv[offset];
+		cmd_argc = argc - offset;
+		cmd_argv = argv + offset;
 	}
 	else
 	{

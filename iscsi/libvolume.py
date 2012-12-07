@@ -5,7 +5,8 @@ import time
 import pickle
 import json
 import os
-os.chdir(os.path.dirname(__file__))
+import uuid
+#os.chdir(os.path.dirname(__file__))
 
 from libiscsicommon import *
 
@@ -79,7 +80,8 @@ def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', nv_cache = 'enable
 	if isDevNodeUsed(udv_dev):
 		return (False, '映射iSCSI数据卷失败！用户数据卷 %s 已经被使用！' % udv_name)
 
-	vol_name = 'vd_' + time.strftime('%Y%m%d%H%M',time.localtime(time.time()))
+	vol_name = 'vd' + str(uuid.uuid1()).split('-')[0]
+	#vol_name = 'vd_' + time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))
 	iscsi_cmd = 'add_device %s filename=%s;blocksize=%d;nv_cache=%s;read_only=%s' % (vol_name, udv_dev, blocksize, VOL_BOOL_MAP[nv_cache], VOL_BOOL_MAP[ro])
 
 	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
@@ -112,6 +114,15 @@ def iSCSIVolumeRemove(volume_name):
 	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
 		return (True, '删除iSCSI数据卷 %s 成功！' % volume_name)
 	return (False, '删除iSCSI数据卷 %s 失败！' % volume_name)
+
+def iscsiExtRemoveUdv(udv):
+	try:
+		cmd = 'sys-manager udv --delete %s' % udv
+		result = json.loads(commands.getoutput(cmd))
+		return result['status']
+	except:
+		pass
+	return False
 
 def getVolumeInfo(volume_name):
 	if not isVolumeExist(volume_name):
@@ -152,6 +163,8 @@ def getVolumeByUdv(udv_name):
 	return None
 
 if __name__ == '__main__':
+	print iscsiExtRemoveUdv('udv1')
+	sys.exit(0)
 	(ret, msg) = iSCSIVolumeAdd('udv1')
 	print 'add udv1 ret: ', ret
 	print 'msg: ', msg

@@ -47,6 +47,8 @@ def disks_from_slot(slots):
 def md_get_mddev(mdname):
 	mddevs = list_files("/dev", "md[0-9]+")
 	for md in mddevs:
+		if md.find('p') >= 0:
+			continue
 		cmd = "mdadm -Ds %s | grep %s" % (md, mdname)
 		sts,out = commands.getstatusoutput(cmd)
 		if sts == 0:

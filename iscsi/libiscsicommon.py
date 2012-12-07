@@ -70,7 +70,6 @@ def AttrWrite(dir_path, attr_name, value):
 		f.close()
 	except IOError,e:
 		err_msg = e
-		print err_msg
 		return False
 	else:
 		return True

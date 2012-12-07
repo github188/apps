@@ -12,7 +12,7 @@ get_hostname()
 
 get_ipaddr()
 {
-	echo "$(ifconfig eth0 | grep 'inet addr' | awk -F':' '{print $2}' | awk '{print $1}' | tr '\n' '\0')"
+	echo "$(sudo ifconfig eth0 | grep 'inet addr' | awk -F':' '{print $2}' | awk '{print $1}' | tr '\n' '\0')"
 }
 
 get_git_branch()

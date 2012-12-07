@@ -15,6 +15,7 @@
 
 /* 记录日志 */
 int LogInsert(
+		const char *user,	// 用户名，供web接口使用
 		const char *module,	// 写入日志的模块
 		const char *category,	// 日志类型
 		const char *event,	// 日志事件
@@ -43,6 +44,8 @@ int LogInsert(
 
 	// 填充msg结构
 	MSG_HEADER_INIT(msg, LOG_REQ_WRITE);
+	if (user)
+		strcpy(msg->user, user);
 	msg->module = LogModuleInt(module);
 	msg->category = LogCategoryInt(category);
 	msg->event = LogEventInt(event);

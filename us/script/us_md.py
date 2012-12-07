@@ -8,8 +8,11 @@ import uuid
 from libdisk import *
 from libmd import *
 
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 def do_create(argv):
-	opts = ["name=", "level=", "strip=", "disk="]
+	opts = ["name=", "level=", "strip=", "disks="]
 	try:
 		pair = getopt.getopt(argv, '', opts)
 	except:
@@ -26,7 +29,7 @@ def do_create(argv):
 			level = arg
 		elif opt == "--strip":
 			strip = arg
-		elif opt == "--disk":
+		elif opt == "--disks":
 			disks = arg
 	if name == None:
 		return False,"未指定名称"
@@ -36,7 +39,7 @@ def do_create(argv):
 		return False,"未指定条带大小"
 	if disks == None:
 		return False,"未指定磁盘槽位"
-	return md_create(name, level, strip, disks)
+	return md_create(name, level, strip, disks.replace(',', ' '))
 
 def __get_mdname_list():
 	mdname_list = []
@@ -105,7 +108,7 @@ def main(argv):
 def usage():
 	help_str="""
 Usage:
-	--create --name=<vg_name> --level=<0|1|5|6> --strip=<64|128|256> --disk='<disk-slot-list>'
+	--create --name <vg_name> --level <0|1|5|6> --strip <64|128|256|512|1024> --disk <slot1>[,<slot2>,<slot3>...]
 	--delete <vg_name>
 	--list [vg_name]
 	--generate-name <suffix>

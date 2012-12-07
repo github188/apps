@@ -22,5 +22,7 @@ int external_main(int argc, char *argv[])
 		strcat(cmd, tmp);
 	}
 
-	return system(cmd);
+	execl("/bin/sh", "sh", "-c", cmd, NULL);
+	//return system(cmd);
+	return 0;
 }

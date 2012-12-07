@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <libudev.h>
 #include <stdint.h>
 #include <regex.h>
@@ -6,6 +7,7 @@
 #include <unistd.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <ctype.h>
 #include "clog.h"
 #include "us_ev.h"
 #include "types.h"
@@ -38,6 +40,7 @@ extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
 extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
+extern regex_t mv_disk_slot_regex;
 
 static struct us_disk_pool us_dp;
 
@@ -74,6 +77,87 @@ static int is_sata_sas(const char *path)
 	return is_sd(path) && !is_usb(path) && !is_dom_disk(path);
 }
 
+static int to_int(const char *buf, int *v)
+{
+	int i = 0;
+	char c;
+
+	*v = -1;
+
+	while ((c = *buf)) {
+		if (!isdigit(c))
+			return -1;
+		i *= 10;
+		i += c - '0';
+		buf++;
+	}
+	*v = i;
+
+	return 0;
+}
+
+static int find_slot_from_path(const char *path)
+{
+	regmatch_t pmatch[2];
+	char slot_digit[4];
+
+	if (regexec(&mv_disk_slot_regex, path,
+	            ARRAY_SIZE(pmatch), pmatch, 0) == 0) {
+		int l = pmatch[1].rm_eo - pmatch[1].rm_so;
+		int slot;
+
+		if (l <= 0 || l > 2) {
+			/* Only deal with 00-99 slots */
+			clog(LOG_ERR, "%s: Invalidate slot\n", __func__);
+			return -1;
+		}
+		strncpy(slot_digit, &path[pmatch[1].rm_so], l);
+		slot_digit[l] = 0;
+		to_int(slot_digit, &slot);
+		return slot;
+	} else {
+		clog(LOG_ERR, "%s: match %s failed\n", __func__, path);
+		return -1;
+	}
+}
+
+static int map_slot(int slot)
+{
+	/**
+	 * Marvell sata槽位号映射：
+	 * 4    8    12    16
+	 * 5    9    13    17
+	 * 6    10   14    18
+	 * 7    11   15    19
+	 */
+	if (slot < 4 || slot > 19)
+		return -1;
+	slot -= 3;
+	return slot;
+}
+
+static int find_slot(struct us_disk_pool *dp, const char *dev, const char *path)
+{
+	int slot;
+	int cook_slot = -1;
+
+	 /**
+	 * 槽位号在/sys/block/sd[b-z]的链接里面
+	 */
+	slot = find_slot_from_path(path);
+	if (slot < 0) {
+		clog(LOG_ERR, "%s: can't find slot from %s\n", __func__, path);
+		return -1;
+	}
+	cook_slot = map_slot(slot);
+	if (cook_slot < 0) {
+		clog(LOG_ERR, "%s: can't map slot %d\n", __func__, slot);
+	}
+
+	return cook_slot;
+}
+
+#if 0
 static int find_free_slot(struct us_disk_pool *dp)
 {
 	int i;
@@ -87,6 +171,7 @@ static int find_free_slot(struct us_disk_pool *dp)
 
 	return -1;
 }
+#endif
 
 static int find_disk(struct us_disk_pool *dp, const char *dev)
 {
@@ -104,7 +189,7 @@ static int find_disk(struct us_disk_pool *dp, const char *dev)
 	return -1;
 }
 
-const char* __disk_get_hotrep(const char *serial)
+const char* __disk_get_hotrep(const char *serial, char *raid_name)
 {
 	xmlDocPtr doc;	// 定义文件指针
 	xmlNodePtr node;
@@ -123,14 +208,21 @@ const char* __disk_get_hotrep(const char *serial)
 	memset(__hotrep_type, 0, sizeof(__hotrep_type));
 	while (node)
 	{
-		xmlChar *xmlType, *xmlSerial;
+		xmlChar *xmlType, *xmlSerial, *xmlRaidName;
 		if( (!xmlStrcmp(node->name, BAD_CAST"disk")) &&
-			((xmlSerial=xmlGetProp(node, "serial"))!=NULL ) &&
-			(!xmlStrcmp(xmlSerial, serial)) )
+		    ((xmlSerial=xmlGetProp(node, (const xmlChar *)"serial"))!=NULL ) &&
+		    (!xmlStrcmp(xmlSerial, (const xmlChar *)serial)) )
 		{
 			hotrep_type = __hotrep_type;
-			xmlType = xmlGetProp(node, "type");
-			strcpy(hotrep_type, xmlType);
+			xmlType = xmlGetProp(node, (const xmlChar *)"type");
+			strcpy(hotrep_type, (const char *)xmlType);
+			// 如果是专用热备盘，同时提供对应的raid名称
+			if (raid_name && !xmlStrcmp(xmlType, BAD_CAST"Special"))
+			{
+				xmlRaidName = xmlGetProp(node, (const xmlChar *)"md_name");
+				strcpy(raid_name, (const char *)xmlRaidName);
+				xmlFree(xmlRaidName);
+			}
 			xmlFree(xmlType);
 			xmlFree(xmlSerial);
 			break;
@@ -168,8 +260,8 @@ static void do_update_disk(struct us_disk *disk, int op)
 
 	if (op & DISK_UPDATE_STATE) {
 		// 从磁盘热备盘配置文件更新磁盘信息
-		const char *hotrep = __disk_get_hotrep(disk->di.serial);
-		printf("update disk, serial = %s, hotrep = %s\n", disk->di.serial, hotrep);
+		const char *hotrep = __disk_get_hotrep(disk->di.serial, NULL);
+		printf("------------update disk, serial = %s, hotrep = %s\n", disk->di.serial, hotrep);
 		disk->is_special = disk->is_global = 0;
 		if (hotrep)
 		{
@@ -207,16 +299,16 @@ static void us_disk_update_all(int op)
 	}
 }
 
-static void add_disk(struct us_disk_pool *dp, const char *dev)
+static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 {
 	int slot;
 	struct us_disk *disk;
 	size_t n;
 	extern int disk_get_size(const char *dev, uint64_t *sz);
 
-	slot = find_free_slot(dp);
+	slot = find_slot(dp, dev, path);
 	if (slot < 0) {
-		clog(LOG_ERR, "%s: no free slots\n", __func__);
+		clog(LOG_ERR, "%s: can't find slot for %s\n", __func__, path);
 		return;
 	}
 
@@ -228,7 +320,7 @@ static void add_disk(struct us_disk_pool *dp, const char *dev)
 	disk->slot = slot;
 	disk->is_exist = 1;
 	disk->ref = 1;
-	do_update_disk(disk, DISK_UPDATE_RAID |DISK_UPDATE_SMART);
+	do_update_disk(disk, DISK_UPDATE_RAID | DISK_UPDATE_SMART | DISK_UPDATE_STATE);
 }
 
 static void remove_disk(struct us_disk_pool *dp, const char *dev)
@@ -278,7 +370,7 @@ static int us_disk_on_event(const char *path, const char *dev, int act)
 	printf("%s: %d\n", dev, act);
 
 	if (act == MA_ADD)
-		add_disk(&us_dp, dev);
+		add_disk(&us_dp, dev, path);
 	else if (act == MA_REMOVE)
 		remove_disk(&us_dp, dev);
 	else if (act == MA_CHANGE)
@@ -360,12 +452,25 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	                di->model);
 	pos += snprintf(pos, end - pos, "%s\"serial\":\"%s\"", delim,
 	                di->serial);
+	pos += snprintf(pos, end - pos, "%s\"firmware\":\"%s\"", delim,
+	                di->firmware);
 	pos += snprintf(pos, end - pos, "%s\"capacity\":%llu", delim,
 	                (unsigned long long)di->size);
-	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim,
-	                disk_get_state(disk));
-	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim,
-	                disk_get_raid_name(&disk->dev_node));
+
+	const char *p_state = disk_get_state(disk);
+	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim, p_state);
+
+	const char *raid_name = disk_get_raid_name(disk->dev_node);
+	char p_raid[128];
+	if (!strcmp(p_state, "Special") && !strcmp(raid_name, "N/A")) {
+		__disk_get_hotrep(disk->di.serial, p_raid);
+	} else {
+		strncpy(p_raid, raid_name, sizeof(p_raid) - 1);
+		p_raid[sizeof(p_raid) - 1] = 0;
+	}
+
+	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim, p_raid);
+
 	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
 	                disk_get_smart_status(di));
 
@@ -384,7 +489,7 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"smart_attr\":{", delim);
 		pos += snprintf(pos, end - pos, "\"read_err\":%llu",
-		                (unsigned long long)di->si.spin_up);
+		                (unsigned long long)di->si.read_error);
 		pos += snprintf(pos, end - pos, "%s\"spin_up\":%llu",
 		                delim, (unsigned long long)di->si.spin_up);
 		pos += snprintf(pos, end - pos,
@@ -439,8 +544,8 @@ void us_disk_dump(int fd, char *slot, int detail)
 		if (disk->is_exist) {
 			write(fd, delim, strlen(delim));
 			us_dump_disk(fd, disk, detail);
+			delim = ",\n";
 		}
-		delim = ",\n";
 	}
 	sprintf(s, "]\n}\n");
 	write(fd, s, strlen(s));

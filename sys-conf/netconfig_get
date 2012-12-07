@@ -12,9 +12,9 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 os.chdir(os.path.dirname(sys.argv[0]))
-DNS_CONFIG_PATH = '/etc/resolv.conf'
-DNS_CONFIG_PATH_HEAD = '/opt/dns.conf'
-INTERFACES_CONFIG_PATH = '/etc/network/interfaces'
+DNS_CONFIG_PATH = '/opt/resolv.conf'
+#~ DNS_CONFIG_PATH_HEAD = '/opt/dns.conf'
+INTERFACES_CONFIG_PATH = '/opt/interfaces'
 BOND_CONFIG_PATH = '/opt/bond_conf.sh'
 
 FILEPATH='/opt/network_conf.xml'
@@ -57,25 +57,25 @@ def dns_config_list():
 	item = root.getElementsByTagName('dns')[0]
 	dns = item.getAttribute('addr').split(',')
 	addr = ''
-	conf = '#!/bin/bash\n\n'
-	init = 1
+	#~ conf = '#!/bin/bash\n\n'
+	#~ init = 1
 	if len(dns) > 0:
 		for x in dns:
 			addr = addr + 'nameserver ' + x + '\n'
-			if init == 1:
-				conf = conf + 'echo "nameserver ' + x + '" > /etc/resolv.conf\n'
-			else:
-				conf = conf + 'echo "nameserver ' + x + '" >> /etc/resolv.conf\n'
-			init = init +1
-	dns_conf_head = open(DNS_CONFIG_PATH_HEAD, 'w')
+			#~ if init == 1:
+				#~ conf = conf + 'echo "nameserver ' + x + '" > /etc/resolv.conf\n'
+			#~ else:
+				#~ conf = conf + 'echo "nameserver ' + x + '" >> /etc/resolv.conf\n'
+			#~ init = init +1
+	#~ dns_conf_head = open(DNS_CONFIG_PATH_HEAD, 'w')
 	dns_conf = open(DNS_CONFIG_PATH, 'w')
 	try:
-		dns_conf_head.write(conf)
-		dns_conf_head.close()
+		#~ dns_conf_head.write(conf)
+		#~ dns_conf_head.close()
 		dns_conf.write(addr)
 		dns_conf.close()
 	finally:
-		dns_conf_head.close()
+		#~ dns_conf_head.close()
 		dns_conf.close()
 
 
@@ -112,4 +112,13 @@ if __name__ == '__main__':
 	nic_config_list()
 	dns_config_list()
 	bond_config_list()
+	sys_inter = '/etc/network/interfaces'
+	if os.path.islink(sys_inter) == False:
+		os.remove(sys_inter)
+		os.symlink(INTERFACES_CONFIG_PATH, sys_inter)
+
+	sys_resolv = '/etc/resolv.conf'
+	if os.path.islink(sys_resolv) == False:
+		os.remove(sys_resolv)
+		os.symlink(DNS_CONFIG_PATH, sys_resolv)			
 
