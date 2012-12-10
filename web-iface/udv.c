@@ -177,8 +177,9 @@ int get_udv_remain()
 			max_single = elem->geom.capacity;
 	}
 
-	return printf("{\"vg\":\"%s\",\"max_avaliable\":%llu,\"max_single\":%llu}\n",
+	printf("{\"vg\":\"%s\",\"max_avaliable\":%llu,\"max_single\":%llu}\n",
 			vg_name, (unsigned long long)max_remain, (unsigned long long)max_single);
+	return 0;
 }
 
 
