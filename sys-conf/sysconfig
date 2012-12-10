@@ -60,7 +60,7 @@ def main():
 			iArgs.ntp_set = arg
 			iArgs.ntp_state = True
 		elif opt == '--now':
-			iArgs.now_set = arg
+			iArgs.now_set = '"'+arg+'"'
 		elif opt == '--zone':
 			iArgs.zone_set = arg
 			iArgs.zone_state = True

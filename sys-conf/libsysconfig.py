@@ -173,8 +173,8 @@ def date(value):
 		else:
 			if value.now_set != '':
 				__del_ntp__()
-				SYSTEM_OUT('date -s '+value.now_set+' > /dev/null')
-				SYSTEM_OUT('hwclock -w > /dev/null')
+				SYSTEM_OUT('date -s '+value.now_set)
+				SYSTEM_OUT('hwclock -w')
 				Export(True, '设置成功！')
 			else:
 				Export(False, '设置失败，时间格式不正确')
