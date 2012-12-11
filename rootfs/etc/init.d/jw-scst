@@ -1,12 +1,15 @@
 #! /bin/sh
+#
+# start/stop iSCSI Target.
 
 ### BEGIN INIT INFO
-# Provides:		jwele
-# Required-Start:
-# Required-Stop:
-# Default-Start:	2
-# Default-Stop:		2
-# Short-Description:	iscsi-scst
+# Provides:          jw-scst
+# Required-Start:    $network $local_fs
+# Required-Stop:     $network $local_fs
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: a iSCSI Target implemention
+# Description:       same with above.
 ### END INIT INFO
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
@@ -15,15 +18,8 @@ SCST_ROOT="/sys/kernel/scst_tgt"
 SCST_TGT_ROOT="$SCST_ROOT/targets"
 SCST_DAEMON="/usr/local/sbin/iscsi-scstd"
 
-echo "$(date) $@" >> /root/iscsi-log
-
-safe_exec()
-{
-	_cmd="$@"
-	[ -z "$_cmd" ] && exit 1
-	`$_cmd`
-	[ $? -ne 0 ] && echo "RUN Command -->> $_cmd <<-- ERROR!" && exit 1
-}
+. /lib/lsb/init-functions
+. /usr/local/lib/jw-functions
 
 __default_target()
 {
@@ -72,8 +68,8 @@ case "${1:-}" in
 		do_scst_stop
 	;;
 	restart)
-		do_scst_stop
-		do_scst_start
+		$0 stop
+		$0 start
 	;;
 	status)
 		status_of_proc -p $PIDFILE "$MDADM" "mdadm" && exit 0 || exit $?

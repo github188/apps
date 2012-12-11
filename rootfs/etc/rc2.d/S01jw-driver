@@ -1,0 +1,52 @@
+#! /bin/sh
+#
+# start/stop iSCSI Target.
+
+### BEGIN INIT INFO
+# Provides:          jw-driver
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: drivers for jwele
+# Description:       same with above.
+### END INIT INFO
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+. /lib/lsb/init-functions
+. /usr/local/lib/jw-functions
+
+do_driver_start()
+{
+	safe_exec modprobe nct6106
+}
+
+do_driver_stop()
+{
+	safe_exec rmmod nct6106
+}
+
+driver_usage()
+{
+	echo "Usage: $(basename "$0")  {start|stop|restart}"
+}
+
+
+case "${1:-}" in
+	start)
+		do_driver_start
+	;;
+	stop)
+		do_driver_stop
+	;;
+	restart)
+		do_driver_stop
+		do_driver_start
+	;;
+	*)
+		driver_usage
+	;;
+esac
+
+exit 0
