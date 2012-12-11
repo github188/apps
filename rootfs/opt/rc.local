@@ -2,19 +2,5 @@
 
 export PATH=/usr/local/bin:$PATH
 
-/usr/local/bin/md-assume.sh
-
-nohup /usr/local/bin/us_d &
-
-/usr/local/bin/log-daemon
-
-/usr/local/bin/sys-mon
-
-insmod /lib/modules/3.4.13/extra/nct6106.ko
-
-export LANG=en_US.UTF-8
-export LANGUAGE=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
-
 # *** JW-NAS-CONF-START ***
 # *** JW-NAS-CONF-END ***
