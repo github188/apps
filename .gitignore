@@ -90,3 +90,5 @@ us/us_cmd
 us/us_d
 sys-manager
 nas/tr-simple
+common/log-daemon
+monitor/sys-mon
