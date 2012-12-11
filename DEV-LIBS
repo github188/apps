@@ -8,3 +8,4 @@ sudo apt-get install sqlite3 libsqlite0 libsqlite3-0 libsqlite3-dev python-sqlit
 sudo apt-get install lighttpd
 sudo apt-get install php5-cgi
 sudo apt-get install libudev-dev libudev0 udev libxml2-dev libxml2
+sudo apt-get install samba nfs-common
