@@ -36,6 +36,9 @@ assemble() # arg1: md_num, arg2: disk_list
 			mdadm -a $mddev $disk
 		fi
 	done
+
+	# restore partitions
+	yes Fix | parted "$mddev" print > /dev/null
 }
 
 while read LINE
