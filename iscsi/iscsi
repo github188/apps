@@ -55,6 +55,7 @@ class iSCSIArgs:
 		self.udv_str = ''
 		self.force_close_sid = None
 		self.get_privilage_set = False
+		self.update_cfg = False
 
 	def setMode(self, mode):
 		if self.mode == '':
@@ -221,6 +222,13 @@ def iscsiSessionProc(args = iSCSIArgs()):
 		iscsiExit(ret, msg)
 	iscsiExit(False, '请输入正确的session操作!')
 
+def iscsiMiscProc(args = iSCSIArgs()):
+	if args.mode != '--misc':
+		return
+	if args.update_cfg:
+		ret,msg = iSCSIUpdateCFG()
+		iscsiExit(ret,msg)
+
 def iscsiUsage():
 	print """
 iscsi --target --list [--target-name <name>]
@@ -241,11 +249,13 @@ iscsi --target --list [--target-name <name>]
 
       --session --list [--target-name <name>]
       --session --force-close <session_id>
+
+      --misc --update-cfg
 """
 	sys.exit(-1)
 
 
-OP_MODE = ['--target', '--volume', '--lun', '--session']
+OP_MODE = ['--target', '--volume', '--lun', '--session', '--misc']
 
 iscsi_long_opt = ['target', 'list', 'target-name=',
 	'modify', 'attribute=', 'value=',
@@ -253,7 +263,7 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
 	'session', 'volume-name=', 'lun-read-only=', 'force-close=', 'initiator=',
-	'modify', 'current-initiator=', 'fresh-initiator=']
+	'modify', 'current-initiator=', 'fresh-initiator=', 'misc', 'update-cfg']
 
 def iscsi_main():
 	try:
@@ -330,11 +340,14 @@ def iscsi_main():
 			iscsiArgs.cur_initor = arg
 		elif opt == '--fresh-initiator':
 			iscsiArgs.fre_initor = arg
+		elif opt == '--update-cfg':
+			iscsiArgs.update_cfg = True
 
 	iscsiTargetProc(iscsiArgs)
 	iscsiVolumeProc(iscsiArgs)
 	iscsiLunProc(iscsiArgs)
 	iscsiSessionProc(iscsiArgs)
+	iscsiMiscProc(iscsiArgs)
 
 	iscsiUsage()
 

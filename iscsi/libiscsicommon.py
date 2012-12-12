@@ -113,7 +113,7 @@ def iSCSIUpdateCFG():
 	try:
 		_cmd = 'scstadmin -write_config %s' % SCST.CFG
 		ret,msg = commands.getstatusoutput(_cmd)
-		if ret:
+		if ret == 0:
 			return True, '写入配置文件成功'
 		else:
 			return False, msg
