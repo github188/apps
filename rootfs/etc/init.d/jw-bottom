@@ -1,0 +1,38 @@
+#! /bin/sh
+#
+# do some check
+
+### BEGIN INIT INFO
+# Provides:          jw-bottom
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: apps for jwele
+# Description:       same with above.
+### END INIT INFO
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+do_bottom()
+{
+	sys-manager iscsi --misc --check-default-target
+	sys-manager iscsi --misc --update-cfg
+}
+
+_usage()
+{
+	echo "Usage: $(basename "$0")  {start}"
+}
+
+
+case "${1:-}" in
+	start)
+		do_bottom
+	;;
+	*)
+		_usage
+	;;
+esac
+
+exit 0
