@@ -132,6 +132,9 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
 
 	lun_cmd = 'add %s %d read_only=%s' % (volume_name, lun_id, lunRO)
 	if AttrWrite(lun_dir, 'mgmt', lun_cmd):
+		ret,msg = iSCSIUpdateCFG()
+		if not ret:
+			return (True, '添加LUN映射成功！更新配置文件失败! %s' % msg)
 		return (True, '添加LUN映射成功！')
 	return (False, '添加LUN映射失败！')
 
@@ -178,7 +181,7 @@ def __delInitiatorConf(tgt, initor):
 	grp_cmd = 'del %s-grp' % initor
 	return True if AttrWrite(grp_mgr, 'mgmt', grp_cmd) else False
 
-def iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
+def __iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 	if not isTargetExist(tgt):
 		return (False, '解除LUN %d 映射失败！Target %s 不存在！' % (lun_id, tgt))
 	if not isLunIdExist(tgt, initor, lun_id):
@@ -211,6 +214,16 @@ def iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 		else:
 			return (True, '解除LUN %d 映射成功！' % lun_id)
 	return (False, '解除LUN %d 映射失败！' % lun_id)
+
+def iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
+	ret,msg = __iSCSILunUnmap(tgt, lun_id, initor, remove_volume)
+
+	if not ret:
+		return ret,msg
+	ret,_msg = iSCSIUpdateCFG()
+	if not ret:
+		return True, '%s 更新配置文件失败! %s' % (msg,_msg)
+	return ret,msg
 
 def iSCSILunGetList(tgt = ''):
 	tgt_lun_list = []

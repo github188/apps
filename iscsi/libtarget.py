@@ -100,6 +100,9 @@ def iSCSISetTargetAttr(tgt_name, attr, value):
 	tgt_full_path = SCST.ROOT_DIR + '/targets/iscsi/' + tgt_name
 	if AttrWrite(tgt_full_path, attr, value):
 		if AttrRead(tgt_full_path, attr) == value:
+			ret,msg = iSCSIUpdateCFG()
+			if not ret:
+				return True, 'Target属性设置成功!写配置文件失败! %s' % msg
 			return (True, 'Target属性设置成功！')
 	return (False, 'Target属性设置失败！')
 
