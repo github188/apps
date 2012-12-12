@@ -5,29 +5,195 @@
 import os
 import sys
 import commands
+import stat
 import json
 import codecs
 import ConfigParser
 import subprocess
+import shutil
 
 from os.path import join, getsize
 
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-SMB_CONF_PATH = "/opt/samba/smb.conf"
+SYNC_PATH = "/opt/etc/link/"
+if os.path.exists(SYNC_PATH) == False:
+	try:
+		os.makedirs(SYNC_PATH)
+	except:
+		pass
+SMB_CONF_PATH = "/opt/etc/samba/smb.conf"
 USERS_CONF_PATH = "/etc/passwd"
 GROUP_CONF_PATH = "/etc/group"
-SMBCONFIG_FILE = "/opt/samba/smbpasswd"
+GSHADOW_CONF_PATH = "/etc/gshadow"
+SHADOW_CONF_PATH = "/etc/shadow"
+SMBCONFIG_FILE = "/opt/etc/samba/smbpasswd"
 RESTART_SMB = 'killall -HUP smbd nmbd'
+
+USERS_CONF = """root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+bin:x:2:2:bin:/bin:/bin/sh
+sys:x:3:3:sys:/dev:/bin/sh
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/bin/sh
+man:x:6:12:man:/var/cache/man:/bin/sh
+lp:x:7:7:lp:/var/spool/lpd:/bin/sh
+mail:x:8:8:mail:/var/mail:/bin/sh
+news:x:9:9:news:/var/spool/news:/bin/sh
+uucp:x:10:10:uucp:/var/spool/uucp:/bin/sh
+proxy:x:13:13:proxy:/bin:/bin/sh
+www-data:x:33:33:www-data:/var/www:/bin/sh
+backup:x:34:34:backup:/var/backups:/bin/sh
+list:x:38:38:Mailing List Manager:/var/list:/bin/sh
+irc:x:39:39:ircd:/var/run/ircd:/bin/sh
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/bin/sh
+nobody:x:65534:65534:nobody:/nonexistent:/bin/sh
+libuuid:x:100:101::/var/lib/libuuid:/bin/sh
+Debian-exim:x:101:103::/var/spool/exim4:/bin/false
+statd:x:102:65534::/var/lib/nfs:/bin/false
+sshd:x:103:65534::/var/run/sshd:/usr/sbin/nologin
+jellw:x:997:997:jellw,,,:/home/jellw:/bin/bash
+foor:x:996:996::/home/foor:/bin/bash
+messagebus:x:104:108::/var/run/dbus:/bin/false
+guest:x:998:100::/home/guest:/bin/sh
+"""
+GROUP_CONF = """root:x:0:
+daemon:x:1:
+bin:x:2:
+sys:x:3:
+adm:x:4:
+tty:x:5:
+disk:x:6:
+lp:x:7:
+mail:x:8:
+news:x:9:
+uucp:x:10:
+man:x:12:
+proxy:x:13:
+kmem:x:15:
+dialout:x:20:
+fax:x:21:
+voice:x:22:
+cdrom:x:24:jellw
+floppy:x:25:jellw
+tape:x:26:
+sudo:x:27:jellw
+audio:x:29:jellw
+dip:x:30:jellw
+www-data:x:33:
+backup:x:34:
+operator:x:37:
+list:x:38:
+irc:x:39:
+src:x:40:
+gnats:x:41:
+shadow:x:42:
+utmp:x:43:
+video:x:44:jellw
+sasl:x:45:
+plugdev:x:46:jellw
+staff:x:50:
+games:x:60:
+users:x:100:
+nogroup:x:65534:
+libuuid:x:101:
+crontab:x:102:
+Debian-exim:x:103:
+mlocate:x:104:
+ssh:x:105:
+jellw:x:997:
+foor:x:996:
+fuse:x:106:
+sambashare:x:107:
+messagebus:x:108:
+"""
+
+gshadow_CONF = """root:*::
+daemon:*::
+bin:*::
+sys:*::
+adm:*::
+tty:*::
+disk:*::
+lp:*::
+mail:*::
+news:*::
+uucp:*::
+man:*::
+proxy:*::
+kmem:*::
+dialout:*::
+fax:*::
+voice:*::
+cdrom:*::jellw
+floppy:*::jellw
+tape:*::
+sudo:*::jellw
+audio:*::jellw
+dip:*::jellw
+www-data:*::
+backup:*::
+operator:*::
+list:*::
+irc:*::
+src:*::
+gnats:*::
+shadow:*::
+utmp:*::
+video:*::jellw
+sasl:*::
+plugdev:*::jellw
+staff:*::
+games:*::
+users:*::
+nogroup:*::
+libuuid:!::
+crontab:!::
+Debian-exim:!::
+mlocate:!::
+ssh:!::
+jellw:!::
+foor:!::
+fuse:!::
+sambashare:!::
+messagebus:!::
+"""
+shadow_CONF = """root:$6$zuKOE5mM$W7qYrndyS3h/.IwcOtLszFQH36f8ru1h6VfvtolD7CMPZ8fx4mvOkISn77HDs5P.O0/PI1mYq5fa/fkkTbjG6/:15680:0:99999:7:::
+daemon:*:15680:0:99999:7:::
+bin:*:15680:0:99999:7:::
+sys:*:15680:0:99999:7:::
+sync:*:15680:0:99999:7:::
+games:*:15680:0:99999:7:::
+man:*:15680:0:99999:7:::
+lp:*:15680:0:99999:7:::
+mail:*:15680:0:99999:7:::
+news:*:15680:0:99999:7:::
+uucp:*:15680:0:99999:7:::
+proxy:*:15680:0:99999:7:::
+www-data:*:15680:0:99999:7:::
+backup:*:15680:0:99999:7:::
+list:*:15680:0:99999:7:::
+irc:*:15680:0:99999:7:::
+gnats:*:15680:0:99999:7:::
+nobody:*:15680:0:99999:7:::
+libuuid:!:15680:0:99999:7:::
+Debian-exim:!:15680:0:99999:7:::
+statd:*:15680:0:99999:7:::
+sshd:*:15680:0:99999:7:::
+jellw:$6$C/5u8dUy$tyMCQjMBcbXSZZyUV4SWVd.xwbCLIZBzgGTpPGpwi/h7o.3kshJt6TFTnam3oD9LSx3q1LISQ3FhuuavAeFrY.:15680:0:99999:7:::
+foor:$6$GtHVbyzg$AzUVQDrHNSCCO4I/j3jfx4Udco8BiAcMs.OH72T/ugf2cZtFT3Wz.Qro6S0/KlbPTbtV1oxj4PtMEiQogQYq4.:15680:0:99999:7:::
+messagebus:*:15685:0:99999:7:::
+guest:!:15685:0:99999:7:::
+"""
 
 USE_CONF = """[global]
 workgroup = WORKGROUP
 server string = %h
 security = user
 passdb backend = smbpasswd
-smb passwd file = /opt/samba/smbpasswd
-include = /opt/samba/smb.conf.guest
+smb passwd file = /etc/samba/smbpasswd
+include = /opt/etc/samba/smb.conf.guest
 encrypt passwords = yes
 guest account = guest
 load printers = no
@@ -61,7 +227,74 @@ dos filetime resolution = no
 inherit acls = yes
 wide links = yes
 
+
 """
+def DEFAULT():
+	conf_file = open(USERS_CONF_PATH, 'w')
+	try:
+		conf_file.write(USERS_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(USERS_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(USERS_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+
+	conf_file = open(GROUP_CONF_PATH, 'w')
+	try:
+		conf_file.write(USERS_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(GROUP_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(GROUP_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+
+	conf_file = open(GSHADOW_CONF_PATH, 'w')
+	try:
+		conf_file.write(gshadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(GSHADOW_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(gshadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+
+	conf_file = open(SHADOW_CONF_PATH, 'w')
+	try:
+		conf_file.write(shadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(SHADOW_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(shadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+
+def Synchronous():
+	shutil.copy(USERS_CONF_PATH, SYNC_PATH)
+	shutil.copy(GROUP_CONF_PATH, SYNC_PATH)
+	shutil.copy(GSHADOW_CONF_PATH, SYNC_PATH)
+	shutil.copy(SHADOW_CONF_PATH, SYNC_PATH)
+	shutil.copy(USERS_CONF_PATH+'-', SYNC_PATH)
+	shutil.copy(GROUP_CONF_PATH+'-', SYNC_PATH)
+	shutil.copy(GSHADOW_CONF_PATH+'-', SYNC_PATH)
+	shutil.copy(SHADOW_CONF_PATH+'-', SYNC_PATH)
 
 config = ConfigParser.ConfigParser()  
 config.read(SMB_CONF_PATH) 
@@ -146,6 +379,7 @@ def User_Add(value):
 			if value.member_state == True:
 				__Add_User_initialize_Conf__(value.name_set, value.member_set)
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '用户名创建成功！')
 	Export(False, '用户名创建失败，用户名不合理！')
 
@@ -169,7 +403,8 @@ def User_Edit(value):
 				if group_name not in IN_User_Group and group_name != '':
 					SYSTEM_OUT('gpasswd -a '+value.name_set+' '+group_name)
 					__Edit_Group_User__(group_name, value.name_set, 'A')
-		SYSTEM_OUT(RESTART_SMB)			
+		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '用户 "'+value.name_set+'" 修改成功！')
 	else:
 		Export(False, '修改失败，用户名不存在！')
@@ -256,6 +491,7 @@ def User_Del(name_list):
 				for share in OUT_Array:
 					__Conf_Share_Del_User__(name, share)	
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '删除成功！')
 	Export(False, '删除失败，没有这个用户！')
 
@@ -319,6 +555,7 @@ def Group_Edit(value):
 					SYSTEM_OUT('gpasswd -a '+user+' '+value.name_set)
 					__Edit_Group_User__(value.name_set, user, 'A')
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		if Status == True:
 			Export(True, '"'+value.name_set+'" 用户组增加成功！')
 		else:
@@ -364,7 +601,7 @@ def Group_List(value):
 			for fileLine in fileList:
 				Grout_Cont = fileLine.split(':')
 				Grout_id = int(Grout_Cont[2])
-				if Grout_id > 1000 and Grout_id < 60001:
+				if Grout_id > 1000 and Grout_id < 29999:
 					group = Grout_Cont[0]
 					if search_check > 0:
 						search_check = len(group.split(search))
@@ -422,6 +659,7 @@ def Group_Del(name_list):
 				except:
 					pass
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '用户组删除成功！')
 	Export(False, '用户组删除失败！')
 
@@ -497,7 +735,7 @@ def __Check_System_Internal_User__(File, name):
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
 				if fileLine.split(':')[0] == name:
-					if int(fileLine.split(':')[2]) < 1001 or int(fileLine.split(':')[2]) > 60000:
+					if int(fileLine.split(':')[2]) < 1001 or int(fileLine.split(':')[2]) > 29999:
 						Status = False
 					break
 			open_conf.close()

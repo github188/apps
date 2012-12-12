@@ -17,20 +17,46 @@ from os.path import join, getsize
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-SMB_PATH = "/opt/samba/"
+SMB_PATH = "/opt/etc/samba/"
+WWW_PATH = "/var/www/"
 SMB_CONF_PATH = SMB_PATH+"smb.conf"
 SMB_USER_CONF_PATH = SMB_CONF_PATH+"."
-NFS_CONF_PATH = SMB_PATH+"exports"
+NFS_CONF_PATH = "/opt/etc/exports"
 GROUP_CONF_FILE = "/etc/group"
 RESTART_SMB = 'killall -HUP smbd nmbd'
+DEF_NASCONF = '/opt/jw-conf/system/nasconf/'
+if os.path.exists(SMB_PATH) == False:
+	try:
+		os.makedirs(SMB_PATH)
+		os.chmod(SMB_PATH, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+	except:
+		pass
+
+if os.path.exists(NFS_CONF_PATH) == False:
+	try:
+		os.mknod(NFS_CONF_PATH)
+	except:
+		pass
+
+if os.path.exists(DEF_NASCONF) == False:
+	try:
+		os.makedirs(DEF_NASCONF)
+		os.chmod(DEF_NASCONF, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+	except:
+		pass
+if os.path.exists(DEF_NASCONF+'修改登陆密码.html') == False:
+	try:
+		os.symlink(WWW_PATH+'pwd.html', DEF_NASCONF+'修改登陆密码.html')
+	except:
+		pass
 
 USE_CONF = """[global]
 workgroup = WORKGROUP
 server string = %h
 security = user
 passdb backend = smbpasswd
-smb passwd file = /opt/samba/smbpasswd
-include = /opt/samba/smb.conf.guest
+smb passwd file = /etc/samba/smbpasswd
+include = /opt/etc/samba/smb.conf.guest
 encrypt passwords = yes
 guest account = guest
 load printers = no
@@ -70,8 +96,8 @@ workgroup = WORKGROUP
 server string = %h
 security = user
 passdb backend = smbpasswd
-smb passwd file = /opt/samba/smbpasswd
-config file = /opt/samba/smb.conf.%U
+smb passwd file = /etc/samba/smbpasswd
+config file = /opt/etc/samba/smb.conf.%U
 encrypt passwords = yes
 guest account = guest
 load printers = no
@@ -110,7 +136,7 @@ guest ok = yes
 
 [系统设置]
 comment = 系统设置
-path = /opt/samba/conf
+path = """+DEF_NASCONF+"""
 directory mask = 0777
 create mask = 0777
 read list = guest
@@ -804,7 +830,7 @@ def get_high(value):
 						pass
 		if value.privacy_state == True:
 			if value.privacy_set == 'yes':
-				config.set('global', 'config file', '/etc/samba/smb.conf.%U')
+				config.set('global', 'config file', SMB_CONF_PATH+'.%U')
 			else:
 				if config.has_option('global', 'config file'):
 					try:

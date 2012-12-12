@@ -14,8 +14,8 @@ import hashlib
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-Admin_CONF_PATH="/opt/manage.conf"
-Session_CONF_PATH="/opt/session.conf"
+Admin_CONF_PATH="/opt/jw-conf/system/manage.conf"
+Session_CONF_PATH="/opt/jw-conf/system/session.conf"
 
 config = ConfigParser.ConfigParser()  
 config.read(Admin_CONF_PATH) 

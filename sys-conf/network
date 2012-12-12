@@ -16,12 +16,17 @@ os.chdir(os.path.dirname(sys.argv[0]))
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-FILEPATH='/opt/network_conf.xml'
-DEFAULT_INTER_PATH = '/opt/interfaces'
-BOND_CONF = '/opt/bond_conf.sh'
-DNS_CONFIG_PATH = '/opt/resolv.conf'
+FILEPATH='/opt/etc/network/network_conf.xml'
+DEFAULT_INTER_PATH = '/opt/etc/network/interfaces'
+BOND_CONF = '/opt/etc/network/bond_conf.sh'
+DNS_CONFIG_PATH = '/opt/etc/resolv.conf'
 
 BOND_LIST = ['bond0', 'bond1']
+if os.path.exists('/opt/etc/network') == False:
+	try:
+		os.makedirs('/opt/etc/network')
+	except:
+		pass
 
 ipre_str = r'^([1]?\d\d?|2[0-4]\d|25[0-5])\.([1]?\d\d?|2[0-4]\d|25[0-5])\.([1]?\d\d?|2[0-4]\d|25[0-5])\.([1]?\d\d?|2[0-4]\d|25[0-4])$'
 
@@ -31,21 +36,10 @@ def SYSTEM_OUT(com):
 	s = p.stdout.readline()
 	return s
 
-#~ print SYSTEM_OUT('ifconfig -a |grep \' Link \'|sed \'/^lo/d\'|awk \'{print $1 ","}\'|awk \'{printf $0}\'|sed \'s/.$//\'')
-
 def LICENSE_SER():
 	return 4
 
 def INCLIST():
-	#~ ####调用系统命令方法
-	#~ p = subprocess.Popen('ifconfig -a |grep \' Link \'|sed \'/^lo/d\'|awk \'{print $1 ","}\'|awk \'{printf $0}\'|sed \'s/.$//\'', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-	#~ s = p.stdout.readline()
-	#~ print s.split(',')
-	#for line in p.stdout.readlines():
-		#print line,
-	#retval = p.wait()
-	#~ print x.getAttribute('name'),x.getAttribute('ip'), x.getAttribute('mode')
-
 	license = LICENSE_SER()
 	if license == 6:
 		NIC_LIST = ['eth0', 'eth1', 'eth2', 'eth3', 'eth4', 'eth5', 'bond0', 'bond1']
@@ -271,21 +265,6 @@ def BOND_REMOVE(bond):
 				IFUP = IFUP + 'route add default gw '+gw+' dev '+nic
 	if Status == True:
 		os.system(xremove + IFUP)
-		#~ Export(True, '负载均衡接口" %s "卸载成功！' % bond)
-	#~ else:
-		#~ Export(False, '%s 接口没有启用！' % bond)
-
-
-#item = root.getElementsByTagName('eth0')[0] #获取第一个等于名称的接点
-#item.setAttribute('ip', '192.168.70.10') #设置接点的属性
-#~ print root.childNodes
-
-
-#~ item = root.getElementsByTagName('nic')
-#~ for x in item:
-	#~ print x.getAttribute('name'),x.getAttribute('ip'), x.getAttribute('mode')
-
-#~ write_xml_file('/opt/network_conf.xml', dom)
 
 class IArgs:
 	def __init__(self):

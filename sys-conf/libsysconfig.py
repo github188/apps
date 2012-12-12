@@ -4,6 +4,7 @@
 import os
 import sys
 import json
+import stat
 import codecs
 import ConfigParser
 import subprocess
@@ -16,11 +17,27 @@ import shutil
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-CONF_PATH="/opt/"
-CRONTAB_PATH="/opt/crontab"
-TIMEZONE_PATH="/opt/timezone"
-LOCALTIME_PATH="/opt/localtime"
+CONF_PATH="/opt/etc/link/"
+CRONTAB_PATH="/etc/crontab"
+TIMEZONE_PATH="/opt/etc/link/timezone"
+LOCALTIME_PATH="/etc/localtime"
 
+sys_hostname = '/etc/hostname'
+sys_hosts = '/etc/hosts'
+sys_crontab = "/opt/etc/link/crontab"
+sys_localtime="/opt/etc/link/localtime"
+
+if os.path.exists(CONF_PATH) == False:
+	try:
+		os.makedirs(CONF_PATH)
+	except:
+		pass
+if os.path.exists(TIMEZONE_PATH) == False:
+	oper = open(TIMEZONE_PATH, 'w')
+	try:
+		oper.write('Asia/Shanghai\n')
+	finally:
+		oper.close()
 
 CRONTAB_CONF = """SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
@@ -31,6 +48,13 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 47 6	* * 7	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
 52 6	1 * *	root	test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
 #
+
+"""
+HOSTS_Content = """127.0.0.1	localhost
+
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
 
 """
 
@@ -79,24 +103,44 @@ def switch(value):
 #~#### 更改系统名称主程序
 def hosts(value):
 	if value.hosts_set != '':
-		hostname = CONF_PATH+'hostname'
-		sys_hostname = '/etc/hostname'
-		n = open(hostname, 'w')
+		if os.path.exists(sys_hosts) == False:
+			oper = open(sys_hosts, 'w')
+			try:
+				oper.write(HOSTS_Content)
+			finally:
+				oper.close()
+		n = open(sys_hostname, 'w')
 		try:
 			n.write(value.hosts_set+'\n')
 		finally:
 			n.close()
-		if os.path.islink(sys_hostname) == False:
-			os.remove(sys_hostname)
-			os.symlink(hostname, sys_hostname)			
+		hosts_conf = open (sys_hosts, 'r')
+		try:
+			fileList = hosts_conf.readlines()
+			hosts_file = ''
+			for fileLine in fileList:
+				if len(fileLine.split('127.0.0.1	')) > 1:
+					hosts_file = hosts_file + '127.0.0.1	'+value.hosts_set+'\n'
+				else:
+					hosts_file = hosts_file + fileLine
+		finally:
+			hosts_conf.close()
+			
+		operating = open(sys_hosts, 'w')
+		try:
+			operating.write(hosts_file)
+		finally:
+			operating.close()
 		os.system('hostname '+value.hosts_set)
+		shutil.copy(sys_hostname,CONF_PATH)
+		shutil.copy(sys_hosts,CONF_PATH)
 		Export(True, '主机名修改成功！')
 	else:
 		Export(False, '修改失败，没有输入主机名！')
 
-#~#### 更改系统名称主程序
+#~#### 输出系统名称主程序
 def hosts_view():
-	open_conf = open(CONF_PATH+'hostname', 'r')
+	open_conf = open(sys_hostname, 'r')
 	OUT= ''
 	try:
 		OUT = open_conf.read()
@@ -145,10 +189,8 @@ def date(value):
 					f.write(conf)
 				finally:
 					f.close()
-				sys_crontab = "/etc/crontab"
-				if os.path.islink(sys_crontab) == False:
-					os.remove(sys_crontab)
-					os.symlink(CRONTAB_PATH, sys_crontab)			
+				
+				shutil.copy(CRONTAB_PATH,sys_crontab)
 				SYSTEM_OUT('ntpdate '+value.ntp_set+' &')
 				Export(True, '设置成功！')
 			else:
@@ -157,16 +199,13 @@ def date(value):
 			value.zone_set = value.zone_set.replace('_','/')
 			zonetime = '/usr/share/zoneinfo/'+value.zone_set
 			if value.zone_set != '' and os.path.exists(zonetime):
-				sys_localtime="/etc/localtime"
 				shutil.copy(zonetime,LOCALTIME_PATH)
 				f = open(TIMEZONE_PATH, 'w')
 				try:
 					f.write(value.zone_set)
 				finally:
 					f.close()
-				if os.path.islink(sys_localtime) == False:
-					os.remove(sys_localtime)
-					os.symlink(LOCALTIME_PATH, sys_localtime)
+				shutil.copy(LOCALTIME_PATH,sys_localtime)
 				Export(True, '设置成功！')
 			else:
 				Export(False, '设置失败，没有这个时区！')
@@ -218,6 +257,7 @@ def __del_ntp__():
 		w.write(OUT)
 	finally:
 		w.close()
+	shutil.copy(CRONTAB_PATH,sys_crontab)
 	
 #~ 输出时区
 def __timezone__():
