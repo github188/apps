@@ -99,7 +99,13 @@ def __genDefaultTarget():
 	return _tgt
 
 def iSCSICreateTarget(tgt):
-	return True if AttrWrite(SCST.TARGET_DIR, 'mgmt', 'add_target %s' % tgt) else False
+	if not AttrWrite(SCST.TARGET_DIR, 'mgmt', 'add_target %s' % tgt):
+		return False
+	if not AttrWrite(SCST.TARGET_DIR, 'enabled', '1'):
+		return False
+	if not AttrWrite('%s/%s' % (SCST.TARGET_DIR, tgt), 'enabled', '1'):
+		return False
+	return True
 
 def iSCSISetDefaultTarget():
 
