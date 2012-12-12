@@ -85,6 +85,9 @@ def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', nv_cache = 'enable
 	iscsi_cmd = 'add_device %s filename=%s;blocksize=%d;nv_cache=%s;read_only=%s' % (vol_name, udv_dev, blocksize, VOL_BOOL_MAP[nv_cache], VOL_BOOL_MAP[ro])
 
 	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
+		ret,msg = iSCSIUpdateCFG()
+		if not ret:
+			return (True, '添加iSCSI数据卷 %s 成功！更新配置文件失败! %s' % (vol_name, msg))
 		return (True, '添加iSCSI数据卷 %s 成功！' % vol_name)
 	return (False, '添加iSCSI数据卷 %s 失败！' % vol_name)
 
@@ -112,6 +115,9 @@ def iSCSIVolumeRemove(volume_name):
 
 	iscsi_cmd = 'del_device %s' % volume_name
 	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
+		ret,msg = iSCSIUpdateCFG()
+		if not ret:
+			return (True, '删除iSCSI数据卷 %s 成功！更新配置文件失败! %s' % (volume_name, msg))
 		return (True, '删除iSCSI数据卷 %s 成功！' % volume_name)
 	return (False, '删除iSCSI数据卷 %s 失败！' % volume_name)
 
