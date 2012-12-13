@@ -8,6 +8,8 @@
 #ifndef _LIB_UDV_H
 #define _lib_UDV_H
 
+#define DFT_ALIGN_BEGIN 524288
+
 /**
  * Defination
  */

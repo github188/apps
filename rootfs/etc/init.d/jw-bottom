@@ -1,0 +1,26 @@
+#!/bin/sh
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+do_bottom()
+{
+	sys-manager iscsi --misc --check-default-target
+	sys-manager iscsi --misc --update-cfg
+}
+
+_usage()
+{
+	echo "Usage: $(basename "$0")  {start}"
+}
+
+
+case "${1:-}" in
+	start)
+		do_bottom
+	;;
+	*)
+		_usage
+	;;
+esac
+
+exit 0

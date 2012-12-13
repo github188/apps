@@ -429,7 +429,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 def __xml_load(fname):
 	try:
 		doc = minidom.parse(fname)
-	except e:
+	except:
 		return None
 	return doc.documentElement
 

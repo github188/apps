@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdbool.h>
+#include "debug.h"
 
 #ifndef _SYS_LOG_H
 #define _SYS_LOG_H
@@ -53,16 +54,19 @@ enum _module
 	LOG_MOD_ISCSI,
 	LOG_MOD_NAS,
 	LOG_MOD_SYSCONF,
+	LOG_MOD_SYSMON,
 	LOG_MOD_UNKNOWN = -1
 };
 
 static inline const char *LogModuleStr(log_module_e module)
 {
+	DBGP("%s : %d, %s\n", __func__, module, _IntToStr(_mod_name, module));
 	return _IntToStr(_mod_name, module);
 }
 
 static inline const int LogModuleInt(const char *module)
 {
+	DBGP("%s : %s %d\n", __func__, module, _StrToInt(_mod_name, module));
 	return _StrToInt(_mod_name, module);
 }
 
@@ -253,6 +257,7 @@ struct _msg_request
 	log_module_e module;		// 模块
 	log_category_e category;	// 类型
 	log_event_e event;		// 事件
+	char user[32];			// 用户名
 	int content_length;		// 内容长度
 	char content[0];		// 内容 (本地传输不考虑报文分片问题)
 };
@@ -271,6 +276,7 @@ bool log_db_create();
 /* 记录日志 */
 /* 返回值不为0表示参数格式错误 */
 int LogInsert(
+		const char *user,	// 用户名
 		const char *module,	// 写入日志的模块
 		const char *category,	// 日志类型
 		const char *event,	// 日志事件

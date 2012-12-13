@@ -17,6 +17,7 @@ class SCST_CONFIG(object):
 		self.ROOT_DIR = '/sys/kernel/scst_tgt'
 		self.TARGET_DIR = '%s/targets/iscsi' % self.ROOT_DIR
 		self.VDISK_DIR = '%s/handlers/vdisk_blockio' % self.ROOT_DIR
+		self.CFG = '/opt/etc/scst.conf'
 
 class iSCSI_Protocol:
 	"""
@@ -70,7 +71,6 @@ def AttrWrite(dir_path, attr_name, value):
 		f.close()
 	except IOError,e:
 		err_msg = e
-		print err_msg
 		return False
 	else:
 		return True
@@ -109,6 +109,17 @@ def iscsiExit(ret = True, msg = ''):
 		sys.exit(0)
 	sys.exit(-1)
 
+def iSCSIUpdateCFG():
+	try:
+		_cmd = 'scstadmin -write_config %s' % SCST.CFG
+		ret,msg = commands.getstatusoutput(_cmd)
+		if ret == 0:
+			return True, '写入配置文件成功'
+		else:
+			return False, msg
+	except:
+		return False, '写入配置文件失败，未知原因'
+
 if __name__ == "__main__":
 	"""
 	ss = AttrRead('/sys/kernel/scst_tgt/targets/iscsi/iqn.2012-abc', 'io_grouping_type')
@@ -116,6 +127,9 @@ if __name__ == "__main__":
 	xx = AttrWrite('/sys/kernel/scst_tgt/targets/iscsi/iqn.2012-abc/io_grouping_type', 'auto')
 	print xx
 	"""
+	ret,msg = iSCSIUpdateCFG()
+	print ret,msg
+	sys.exit(0)
 
 	print 'udv2: ', getUdvDevByName('udv2')
 	print '/dev/sdg1: ', getUdvNameByDev('/dev/sdg1')

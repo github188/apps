@@ -1,6 +1,0 @@
-sudo apt-get install libev4
-sudo apt-get install libatasmart-dev libatasmart4
-sudo apt-get install libparted0-dev libparted0debian1 libparted0
-sudo apt-get install python-dev
-sudo apt-get install libev-dev
-

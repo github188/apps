@@ -12,12 +12,11 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 os.chdir(os.path.dirname(sys.argv[0]))
-DNS_CONFIG_PATH = '/etc/resolv.conf'
-DNS_CONFIG_PATH_HEAD = '/opt/dns.conf'
-INTERFACES_CONFIG_PATH = '/etc/network/interfaces'
-BOND_CONFIG_PATH = '/opt/bond_conf.sh'
+DNS_CONFIG_PATH = '/opt/etc/resolv.conf'
+INTERFACES_CONFIG_PATH = '/opt/etc/network/interfaces'
+BOND_CONFIG_PATH = '/opt/etc/network/bond_conf.sh'
 
-FILEPATH='/opt/network_conf.xml'
+FILEPATH='/opt/etc/network/network_conf.xml'
 dom = xml.dom.minidom.parse(FILEPATH)#打开DOM
 root = dom.documentElement #获取根接点
 
@@ -34,7 +33,6 @@ iface lo inet loopback\n
 	i = 1
 	for x in item:
 		if x.getAttribute('name') != 'bond0' and x.getAttribute('name') != 'bond1':
-			#~ if x.getAttribute('bond') == '':
 			conf = conf + 'auto ' + x.getAttribute('name')  + '\n'
 			conf = conf + 'iface ' + x.getAttribute('name')  + ' inet ' + x.getAttribute('mode')  + '\n'
 			if x.getAttribute('mode') != 'dhcp':
@@ -57,25 +55,14 @@ def dns_config_list():
 	item = root.getElementsByTagName('dns')[0]
 	dns = item.getAttribute('addr').split(',')
 	addr = ''
-	conf = '#!/bin/bash\n\n'
-	init = 1
 	if len(dns) > 0:
 		for x in dns:
 			addr = addr + 'nameserver ' + x + '\n'
-			if init == 1:
-				conf = conf + 'echo "nameserver ' + x + '" > /etc/resolv.conf\n'
-			else:
-				conf = conf + 'echo "nameserver ' + x + '" >> /etc/resolv.conf\n'
-			init = init +1
-	dns_conf_head = open(DNS_CONFIG_PATH_HEAD, 'w')
 	dns_conf = open(DNS_CONFIG_PATH, 'w')
 	try:
-		dns_conf_head.write(conf)
-		dns_conf_head.close()
 		dns_conf.write(addr)
 		dns_conf.close()
 	finally:
-		dns_conf_head.close()
 		dns_conf.close()
 
 
@@ -112,4 +99,13 @@ if __name__ == '__main__':
 	nic_config_list()
 	dns_config_list()
 	bond_config_list()
+	sys_inter = '/etc/network/interfaces'
+	if os.path.islink(sys_inter) == False:
+		os.remove(sys_inter)
+		os.symlink(INTERFACES_CONFIG_PATH, sys_inter)
+
+	sys_resolv = '/etc/resolv.conf'
+	if os.path.islink(sys_resolv) == False:
+		os.remove(sys_resolv)
+		os.symlink(DNS_CONFIG_PATH, sys_resolv)			
 

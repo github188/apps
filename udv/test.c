@@ -51,9 +51,10 @@ void test_list()
 
 int main(int argc, char *argv[])
 {
-	udv_info_t list[MAX_UDV];
+	struct list list, *n, *nt;
+	struct geom_stru *tmp;
 
-	printf("is nas: %d\n", isNasVolume("abc"));
+	//printf("is nas: %d\n", isNasVolume("abc"));
 	/*
 	if (argc!=2)
 	{
@@ -88,11 +89,18 @@ int main(int argc, char *argv[])
 
 	//printf("=========== after delete =============\n");
 	//printf("=========== after create =============\n");
-	if (udv_get_free_list("vgtest1", list)>0)
-		printf("free space\n");
-	test_list();
-	test_create();
-	test_list();
+	if (udv_get_free_list("slash", &list)>0)
+	{
+		list_iterate_safe(n, nt, &list)
+		{
+			tmp = list_struct_base(n, struct geom_stru, list);
+			printf("start : %llu, end: %llu\n",
+					tmp->geom.start, tmp->geom.end);
+		}
+	}
+	//test_list();
+	//test_create();
+	//test_list();
 
 	/*
 	struct list list, *nn, *nt;

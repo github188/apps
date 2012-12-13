@@ -17,8 +17,14 @@ assemble() # arg1: md_num, arg2: disk_list
 	local disk
 	local slaves
 	local disk_name
+	local array_state
 	mdadm -Af $mddev $disks
-	slaves=`ls /sys/block/md1/slaves 2>/dev/null`
+	array_state=`cat /sys/block/md$1/md/array_state`
+	if [ "$array_state" = "inactive" ]; then
+		mdadm -S $mddev
+		return
+	fi
+	slaves=`ls /sys/block/md$1/slaves 2>/dev/null`
 	if [ -z "$slaves" ]; then
 		return
 	fi
@@ -30,6 +36,9 @@ assemble() # arg1: md_num, arg2: disk_list
 			mdadm -a $mddev $disk
 		fi
 	done
+
+	# restore partitions
+	yes Fix | parted "$mddev" print > /dev/null
 }
 
 while read LINE

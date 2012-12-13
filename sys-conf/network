@@ -16,11 +16,17 @@ os.chdir(os.path.dirname(sys.argv[0]))
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-FILEPATH='/opt/network_conf.xml'
-DEFAULT_INTER_PATH = '/etc/network/interfaces'
-BOND_CONF = '/opt/bond_conf.sh'
+FILEPATH='/opt/etc/network/network_conf.xml'
+DEFAULT_INTER_PATH = '/opt/etc/network/interfaces'
+BOND_CONF = '/opt/etc/network/bond_conf.sh'
+DNS_CONFIG_PATH = '/opt/etc/resolv.conf'
 
 BOND_LIST = ['bond0', 'bond1']
+if os.path.exists('/opt/etc/network') == False:
+	try:
+		os.makedirs('/opt/etc/network')
+	except:
+		pass
 
 ipre_str = r'^([1]?\d\d?|2[0-4]\d|25[0-5])\.([1]?\d\d?|2[0-4]\d|25[0-5])\.([1]?\d\d?|2[0-4]\d|25[0-5])\.([1]?\d\d?|2[0-4]\d|25[0-4])$'
 
@@ -30,21 +36,10 @@ def SYSTEM_OUT(com):
 	s = p.stdout.readline()
 	return s
 
-#~ print SYSTEM_OUT('ifconfig -a |grep \' Link \'|sed \'/^lo/d\'|awk \'{print $1 ","}\'|awk \'{printf $0}\'|sed \'s/.$//\'')
-
 def LICENSE_SER():
 	return 4
 
 def INCLIST():
-	#~ ####调用系统命令方法
-	#~ p = subprocess.Popen('ifconfig -a |grep \' Link \'|sed \'/^lo/d\'|awk \'{print $1 ","}\'|awk \'{printf $0}\'|sed \'s/.$//\'', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-	#~ s = p.stdout.readline()
-	#~ print s.split(',')
-	#for line in p.stdout.readlines():
-		#print line,
-	#retval = p.wait()
-	#~ print x.getAttribute('name'),x.getAttribute('ip'), x.getAttribute('mode')
-
 	license = LICENSE_SER()
 	if license == 6:
 		NIC_LIST = ['eth0', 'eth1', 'eth2', 'eth3', 'eth4', 'eth5', 'bond0', 'bond1']
@@ -270,21 +265,6 @@ def BOND_REMOVE(bond):
 				IFUP = IFUP + 'route add default gw '+gw+' dev '+nic
 	if Status == True:
 		os.system(xremove + IFUP)
-		#~ Export(True, '负载均衡接口" %s "卸载成功！' % bond)
-	#~ else:
-		#~ Export(False, '%s 接口没有启用！' % bond)
-
-
-#item = root.getElementsByTagName('eth0')[0] #获取第一个等于名称的接点
-#item.setAttribute('ip', '192.168.70.10') #设置接点的属性
-#~ print root.childNodes
-
-
-#~ item = root.getElementsByTagName('nic')
-#~ for x in item:
-	#~ print x.getAttribute('name'),x.getAttribute('ip'), x.getAttribute('mode')
-
-#~ write_xml_file('/opt/network_conf.xml', dom)
 
 class IArgs:
 	def __init__(self):
@@ -294,6 +274,7 @@ class IArgs:
 		self.ifconfig_set = False
 		self.bond_set = False
 		self.dns_set = False
+		self.status_set = False
 		self.var_set = ''
 		self.iface_set = ''
 		self.iface_set = ''
@@ -312,6 +293,31 @@ class IArgs:
 	def setMode(self, mode):
 		if self.mode == '':
 			self.mode = mode
+
+class net_info():
+	def __init__(self):
+		self.Interface_Name = ''
+		self.Interface_MAC = ''
+		self.Interface_Velocity = ''
+		self.Interface_Status = '1'
+
+def NetStatus():
+	list = []
+	json_info = {'total':0, 'rows':[]}
+	com_net = subprocess.Popen('ifconfig -a|grep "^eth"|tr -s " "|sort -f|cut -d " " -f1', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	net_list = com_net.stdout.readlines()
+	for inc_name in net_list:
+		inc_name = inc_name.replace('\n','')
+		out = net_info()
+		out.Interface_Name = inc_name
+		out.Interface_MAC =  SYSTEM_OUT('cat /sys/class/net/%s/address' % inc_name).replace('\n','')
+		out.Interface_Velocity = SYSTEM_OUT('dmesg |grep %s|grep "NIC Link is Up"|awk -F \':\' \'{print $2}\'|tr -s \' \'|cut -d \' \' -f7,8' % inc_name).replace('\n','')
+		if SYSTEM_OUT('ifconfig -a %s|grep "UP BROADCAST MULTICAST"|wc -l' % inc_name).replace('\n','') == '1':
+			out.Interface_Status =  '0'
+		list.append(out.__dict__)
+	json_info['total'] = len(net_list)
+	json_info['rows'] = list
+	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
 
 class nic_info():
 	def __init__(self):
@@ -490,6 +496,16 @@ netmask 255.255.255.0
 	finally:
 		bond_conf_file.close()
 
+	sys_inter = '/etc/network/interfaces'
+	if os.path.islink(sys_inter) == False:
+		os.remove(sys_inter)
+		os.symlink(DEFAULT_INTER_PATH, sys_inter)
+
+	sys_resolv = '/etc/resolv.conf'
+	if os.path.islink(sys_resolv) == False:
+		os.remove(sys_resolv)
+		os.symlink(DNS_CONFIG_PATH, sys_resolv)			
+
 	print '网络配置恢复出厂设置成功,需要重启设备才能生效。'
 
 #~ 修改DNS
@@ -540,6 +556,7 @@ network --list < --iface <name> | --filter [--intbond] >
 	--bond --iface <bond0|bond1> --inter <eth0,eth1,eth2,eth3,.....> --mode <bonding mode(0|1|4)> --ip <address> --mask <netmask> [--gw<gateway>] 
 	--bond --remove --iface <bond0|bond1>
 	--dns < --var <nameserver1,nameserver2 > | --remove >
+	--status
 	--default
 	--niccoun
 """
@@ -551,8 +568,8 @@ if os.path.exists(FILEPATH):
 	item = root.getElementsByTagName('nic')
 
 
-OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default', '--niccoun']
-network_long_opt = ['list', 'filter', 'ifconfig', 'bond', 'dns', 'default', 'iface=', 'dhcp', 'ip=', 'mask=', 'gw=', 'inter=', 'mode=', 'var=', 'remove', 'intbond', 'niccoun', 'default_gw']
+OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default', '--niccoun', '--status']
+network_long_opt = ['list', 'filter', 'ifconfig', 'bond', 'dns', 'default', 'status', 'iface=', 'dhcp', 'ip=', 'mask=', 'gw=', 'inter=', 'mode=', 'var=', 'remove', 'intbond', 'niccoun', 'default_gw']
 
 def network_main():
 	try:
@@ -576,6 +593,8 @@ def network_main():
 			iArgs.bond_set = True
 		elif opt == '--dns':
 			iArgs.dns_set = True
+		elif opt == '--status':
+			iArgs.status_set = True
 		elif opt == '--var':
 			iArgs.var_set = arg
 		elif opt == '--iface':
@@ -631,6 +650,8 @@ def network_main():
 		Export(True, '设置成功！')
 	elif iArgs.dns_set == True:
 		DNSAlter(iArgs)
+	elif iArgs.status_set == True:
+		NetStatus()
 	else:
 		Export(False, '命令参数不正确，请检查要执行的命令模式！')
 		networkUsage()
