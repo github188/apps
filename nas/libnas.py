@@ -10,10 +10,10 @@ import stat
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-NAS_CONF_FILE = '/etc/rc.local'
-NAS_CONF_START_SEP = '# *** JW-NAS-CONF-START ***'
-NAS_CONF_END_SEP = '# *** JW-NAS-CONF-END ***'
-NAS_CONF_TMP = '/etc/.nas_tmp_conf'
+NAS_CONF_FILE = '/opt/jw-conf/nas/self-load.sh'
+#NAS_CONF_START_SEP = '# *** JW-NAS-CONF-START ***'
+#NAS_CONF_END_SEP = '# *** JW-NAS-CONF-END ***'
+NAS_CONF_TEMP = '/opt/jw-conf/nas/.nas_tmp_conf'
 TMP_DIR = '/tmp/.nas_info'
 
 #-------------- 辅助函数 ---------------
@@ -143,23 +143,41 @@ class NasVolumeAttr:
 """
 配置文件操作函数
 """
+
+def __touch_default_nas_conf():
+	return
+
+# 检查配置项是否存在
+def __conf_exist(mnt):
+	exist = False
+	try:
+		# check and create dir
+		d,x = os.path.split(NAS_CONF_FILE)
+		if not os.path.isdir(d):
+			os.makedirs(d)
+		if os.path.isfile(NAS_CONF_FILE):
+			f = open(NAS_CONF_FILE, 'r')
+			for line in f.readlines():
+				if line.find(mnt) >= 0:
+					exist = True
+					break
+			f.close()
+		else:
+			f = open(NAS_CONF_FILE, 'w')
+			f.close()
+	except:
+		return False
+	return exist
+
 #  增加配置项
 def nas_conf_add(dev, mnt):
-	if nas_conf_is_exist(mnt):
+	if __conf_exist(mnt):
 		return False, '记录已经存在!'
-
 	try:
-		old_f = open(NAS_CONF_FILE, 'r')
-		new_file_name = NAS_CONF_TMP
-		new_f = open(new_file_name, 'w')
-		for line in old_f.readlines():
-			if line.find(NAS_CONF_END_SEP) >= 0:
-				new_f.write('mount %s %s\n' % (dev, mnt))
-			new_f.write(line)
-		old_f.close()
-		new_f.close()
-		os.rename(new_file_name, NAS_CONF_FILE)
-		# set file mod to 755
+		f = open(NAS_CONF_FILE, 'r+')
+		f.seek(0, os.SEEK_END)
+		f.write('mount %s %s\n' % (dev, mnt))
+		f.close()
 		os.chmod(NAS_CONF_FILE, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 	except:
 		return False, '增加记录失败!'
@@ -167,37 +185,25 @@ def nas_conf_add(dev, mnt):
 
 # 删除指定配置项
 def nas_conf_remove(mnt):
-	if not nas_conf_is_exist(mnt):
+	if not __conf_exist(mnt):
 		return False,'记录不存在!'
 	try:
-		old_f = open(NAS_CONF_FILE, 'r')
-		#new_file_name = os.tempnam()
-		new_file_name = NAS_CONF_TMP
-		new_f = open(new_file_name, 'w')
-		for line in old_f.readlines():
-			if line.find(mnt) >= 0:
+		conf_list = []
+		s = open(NAS_CONF_FILE, 'r')
+		d = open(NAS_CONF_TEMP, 'w')
+		for x in s.readlines():
+			if x.find(mnt) >= 0:
 				continue
-			new_f.write(line)
-		old_f.close()
-		new_f.close()
-		os.rename(new_file_name, NAS_CONF_FILE)
+			conf_list.append(x)
+		d.writelines(conf_list)
+		s.close()
+		d.close()
+		os.rename(NAS_CONF_TEMP, NAS_CONF_FILE)
 		os.chmod(NAS_CONF_FILE, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 	except:
 		return False,'删除配置文件记录失败!'
 	return True, '删除配置文件记录成功!'
 
-# 检查配置项是否存在
-def nas_conf_is_exist(mnt):
-	exist = False
-	try:
-		f = open(NAS_CONF_FILE)
-		for line in f.readlines():
-			if line.find(mnt) >= 0:
-				exist = True
-		f.close()
-	except:
-		return False
-	return exist
 
 # 获取配置项列表
 def __nas_conf_get_list():
@@ -286,8 +292,8 @@ def nas_fmt_get_list():
 def nas_mount_get_list():
 	nas_mount_list = []
 	try:
-		mount_result = os.popen('mount')
-		for line in mount_result:
+		#mount_result = os.popen('mount')
+		for line in os.popen('mount').readlines():
 			if line.find('/mnt/Share/') > 0:
 				tmp_nas_dev = line.split()[0]
 				nas_mount = NasVolumeAttr()
@@ -308,16 +314,22 @@ def nas_mount_get_list():
 API
 """
 # 获取指定或者所有NAS卷列表
-def nasGetList(volume_name):
+def nasGetList(volume_name = ''):
+	"""
 	nas_list = nas_conf_get_list() + nas_fmt_get_list()
 	if volume_name == '':
 		return nas_list
-	tmp_list = []
-	for x in nas_list:
-		if x['volume_name'] == volume_name:
-			tmp_list.append(x)
+	"""
+	# 仅查看已经加载的nas卷列表
+	if volume_name == '':
+		return nas_mount_get_list()
+
+	_nas_list = []
+	for x in nas_mount_get_list():
+		if x.volume_name == volume_name:
+			_nas_list.append(x)
 			break
-	return tmp_list
+	return _nas_list
 
 # 映射NAS卷
 def nasMapping(udv_name, filesystem = 'ext4'):
@@ -337,13 +349,13 @@ def nasMapping(udv_name, filesystem = 'ext4'):
 
 # 解除NAS卷映射
 def nasUnmapping(volume_name):
+	#if not isNasVolume(volume_name):
+	#	return False, 'NAS卷 %s 未映射!' % volume_name
 	nas_volume_path = '/mnt/Share/%s' % volume_name
 	try:
 		umount_ret, umount_result = commands.getstatusoutput('2>&1 umount %s' % nas_volume_path)
 		if umount_ret == 0:
-			ret, msg = nas_conf_remove(nas_volume_path)
-			if not ret:
-				return ret,msg
+			nas_conf_remove(nas_volume_path)
 			return True,'解除NAS卷映射成功!'
 		elif umount_result.find('not found') >= 0:
 			return False,'NAS卷 %s 不存在!' % volume_name
@@ -358,15 +370,18 @@ def nasUnmapping(volume_name):
 
 # 检查是否为NAS卷
 def isNasVolume(volume_name):
+	"""
 	for nas_dev,mnt_path in __nas_conf_get_list():
 		if mnt_path.find(volume_name) >= 0:
 			return True
 	for x in nas_fmt_get_list():
 		if x['volume_name'] == volume_name:
 			return True
-	#for x in nas_mount_list():
-	#	if x.volume_name == volume_name:
-	#		return True
+	"""
+	for x in nas_mount_get_list():
+		if x.volume_name == volume_name:
+			return True
+	# TODO: recusive call
 	return False
 
 if __name__ == '__main__':
@@ -374,19 +389,19 @@ if __name__ == '__main__':
 	#	print x.__dict__
 	#for x in nas_mount_get_list():
 	#	print x.__dict__
+	"""
 	print nasGetList('Udv299_1')
-"""
 	for x in nas_conf_get_list():
 		print x
 
 	sys.exit(0)
-	ret,msg = nas_conf_add('/dev/md1p2', '/mnt/Share/udv2')
-	print msg
-	ret,msg = nas_conf_remove('/mnt/Share/udv2')
+	"""
+	#print __conf_exist('/mnt/Share/udv2')
+	#sys.exit(0)
+	#print nas_conf_add('/dev/md1p2', '/mnt/Share/udv2')
+	ret,msg  = nas_conf_remove('/mnt/Share/udv2')
 	print msg
 """
-"""
-
 	if nas_conf_is_exist('/mnt/Share/udv2'):
 		print 'exist'
 	else:

@@ -9,6 +9,30 @@ os.chdir(os.path.dirname(sys.argv[0]))
 
 from libnas import *
 
+def DictDump(row_list):
+	return row_list
+
+def DefaultDump(row_list):
+	rows = []
+	for row in row_list:
+		rows.append(row.__dict__)
+	return rows
+
+class UniOutput:
+	def __init__(self, row_list, dump = DefaultDump):
+		self.total = 0
+		self.rows = []
+		#for row in row_list:
+		#	self.rows.append(row.__dict__)
+		#self.total = len(self.rows)
+		self.rows = dump(row_list)
+		self.total = len(self.rows)
+
+		#print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
+		print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
+		sys.exit(0)
+
+
 def nasExit(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
@@ -17,13 +41,6 @@ def nasExit(ret = True, msg = ''):
 	if ret:
 		sys.exit(0)
 	sys.exit(-1)
-
-def nasListProc(volume_name):
-	nas_list = {'total':0, 'rows':[]}
-	nas_list['rows'] = nasGetList(volume_name)
-	nas_list['total'] = len(nas_list['rows'])
-	print json.dumps(nas_list, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent = 4)
-	sys.exit(0)
 
 def nasUsage():
 	print """
@@ -58,7 +75,7 @@ def nas_main():
 			arg_fs = arg
 
 	if arg_op_mode == '--list':
-		nasListProc(arg_volume)
+		UniOutput(nasGetList(arg))
 	elif arg_op_mode == '--map':
 		ret,msg = nasMapping(arg_udv, arg_fs)
 		nasExit(ret, msg)
