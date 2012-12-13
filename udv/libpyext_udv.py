@@ -3,6 +3,16 @@
 
 import os
 import sys
+from libmd import md_info
+
+# -----------------------------------------------------------------------------
+def getVGNameByDev(md_dev):
+	x = None
+	try:
+		x = md_info(md_dev)['rows'][0]
+	except:
+		return 'N/A'
+	return x['name']
 
 # -----------------------------------------------------------------------------
 
@@ -78,6 +88,8 @@ def isISCSIVolume(udv_dev):
 	return 0
 
 if __name__ == '__main__':
+	print getMdNameByDev('/dev/md1')
+	sys.exit(0)
 	vg_dev = getVGDevByName(sys.argv[1])
 	print 'VG: slash-server, DEV: ', vg_dev
 

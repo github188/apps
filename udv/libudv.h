@@ -63,6 +63,7 @@ struct _udv_info {
         char name[UDV_NAME_LEN];
 	char dev[UDV_NAME_LEN];
         char vg_dev[PATH_MAX];
+	char vg_name[PATH_MAX];
         int part_num;
         udv_geom geom;
         uint32_t sector_size;   // not used currently

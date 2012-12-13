@@ -44,6 +44,42 @@ size_t getVGDevByName(const char *vg_name, char *vg_dev)
 	return PYEXT_RET_OK;
 }
 
+size_t getVGNameByDev(const char *vg_dev, char *vg_name)
+{
+	PyObject *pModule, *pFunc, *pArg, *pRetVal;
+
+	if (!(vg_name && vg_dev))
+		return PYEXT_ERR_INPUT_ARG;
+	vg_name[0] = '\0';
+
+	Py_Initialize();
+	if (!Py_IsInitialized())
+		return PYEXT_ERR_INIT;
+
+	pModule = pFunc = pArg = pRetVal = NULL;
+
+	PyRun_SimpleString("import sys");
+	PyRun_SimpleString("sys.path.append('./')");
+	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
+
+	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
+		return PYEXT_ERR_LOAD_MODULE;
+
+	pFunc = PyObject_GetAttrString(pModule, "getVGNameByDev");
+	if(!PyCallable_Check(pFunc))
+		return PYEXT_ERR_LOAD_FUNC;
+
+	if (!(pArg = Py_BuildValue("(s)", vg_dev)))
+		return PYEXT_ERR_SET_ARG;
+
+	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
+		return PYEXT_ERR_RUN;
+
+	strcpy(vg_name, PyString_AsString(pRetVal));
+
+	return PYEXT_RET_OK;
+}
+
 /*
  * import from libpyext_udv.py
  */
@@ -444,6 +480,7 @@ size_t udv_list(udv_info_t *list, size_t n)
 
 	const char *part_name;
 	udv_info_t *udv = list;
+	char vg_name[PATH_MAX];
 
 	libudv_custom_init();
 
@@ -484,6 +521,8 @@ size_t udv_list(udv_info_t *list, size_t n)
 				sprintf(udv->dev, "%s%d", dev->path, part->num);
 
 			strcpy(udv->vg_dev, dev->path);
+			if (!getVGNameByDev(udv->vg_dev, vg_name))
+				strcpy(udv->vg_name, vg_name);
 			udv->part_num = part->num;
 
 			udv->geom.start = part->geom.start * DFT_SECTOR_SIZE;
