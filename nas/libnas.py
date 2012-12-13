@@ -298,7 +298,8 @@ def nas_mount_get_list():
 				tmp_nas_dev = line.split()[0]
 				nas_mount = NasVolumeAttr()
 				nas_mount.path = line.split()[2]
-				nas_mount.volume_name = __get_udv_name_by_dev(tmp_nas_dev)
+				#nas_mount.volume_name = __get_udv_name_by_dev(tmp_nas_dev)
+				nas_mount.volume_name = os.path.basename(nas_mount.path)
 				nas_mount.state = 'mounted'
 				nas_mount.fmt_percent = 0
 				nas_mount.capacity = __get_nas_volume_capacity(nas_mount.path)
@@ -381,7 +382,6 @@ def isNasVolume(volume_name):
 	for x in nas_mount_get_list():
 		if x.volume_name == volume_name:
 			return True
-	# TODO: recusive call
 	return False
 
 if __name__ == '__main__':
