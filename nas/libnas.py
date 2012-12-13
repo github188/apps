@@ -384,6 +384,20 @@ def isNasVolume(volume_name):
 			return True
 	return False
 
+def nasUpdateCfg():
+	try:
+		f = open(NAS_CONF_TEMP, 'w')
+		for x in nasGetList():
+			dev = __get_udv_dev_by_name(x.volume_name)
+			mnt = x.path
+			f.write('mount %s %s\n' % (dev, mnt))
+		f.close()
+		os.rename(NAS_CONF_TEMP, NAS_CONF_FILE)
+		os.chmod(NAS_CONF_FILE, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+	except:
+		return False, '更新配置文件失败!'
+	return True, '更新配置文件成功'
+
 if __name__ == '__main__':
 	#for x in nas_fmt_get_list():
 	#	print x.__dict__
@@ -399,8 +413,9 @@ if __name__ == '__main__':
 	#print __conf_exist('/mnt/Share/udv2')
 	#sys.exit(0)
 	#print nas_conf_add('/dev/md1p2', '/mnt/Share/udv2')
-	ret,msg  = nas_conf_remove('/mnt/Share/udv2')
-	print msg
+	#ret,msg  = nas_conf_remove('/mnt/Share/udv2')
+	#print msg
+	nasUpdateCfg()
 """
 	if nas_conf_is_exist('/mnt/Share/udv2'):
 		print 'exist'
