@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import sys
 import os
 import getopt
@@ -16,6 +15,7 @@ class IArgs:
 		self.edit_set = False
 		self.list_set = False
 		self.del_set = False
+		self.default_set = False
 		self.check_set = False
 		self.share_set = False
 		self.right_set = False
@@ -43,8 +43,8 @@ class IArgs:
 			print '##操作模式为唯一性，请选择 [ '+','.join(OP_MODE)+' ] 中的一种!参见如下命令格式：\n'
 			AUsage()
 
-OP_MODE = ['--user', '--group', '--userpwd']
-long_opt = ['user', 'group','add', 'edit', 'list', 'del', 'share', 'check', 'right', 'userpwd', 'name=','pwd=', 'note=', 'member=', 'page=', 'coun=', 'search=', 'write=', 'read=', 'newpwd=']
+OP_MODE = ['--user', '--group', '--userpwd', '--default']
+long_opt = ['user', 'group','add', 'edit', 'list', 'del', 'default', 'share', 'check', 'right', 'userpwd', 'name=','pwd=', 'note=', 'member=', 'page=', 'coun=', 'search=', 'write=', 'read=', 'newpwd=']
 
 def main():
 	try:
@@ -128,6 +128,8 @@ def main():
 			AUsage()
 	elif iArgs.mode == '--userpwd':
 		User_Edit_Pwd(iArgs)
+	elif iArgs.mode == '--default':
+		DEFAULT()
 	else:
 		AUsage()
 

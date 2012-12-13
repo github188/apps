@@ -22,6 +22,7 @@ class IArgs:
 		self.check_pwd_set = False
 		self.login_set = False
 		self.default_set = False
+		self.outsession_set = False
 		self.name_set = ''
 		self.pwd_set = ''
 		self.pwd_state = False
@@ -38,6 +39,8 @@ class IArgs:
 		self.page_set = 0
 		self.coun_set = 10
 		self.search_set = ''
+		self.session_set = ''
+		self.session_state = False
 
 	def setMode(self, mode):
 		if self.mode == '':
@@ -46,8 +49,8 @@ class IArgs:
 if os.path.exists(Admin_CONF_PATH) == False:
 	Admin_default()
 
-OP_MODE = ['--list', '--add', '--edit', '--useredit', '--del', '--check',  '--check_pwd', '--login', '--default']
-long_opt = ['list', 'add', 'edit', 'del', 'check', 'check_pwd', 'default','useredit', 'login', 'name=', 'page=', 'coun=', 'search=', 'pwd=', 'new_pwd=', 'manage_pwd=', 'new_manage_pwd=', 'manage_type=', 'note=']
+OP_MODE = ['--list', '--add', '--edit', '--useredit', '--del', '--check',  '--check_pwd', '--login', '--default', '--outsession']
+long_opt = ['list', 'add', 'edit', 'del', 'check', 'check_pwd', 'default',  'outsession', 'useredit', 'login', 'name=', 'page=', 'coun=', 'search=', 'pwd=', 'new_pwd=', 'manage_pwd=', 'new_manage_pwd=', 'manage_type=', 'note=', 'session=']
 
 def main():
 	try:
@@ -76,6 +79,8 @@ def main():
 			iArgs.check_pwd_set = True
 		elif opt == '--login':
 			iArgs.login_set = True
+		elif opt == '--outsession':
+			iArgs.outsession_set = True
 		elif opt == '--default':
 			iArgs.default_set = True
 		elif opt == '--page':
@@ -84,6 +89,9 @@ def main():
 			iArgs.coun_set = arg
 		elif opt == '--search':
 			iArgs.search_set = arg
+		elif opt == '--session':
+			iArgs.session_set = arg
+			iArgs.session_state = True
 		elif opt == '--name':
 			iArgs.name_set = arg
 		elif opt == '--pwd':
@@ -129,6 +137,8 @@ def main():
 		Admin_useredit(iArgs)
 	elif iArgs.login_set == True:
 		Admin_login(iArgs)
+	elif iArgs.outsession_set == True:
+		out_session(iArgs)
 	else:
 		AUsage()
 

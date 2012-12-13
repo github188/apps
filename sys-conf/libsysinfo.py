@@ -52,13 +52,13 @@ def __get_temp(mod):
 		_item['value'] = ''
 		temp = __read_value(NCT_ROOT, 'temp17_input')
 		if temp != '':
-			_item['value'] = _item['value'] + 'CPU温度: %d' % (int(temp)/1000)
+			_item['value'] = _item['value'] + '[ CPU温度: %d ]' % (int(temp)/1000)
 		temp = __read_value(NCT_ROOT, 'temp18_input')
 		if temp != '':
-			_item['value'] = _item['value'] + ' 机箱温度: %d' % (int(temp)/1000)
+			_item['value'] = _item['value'] + ' [ 机箱温度: %d ]' % (int(temp)/1000)
 		temp = __read_value(NCT_ROOT, 'temp20_input')
 		if temp != '':
-			_item['value'] = _item['value'] + ' 环境温度: %d' % (int(temp)/1000)
+			_item['value'] = _item['value'] + ' [ 环境温度: %d ]' % (int(temp)/1000)
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item
@@ -70,13 +70,13 @@ def __get_fan_speed(mod):
 		_item['value'] = ''
 		temp = __read_value(NCT_ROOT, 'fan1_input')
 		if temp != '' and temp != '0':
-			_item['value'] = _item['value'] + '机箱风扇1: %s RPM' % temp
+			_item['value'] = _item['value'] + '[ 机箱风扇1: %s RPM ]' % temp
 		temp = __read_value(NCT_ROOT, 'fan3_input')
 		if temp != '' and temp != '0':
-			_item['value'] = _item['value'] + '  机箱风扇2: %s RPM' % temp
+			_item['value'] = _item['value'] + '  [ 机箱风扇2: %s RPM ]' % temp
 		temp = __read_value(NCT_ROOT, 'fan2_input')
 		if temp != '' and temp != '0':
-			_item['value'] = _item['value'] + '  CPU风扇: %s RPM' % temp
+			_item['value'] = _item['value'] + '  [ CPU风扇: %s RPM ]' % temp
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item
@@ -105,7 +105,7 @@ def __get_mem_util(mod):
 		mem_total = float(re.findall('MemTotal: (.*) kB', mem_info)[0])
 		mem_free = float(re.findall('MemFree: (.*) kB', mem_info)[0])
 		mem_used = mem_total - mem_free
-		_item['value'] = '%.2f%%   %s' % (mem_used/mem_total*100, __calc_mem(mem_total))
+		_item['value'] = '%.2f%%  [ 总内存 %s ]' % (mem_used/mem_total*100, __calc_mem(mem_total))
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item

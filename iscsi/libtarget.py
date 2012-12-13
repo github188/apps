@@ -5,6 +5,10 @@ import os
 #os.chdir(os.path.dirname(__file__))
 
 from libiscsicommon import *
+from uuid import uuid1
+
+JW_ISCSI = '/opt/jw-conf/iscsi'
+JW_ISCSI_DFT_TARGET = 'default-target'
 
 class TargetAttr:
 	"""
@@ -38,6 +42,8 @@ _	Target对象
 		self.statistics = {}		# TargetStat()
 
 def isTargetExist(tgt_name):
+	return True if os.path.isdir(SCST.TARGET_DIR + os.sep + tgt_name) else False
+	"""
 	isExist = False
 	try:
 		if (os.path.isdir(SCST.TARGET_DIR + os.sep + tgt_name)):
@@ -45,8 +51,9 @@ def isTargetExist(tgt_name):
 		else:
 			isExist = False
 	except IOError,e:
-		raise e
+		return e
 	return isExist
+	"""
 
 def getTargetAttr(tgt_name):
 	tgt_full_path = SCST.ROOT_DIR + '/targets/iscsi/' + tgt_name
@@ -83,6 +90,45 @@ def getTargetInfo(tgt_name):
 	tgt.statistics = getTargetStat(tgt_name).__dict__
 	return tgt
 
+def __genDefaultTarget():
+	_random = str(uuid1()).split('-')[0]
+	_tgt = 'iqn.2012-12.com.jwele:tgt-%s' % _random
+	if not os.path.isdir(JW_ISCSI):
+		os.makedirs(JW_ISCSI)
+	AttrWrite(JW_ISCSI, JW_ISCSI_DFT_TARGET, _tgt)
+	return _tgt
+
+def iSCSICreateTarget(tgt):
+	if not AttrWrite(SCST.TARGET_DIR, 'mgmt', 'add_target %s' % tgt):
+		return False
+	if not AttrWrite(SCST.TARGET_DIR, 'enabled', '1'):
+		return False
+	if not AttrWrite('%s/%s' % (SCST.TARGET_DIR, tgt), 'enabled', '1'):
+		return False
+	return True
+
+def iSCSISetDefaultTarget():
+
+	if iSCSIGetTargetList() != []:
+		return True
+
+	# check default target
+	if not os.path.isfile('%s/%s' % (JW_ISCSI, JW_ISCSI_DFT_TARGET)):
+		_tgt = __genDefaultTarget()
+	else:
+		_tgt = AttrRead(JW_ISCSI, JW_ISCSI_DFT_TARGET)
+
+	if isTargetExist(_tgt):
+		return True
+
+	# make sure module loaded
+	os.popen('modprobe scst')
+	os.popen('modprobe iscsi-scst')
+	os.popen('modprobe scst_vdisk')
+	os.popen('iscsi-scstd')
+
+	return iSCSICreateTarget(_tgt)
+
 def iSCSIGetTargetList(tgt = ''):
 	target_list = []
 	target_dir = SCST.ROOT_DIR + os.sep + 'targets/iscsi'
@@ -100,11 +146,16 @@ def iSCSISetTargetAttr(tgt_name, attr, value):
 	tgt_full_path = SCST.ROOT_DIR + '/targets/iscsi/' + tgt_name
 	if AttrWrite(tgt_full_path, attr, value):
 		if AttrRead(tgt_full_path, attr) == value:
+			ret,msg = iSCSIUpdateCFG()
+			if not ret:
+				return True, 'Target属性设置成功!写配置文件失败! %s' % msg
 			return (True, 'Target属性设置成功！')
 	return (False, 'Target属性设置失败！')
 
 # 测试代码
 if __name__ == '__main__':
+	print iSCSISetDefaultTarget()
+	sys.exit(0)
 	# 获取Target列表
 	tgt_list = iSCSIGetTargetList()
 	for tgt in tgt_list:
