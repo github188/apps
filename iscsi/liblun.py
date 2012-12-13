@@ -109,9 +109,11 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
 			return False, '增加Initiator配置到Target出错!'
 
 	if lun_id == 'auto':
-		lun_id = __getFreeLunId(lun_dir)
-		if lun_id == -1:
+		_lun_id = __getFreeLunId(lun_dir)
+		if _lun_id == -1:
 			return (False, '添加LUN映射失败！LUN映射已经超出最大允许范围！')
+	else:
+		_lun_id = int(lun_id)
 
 	lunRW = isLunMappedRw(volume_name)
 	if ro == 'auto':
@@ -130,7 +132,7 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
 	else:
 		return (False, '添加LUN映射失败！ReadOnly属性设置不正确！')
 
-	lun_cmd = 'add %s %d read_only=%s' % (volume_name, lun_id, lunRO)
+	lun_cmd = 'add %s %d read_only=%s' % (volume_name, _lun_id, lunRO)
 	if AttrWrite(lun_dir, 'mgmt', lun_cmd):
 		ret,msg = iSCSIUpdateCFG()
 		if not ret:
