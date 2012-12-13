@@ -25,6 +25,7 @@ class iSCSIVolume:
 		self.read_only = 'disable'
 		self.nv_cache = 'enable'
 		self.t10_dev_id = ''
+		self.wr_method = ''
 
 def isVolumeExist(volume_name):
 	vol_path = SCST.VDISK_DIR + os.sep + volume_name
@@ -66,8 +67,11 @@ def __get_udv_dev_byname(udv_name):
 	except:
 		return (False, '获取用户数据卷信息失败:未知错误')
 
-def __attr_wrth(wrth):
-	return '1' if wrth == 'wt' else '0'
+def __wrth_int(wr):
+	return '1' if wr == 'wt' else '0'
+
+def __wrth_str(wr):
+	return 'wt' if wr == '1' else 'wb'
 
 def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', nv_cache = 'enable', wrth = 'wb'):
 	if not blocksize in VOL_BLOCK_SIZE:
@@ -84,7 +88,7 @@ def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', nv_cache = 'enable
 		return (False, '映射iSCSI数据卷失败！用户数据卷 %s 已经被使用！' % udv_name)
 
 	vol_name = 'vd' + str(uuid.uuid1()).split('-')[0]
-	iscsi_cmd = 'add_device %s filename=%s;blocksize=%d;nv_cache=%s;read_only=%s;write_through=%s' % (vol_name, udv_dev, blocksize, VOL_BOOL_MAP[nv_cache], VOL_BOOL_MAP[ro], __attr_wrth(wrth))
+	iscsi_cmd = 'add_device %s filename=%s;blocksize=%d;nv_cache=%s;read_only=%s;write_through=%s' % (vol_name, udv_dev, blocksize, VOL_BOOL_MAP[nv_cache], VOL_BOOL_MAP[ro], __wrth_int(wrth))
 
 	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
 		ret,msg = iSCSIUpdateCFG()
@@ -145,6 +149,7 @@ def getVolumeInfo(volume_name):
 	vol.read_only = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'read_only')]
 	vol.nv_cache = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'nv_cache')]
 	vol.t10_dev_id = AttrRead(vol_full_path, 't10_dev_id')
+	vol.wr_method = __wrth_str(AttrRead(vol_full_path, 'write_through'))
 	return vol
 
 def iSCSIVolumeGetList(volume_name = ''):
