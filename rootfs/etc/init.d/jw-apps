@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# start/stop iSCSI Target.
+# load jw apps
 
 ### BEGIN INIT INFO
 # Provides:          jw-apps
@@ -59,7 +59,6 @@ apps_usage()
 {
 	echo "Usage: $(basename "$0")  {start|stop|restart|status}"
 }
-
 
 case "${1:-}" in
 	start)

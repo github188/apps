@@ -14,17 +14,14 @@
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
-. /lib/lsb/init-functions
-. /usr/local/lib/jw-functions
-
 do_driver_start()
 {
-	safe_exec modprobe nct6106
+	modprobe nct6106
 }
 
 do_driver_stop()
 {
-	safe_exec rmmod nct6106
+	rmmod nct6106
 }
 
 driver_usage()
