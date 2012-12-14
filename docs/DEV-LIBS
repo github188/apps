@@ -1,3 +1,4 @@
+# for running use
 aptitude install libev4 libev-dev -y
 aptitude install libatasmart-dev libatasmart4 -y
 aptitude install python-psutil python-dev -y
