@@ -11,7 +11,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-DISK_HOTREP_CONF='/opt/disk/disk-hotreplace.xml'
+DISK_HOTREP_CONF='/opt/jw-conf/disk/hotreplace.xml'
 DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 <hot_replace>
 </hot_replace>
@@ -427,6 +427,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 	return True, '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
 
 def __xml_load(fname):
+	__check_disk_hotrep_conf()
 	try:
 		doc = minidom.parse(fname)
 	except:
@@ -472,6 +473,7 @@ def md_get_hotrep(md_uuid=''):
 
 # 设置热备盘被使用
 def disk_clean_hotrep(slot):
+	__check_disk_hotrep_conf()
 	try:
 		doc = minidom.parse(DISK_HOTREP_CONF)
 	except IOError,e:

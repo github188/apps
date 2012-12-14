@@ -6,7 +6,7 @@ import xml
 import os
 from xml.dom import minidom
 
-ALARM_CONF_FILE = '/opt/sys/alarm-conf.xml'
+ALARM_CONF_FILE = '/opt/jw-conf/system/alarm-conf.xml'
 ALARM_CONF_DFT_CONTENT = """<?xml version="1.0" encoding="UTF-8"?>
 <alarm>
 </alarm>
@@ -63,6 +63,9 @@ class email_conf:
 		self.auth_password = None
 
 def alarm_email_get():
+
+	__check_alarm_conf()
+
 	ret,doc = __load_xml(ALARM_CONF_FILE)
 	if not ret:
 		return ret,doc
@@ -270,6 +273,8 @@ def alarm_set(module, switch=None, category=None):
 	return True, '修改告警设置成功!'
 
 def alarm_get(module=None):
+
+	__check_alarm_conf()
 
 	ret,doc = __load_xml(ALARM_CONF_FILE)
 	if ret is False:
