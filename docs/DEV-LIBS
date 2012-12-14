@@ -1,11 +1,13 @@
-sudo apt-get install libev4
-sudo apt-get install libatasmart-dev libatasmart4
-sudo apt-get install libparted0-dev libparted0debian1 libparted0
-sudo apt-get install python-dev
-sudo apt-get install libev-dev
-sudo apt-get install python-psutil
-sudo apt-get install sqlite3 libsqlite0 libsqlite3-0 libsqlite3-dev python-sqlite
-sudo apt-get install lighttpd
-sudo apt-get install php5-cgi
-sudo apt-get install libudev-dev libudev0 udev libxml2-dev libxml2
-sudo apt-get install samba nfs-common
+aptitude install libev4 libev-dev -y
+aptitude install libatasmart-dev libatasmart4 -y
+aptitude install python-psutil python-dev -y
+aptitude install sqlite3 libsqlite0 libsqlite3-0 libsqlite3-dev python-sqlite -y
+aptitude install lighttpd php5-cgi -y
+aptitude install libudev-dev libudev0 udev -y
+aptitude install libxml2-dev libxml2 -y
+aptitude install samba nfs-common -y
+
+# for parted 3.1 complie use
+aptitude install libdevmapper libdevmapper-dev libdevmapper-event1.02.1 libdevmapper1.02.1 -y
+aptitude install uuid-dev -y
+aptitude install libreadline-dev -y
