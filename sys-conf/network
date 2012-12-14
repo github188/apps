@@ -16,15 +16,16 @@ os.chdir(os.path.dirname(sys.argv[0]))
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-FILEPATH='/opt/etc/network/network_conf.xml'
-DEFAULT_INTER_PATH = '/opt/etc/network/interfaces'
-BOND_CONF = '/opt/etc/network/bond_conf.sh'
+NET_PATH='/opt/etc/network/'
+FILEPATH=NET_PATH+'network_conf.xml'
+DEFAULT_INTER_PATH = NET_PATH+'interfaces'
+BOND_CONF = NET_PATH+'bond_conf.sh'
 DNS_CONFIG_PATH = '/opt/etc/resolv.conf'
 
 BOND_LIST = ['bond0', 'bond1']
-if os.path.exists('/opt/etc/network') == False:
+if os.path.exists(NET_PATH) == False:
 	try:
-		os.makedirs('/opt/etc/network')
+		os.makedirs(NET_PATH)
 	except:
 		pass
 
@@ -420,7 +421,7 @@ def nic_list(value):
 
 
 #~ 恢复默认置
-def get_default(value):
+def get_default():
 	conf = """#请不要直接修改本配置文件
 #修改IP地址请使用 network 命令\n
 auto lo
@@ -566,6 +567,8 @@ if os.path.exists(FILEPATH):
 	dom = xml.dom.minidom.parse(FILEPATH)#打开DOM
 	root = dom.documentElement #获取根接点
 	item = root.getElementsByTagName('nic')
+else:
+	get_default()
 
 
 OP_MODE = ['--list', '--ifconfig', '--bond', '--dns', '--default', '--niccoun', '--status']
@@ -637,7 +640,7 @@ def network_main():
 	if iArgs.list_set == True:
 		nic_list(iArgs)
 	elif iArgs.default_set == True:
-		get_default(iArgs)
+		get_default()
 	elif iArgs.niccoun_set == True:
 		print LICENSE_SER()
 	elif iArgs.ifconfig_set == True:

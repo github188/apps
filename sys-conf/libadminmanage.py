@@ -14,8 +14,9 @@ import hashlib
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-Admin_CONF_PATH="/opt/jw-conf/system/manage.conf"
-Session_CONF_PATH="/opt/jw-conf/system/session.conf"
+CONF_PATH="/opt/jw-conf/system/"
+Admin_CONF_PATH=CONF_PATH+'manage.conf'
+Session_CONF_PATH=CONF_PATH+'session.conf'
 
 config = ConfigParser.ConfigParser()  
 config.read(Admin_CONF_PATH) 
@@ -31,6 +32,7 @@ manage_pwd = 80BAEC203A63F45280DAADD5CF3598FE
 manage_type = 3
 note = 专用管理员
 """
+
 #~ root帐号密码默认为密码lkjhgfdsA
 #~ admin帐号密码默认为密码admin
 def Export(ret = True, msg = ''):
@@ -225,11 +227,18 @@ def Admin_check_pwd(value):
 
 #~#### 恢复默认主程序
 def Admin_default():
+	if os.path.exists(CONF_PATH) == False:
+		try:
+			os.makedirs(CONF_PATH)
+		except:
+			pass
+
 	f = open(Admin_CONF_PATH, 'w')
 	try:
 		f.write(Admin_CONF)
 	finally:
 		f.close()
+
 def out_session(value):
 	if value.session_state:
 		f = open(Session_CONF_PATH, 'w')
