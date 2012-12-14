@@ -73,29 +73,6 @@ def get_default():
 	except:
 		pass
 
-	#~ 初始化SMBPASSWD文件
-	#~ root初始密码为qwertgfdsa
-	smbpwd = """root:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:75B03763C8EB36EA61EFE872CC62447D:[U          ]:LCT-509B7BAC:
-guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U          ]:LCT-509B3704:
-"""
-	conf_file = open(SMB_PATH+'smbpasswd', 'w')
-	try:
-		conf_file.write(smbpwd)
-		conf_file.close()
-	except:
-		conf_file.close()
-	os.chmod(SMB_PATH+'smbpasswd', stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
-	SYS_smbpasswd_PATH = '/etc/samba/smbpasswd'
-	try:
-		if os.path.exists(SYS_smbpasswd_PATH) == False:
-			os.symlink(SMB_PATH+'smbpasswd', SYS_smbpasswd_PATH)
-		else:
-			if os.path.islink(SYS_smbpasswd_PATH) == False:
-				os.remove(SYS_smbpasswd_PATH)
-				os.symlink(SMB_PATH+'smbpasswd', SYS_smbpasswd_PATH)
-	except:
-		pass
-
 #~ 初始化NFS文件
 	try:
 		os.mknod(NFS_CONF_PATH)

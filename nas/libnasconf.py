@@ -433,40 +433,41 @@ def __user_purview__(value, u_list, rw):
 	u_list = __User_Group_List__(u_list).split(',')
 	if len(u_list) > 0:
 		for x in u_list:
-			xpath = SMB_USER_CONF_PATH + x
-			if os.path.exists(xpath) == False:
-				f = open(xpath, 'w')
-				f.write(USE_CONF)
-				f.close()
-			e_conf = ConfigParser.ConfigParser()  
-			e_conf.read(xpath) 
-			if e_conf.has_section(value.name_set) == False:
-				e_conf.add_section(value.name_set)
-			if value.add_set == True:
-				if value.comment_set == '':
-					value.comment_set = value.name_set
-				e_conf.set(value.name_set, 'comment', value.comment_set)
-				e_conf.set(value.name_set, 'path', value.path_set)
-				e_conf.set(value.name_set, 'browsable', 'yes')
-				e_conf.set(value.name_set, 'inherit permissions', 'yes')
-			else:
-				e_conf.set(value.name_set, 'comment', deviant(value.name_set, "comment"))
-				e_conf.set(value.name_set, 'path', deviant(value.name_set, "path"))
-				e_conf.set(value.name_set, 'browsable', 'yes')
-				e_conf.set(value.name_set, 'inherit permissions', deviant(value.name_set, "inherit permissions"))				
-			if rw == 'r':
-				e_conf.set(value.name_set, 'read only', 'yes')
-				try:
-					e_conf.remove_option(value.name_set,  "writable")
-				except:
-					pass
-			else:
-				e_conf.set(value.name_set, 'writable', 'yes')
-				try:
-					e_conf.remove_option(value.name_set,  "read only")
-				except:
-					pass
-			e_conf.write(open(xpath, 'w'))
+			if len(x.strip()) > 0:
+				xpath = SMB_USER_CONF_PATH + x
+				if os.path.exists(xpath) == False:
+					f = open(xpath, 'w')
+					f.write(USE_CONF)
+					f.close()
+				e_conf = ConfigParser.ConfigParser()  
+				e_conf.read(xpath) 
+				if e_conf.has_section(value.name_set) == False:
+					e_conf.add_section(value.name_set)
+				if value.add_set == True:
+					if value.comment_set == '':
+						value.comment_set = value.name_set
+					e_conf.set(value.name_set, 'comment', value.comment_set)
+					e_conf.set(value.name_set, 'path', value.path_set)
+					e_conf.set(value.name_set, 'browsable', 'yes')
+					e_conf.set(value.name_set, 'inherit permissions', 'yes')
+				else:
+					e_conf.set(value.name_set, 'comment', deviant(value.name_set, "comment"))
+					e_conf.set(value.name_set, 'path', deviant(value.name_set, "path"))
+					e_conf.set(value.name_set, 'browsable', 'yes')
+					e_conf.set(value.name_set, 'inherit permissions', deviant(value.name_set, "inherit permissions"))				
+				if rw == 'r':
+					e_conf.set(value.name_set, 'read only', 'yes')
+					try:
+						e_conf.remove_option(value.name_set,  "writable")
+					except:
+						pass
+				else:
+					e_conf.set(value.name_set, 'writable', 'yes')
+					try:
+						e_conf.remove_option(value.name_set,  "read only")
+					except:
+						pass
+				e_conf.write(open(xpath, 'w'))
 
 #~ 增加共享配置
 def add(value):

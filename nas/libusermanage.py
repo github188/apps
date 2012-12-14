@@ -28,8 +28,9 @@ USERS_CONF_PATH = "/etc/passwd"
 GROUP_CONF_PATH = "/etc/group"
 GSHADOW_CONF_PATH = "/etc/gshadow"
 SHADOW_CONF_PATH = "/etc/shadow"
-SMBCONFIG_FILE = "/opt/etc/samba/smbpasswd"
+SMBCONFIG_FILE = "/etc/samba/smbpasswd"
 RESTART_SMB = 'killall -HUP smbd nmbd'
+
 
 USERS_CONF = """root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/bin/sh
@@ -285,6 +286,18 @@ def DEFAULT():
 		conf_file.close()
 	finally:
 		conf_file.close()
+		
+	#~ 初始化SMBPASSWD文件
+	#~ root初始密码为qwertgfdsa
+	smbpwd = """root:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:75B03763C8EB36EA61EFE872CC62447D:[U          ]:LCT-509B7BAC:
+guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U          ]:LCT-509B3704:
+"""
+	conf_file = open(SMBCONFIG_FILE, 'w')
+	try:
+		conf_file.write(smbpwd)
+		conf_file.close()
+	except:
+		conf_file.close()
 
 def Synchronous():
 	shutil.copy(USERS_CONF_PATH, SYNC_PATH)
@@ -295,6 +308,7 @@ def Synchronous():
 	shutil.copy(GROUP_CONF_PATH+'-', SYNC_PATH)
 	shutil.copy(GSHADOW_CONF_PATH+'-', SYNC_PATH)
 	shutil.copy(SHADOW_CONF_PATH+'-', SYNC_PATH)
+	shutil.copy(SMBCONFIG_FILE, SYNC_PATH)
 
 config = ConfigParser.ConfigParser()  
 config.read(SMB_CONF_PATH) 
@@ -710,7 +724,7 @@ def Group_Check(value):
 	else:
 		Export(False, '组名称已存在！')
 
-#~#### 验证用户组重名主程序
+#~#### 用户修改密码主程序
 def User_Edit_Pwd(value):
 	if __Check_Samba_User_licit__(value.name_set):
 		if value.pwd_state and value.newpwd_state:
@@ -723,6 +737,7 @@ def User_Edit_Pwd(value):
 			if __Read_Samba_User_pwd__('pw', 3) == __Read_Samba_User_pwd__(value.name_set, 3):
 				if newpwd != pwd:
 					SYSTEM_OUT('(echo '+newpwd+'; echo '+newpwd+') | smbpasswd -s '+value.name_set)
+				Synchronous()
 				Export(True, '密码修改成功')
 	Export(False, '用户名或原密码不正确！')
 
@@ -882,33 +897,34 @@ def __Add_User_initialize_Conf__(User_name, Group_List):
 
 #~###-增加用户初始配置，操作函数	__Add_User_initialize_Conf_Operating__(User_name, Share_name, rw):
 def __Add_User_initialize_Conf_Operating__(User_name, Share_name, rw):
-	Conf_valid = __GroupList_User_List__(deviant(Share_name, 'valid users'))
-	xpath = SMB_CONF_PATH +'.'+ User_name
-	if os.path.exists(xpath) == False:
-		f = open(xpath, 'w')
-		f.write(USE_CONF)
-		f.close()
-	e_conf = ConfigParser.ConfigParser()  
-	e_conf.read(xpath) 
-	if e_conf.has_section(Share_name) == False:
-		e_conf.add_section(Share_name)
-	e_conf.set(Share_name, 'comment', deviant(Share_name, "comment"))
-	e_conf.set(Share_name, 'path', deviant(Share_name, "path"))
-	e_conf.set(Share_name, 'browsable', 'yes')
-	e_conf.set(Share_name, 'inherit permissions', deviant(Share_name, "inherit permissions"))				
-	if rw == 'r' and User_name not in Conf_valid:
-		e_conf.set(Share_name, 'read only', 'yes')
-		try:
-			e_conf.remove_option(Share_name,  "writable")
-		except:
-			pass
-	else:
-		e_conf.set(Share_name, 'writable', 'yes')
-		try:
-			e_conf.remove_option(Share_name,  "read only")
-		except:
-			pass
-	e_conf.write(open(xpath, 'w'))
+	if len(User_name) > 0:
+		Conf_valid = __GroupList_User_List__(deviant(Share_name, 'valid users'))
+		xpath = SMB_CONF_PATH +'.'+ User_name
+		if os.path.exists(xpath) == False:
+			f = open(xpath, 'w')
+			f.write(USE_CONF)
+			f.close()
+		e_conf = ConfigParser.ConfigParser()  
+		e_conf.read(xpath) 
+		if e_conf.has_section(Share_name) == False:
+			e_conf.add_section(Share_name)
+		e_conf.set(Share_name, 'comment', deviant(Share_name, "comment"))
+		e_conf.set(Share_name, 'path', deviant(Share_name, "path"))
+		e_conf.set(Share_name, 'browsable', 'yes')
+		e_conf.set(Share_name, 'inherit permissions', deviant(Share_name, "inherit permissions"))				
+		if rw == 'r' and User_name not in Conf_valid:
+			e_conf.set(Share_name, 'read only', 'yes')
+			try:
+				e_conf.remove_option(Share_name,  "writable")
+			except:
+				pass
+		else:
+			e_conf.set(Share_name, 'writable', 'yes')
+			try:
+				e_conf.remove_option(Share_name,  "read only")
+			except:
+				pass
+		e_conf.write(open(xpath, 'w'))
 
 #~###-列出组中的所有用户	__Group_User__(group):
 def __Group_User__(group):
