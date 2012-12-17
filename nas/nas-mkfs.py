@@ -44,7 +44,7 @@ def nas_mkfs(dev, filesystem):
 	nas_tmpfs_set_value('state', 'format-starting')
 	p = sp.Popen(args, stdout=sp.PIPE)
 
-	nas_tmpfs_set_value('state', 'formating')
+	nas_tmpfs_set_value('state', 'formatting')
 	while True:
 		ret = sp.Popen.poll(p)
 		if ret == 0:	# 程序正常结束
