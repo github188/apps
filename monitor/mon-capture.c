@@ -6,7 +6,7 @@
 
 #define NCT_ROOT "/sys/devices/platform/nct6106.656"
 
-const char *mod_cap_list[] = {"cpu-temp", "env-temp", "case-temp", NULL};
+const char *mod_cap_list[] = {"cpu-temp", "env-temp", "case-temp", "case-fan1", "case-fan2", "cpu-fan", NULL};
 
 bool isCaptureSupported(const char *mod)
 {
@@ -49,6 +49,7 @@ int __atoi(const char *p)
 	return -1;
 }
 
+// retcode: -1 表示文件不存在
 int __read_int_value(const char *file)
 {
 	return __atoi(__read_file_line(file));
@@ -78,6 +79,22 @@ int capture_case_temp()
 	return val;
 }
 
+int capture_case_fan1()
+{
+	return __read_int_value(NCT_ROOT"/fan1_input");
+}
+
+int capture_case_fan2()
+{
+	return __read_int_value(NCT_ROOT"/fan3_input");
+}
+
+int capture_cpu_fan()
+{
+	return __read_int_value(NCT_ROOT"/fan2_input");
+}
+
+
 capture_func capture_get(const char *mod)
 {
 	if (!isCaptureSupported(mod))
@@ -89,5 +106,11 @@ capture_func capture_get(const char *mod)
 		return capture_env_temp;
 	else if (!strcmp(mod, "case-temp"))
 		return capture_case_temp;
+	else if (!strcmp(mod, "case-fan1"))
+		return capture_case_fan1;
+	else if (!strcmp(mod, "case-fan2"))
+		return capture_case_fan2;
+	else if (!strcmp(mod, "cpu-fan"))
+		return capture_cpu_fan;
 	return NULL;
 }
