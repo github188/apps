@@ -4,6 +4,8 @@
 import json
 import re
 import time
+import os
+import commands
 from libsyscommon import *
 
 ERROR_VALUE = 'error-occurs'
@@ -215,6 +217,20 @@ def get_sys_info(item=None):
 
 #------------------------------------------------------------------------------
 
+ALARM_DIR='/tmp/jw/alarm'
+
+def AttrRead(dir_path, attr_name):
+	value = ''
+	full_path = dir_path + os.sep + attr_name
+	try:
+		f = open(full_path)
+		value = f.readline()
+	except:
+		return value
+	else:
+		f.close()
+	return value.strip()
+
 """
 获取状态函数返回值约定：
 1. 状态正常返回 'good'
@@ -234,6 +250,7 @@ def __get_stat_disk(mod):
 				_stat['value'] = _stat['value'] + '槽位号%s的磁盘故障 ' % _disk['slot']
 	except:
 		pass
+		_stat['value'] = '无法获取'
 	if _stat['value'] == '':
 		_stat['value'] = 'good'
 	return _stat
@@ -253,6 +270,7 @@ def __get_stat_vg(mod):
 				_stat['value'] = _stat['value'] + '卷组%s降级 ' % _vg['name']
 	except:
 		pass
+		_stat['value'] = '无法获取'
 	if _stat['value'] == '':
 		_stat['value'] = 'good'
 	return _stat
@@ -260,19 +278,40 @@ def __get_stat_vg(mod):
 def __get_stat_power(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_stat['value'] = 'good'
+	_val = AttrRead(ALARM_DIR, 'power')
+	if _val == '':
+		_stat['value'] = '无法获取'
+	else:
+		_stat['value'] = _val
 	return _stat
 
 def __get_stat_fan(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_stat['value'] = 'good'
+	_tmp = AttrRead(ALARM_DIR, 'case-fan1')
+	_value = ''
+	if _tmp != '' and _tmp != 'good':
+		_value = _value + '[机箱风扇1告警，转速: %s] ' % _tmp
+	_tmp = AttrRead(ALARM_DIR, 'case-fan2')
+	if _tmp != '' and _tmp != 'good':
+		_value = _value + '[机箱风扇2告警, 转速: %s] ' % _tmp
+	_tmp = AttrRead(ALARM_DIR, 'cpu-fan')
+	if _tmp != '' and _tmp != 'good':
+		_value = _value + '[CPU风扇告警, 转速: %s]' % _tmp
+	if _value != '':
+		_stat['value'] = _value
+	else:
+		_stat['value'] = 'good'
 	return _stat
 
 def __get_stat_buzzer(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_stat['value'] = 'good'
+	_val = AttrRead(ALARM_DIR, 'buzzer')
+	if _val == '':
+		_stat['value'] = '无法获取'
+	else:
+		_stat['value'] = _val
 	return _stat
 
 _stat_list = {'disk': __get_stat_disk,
@@ -311,5 +350,5 @@ if __name__ == '__main__':
 	#print __get_cpu_util('cpu-util')
 	#print __get_stat_disk('disk')
 	#print __get_stat_vg('vg')
-	print __calc_mem(3942412.0)
-	#print __read_value(NCT_ROOT, 'temp20_input')
+	#print __calc_mem(3942412.0)
+	print __read_value(NCT_ROOT, 'temp20_input')

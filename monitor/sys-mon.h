@@ -59,6 +59,7 @@ void raise_alarm(const char *module, const char *msg);
 "
 
 bool create_default_conf(const char *file, const char *content);
+void write_alarm(const char *fname, const char *value);
 
 /*---------------------------------------------------------------------------*/
 /*   Capture                                                                 */
@@ -82,6 +83,7 @@ struct _mon_conf {
 	int min_alr, max_alr;
 	time_t _last_update;	// 最后更新时间
 	capture_func _capture;	// 获取系统信息的函数
+	char _alarm_file[PATH_MAX]; // 告警文件通常存放在/tmp/jw/alarm/告警模块名称
 };
 
 size_t mon_conf_load();
@@ -96,6 +98,9 @@ void mon_conf_release();
 	<target name=\"cpu-temp\" check_interval=\"60\" min_threshold=\"ignore\" max_threshold=\"65\" min_alarm=\"ignore\" max_alarm=\"60\"/> \
 	<target name=\"env-temp\" check_interval=\"60\" min_threshold=\"ignore\" max_threshold=\"65\" min_alarm=\"ignore\" max_alarm=\"60\"/> \
 	<target name=\"case-temp\" check_interval=\"60\" min_threshold=\"ignore\" max_threshold=\"65\" min_alarm=\"ignore\" max_alarm=\"60\"/> \
+	<target name=\"case-fan1\" check_interval=\"60\" min_threshold=\"1000\" max_threshold=\"ignore\" min_alarm=\"800\" max_alarm=\"ignore\"/> \
+	<target name=\"case-fan2\" check_interval=\"60\" min_threshold=\"1000\" max_threshold=\"ignore\" min_alarm=\"800\" max_alarm=\"ignore\"/> \
+	<target name=\"cpu-fan\" check_interval=\"60\" min_threshold=\"1000\" max_threshold=\"ignore\" min_alarm=\"800\" max_alarm=\"ignore\"/> \
 </mon> \
 "
 

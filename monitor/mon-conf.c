@@ -12,6 +12,7 @@
 		item = atoi(prop); \
 }
 
+#define ALARM_DIR "/tmp/jw/alarm"
 
 struct list gconf;
 
@@ -129,6 +130,7 @@ size_t mon_conf_load()
 				_ASSIGN(tgtMaxAlr, tmp->max_alr);
 				update(tmp);
 				tmp->_capture = capture_get(tgtName);
+				sprintf(tmp->_alarm_file, "%s/%s", ALARM_DIR, tmp->name);
 				list_add(&gconf, &tmp->list);
 
 				syslog(LOG_INFO, "Load: %s (min_thr: %d, max_thr: %d, min_alr: %d, max_thr: %d, check_int: %d)",

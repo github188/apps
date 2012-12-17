@@ -226,3 +226,20 @@ void raise_alarm(const char *mod, const char *msg)
 		action_email(mod, msg);
 }
 
+void write_alarm(const char *fname, const char *value)
+{
+	char _dir[PATH_MAX], *p = NULL;
+	int fd;
+
+	strcpy(_dir, fname);
+	if (! (p=strrchr(_dir, '/')) )
+		return;
+	*(p+1) = '\0';
+	mkdir_p(_dir);
+
+	if ( (fd=open(fname, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) > 0 )
+	{
+		write(fd, value, strlen(value));
+		close(fd);
+	}
+}
