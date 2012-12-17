@@ -1,0 +1,25 @@
+#! /bin/sh
+#
+# reassume md devices
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+_usage()
+{
+	echo "Usage: $(basename "$0")  {start}"
+}
+
+case "${1:-}" in
+	start)
+		/usr/local/bin/md-assume.sh
+		/etc/init.d/scst start
+		/etc/init.d/jw-bottom start
+		sys-manager iscsi --misc --check-default-target
+		sys-manager iscsi --misc --update-cfg
+	;;
+	*)
+		_usage
+	;;
+esac
+
+exit 0
