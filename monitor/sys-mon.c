@@ -38,9 +38,17 @@ void mon_event(mon_conf_t *conf)
 		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最高阀值 %d !",
 				conf->name, value, conf->max_thr);
 
-
 	if (msg[0] != '\0')
+	{
+		char _tmp[128];
+		sprintf(_tmp, "%d", value);
+		write_alarm(conf->_alarm_file, _tmp);
 		raise_alarm(conf->name, msg);
+	}
+	else
+	{
+		write_alarm(conf->_alarm_file, "good");
+	}
 }
 
 void check_interval()
