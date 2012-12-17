@@ -259,11 +259,11 @@ def nas_conf_get_list():
 def nas_fmt_get_list():
 	nas_fmt_list = []
 	try:
-		text = commands.getoutput('ps -au')
+		text = commands.getoutput('ps ax')
 		for x in text.split('\n'):
 			if x.find('nas-mkfs.py') < 0:
 				continue
-			mkfs_pid = x.split()[1]
+			mkfs_pid = x.split()[0]
 			mkfs_tmp_dir = '%s/%s' % (TMP_DIR, mkfs_pid)
 			if not os.path.exists(mkfs_tmp_dir):
 				continue
@@ -323,10 +323,18 @@ def nasGetList(volume_name = ''):
 	"""
 	# 仅查看已经加载的nas卷列表
 	if volume_name == '':
-		return nas_mount_get_list()
+		_mnt_list = nas_mount_get_list()
+		_fmt_list = nas_fmt_get_list()
+		return _mnt_list + _fmt_list
 
 	_nas_list = []
 	for x in nas_mount_get_list():
+		if x.volume_name == volume_name:
+			_nas_list.append(x)
+			break
+	if len(_nas_list) > 0:
+		return _nas_list
+	for x in nas_fmt_get_list():
 		if x.volume_name == volume_name:
 			_nas_list.append(x)
 			break
@@ -399,6 +407,9 @@ def nasUpdateCfg():
 	return True, '更新配置文件成功'
 
 if __name__ == '__main__':
+	for x in nas_fmt_get_list():
+		print x.__dict__
+	sys.exit(0)
 	#for x in nas_fmt_get_list():
 	#	print x.__dict__
 	#for x in nas_mount_get_list():
