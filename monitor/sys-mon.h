@@ -88,7 +88,7 @@ size_t mon_conf_load();
 size_t mon_conf_reload();
 void mon_conf_release();
 
-#define MON_CONF "/opt/sys/sys-mon-conf.xml"
+#define MON_CONF "/opt/jw-conf/system/mon-conf.xml"
 
 #define MON_CONF_CONTENT "\
 <?xml version=\"1.0\" encoding=\"UTF-8\"?> \
