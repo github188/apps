@@ -1,5 +1,5 @@
-PYFLAGS=`python-config --includes --libs`
-CFLAGS=-g -Wall -lpthread -ldl -lutil -lm
+PYFLAGS=`python-config --includes`
+CFLAGS=-g -Wall -lpthread -ldl -lutil -lm -L/usr/lib/python2.6/config -lpython2.6
 CFLAGS+=${PYFLAGS}
 
 all:

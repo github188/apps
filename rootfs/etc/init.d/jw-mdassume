@@ -12,10 +12,9 @@ _usage()
 case "${1:-}" in
 	start)
 		/usr/local/bin/md-assume.sh
-		/etc/init.d/scst start
-		/etc/init.d/jw-bottom start
 		sys-manager iscsi --misc --check-default-target
 		sys-manager iscsi --misc --update-cfg
+		/etc/init.d/scst start
 	;;
 	*)
 		_usage
