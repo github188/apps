@@ -54,8 +54,6 @@ libuuid:x:100:101::/var/lib/libuuid:/bin/sh
 Debian-exim:x:101:103::/var/spool/exim4:/bin/false
 statd:x:102:65534::/var/lib/nfs:/bin/false
 sshd:x:103:65534::/var/run/sshd:/usr/sbin/nologin
-jellw:x:997:997:jellw,,,:/home/jellw:/bin/bash
-foor:x:996:996::/home/foor:/bin/bash
 messagebus:x:104:108::/var/run/dbus:/bin/false
 guest:x:998:100::/home/guest:/bin/sh
 """
@@ -103,8 +101,6 @@ crontab:x:102:
 Debian-exim:x:103:
 mlocate:x:104:
 ssh:x:105:
-jellw:x:997:
-foor:x:996:
 fuse:x:106:
 sambashare:x:107:
 messagebus:x:108:
@@ -154,8 +150,6 @@ crontab:!::
 Debian-exim:!::
 mlocate:!::
 ssh:!::
-jellw:!::
-foor:!::
 fuse:!::
 sambashare:!::
 messagebus:!::
@@ -182,8 +176,6 @@ libuuid:!:15680:0:99999:7:::
 Debian-exim:!:15680:0:99999:7:::
 statd:*:15680:0:99999:7:::
 sshd:*:15680:0:99999:7:::
-jellw:$6$C/5u8dUy$tyMCQjMBcbXSZZyUV4SWVd.xwbCLIZBzgGTpPGpwi/h7o.3kshJt6TFTnam3oD9LSx3q1LISQ3FhuuavAeFrY.:15680:0:99999:7:::
-foor:$6$GtHVbyzg$AzUVQDrHNSCCO4I/j3jfx4Udco8BiAcMs.OH72T/ugf2cZtFT3Wz.Qro6S0/KlbPTbtV1oxj4PtMEiQogQYq4.:15680:0:99999:7:::
 messagebus:*:15685:0:99999:7:::
 guest:!:15685:0:99999:7:::
 """
@@ -304,10 +296,10 @@ def Synchronous():
 	shutil.copy(GROUP_CONF_PATH, SYNC_PATH)
 	shutil.copy(GSHADOW_CONF_PATH, SYNC_PATH)
 	shutil.copy(SHADOW_CONF_PATH, SYNC_PATH)
-	shutil.copy(USERS_CONF_PATH+'-', SYNC_PATH)
-	shutil.copy(GROUP_CONF_PATH+'-', SYNC_PATH)
-	shutil.copy(GSHADOW_CONF_PATH+'-', SYNC_PATH)
-	shutil.copy(SHADOW_CONF_PATH+'-', SYNC_PATH)
+	#~ shutil.copy(USERS_CONF_PATH+'-', SYNC_PATH)
+	#~ shutil.copy(GROUP_CONF_PATH+'-', SYNC_PATH)
+	#~ shutil.copy(GSHADOW_CONF_PATH+'-', SYNC_PATH)
+	#~ shutil.copy(SHADOW_CONF_PATH+'-', SYNC_PATH)
 	shutil.copy(SMBCONFIG_FILE, SYNC_PATH)
 
 config = ConfigParser.ConfigParser()  
