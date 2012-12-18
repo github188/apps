@@ -4,8 +4,8 @@
 
 ### BEGIN INIT INFO
 # Provides:          jw-driver
-# Required-Start:    $local_fs
-# Required-Stop:     $local_fs
+# Required-Start:
+# Required-Stop:
 # Default-Start:     2
 # Default-Stop:      0 1 6
 # Short-Description: drivers for jwele
