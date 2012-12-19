@@ -134,7 +134,7 @@ def __md_fill_attr(str):
 
 def mddev_get_attr(mddev):
 	md_attr = {}
-	cmd = "mdadm -D %s" % mddev
+	cmd = "mdadm -D %s 2>/dev/null" % mddev
 	sts,output = commands.getstatusoutput(cmd)
 	if (sts != 0) :
 		return None
