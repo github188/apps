@@ -9,6 +9,12 @@ from xml.dom import minidom
 ALARM_CONF_FILE = '/opt/jw-conf/system/alarm-conf.xml'
 ALARM_CONF_DFT_CONTENT = """<?xml version="1.0" encoding="UTF-8"?>
 <alarm>
+<category name="email" switch="disable"/>
+<module buzzer="enable" email="disable" name="power" switch="enable" sys-led="enable"/>
+<module buzzer="enable" email="disable" name="disk" switch="enable" sys-led="enable"/>
+<module buzzer="enable" email="disable" name="vg" switch="enable" sys-led="enable"/>
+<module buzzer="enable" email="disable" name="temperature" switch="enable" sys-led="enable"/>
+<module buzzer="enable" email="disable" name="fan" switch="enable" sys-led="enable"/>
 </alarm>
 """
 
