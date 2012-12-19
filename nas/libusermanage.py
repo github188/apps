@@ -51,10 +51,9 @@ irc:x:39:39:ircd:/var/run/ircd:/bin/sh
 gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/bin/sh
 nobody:x:65534:65534:nobody:/nonexistent:/bin/sh
 libuuid:x:100:101::/var/lib/libuuid:/bin/sh
-Debian-exim:x:101:103::/var/spool/exim4:/bin/false
+sshd:x:101:65534::/var/run/sshd:/usr/sbin/nologin
 statd:x:102:65534::/var/lib/nfs:/bin/false
-sshd:x:103:65534::/var/run/sshd:/usr/sbin/nologin
-messagebus:x:104:108::/var/run/dbus:/bin/false
+messagebus:x:103:104::/var/run/dbus:/bin/false
 guest:x:998:100::/home/guest:/bin/sh
 """
 GROUP_CONF = """root:x:0:
@@ -74,12 +73,12 @@ kmem:x:15:
 dialout:x:20:
 fax:x:21:
 voice:x:22:
-cdrom:x:24:jellw
-floppy:x:25:jellw
+cdrom:x:24:user1
+floppy:x:25:user1
 tape:x:26:
-sudo:x:27:jellw
-audio:x:29:jellw
-dip:x:30:jellw
+sudo:x:27:
+audio:x:29:user1
+dip:x:30:user1
 www-data:x:33:
 backup:x:34:
 operator:x:37:
@@ -89,21 +88,18 @@ src:x:40:
 gnats:x:41:
 shadow:x:42:
 utmp:x:43:
-video:x:44:jellw
+video:x:44:user1
 sasl:x:45:
-plugdev:x:46:jellw
+plugdev:x:46:user1
 staff:x:50:
 games:x:60:
 users:x:100:
 nogroup:x:65534:
 libuuid:x:101:
 crontab:x:102:
-Debian-exim:x:103:
-mlocate:x:104:
-ssh:x:105:
-fuse:x:106:
-sambashare:x:107:
-messagebus:x:108:
+ssh:x:103:
+messagebus:x:104:
+sambashare:x:105:
 """
 
 gshadow_CONF = """root:*::
@@ -154,29 +150,29 @@ fuse:!::
 sambashare:!::
 messagebus:!::
 """
-shadow_CONF = """root:$6$zuKOE5mM$W7qYrndyS3h/.IwcOtLszFQH36f8ru1h6VfvtolD7CMPZ8fx4mvOkISn77HDs5P.O0/PI1mYq5fa/fkkTbjG6/:15680:0:99999:7:::
-daemon:*:15680:0:99999:7:::
-bin:*:15680:0:99999:7:::
-sys:*:15680:0:99999:7:::
-sync:*:15680:0:99999:7:::
-games:*:15680:0:99999:7:::
-man:*:15680:0:99999:7:::
-lp:*:15680:0:99999:7:::
-mail:*:15680:0:99999:7:::
-news:*:15680:0:99999:7:::
-uucp:*:15680:0:99999:7:::
-proxy:*:15680:0:99999:7:::
-www-data:*:15680:0:99999:7:::
-backup:*:15680:0:99999:7:::
-list:*:15680:0:99999:7:::
-irc:*:15680:0:99999:7:::
-gnats:*:15680:0:99999:7:::
-nobody:*:15680:0:99999:7:::
-libuuid:!:15680:0:99999:7:::
-Debian-exim:!:15680:0:99999:7:::
-statd:*:15680:0:99999:7:::
-sshd:*:15680:0:99999:7:::
-messagebus:*:15685:0:99999:7:::
+shadow_CONF = """root:$6$eWqmWvKp$LhsgufET1jtfW3Fl2ZWkvw75OpCwBBKTqXFHZVQEzzaSgHdQEw9YPxbMemn2Uc9nM9zZJngDPz0YqTV4z7E.p/:15692:0:99999:7:::
+daemon:*:15692:0:99999:7:::
+bin:*:15692:0:99999:7:::
+sys:*:15692:0:99999:7:::
+sync:*:15692:0:99999:7:::
+games:*:15692:0:99999:7:::
+man:*:15692:0:99999:7:::
+lp:*:15692:0:99999:7:::
+mail:*:15692:0:99999:7:::
+news:*:15692:0:99999:7:::
+uucp:*:15692:0:99999:7:::
+proxy:*:15692:0:99999:7:::
+www-data:*:15692:0:99999:7:::
+backup:*:15692:0:99999:7:::
+list:*:15692:0:99999:7:::
+irc:*:15692:0:99999:7:::
+gnats:*:15692:0:99999:7:::
+nobody:*:15692:0:99999:7:::
+libuuid:!:15692:0:99999:7:::
+sshd:*:15692:0:99999:7:::
+user1:$6$DmeFnLgA$pbG8PNnLj8O1coE5SvhuvIz5I1LXzF4SGqiLOJkYmDAFP7FyA9t490GA.7WdnNU1F6UdDd6Cv741c2ddn78kE/:15692:0:99999:7:::
+statd:*:15692:0:99999:7:::
+messagebus:*:15692:0:99999:7:::
 guest:!:15685:0:99999:7:::
 """
 
@@ -290,6 +286,12 @@ guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U    
 		conf_file.close()
 	except:
 		conf_file.close()
+
+if os.path.exists(SMB_CONF_PATH) == False:
+	os.system('sys-manager nasconf --default')
+
+if os.path.exists(SMBCONFIG_FILE) == False:
+	DEFAULT()
 
 def Synchronous():
 	shutil.copy(USERS_CONF_PATH, SYNC_PATH)
@@ -607,7 +609,7 @@ def Group_List(value):
 			for fileLine in fileList:
 				Grout_Cont = fileLine.split(':')
 				Grout_id = int(Grout_Cont[2])
-				if Grout_id > 1000 and Grout_id < 29999:
+				if Grout_id >= 1000 and Grout_id < 29999:
 					group = Grout_Cont[0]
 					if search_check > 0:
 						search_check = len(group.split(search))
