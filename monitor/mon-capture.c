@@ -81,6 +81,7 @@ int capture_case_temp()
 
 int capture_case_fan1()
 {
+	syslog(LOG_INFO, "capture case fan1");
 	return __read_int_value(NCT_ROOT"/fan1_input");
 }
 

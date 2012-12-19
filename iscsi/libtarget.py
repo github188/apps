@@ -150,7 +150,7 @@ def iSCSISetDefaultTarget():
 	_tgt = __genDefaultTarget() if __getDefaultTarget() == '' else __getDefaultTarget()
 	
 	# check & set default scst.conf
-	if not os.path.isfile(SCST.CFG):
+	if not os.path.exists(SCST.CFG):
 		return __genDefaultCfg(SCST.CFG, _tgt)
 
 	return True

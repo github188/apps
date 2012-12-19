@@ -18,8 +18,8 @@
 
 #define VAL_IGNORE -1
 #define VAL_INVALID 0
+#define isValid(val) ( ((val)!=VAL_IGNORE) && ((val)!=VAL_INVALID) )
 
-#define isValid(val) ((val != VAL_IGNORE)&&(val != VAL_INVALID))
 #define isExecutable(item) (item->_capture)
 #define isExpried(item) ((int)difftime(time(NULL), item->_last_update) >= item->check_int)
 #define update(item) item->_last_update = time(NULL)
