@@ -1,5 +1,5 @@
-#include <syslog.h>
 #include <Python.h>
+#include <syslog.h>
 #include <parted/parted.h>
 #include "libudv.h"
 
@@ -200,6 +200,51 @@ PedDisk* _create_disk_label (PedDevice *dev, PedDiskType *type)
 }
 
 #define _fix_4k(size) ((uint64_t)((size)/4096)) * 8
+
+ssize_t udv_force_init_vg(const char *vg_name)
+{
+	PedDevice *device = NULL;
+	PedDisk *disk = NULL;
+	PedConstraint *constraint;
+	ssize_t ret_code = E_OK;
+	char vg_dev[PATH_MAX];
+
+	// 参数检查
+	if (!vg_name)
+		return E_FMT_ERROR;
+
+	libudv_custom_init();
+
+	// 检查VG是否存在
+	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
+		return E_VG_NONEXIST;
+
+	if (!(device = ped_device_get(vg_dev)))
+		return E_SYS_ERROR;
+	constraint = ped_constraint_any(device);
+
+#ifndef _UDV_DEBUG
+	// 检查是否为MD设备
+	if (device->type != PED_DEVICE_MD)
+		return E_DEVICE_NOTMD;
+#else
+	if (!strcmp(device->path, "/dev/sda"))
+		return E_SYS_ERROR;
+#endif
+
+	disk = _create_disk_label(device, ped_disk_type_get("gpt"));
+	if (!disk)
+	{
+		ret_code = E_SYS_ERROR;
+		goto error;
+	}
+
+	ped_disk_destroy(disk);
+error:
+	ped_device_destroy(device);
+
+	return ret_code;
+}
 
 /**
  * API
