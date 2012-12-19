@@ -10,7 +10,7 @@ UDV_LIB='udv/libudv.a'
 UDV_BIN='udv/libpyext_udv.py'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
-NAS_BIN='nas/nas nas/nasconf nas/tr-simple nas/*.py nas/*.sh'
+NAS_BIN='nas/nas nas/nasconf nas/tr-simple nas/*.py nas/*.sh nas/usermanage'
 SYSCONF_BIN='sys-conf/*'
 COMMON_BIN='common/loglist common/log-daemon'
 MON_BIN='monitor/sys-mon'
@@ -22,9 +22,10 @@ LIB_LIST="$UDV_LIB"
 sync_target()
 {
 	local _target="$1"
+	chmod +x $BIN_LIST
 	rsync -av $BIN_LIST  "$_target"/usr/local/bin
 	rsync -av $LIB_LIST  "$_target"/usr/local/lib
-	rsync -av rootfs/* "$_target"/
+	#rsync -av rootfs/* "$_target"/
 }
 
 update_ld()
