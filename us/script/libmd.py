@@ -211,7 +211,19 @@ def md_create(mdname, level, chunk, slots):
 	disk_slot_update(slots)
 	if sts != 0 :
 		return False, "创建卷组失败"
-	return True, "创建卷组成功"
+
+	msg = ''
+	try:
+		# 强制重写分区表
+		cmd = 'sys-manager udv --force-init-vg %s' % mdname
+		sts,out = commands.getstatusoutput(cmd)
+		if sts != 0:
+			force = json.loads(out)
+			msg = force['msg']
+	except:
+		msg = '初始化卷组未知错误!'
+		pass
+	return True, '创建卷组成功!%s' % msg
 
 def __md_remove_devnode(mddev):
 	try:
