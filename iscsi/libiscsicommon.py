@@ -57,8 +57,8 @@ def AttrRead(dir_path, attr_name):
 	try:
 		f = open(full_path)
 		value = f.readline()
-	except IOError, e:
-		value = e
+	except:
+		return ''
 	else:
 		f.close()
 	return value.strip()
