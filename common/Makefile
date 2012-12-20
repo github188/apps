@@ -1,7 +1,7 @@
 CC=gcc
 #CFLAGS+=-g
 CFLAGS+=-DNDEBUG
-OBJECTS=log.o log-utils.o debug.o
+OBJECTS=log.o log-utils.o debug.o mkdir-p.o
 
 all: liblog.a daemon
 

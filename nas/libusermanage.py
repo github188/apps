@@ -5,29 +5,184 @@
 import os
 import sys
 import commands
+import stat
 import json
 import codecs
 import ConfigParser
 import subprocess
+import shutil
 
 from os.path import join, getsize
 
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-SMB_CONF_PATH = "/opt/samba/smb.conf"
+SYNC_PATH = "/opt/etc/link/"
+if os.path.exists(SYNC_PATH) == False:
+	try:
+		os.makedirs(SYNC_PATH)
+	except:
+		pass
+SMB_CONF_PATH = "/opt/etc/samba/smb.conf"
 USERS_CONF_PATH = "/etc/passwd"
 GROUP_CONF_PATH = "/etc/group"
-SMBCONFIG_FILE = "/opt/samba/smbpasswd"
+GSHADOW_CONF_PATH = "/etc/gshadow"
+SHADOW_CONF_PATH = "/etc/shadow"
+SMBCONFIG_FILE = "/etc/samba/smbpasswd"
 RESTART_SMB = 'killall -HUP smbd nmbd'
+
+
+USERS_CONF = """root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+bin:x:2:2:bin:/bin:/bin/sh
+sys:x:3:3:sys:/dev:/bin/sh
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/bin/sh
+man:x:6:12:man:/var/cache/man:/bin/sh
+lp:x:7:7:lp:/var/spool/lpd:/bin/sh
+mail:x:8:8:mail:/var/mail:/bin/sh
+news:x:9:9:news:/var/spool/news:/bin/sh
+uucp:x:10:10:uucp:/var/spool/uucp:/bin/sh
+proxy:x:13:13:proxy:/bin:/bin/sh
+www-data:x:33:33:www-data:/var/www:/bin/sh
+backup:x:34:34:backup:/var/backups:/bin/sh
+list:x:38:38:Mailing List Manager:/var/list:/bin/sh
+irc:x:39:39:ircd:/var/run/ircd:/bin/sh
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/bin/sh
+nobody:x:65534:65534:nobody:/nonexistent:/bin/sh
+libuuid:x:100:101::/var/lib/libuuid:/bin/sh
+sshd:x:101:65534::/var/run/sshd:/usr/sbin/nologin
+statd:x:102:65534::/var/lib/nfs:/bin/false
+messagebus:x:103:104::/var/run/dbus:/bin/false
+guest:x:998:100::/home/guest:/bin/sh
+"""
+GROUP_CONF = """root:x:0:
+daemon:x:1:
+bin:x:2:
+sys:x:3:
+adm:x:4:
+tty:x:5:
+disk:x:6:
+lp:x:7:
+mail:x:8:
+news:x:9:
+uucp:x:10:
+man:x:12:
+proxy:x:13:
+kmem:x:15:
+dialout:x:20:
+fax:x:21:
+voice:x:22:
+cdrom:x:24:user1
+floppy:x:25:user1
+tape:x:26:
+sudo:x:27:
+audio:x:29:user1
+dip:x:30:user1
+www-data:x:33:
+backup:x:34:
+operator:x:37:
+list:x:38:
+irc:x:39:
+src:x:40:
+gnats:x:41:
+shadow:x:42:
+utmp:x:43:
+video:x:44:user1
+sasl:x:45:
+plugdev:x:46:user1
+staff:x:50:
+games:x:60:
+users:x:100:
+nogroup:x:65534:
+libuuid:x:101:
+crontab:x:102:
+ssh:x:103:
+messagebus:x:104:
+sambashare:x:105:
+"""
+
+gshadow_CONF = """root:*::
+daemon:*::
+bin:*::
+sys:*::
+adm:*::
+tty:*::
+disk:*::
+lp:*::
+mail:*::
+news:*::
+uucp:*::
+man:*::
+proxy:*::
+kmem:*::
+dialout:*::
+fax:*::
+voice:*::
+cdrom:*::jellw
+floppy:*::jellw
+tape:*::
+sudo:*::jellw
+audio:*::jellw
+dip:*::jellw
+www-data:*::
+backup:*::
+operator:*::
+list:*::
+irc:*::
+src:*::
+gnats:*::
+shadow:*::
+utmp:*::
+video:*::jellw
+sasl:*::
+plugdev:*::jellw
+staff:*::
+games:*::
+users:*::
+nogroup:*::
+libuuid:!::
+crontab:!::
+Debian-exim:!::
+mlocate:!::
+ssh:!::
+fuse:!::
+sambashare:!::
+messagebus:!::
+"""
+shadow_CONF = """root:$6$eWqmWvKp$LhsgufET1jtfW3Fl2ZWkvw75OpCwBBKTqXFHZVQEzzaSgHdQEw9YPxbMemn2Uc9nM9zZJngDPz0YqTV4z7E.p/:15692:0:99999:7:::
+daemon:*:15692:0:99999:7:::
+bin:*:15692:0:99999:7:::
+sys:*:15692:0:99999:7:::
+sync:*:15692:0:99999:7:::
+games:*:15692:0:99999:7:::
+man:*:15692:0:99999:7:::
+lp:*:15692:0:99999:7:::
+mail:*:15692:0:99999:7:::
+news:*:15692:0:99999:7:::
+uucp:*:15692:0:99999:7:::
+proxy:*:15692:0:99999:7:::
+www-data:*:15692:0:99999:7:::
+backup:*:15692:0:99999:7:::
+list:*:15692:0:99999:7:::
+irc:*:15692:0:99999:7:::
+gnats:*:15692:0:99999:7:::
+nobody:*:15692:0:99999:7:::
+libuuid:!:15692:0:99999:7:::
+sshd:*:15692:0:99999:7:::
+user1:$6$DmeFnLgA$pbG8PNnLj8O1coE5SvhuvIz5I1LXzF4SGqiLOJkYmDAFP7FyA9t490GA.7WdnNU1F6UdDd6Cv741c2ddn78kE/:15692:0:99999:7:::
+statd:*:15692:0:99999:7:::
+messagebus:*:15692:0:99999:7:::
+guest:!:15685:0:99999:7:::
+"""
 
 USE_CONF = """[global]
 workgroup = WORKGROUP
 server string = %h
 security = user
 passdb backend = smbpasswd
-smb passwd file = /opt/samba/smbpasswd
-include = /opt/samba/smb.conf.guest
+smb passwd file = /etc/samba/smbpasswd
+include = /opt/etc/samba/smb.conf.guest
 encrypt passwords = yes
 guest account = guest
 load printers = no
@@ -61,7 +216,93 @@ dos filetime resolution = no
 inherit acls = yes
 wide links = yes
 
+
 """
+def DEFAULT():
+	conf_file = open(USERS_CONF_PATH, 'w')
+	try:
+		conf_file.write(USERS_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(USERS_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(USERS_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+
+	conf_file = open(GROUP_CONF_PATH, 'w')
+	try:
+		conf_file.write(USERS_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(GROUP_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(GROUP_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+
+	conf_file = open(GSHADOW_CONF_PATH, 'w')
+	try:
+		conf_file.write(gshadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(GSHADOW_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(gshadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+
+	conf_file = open(SHADOW_CONF_PATH, 'w')
+	try:
+		conf_file.write(shadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	conf_file = open(SHADOW_CONF_PATH+'-', 'w')
+	try:
+		conf_file.write(shadow_CONF)
+		conf_file.close()
+	finally:
+		conf_file.close()
+		
+	#~ 初始化SMBPASSWD文件
+	#~ root初始密码为qwertgfdsa
+	smbpwd = """root:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:75B03763C8EB36EA61EFE872CC62447D:[U          ]:LCT-509B7BAC:
+guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U          ]:LCT-509B3704:
+"""
+	conf_file = open(SMBCONFIG_FILE, 'w')
+	try:
+		conf_file.write(smbpwd)
+		conf_file.close()
+	except:
+		conf_file.close()
+
+if os.path.exists(SMB_CONF_PATH) == False:
+	os.system('sys-manager nasconf --default')
+
+if os.path.exists(SMBCONFIG_FILE) == False:
+	DEFAULT()
+
+def Synchronous():
+	shutil.copy(USERS_CONF_PATH, SYNC_PATH)
+	shutil.copy(GROUP_CONF_PATH, SYNC_PATH)
+	shutil.copy(GSHADOW_CONF_PATH, SYNC_PATH)
+	shutil.copy(SHADOW_CONF_PATH, SYNC_PATH)
+	#~ shutil.copy(USERS_CONF_PATH+'-', SYNC_PATH)
+	#~ shutil.copy(GROUP_CONF_PATH+'-', SYNC_PATH)
+	#~ shutil.copy(GSHADOW_CONF_PATH+'-', SYNC_PATH)
+	#~ shutil.copy(SHADOW_CONF_PATH+'-', SYNC_PATH)
+	shutil.copy(SMBCONFIG_FILE, SYNC_PATH)
 
 config = ConfigParser.ConfigParser()  
 config.read(SMB_CONF_PATH) 
@@ -146,6 +387,7 @@ def User_Add(value):
 			if value.member_state == True:
 				__Add_User_initialize_Conf__(value.name_set, value.member_set)
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '用户名创建成功！')
 	Export(False, '用户名创建失败，用户名不合理！')
 
@@ -169,7 +411,8 @@ def User_Edit(value):
 				if group_name not in IN_User_Group and group_name != '':
 					SYSTEM_OUT('gpasswd -a '+value.name_set+' '+group_name)
 					__Edit_Group_User__(group_name, value.name_set, 'A')
-		SYSTEM_OUT(RESTART_SMB)			
+		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '用户 "'+value.name_set+'" 修改成功！')
 	else:
 		Export(False, '修改失败，用户名不存在！')
@@ -256,6 +499,7 @@ def User_Del(name_list):
 				for share in OUT_Array:
 					__Conf_Share_Del_User__(name, share)	
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '删除成功！')
 	Export(False, '删除失败，没有这个用户！')
 
@@ -319,6 +563,7 @@ def Group_Edit(value):
 					SYSTEM_OUT('gpasswd -a '+user+' '+value.name_set)
 					__Edit_Group_User__(value.name_set, user, 'A')
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		if Status == True:
 			Export(True, '"'+value.name_set+'" 用户组增加成功！')
 		else:
@@ -364,7 +609,7 @@ def Group_List(value):
 			for fileLine in fileList:
 				Grout_Cont = fileLine.split(':')
 				Grout_id = int(Grout_Cont[2])
-				if Grout_id > 1000 and Grout_id < 60001:
+				if Grout_id >= 1000 and Grout_id < 29999:
 					group = Grout_Cont[0]
 					if search_check > 0:
 						search_check = len(group.split(search))
@@ -422,6 +667,7 @@ def Group_Del(name_list):
 				except:
 					pass
 		SYSTEM_OUT(RESTART_SMB)
+		Synchronous()
 		Export(True, '用户组删除成功！')
 	Export(False, '用户组删除失败！')
 
@@ -472,7 +718,7 @@ def Group_Check(value):
 	else:
 		Export(False, '组名称已存在！')
 
-#~#### 验证用户组重名主程序
+#~#### 用户修改密码主程序
 def User_Edit_Pwd(value):
 	if __Check_Samba_User_licit__(value.name_set):
 		if value.pwd_state and value.newpwd_state:
@@ -485,6 +731,7 @@ def User_Edit_Pwd(value):
 			if __Read_Samba_User_pwd__('pw', 3) == __Read_Samba_User_pwd__(value.name_set, 3):
 				if newpwd != pwd:
 					SYSTEM_OUT('(echo '+newpwd+'; echo '+newpwd+') | smbpasswd -s '+value.name_set)
+				Synchronous()
 				Export(True, '密码修改成功')
 	Export(False, '用户名或原密码不正确！')
 
@@ -497,7 +744,7 @@ def __Check_System_Internal_User__(File, name):
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
 				if fileLine.split(':')[0] == name:
-					if int(fileLine.split(':')[2]) < 1001 or int(fileLine.split(':')[2]) > 60000:
+					if int(fileLine.split(':')[2]) < 1001 or int(fileLine.split(':')[2]) > 29999:
 						Status = False
 					break
 			open_conf.close()
@@ -644,33 +891,34 @@ def __Add_User_initialize_Conf__(User_name, Group_List):
 
 #~###-增加用户初始配置，操作函数	__Add_User_initialize_Conf_Operating__(User_name, Share_name, rw):
 def __Add_User_initialize_Conf_Operating__(User_name, Share_name, rw):
-	Conf_valid = __GroupList_User_List__(deviant(Share_name, 'valid users'))
-	xpath = SMB_CONF_PATH +'.'+ User_name
-	if os.path.exists(xpath) == False:
-		f = open(xpath, 'w')
-		f.write(USE_CONF)
-		f.close()
-	e_conf = ConfigParser.ConfigParser()  
-	e_conf.read(xpath) 
-	if e_conf.has_section(Share_name) == False:
-		e_conf.add_section(Share_name)
-	e_conf.set(Share_name, 'comment', deviant(Share_name, "comment"))
-	e_conf.set(Share_name, 'path', deviant(Share_name, "path"))
-	e_conf.set(Share_name, 'browsable', 'yes')
-	e_conf.set(Share_name, 'inherit permissions', deviant(Share_name, "inherit permissions"))				
-	if rw == 'r' and User_name not in Conf_valid:
-		e_conf.set(Share_name, 'read only', 'yes')
-		try:
-			e_conf.remove_option(Share_name,  "writable")
-		except:
-			pass
-	else:
-		e_conf.set(Share_name, 'writable', 'yes')
-		try:
-			e_conf.remove_option(Share_name,  "read only")
-		except:
-			pass
-	e_conf.write(open(xpath, 'w'))
+	if len(User_name) > 0:
+		Conf_valid = __GroupList_User_List__(deviant(Share_name, 'valid users'))
+		xpath = SMB_CONF_PATH +'.'+ User_name
+		if os.path.exists(xpath) == False:
+			f = open(xpath, 'w')
+			f.write(USE_CONF)
+			f.close()
+		e_conf = ConfigParser.ConfigParser()  
+		e_conf.read(xpath) 
+		if e_conf.has_section(Share_name) == False:
+			e_conf.add_section(Share_name)
+		e_conf.set(Share_name, 'comment', deviant(Share_name, "comment"))
+		e_conf.set(Share_name, 'path', deviant(Share_name, "path"))
+		e_conf.set(Share_name, 'browsable', 'yes')
+		e_conf.set(Share_name, 'inherit permissions', deviant(Share_name, "inherit permissions"))				
+		if rw == 'r' and User_name not in Conf_valid:
+			e_conf.set(Share_name, 'read only', 'yes')
+			try:
+				e_conf.remove_option(Share_name,  "writable")
+			except:
+				pass
+		else:
+			e_conf.set(Share_name, 'writable', 'yes')
+			try:
+				e_conf.remove_option(Share_name,  "read only")
+			except:
+				pass
+		e_conf.write(open(xpath, 'w'))
 
 #~###-列出组中的所有用户	__Group_User__(group):
 def __Group_User__(group):

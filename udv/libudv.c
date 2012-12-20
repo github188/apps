@@ -1,5 +1,5 @@
-#include <syslog.h>
 #include <Python.h>
+#include <syslog.h>
 #include <parted/parted.h>
 #include "libudv.h"
 
@@ -40,6 +40,42 @@ size_t getVGDevByName(const char *vg_name, char *vg_dev)
 		return PYEXT_ERR_RUN;
 
 	strcpy(vg_dev, PyString_AsString(pRetVal));
+
+	return PYEXT_RET_OK;
+}
+
+size_t getVGNameByDev(const char *vg_dev, char *vg_name)
+{
+	PyObject *pModule, *pFunc, *pArg, *pRetVal;
+
+	if (!(vg_name && vg_dev))
+		return PYEXT_ERR_INPUT_ARG;
+	vg_name[0] = '\0';
+
+	Py_Initialize();
+	if (!Py_IsInitialized())
+		return PYEXT_ERR_INIT;
+
+	pModule = pFunc = pArg = pRetVal = NULL;
+
+	PyRun_SimpleString("import sys");
+	PyRun_SimpleString("sys.path.append('./')");
+	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
+
+	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
+		return PYEXT_ERR_LOAD_MODULE;
+
+	pFunc = PyObject_GetAttrString(pModule, "getVGNameByDev");
+	if(!PyCallable_Check(pFunc))
+		return PYEXT_ERR_LOAD_FUNC;
+
+	if (!(pArg = Py_BuildValue("(s)", vg_dev)))
+		return PYEXT_ERR_SET_ARG;
+
+	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
+		return PYEXT_ERR_RUN;
+
+	strcpy(vg_name, PyString_AsString(pRetVal));
 
 	return PYEXT_RET_OK;
 }
@@ -163,6 +199,53 @@ PedDisk* _create_disk_label (PedDevice *dev, PedDiskType *type)
 	return disk;
 }
 
+#define _fix_4k(size) ((uint64_t)((size)/4096)) * 8
+
+ssize_t udv_force_init_vg(const char *vg_name)
+{
+	PedDevice *device = NULL;
+	PedDisk *disk = NULL;
+	PedConstraint *constraint;
+	ssize_t ret_code = E_OK;
+	char vg_dev[PATH_MAX];
+
+	// 参数检查
+	if (!vg_name)
+		return E_FMT_ERROR;
+
+	libudv_custom_init();
+
+	// 检查VG是否存在
+	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
+		return E_VG_NONEXIST;
+
+	if (!(device = ped_device_get(vg_dev)))
+		return E_SYS_ERROR;
+	constraint = ped_constraint_any(device);
+
+#ifndef _UDV_DEBUG
+	// 检查是否为MD设备
+	if (device->type != PED_DEVICE_MD)
+		return E_DEVICE_NOTMD;
+#else
+	if (!strcmp(device->path, "/dev/sda"))
+		return E_SYS_ERROR;
+#endif
+
+	disk = _create_disk_label(device, ped_disk_type_get("gpt"));
+	if (!disk)
+	{
+		ret_code = E_SYS_ERROR;
+		goto error;
+	}
+
+	ped_disk_destroy(disk);
+error:
+	ped_device_destroy(device);
+
+	return ret_code;
+}
+
 /**
  * API
  */
@@ -238,11 +321,15 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 		elem = list_struct_base(n, struct geom_stru, list);
 		if (elem->geom.capacity >= capacity)
 		{
-			part = ped_partition_new(disk, PED_PARTITION_NORMAL,
-					NULL,
-					(elem->geom.start/DFT_SECTOR_SIZE),
-					(uint64_t)((elem->geom.start + capacity)/DFT_SECTOR_SIZE));
+			uint64_t _start_sect, _end_sect;
 
+			_start_sect = _fix_4k(elem->geom.start);
+			_end_sect = _fix_4k(elem->geom.start + capacity) - 1;
+
+			//printf("ss: %llu, cap: %llu\n", elem->geom.start, capacity);
+			//printf("s: %llu, e: %llu\n", _start_sect, _end_sect);
+
+			part = ped_partition_new(disk, PED_PARTITION_NORMAL, NULL, _start_sect, _end_sect);
 			ped_partition_set_name(part, name);
 			ped_disk_add_partition(disk, part, constraint);
 			ped_disk_commit(disk);
@@ -317,6 +404,10 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 
 				gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
 				gs->geom.start = last_geom.end;
+				if (gs->geom.start == 0)
+				{
+					gs->geom.start = DFT_ALIGN_BEGIN;
+				}
 				gs->geom.end = part->geom.start * DFT_SECTOR_SIZE - 1;
 				gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
 				list_add(list, &gs->list);
@@ -335,6 +426,10 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 		gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
 
 		gs->geom.start = last_geom.end;
+		if (gs->geom.start == 0)
+		{
+			gs->geom.start = DFT_ALIGN_BEGIN;
+		}
 		gs->geom.end = end_pos;
 		gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
 
@@ -430,6 +525,7 @@ size_t udv_list(udv_info_t *list, size_t n)
 
 	const char *part_name;
 	udv_info_t *udv = list;
+	char vg_name[PATH_MAX];
 
 	libudv_custom_init();
 
@@ -470,6 +566,8 @@ size_t udv_list(udv_info_t *list, size_t n)
 				sprintf(udv->dev, "%s%d", dev->path, part->num);
 
 			strcpy(udv->vg_dev, dev->path);
+			if (!getVGNameByDev(udv->vg_dev, vg_name))
+				strcpy(udv->vg_name, vg_name);
 			udv->part_num = part->num;
 
 			udv->geom.start = part->geom.start * DFT_SECTOR_SIZE;

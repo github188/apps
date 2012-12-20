@@ -11,7 +11,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-DISK_HOTREP_CONF='/opt/disk/disk-hotreplace.xml'
+DISK_HOTREP_CONF='/opt/jw-conf/disk/hotreplace.xml'
 DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 <hot_replace>
 </hot_replace>
@@ -134,7 +134,7 @@ def __md_fill_attr(str):
 
 def mddev_get_attr(mddev):
 	md_attr = {}
-	cmd = "mdadm -D %s" % mddev
+	cmd = "mdadm -D %s 2>/dev/null" % mddev
 	sts,output = commands.getstatusoutput(cmd)
 	if (sts != 0) :
 		return None
@@ -211,7 +211,19 @@ def md_create(mdname, level, chunk, slots):
 	disk_slot_update(slots)
 	if sts != 0 :
 		return False, "创建卷组失败"
-	return True, "创建卷组成功"
+
+	msg = ''
+	try:
+		# 强制重写分区表
+		cmd = 'sys-manager udv --force-init-vg %s' % mdname
+		sts,out = commands.getstatusoutput(cmd)
+		if sts != 0:
+			force = json.loads(out)
+			msg = force['msg']
+	except:
+		msg = '初始化卷组未知错误!'
+		pass
+	return True, '创建卷组成功!%s' % msg
 
 def __md_remove_devnode(mddev):
 	try:
@@ -427,6 +439,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 	return True, '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
 
 def __xml_load(fname):
+	__check_disk_hotrep_conf()
 	try:
 		doc = minidom.parse(fname)
 	except:
@@ -472,6 +485,7 @@ def md_get_hotrep(md_uuid=''):
 
 # 设置热备盘被使用
 def disk_clean_hotrep(slot):
+	__check_disk_hotrep_conf()
 	try:
 		doc = minidom.parse(DISK_HOTREP_CONF)
 	except IOError,e:

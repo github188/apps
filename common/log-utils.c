@@ -1,7 +1,13 @@
+#include <string.h>
 #include <unistd.h>
 #include <sqlite3.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <limits.h>
 #include "log.h"
+#include "debug.h"
 
 const char *_mod_name[] = {"Web", "Disk", "VG", "UDV", "iSCSI", "NAS", "SysConf", "SysMon", "Unknown", NULL};
 const char *_mod_category[] = {"Auto", "Manual", NULL};
@@ -39,6 +45,15 @@ bool log_db_create()
 	char *errmsg;
 	char sql_cmd[1024];
 	bool retcode = false;
+	char _conf_dir[PATH_MAX], *p = NULL;
+
+	strcpy(_conf_dir, LOG_FILE);
+	if (! (p = strrchr(_conf_dir, '/')) )
+		return false;
+
+	*(p+1) = '\0';
+	if (!mkdir_p(_conf_dir))
+		return false;
 
 	if (SQLITE_OK != sqlite3_open(LOG_FILE, &tmp_handle))
 		return false;

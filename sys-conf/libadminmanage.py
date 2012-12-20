@@ -14,7 +14,9 @@ import hashlib
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-Admin_CONF_PATH="/opt/manage.conf"
+CONF_PATH="/opt/jw-conf/system/"
+Admin_CONF_PATH=CONF_PATH+'manage.conf'
+Session_CONF_PATH=CONF_PATH+'session.conf'
 
 config = ConfigParser.ConfigParser()  
 config.read(Admin_CONF_PATH) 
@@ -24,9 +26,15 @@ password = 21232F297A57A5A743894A0E4A801FC3
 manage_pwd = 21232F297A57A5A743894A0E4A801FC3
 manage_type = 1
 note = 超级管理员
-
+[root]
+password = 80BAEC203A63F45280DAADD5CF3598FE
+manage_pwd = 80BAEC203A63F45280DAADD5CF3598FE
+manage_type = 3
+note = 专用管理员
 """
 
+#~ root帐号密码默认为密码lkjhgfdsA
+#~ admin帐号密码默认为密码admin
 def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
@@ -55,6 +63,7 @@ adminmanage --list [ <--name <admin_name> --page <int> --coun <int> --search <us
 	   --check --name <admin_name>		##管理员重名验证
 	   --login --name <admin_name> --pwd <password>		##管理员登录
 	   --check_pwd --name <admin_name> --pwd <password>		##验证操作密码
+	   --outsession [ --session <session> ]		##输入输出session
 """
 	sys.exit(-1)
 
@@ -103,7 +112,7 @@ def Admin_list(value):
 			StartEnd =0
 			Start = 0
 		out_list = config.sections()
-		out_list= [i for i in out_list if i!='admin']
+		out_list= [i for i in out_list if i!='admin' and i!='root']
 		out_list.sort() 
 		for fileLine in out_list:
 			if search_check > 0:
@@ -218,10 +227,30 @@ def Admin_check_pwd(value):
 
 #~#### 恢复默认主程序
 def Admin_default():
+	if os.path.exists(CONF_PATH) == False:
+		try:
+			os.makedirs(CONF_PATH)
+		except:
+			pass
+
 	f = open(Admin_CONF_PATH, 'w')
 	try:
 		f.write(Admin_CONF)
 	finally:
 		f.close()
+
+def out_session(value):
+	if value.session_state:
+		f = open(Session_CONF_PATH, 'w')
+		try:
+			f.write(value.session_set)
+		finally:
+			f.close()		
+	else:
+		f = open(Session_CONF_PATH, 'r')
+		try:
+			print f.read()
+		finally:
+			f.close()
 
 

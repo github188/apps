@@ -1,5 +1,7 @@
 CC=gcc
-CFLAGS=-Wall -g ${CFLAG} -I/usr/include/python2.6 -I/usr/lib/python2.6/config -lpthread -ldl -lutil -lm -lpython2.6
+PYFLAGS=`python-config --includes`
+CFLAGS=-Wall -g ${CFLAG} -lpthread -ldl -lutil -lm -L/usr/lib/python2.6/config -lpython2.6
+CFLAGS+=${PYFLAGS}
 objects=libudv.o list.o
 
 libudv.a : $(objects)

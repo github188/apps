@@ -24,6 +24,7 @@ struct option udv_options[] = {
 	{"get-dev-byname",	required_argument,	NULL,	'a'},
 	{"get-name-bydev",	required_argument,	NULL,	'e'},
 	{"duplicate-check",	required_argument,	NULL,	'D'},
+	{"force-init-vg",	required_argument,	NULL,	'f'},
 	{0, 0, 0, 0}
 
 };
@@ -39,6 +40,7 @@ void udv_usage()
   printf(_T("       --get-dev-byname <name>\n"));
   printf(_T("       --get-name-bydev <dev>\n"));
   printf(_T("       --duplicate-check <udv_name>\n"));
+  printf(_T("       --force-init-vg <vg_name>\n"));
   printf(_T("\n\n"));
   exit(0);
 }
@@ -129,12 +131,12 @@ void list_udv(list_type_t t)
 			__udv_set_state(udv_state, udv->state);
 
 			if (printed==0)
-				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
+				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"vg\":\"%s\", \"combin\":\"%s|%llu\"}",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state, udv->vg_name,
 						udv->name, (unsigned long long)udv->geom.capacity);
 			else
-				printf(",\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"combin\":\"%s|%llu\"}",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state,
+				printf(",\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"vg\":\"%s\", \"combin\":\"%s|%llu\"}",
+						udv->name, (unsigned long long)udv->geom.capacity, udv_state, udv->vg_name,
 						udv->name, (unsigned long long)udv->geom.capacity);
 			printed++;
 		}
@@ -177,8 +179,9 @@ int get_udv_remain()
 			max_single = elem->geom.capacity;
 	}
 
-	return printf("{\"vg\":\"%s\",\"max_avaliable\":%llu,\"max_single\":%llu}\n",
+	printf("{\"vg\":\"%s\",\"max_avaliable\":%llu,\"max_single\":%llu}\n",
 			vg_name, (unsigned long long)max_remain, (unsigned long long)max_single);
+	return 0;
 }
 
 
@@ -307,6 +310,24 @@ void build_err_msg(int err_code, char *err_msg)
 	}
 }
 
+int force_init_vg(const char *vg)
+{
+	ssize_t ret = udv_force_init_vg(vg);
+	char _msg[128];
+	if (0 != ret)
+	{
+		build_err_msg(ret, _msg);
+		printf("{\"status\":\"false\", \"msg\":\"卷组强制初始化失败!%s\"}\n", _msg);
+	}
+	else
+	{
+		printf("{\"status\":\"true\", \"msg\":\"卷组强制初始化成功!\"}\n");
+	}
+
+	return ret;
+}
+
+
 int udv_main(int argc, char *argv[])
 {
 	char c;
@@ -368,6 +389,8 @@ int udv_main(int argc, char *argv[])
 			case 'N':	// --nas
 				t.nas = true;
 				continue;
+			case 'f':	// --force-init-vg
+				return force_init_vg(optarg);
 			case '?':
 			default:
 				udv_usage();

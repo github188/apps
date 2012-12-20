@@ -17,7 +17,7 @@
 #include "script.h"
 #include "safe_popen.h"
 
-#define DISK_HOTREP_CONF "/opt/disk/disk-hotreplace.xml"
+#define DISK_HOTREP_CONF "/opt/jw-conf/disk/hotreplace.xml"
 
 struct us_disk {
 	int		ref;

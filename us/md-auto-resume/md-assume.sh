@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export PATH=/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin
 
 mdadm -Ss
 
@@ -36,6 +36,9 @@ assemble() # arg1: md_num, arg2: disk_list
 			mdadm -a $mddev $disk
 		fi
 	done
+
+	# restore partitions
+	#yes Fix | parted "$mddev" print > /dev/null
 }
 
 while read LINE

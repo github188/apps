@@ -234,9 +234,17 @@ void write_alarm(const char *fname, const char *value)
 
 	strcpy(_dir, fname);
 	if (! (p=strrchr(_dir, '/')) )
+	{
+		syslog(LOG_ERR, "get dir error: %s", _dir);
 		return;
+	}
+
 	*(p+1) = '\0';
-	mkdir_p(_dir);
+	if (!mkdir_p(_dir))
+	{
+		syslog(LOG_ERR, "mkdir error: %s", _dir);
+		return;
+	}
 
 	if ( (fd=open(fname, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) > 0 )
 	{

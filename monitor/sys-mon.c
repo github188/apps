@@ -19,7 +19,8 @@ void mon_event(mon_conf_t *conf)
 		return;
 	}
 
-	if ( (value = conf->_capture()) < 0 )
+	value = conf->_capture();
+	if ( !isValid(value) )
 	{
 		syslog(LOG_INFO, "capture value invalid! (mod: %s val: %d)", conf->name, value);
 		return;
@@ -121,8 +122,6 @@ void test()
 int main()
 {
 #ifdef NDEBUG
-	daemon(0, 0);
-
 	mon_init();
 	signal(SIGALRM, sig_alarm);
 	signal(SIGTERM, mon_fini);

@@ -62,29 +62,31 @@ def get_default():
 
 	SYSTEM_OUT('rm -rf '+SMB_USER_CONF_PATH+'*')
 	os.chmod(SMB_CONF_PATH, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
-	os.remove('/etc/samba/smb.conf')
-	os.symlink(SMB_CONF_PATH, '/etc/samba/smb.conf')
-
-	#~ 初始化SMBPASSWD文件
-	smbpwd = """root:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:32ED87BDB5FDC5E9CBA88547376818D4:[U          ]:LCT-509B7BAC:
-guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U          ]:LCT-509B3704:
-"""
-	conf_file = open(SMB_PATH+'smbpasswd', 'w')
+	SYS_smb_PATH = '/etc/samba/smb.conf'
 	try:
-		conf_file.write(smbpwd)
-		os.chmod(SMB_PATH+'smbpasswd', stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
-		os.remove('/etc/samba/smbpasswd')
-		os.symlink(SMB_PATH+'smbpasswd', '/etc/samba/smbpasswd')
-		conf_file.close()
+		if os.path.exists(SYS_smb_PATH) == False:
+			os.symlink(SMB_CONF_PATH, SYS_smb_PATH)
+		else:
+			if os.path.islink(SYS_smb_PATH) == False:
+				os.remove(SYS_smb_PATH)
+				os.symlink(SMB_CONF_PATH, SYS_smb_PATH)
 	except:
-		conf_file.close()
+		pass
 
 #~ 初始化NFS文件
 	try:
 		os.mknod(NFS_CONF_PATH)
-		os.chmod(NFS_CONF_PATH, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
-		os.remove('/etc/exports')
-		os.symlink(NFS_CONF_PATH, '/etc/exports')
+	except:
+		pass
+	os.chmod(NFS_CONF_PATH, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
+	SYS_exports_PATH = '/etc/exports'
+	try:
+		if os.path.exists(SYS_exports_PATH) == False:
+			os.symlink(NFS_CONF_PATH, SYS_exports_PATH)
+		else:
+			if os.path.islink(SYS_exports_PATH) == False:
+				os.remove(SYS_exports_PATH)
+				os.symlink(NFS_CONF_PATH, SYS_exports_PATH)
 	except:
 		pass
 	SYSTEM_OUT('exportfs -r')
@@ -93,7 +95,7 @@ guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U    
 	conf_file = open(SMB_USER_CONF_PATH+'guest', 'w')
 	guest_conf = """[系统设置]
 comment = 系统设置
-path = /opt/samba/conf
+path = """+DEF_NASCONF+"""
 browsable = yes
 directory mask = 0777
 create mask = 0777
@@ -113,7 +115,7 @@ inherit permissions = yes
 
 
 if os.path.exists(SMB_CONF_PATH) == False:
-	print '##配置文件不在，请检查。\n'
+	get_default()
 
 OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default', '--sync', '--high']
 long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','sync','high', 'nfs', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'guest=', 'privacy=', 'nfsallow', 'page=', 'coun=', 'search=']

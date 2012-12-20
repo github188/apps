@@ -8,6 +8,8 @@
 #ifndef _LIB_UDV_H
 #define _lib_UDV_H
 
+#define DFT_ALIGN_BEGIN 524288
+
 /**
  * Defination
  */
@@ -61,6 +63,7 @@ struct _udv_info {
         char name[UDV_NAME_LEN];
 	char dev[UDV_NAME_LEN];
         char vg_dev[PATH_MAX];
+	char vg_name[PATH_MAX];
         int part_num;
         udv_geom geom;
         uint32_t sector_size;   // not used currently
@@ -83,6 +86,8 @@ ssize_t udv_delete(const char *name);
 size_t udv_list(udv_info_t *list, size_t n);
 
 ssize_t udv_rename(const char *name, const char *new_name);
+
+ssize_t udv_force_init_vg(const char *vg_name);
 
 size_t getVGDev_ByName(const char *vg_name, char *vg_dev);
 

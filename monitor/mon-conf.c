@@ -53,6 +53,7 @@ bool create_default_conf(const char *file, const char *content)
 	{
 		write(fd, content, strlen(content));
 		close(fd);
+		syslog(LOG_INFO, "Create default conf %s", file);
 		return true;
 	}
 
