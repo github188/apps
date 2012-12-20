@@ -192,6 +192,7 @@ int __get_alarm_action(const char *mod)
 void action_buzzer()
 {
 	syslog(LOG_ERR, "*** buzzer action ***");
+	system("alarm");
 }
 
 void action_sysled()
