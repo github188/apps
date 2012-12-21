@@ -22,7 +22,10 @@ def __set_http_port(value):
 	return False, '暂时不支持设置http端口操作'
 
 def __set_buzzer(value):
-	return False, '暂时不支持设置蜂鸣器操作'
+	ret,msg = commands.getstatusoutput('set-buzzer.sh %s' % value)
+	if ret == 0:
+		return True, '关闭蜂鸣器成功!'
+	return False, '关闭蜂鸣器失败!'
 
 _param_list = {'hostname': __set_hostname,
 		'fan-speed': __set_fan_speed,

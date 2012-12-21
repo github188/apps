@@ -13,7 +13,7 @@ ISCSI_BIN='iscsi/*'
 NAS_BIN='nas/nas nas/nasconf nas/tr-simple nas/*.py nas/*.sh nas/usermanage'
 SYSCONF_BIN='sys-conf/*'
 COMMON_BIN='common/loglist common/log-daemon'
-MON_BIN='monitor/sys-mon monitor/alarm monitor/alarm-stop.sh'
+MON_BIN='monitor/sys-mon monitor/buzzer monitor/set-buzzer.sh'
 
 # sync list
 BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN"

@@ -6,8 +6,6 @@
 
 void play(unsigned int* freq ,unsigned int* delay);  
 
-//如果蜂鸣器在鸣叫时程序被ctrl+c或者其他情况意外终止,蜂鸣器就会一直不停的叫
-//下面这个函数让蜂鸣器不发声
 void Stop( )  
 { 
 	static  int  flag=0;  
@@ -75,7 +73,7 @@ int main(int argc,char **argv)
 		int k;
 		k = atoi(argv[1]);
 		if (k){
-			//循环5次播放警告音
+			//循??5?尾??啪?????
 			for(i = 0; i< k; i++)  
 			{  
 				play(freq_alert ,time_alert);  
@@ -85,14 +83,14 @@ int main(int argc,char **argv)
 			Stop(); 
 		}
 	}			
-	//播放歌曲1
+	//???鸥???1
 	
 	//play(freq ,time);
 	
-	//播放歌曲2  
+	//???鸥???2  
 	//play(freq2 ,time2);  
 	
-	//下面这句用来关闭蜂鸣器,不然老叫，吵死了
+	//??????????来?乇辗?????,??然?辖校???????
 }  
 
 void play(unsigned int* freq ,unsigned int* time)  
