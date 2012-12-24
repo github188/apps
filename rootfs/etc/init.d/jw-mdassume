@@ -12,6 +12,7 @@
 # Description:       same with above.
 ### END INIT INFO
 
+. /usr/local/lib/jw-functions
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
@@ -20,12 +21,21 @@ _usage()
 	echo "Usage: $(basename "$0")  {start}"
 }
 
+start_scst()
+{
+	safe_exec modprobe scst
+	safe_exec modprobe scst_vdisk
+	safe_exec modprobe iscsi-scst
+	safe_exec scstadmin -config $SCST_CFG
+	[ $? -eq 0 ] && sys-manager iscsi --misc --update-cfg
+}
+
 case "${1:-}" in
 	start)
 		/usr/local/bin/md-assume.sh
 		sys-manager iscsi --misc --check-default-target
-		/etc/init.d/scst start
-		[ $? -eq 0 ] && sys-manager iscsi --misc --update-cfg
+		#/etc/init.d/scst start
+		start_scst
 	;;
 	*)
 		_usage
