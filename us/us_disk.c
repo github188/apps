@@ -315,6 +315,22 @@ static void us_disk_update_all(int op)
 	}
 }
 
+ssize_t disk_name2slot(const char *name, char *slot)
+{
+	int i;
+	for (i = 0; i < ARRAY_SIZE(us_dp.disks); i++) {
+		struct us_disk *disk = &us_dp.disks[i];
+
+		if (disk->is_exist)
+		{
+			sprintf(slot, "0:%d", disk->slot);
+			return 0;
+		}
+
+	}
+	return -EEXIST;
+}
+
 static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 {
 	int slot;
