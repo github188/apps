@@ -121,19 +121,35 @@ static int find_slot_from_path(const char *path)
 	}
 }
 
+#ifdef IDE_SLOT_MAP
+#define _SLOT_START 4
+#else
+#define _SLOT_START 6
+#endif
+#define _SLOT_END (_SLOT_START+16)
+
 static int map_slot(int slot)
 {
 	/**
-	 * Marvell sata槽位号映射：
+	 * Marvell sata槽位号映射：(IDE启动方式)
 	 * 4    8    12    16
 	 * 5    9    13    17
 	 * 6    10   14    18
 	 * 7    11   15    19
 	 */
-	if (slot < 4 || slot > 19)
+
+	/**
+	 * Marvell sata槽位号映射：(AHCI启动方式)
+	 * 4    8    12    16
+	 * 5    9    13    17
+	 * 6    10   14    18
+	 * 7    11   15    19
+	 */
+
+	if (slot < _SLOT_START || slot >= _SLOT_END)
 		return -1;
-	slot -= 3;
-	return slot;
+	slot -= _SLOT_START;
+	return (slot+1);
 }
 
 static int find_slot(struct us_disk_pool *dp, const char *dev, const char *path)
