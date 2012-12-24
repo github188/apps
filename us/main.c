@@ -4,6 +4,7 @@
 #include "clog.h"
 #include "us_ev.h"
 #include "us_mon.h"
+#include "us_prewarn.h"
 
 extern void us_mod_init(void);
 extern void us_mod_release(void);

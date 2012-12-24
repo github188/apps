@@ -19,6 +19,7 @@ DECLARE_FUNC(us_ev);
 DECLARE_FUNC(us_mon);
 DECLARE_FUNC(us_disk);
 DECLARE_FUNC(us_session);
+DECLARE_FUNC(us_prewarn);
 
 static struct module us_modules[] = {
 	MODULE(us_regex),
@@ -26,6 +27,7 @@ static struct module us_modules[] = {
 	MODULE(us_mon),
 	MODULE(us_disk),
 	MODULE(us_session),
+	MODULE(us_prewarn),
 };
 
 void us_mod_init(void)
