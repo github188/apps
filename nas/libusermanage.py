@@ -370,13 +370,11 @@ def User_Add(value):
 				comstr += ' -c ' + value.name_set
 			if value.member_state == True:
 				comstr += ' -G ' + __List_Group_Check__(value.member_set)
-			SYSTEM_OUT(comstr)
-			
+			os.system(comstr+' > /dev/null')
 		if __Samba_User_Check__(value.name_set) == True:
 			if value.pwd_set == '':
 				value.pwd_set = '888888'
 			SYSTEM_OUT('(echo ' + value.pwd_set + '; echo ' + value.pwd_set + ') | smbpasswd -s -a ' + value.name_set)
-
 			xpath = SMB_CONF_PATH + '.' + value.name_set
 			try:
 				f = open(xpath, 'w')
@@ -398,19 +396,21 @@ def User_Edit(value):
 		if value.pwd_state == True:
 			SYSTEM_OUT('(echo ' + value.pwd_set + '; echo ' + value.pwd_set + ') | smbpasswd -s ' + value.name_set)
 		if value.note_state == True:
-			SYSTEM_OUT('usermod '+ value.name_set + ' -c ' + value.note_set)
+			os.system('usermod '+ value.name_set + ' -c ' + value.note_set+' > /dev/null')
 		if value.member_state == True:
-			SYS_User_Group =  __List_Group_Check__(value.member_set).split(',')
-			IN_User_Group = __User_Group_List__(value.name_set).split(',')
-			for group_name in IN_User_Group:
-				if group_name not in SYS_User_Group and group_name != '':
-					SYSTEM_OUT('gpasswd -d '+value.name_set+' '+group_name)
-					__Edit_Group_User__(group_name, value.name_set, 'D')
+			SYS_User_Group =  __List_Group_Check__(value.member_set)
+			IN_User_Group = __User_Group_List__(value.name_set)
+			if len(IN_User_Group) > 0:
+				for group_name in IN_User_Group.split(','):
+					if group_name not in SYS_User_Group.split(',') and group_name != '':
+						os.system('gpasswd -d '+value.name_set+' '+group_name+' > /dev/null')
+						__Edit_Group_User__(group_name, value.name_set, 'D')
 					
-			for group_name in SYS_User_Group:
-				if group_name not in IN_User_Group and group_name != '':
-					SYSTEM_OUT('gpasswd -a '+value.name_set+' '+group_name)
-					__Edit_Group_User__(group_name, value.name_set, 'A')
+			if len(SYS_User_Group) > 0:
+				for group_name in SYS_User_Group.split(','):
+					if group_name not in IN_User_Group.split(',') and group_name != '':
+						os.system('gpasswd -a '+value.name_set+' '+group_name+' > /dev/null')
+						__Edit_Group_User__(group_name, value.name_set, 'A')
 		SYSTEM_OUT(RESTART_SMB)
 		Synchronous()
 		Export(True, '用户 "'+value.name_set+'" 修改成功！')
@@ -488,8 +488,8 @@ def User_Del(name_list):
 		name_list = name_list.split(',')
 		for name in name_list:
 			if __Check_Samba_User_licit__(name):
-				SYSTEM_OUT('smbpasswd -x '+ name)
-				SYSTEM_OUT('userdel '+ name)
+				os.system('smbpasswd -x '+ name+' > /dev/null')
+				os.system('userdel '+ name+' > /dev/null')
 				xpath = SMB_CONF_PATH +'.'+ name
 				try:
 					os.remove(xpath)
@@ -546,21 +546,22 @@ def User_Check(value):
 #~ 当为新用户名时，自动增加
 def Group_Edit(value):
 	Status = False
+	#~ Export(False, '"'+value.member_set+'"')
 	if __Check_System_Internal_User__(GROUP_CONF_PATH, value.name_set) == True:
 		if __System_Group_Check__(value.name_set):
-			SYSTEM_OUT('groupadd -f '+value.name_set)
+			os.system('groupadd -f '+value.name_set+' > /dev/null')
 			Status = True
 		if value.member_state == True:
 			Group_List = __Group_User__(value.name_set).split(',')
 			IN_Group = value.member_set.split(',')
 			for user in Group_List:
 				if user not in IN_Group and user != '':
-					SYSTEM_OUT('gpasswd -d '+user+' '+value.name_set)
+					os.system('gpasswd -d '+user+' '+value.name_set+' > /dev/null')
 					__Edit_Group_User__(value.name_set, user, 'D')
 
 			for user in IN_Group:
 				if user not in Group_List and user != '':
-					SYSTEM_OUT('gpasswd -a '+user+' '+value.name_set)
+					os.system('gpasswd -a '+user+' '+value.name_set+' > /dev/null')
 					__Edit_Group_User__(value.name_set, user, 'A')
 		SYSTEM_OUT(RESTART_SMB)
 		Synchronous()
@@ -663,7 +664,7 @@ def Group_Del(name_list):
 						if __Share_limits__(share, user, 'V'):
 							__Del_User_Share__(user, share)
 				try:
-					SYSTEM_OUT('groupdel '+ group)
+					os.system('groupdel '+ group+' > /dev/null')
 				except:
 					pass
 		SYSTEM_OUT(RESTART_SMB)
@@ -725,12 +726,12 @@ def User_Edit_Pwd(value):
 			pwd = value.pwd_set.strip()
 			newpwd = value.newpwd_set.strip()
 			if __System_User_Check__('pw'):
-				SYSTEM_OUT('useradd pw -N -M -u 996')
-				SYSTEM_OUT('(echo mkmkmk; echo mkmkmk) | smbpasswd -s -a pw')
-			SYSTEM_OUT('(echo '+pwd+'; echo '+pwd+') | smbpasswd -s pw')
+				os.system('useradd pw -N -M -u 996 > /dev/null')
+				os.system('(echo mkmkmk; echo mkmkmk) | smbpasswd -s -a pw > /dev/null')
+			os.system('(echo '+pwd+'; echo '+pwd+') | smbpasswd -s pw > /dev/null')
 			if __Read_Samba_User_pwd__('pw', 3) == __Read_Samba_User_pwd__(value.name_set, 3):
 				if newpwd != pwd:
-					SYSTEM_OUT('(echo '+newpwd+'; echo '+newpwd+') | smbpasswd -s '+value.name_set)
+					os.system('(echo '+newpwd+'; echo '+newpwd+') | smbpasswd -s '+value.name_set+' > /dev/null')
 				Synchronous()
 				Export(True, '密码修改成功')
 	Export(False, '用户名或原密码不正确！')
@@ -954,7 +955,7 @@ def __User_Group_List__(User):
 	OUT_List = ''
 	try:
 		Group_list = SYSTEM_OUT('groups '+User).split(':')[1].strip().split(' ')
-		Group_list.remove('users')
+		Group_list= [i for i in Group_list if i!='users' and i!='libuuid']
 		OUT_List = ','.join(Group_list)
 	except:
 		pass
