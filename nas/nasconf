@@ -99,9 +99,9 @@ path = """+DEF_NASCONF+"""
 browsable = yes
 directory mask = 0777
 create mask = 0777
-read list = guest
+read list = guest,@users
 write list = root
-valid users = root,guest
+valid users = root,guest,@users
 inherit permissions = yes
 
 """

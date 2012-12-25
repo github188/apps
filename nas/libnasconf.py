@@ -139,9 +139,9 @@ comment = 系统设置
 path = """+DEF_NASCONF+"""
 directory mask = 0777
 create mask = 0777
-read list = guest
+read list = guest,@users
 write list = root
-valid users = root,guest
+valid users = root,guest,@users
 inherit permissions = yes
 
 """
@@ -278,10 +278,10 @@ def nas_list(value):
 		json_info['comment'] = deviant(value.name_set, "comment")
 		json_info['path'] = deviant(value.name_set, "path")
 		json_info['browsable'] = deviant(value.name_set, "browsable")
-		json_info['invalid users'] = deviant(value.name_set, "invalid users")
-		json_info['read list'] = deviant(value.name_set, "read list")
-		json_info['write list'] = deviant(value.name_set, "write list")
-		json_info['valid users'] = deviant(value.name_set, "valid users")
+		json_info['invalid users'] =  __System_User_Check__(deviant(value.name_set, "invalid users"))
+		json_info['read list'] = __System_User_Check__(deviant(value.name_set, "read list"))
+		json_info['write list'] = __System_User_Check__(deviant(value.name_set, "write list"))
+		json_info['valid users'] = __System_User_Check__(deviant(value.name_set, "valid users"))
 		json_info['inherit permissions'] = deviant(value.name_set, "inherit permissions")
 		json_info['hosts allow'] = deviant(value.name_set, "hosts allow")
 		nfs_conf = open (NFS_CONF_PATH, 'r')
@@ -852,7 +852,23 @@ def get_high(value):
 		else:
 			json_info['privacy'] = 'no'
 		print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+
+#~ 验证是否是系统用和组
+def __System_User_Check__(User_array):
+	if isinstance(User_array,list) != True:
+		User_array = User_array.split(',')
+	User_list = []
+	for Name in User_array:
+		if len(Name.split('@')) > 1:
+			u = Name.replace('@','')
+			if int(SYSTEM_OUT('cat /etc/group|grep "^'+u+':"|wc -l')) > 0:
+				User_list.append(Name)
+		else:
+			if int(SYSTEM_OUT('cat /etc/passwd|grep "^'+Name+':"|wc -l')) > 0:
+				User_list.append(Name)
+	return ','.join(User_list)
 	
+
 
 
 

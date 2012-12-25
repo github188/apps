@@ -235,7 +235,7 @@ def DEFAULT():
 
 	conf_file = open(GROUP_CONF_PATH, 'w')
 	try:
-		conf_file.write(USERS_CONF)
+		conf_file.write(GROUP_CONF)
 		conf_file.close()
 	finally:
 		conf_file.close()
@@ -745,7 +745,7 @@ def __Check_System_Internal_User__(File, name):
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
 				if fileLine.split(':')[0] == name:
-					if int(fileLine.split(':')[2]) < 1001 or int(fileLine.split(':')[2]) > 29999:
+					if int(fileLine.split(':')[2]) < 1000 or int(fileLine.split(':')[2]) > 29999:
 						Status = False
 					break
 			open_conf.close()
