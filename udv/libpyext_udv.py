@@ -82,13 +82,13 @@ def isISCSIVolume(udv_dev):
 	try:
 		for x in getVdiskList():
 			if x == udv_dev:
-				return 1
+				return True
 	except:
 		pass
-	return 0
+	return False
 
 if __name__ == '__main__':
-	print getMdNameByDev('/dev/md1')
+	print isISCSIVolume(sys.argv[1])
 	sys.exit(0)
 	vg_dev = getVGDevByName(sys.argv[1])
 	print 'VG: slash-server, DEV: ', vg_dev

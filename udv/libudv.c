@@ -80,6 +80,7 @@ size_t getVGNameByDev(const char *vg_dev, char *vg_name)
 	return PYEXT_RET_OK;
 }
 
+// python 函数返回值: True - 1, False - 0
 /*
  * import from libpyext_udv.py
  */
@@ -471,13 +472,15 @@ ssize_t udv_delete(const char *name)
 
 	libudv_custom_init();
 
-	// 检查是否已经映射
-	if (isISCSIVolume(name) || isNasVolume(name))
-		return E_UDV_MOUNTED;
-
 	// 查找UDV
 	if (!(udv=get_udv_by_name(name)))
 		return E_UDV_NONEXIST;
+
+	// 检查是否已经映射
+	if (isISCSIVolume(udv->dev))
+		return E_UDV_MOUNTED_ISCSI;
+	if (isNasVolume(udv->name))
+		return E_UDV_MOUNTED_NAS;
 
 	// 删除分区
 	if (!(device = ped_device_get(udv->vg_dev)))

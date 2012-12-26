@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "web-iface.h"
 #include "common.h"
@@ -280,32 +282,43 @@ void build_err_msg(int err_code, char *err_msg)
 		return;
 	switch(err_code)
 	{
+		case E_OK:
+			sprintf(err_msg, "操作成功!");
 		case E_FMT_ERROR:
-			sprintf(err_msg, "参数格式错误!");
+			sprintf(err_msg, "操作失败,参数格式错误!");
 			break;
 		case E_VG_NONEXIST:
-			sprintf(err_msg, "VG不存在!");
+			sprintf(err_msg, "操作失败,VG不存在!");
 			break;
 		case E_UDV_NONEXIST:
-			sprintf(err_msg, "UDV不存在!");
+			sprintf(err_msg, "操作失败,UDV不存在!");
 			break;
 		case E_VG_EXIST:
-			sprintf(err_msg, "VG已经存在!");
+			sprintf(err_msg, "操作失败,VG已经存在!");
 			break;
 		case E_UDV_EXIST:
-			sprintf(err_msg, "UDV已经存在!");
+			sprintf(err_msg, "操作失败,UDV已经存在!");
 			break;
 		case E_SYS_ERROR:
-			sprintf(err_msg, "系统调用出错!");
+			sprintf(err_msg, "操作失败,系统调用出错!");
 			break;
 		case E_NO_FREE_SPACE:
-			sprintf(err_msg, "可供使用的有效剩余空间不足!");
+			sprintf(err_msg, "操作失败,可供使用的有效剩余空间不足!");
 			break;
 		case E_DEVICE_NOTMD:
-			sprintf(err_msg, "设备类型不是VG设备!");
+			sprintf(err_msg, "操作失败,设备类型不是VG设备!");
+			break;
+		case E_DEVNODE_NOT_EXIST:
+			sprintf(err_msg, "操作失败,设备节点不存在!");
+			break;
+		case E_UDV_MOUNTED_ISCSI:
+			sprintf(err_msg, "操作失败,用户数据卷已经被挂载为iSCSI卷!");
+			break;
+		case E_UDV_MOUNTED_NAS:
+			sprintf(err_msg, "操作失败,用户数据卷已经被挂载为NAS卷!");
 			break;
 		default:
-			sprintf(err_msg, "未知错误!");
+			sprintf(err_msg, "操作失败,未知错误!");
 			break;
 	}
 }
@@ -333,6 +346,8 @@ int udv_main(int argc, char *argv[])
 	char c;
 	list_type_t t;
 	char err_msg[256];
+	char _tmp[512];
+	ssize_t _ret;
 
 	t.raw = t.iscsi = t.nas = false;
 
@@ -357,10 +372,13 @@ int udv_main(int argc, char *argv[])
 				capacity = atoll(optarg);
 				continue;
 			case 'd':  // --delete <udv_name>
-				if (udv_delete(optarg)>=0)
-					return_json_msg(MSG_OK, "删除用户数据卷成功!");
+				_ret = udv_delete(optarg);
+				build_err_msg(_ret, err_msg);
+				sprintf(_tmp, "删除用户数据卷 %s : %s", optarg, err_msg);
+				if (_ret>=0)
+					return_json_msg(MSG_OK, _tmp);
 				else
-					return_json_msg(MSG_ERROR, "删除用户数据卷失败!");
+					return_json_msg(MSG_ERROR, _tmp);
 				break;
 			case 'm':
 				mode = UDV_MODE_RENAME;

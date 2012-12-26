@@ -387,7 +387,7 @@ def isNasVolume(volume_name):
 		if x['volume_name'] == volume_name:
 			return True
 	"""
-	for x in nas_mount_get_list():
+	for x in nas_mount_get_list() + nas_fmt_get_list():
 		if x.volume_name == volume_name:
 			return True
 	return False
@@ -407,6 +407,8 @@ def nasUpdateCfg():
 	return True, '更新配置文件成功'
 
 if __name__ == '__main__':
+	print isNasVolume(sys.argv[1])
+	sys.exit(0)
 	for x in nas_fmt_get_list():
 		print x.__dict__
 	sys.exit(0)

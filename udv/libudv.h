@@ -40,7 +40,8 @@ enum {
 	E_NO_FREE_SPACE = -7,
 	E_DEVICE_NOTMD = -8,
 	E_DEVNODE_NOT_EXIST = -9,
-	E_UDV_MOUNTED
+	E_UDV_MOUNTED_ISCSI = -10,
+	E_UDV_MOUNTED_NAS = -11
 };
 
 typedef enum _udv_state udv_state;
