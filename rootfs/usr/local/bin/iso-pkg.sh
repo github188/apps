@@ -18,8 +18,17 @@ make_default_conf()
 	rm -f /opt/log/jw-log.db
 }
 
+pkg_root_preprocess()
+{
+	# be sure /etc/sudoers has right privilege
+	chown root:root /etc/sudoers
+	chmod 440 /etc/sudoers
+}
+
 pkg_root()
 {
+	pkg_root_preprocess
+
 	# check if mounted /
 	echo "Checking rootfs mounted..."
 	mount | grep \/media\/sda1 > /dev/null

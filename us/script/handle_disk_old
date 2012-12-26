@@ -118,13 +118,17 @@ def __try_md_assume(md_uuid):
 				_disks = _disks + ' ' + __tmpfs_read_value('%s/%s/dev' % (_prepare_md_dir, x))
 			_new_md_dev = __get_mddev()
 			_assume_cmd = 'mdadm --assume %s %s' % (_new_md_dev, _disks)
+			_disk_slots = []
+			for x in _disks:
+				_disk_slots.append(disk_slot(x))
 			ret,msg = commands.getoutputstatus(_assume_cmd)
 			if ret == 0:
-				# (TODO)记录日志，重组md成功
-				print '重组VG成功'
+				_mdinfo = mddev_get_attr(_new_md_dev)
+				_md_log('Auto', 'Info', '使用槽位号为 %s 的磁盘重组卷组 %s 成功!' %
+						(_disk_slots, _mdinfo['name']))
 			else:
-				# (TODO)记录日志，重组md失败
-				print '重组VG失败'
+				_md_log('Auto', 'Info', '使用槽位号为 %s 的磁盘重组卷组失败!' %s
+						_disk_slots)
 	except:
 		pass
 
@@ -148,16 +152,12 @@ def handle_disk_add_event(disk_dev):
 	disk_info = get_disk_info(disk_dev)
 	if disk_info.slot == '':
 		return
-	# (TODO)记录磁盘上线信息
-	print '磁盘 %s(%s) 上线' % (disk_info.dev, disk_info.slot)
-	print disk_info.__dict__
-	return
+	_md_log('Auto', 'Info', '槽位号为 %s 的磁盘上线!' % disk_info.slot)
 
 	# 检查磁盘是否包含md信息
 	if disk_info.md_uuid == '':
-		print '磁盘不包含md信息，退出处理脚本'
 		return
-	print '磁盘包含md信息'
+	_md_log('Auto', 'Info', '检测到磁盘 %s 包含卷组信息，尝试进行卷组处理!' % disk_info.slot)
 
 	# 检查是否属于某个md设备，如果是，加入
 	for md_dev in md_list_mddevs():
@@ -210,6 +210,14 @@ def __remove_disk_from_md(md_info, disk_info):
 		print '从卷组 %s 删除掉线磁盘 %s 失败!' % (md_info['name'], disk_info.slot)
 	return
 
+def LogInsert(module, category, event, content):
+	cmd = 'sys-manager log --insert --module %s --category %s --event %s --content %s' %
+	(module, category, event, content)
+	os.popen(cmd)
+
+def _md_log(category, event, content):
+	LogInsert('VG', category, event, content)
+
 # 仅处理磁盘掉线后产生的md事件
 def __handle_md_event(md_info):
 	# 目前仅处理raid 5,6的事件
@@ -227,7 +235,8 @@ def __handle_md_event(md_info):
 		commands.getoutput(cmd);
 
 		# 记录日志
-		print '使用槽位号为 %s 的%s重建卷组 %s !' % (slot, DISK_TYPE_MAP[disk['type']], md_info['name'])
+		_md_log('Auto', 'Info', '使用槽位号为 %s 的%s重建卷组 %s !' % (slot,
+			DISK_TYPE_MAP[disk['type']], md_info['name']))
 
 		# 更新热备盘配置
 		disk_clean_hotrep(slot)
@@ -242,7 +251,7 @@ def handle_disk_remove_event(disk_dev):
 		return
 
 	# (TODO)记录磁盘上线信息
-	print '磁盘 %s(%s) 掉线' % (disk_info.dev, disk_info.slot)
+	_md_log('Auto', 'Info', '磁盘 %s(%s) 掉线' % (disk_info.dev, disk_info.slot))
 
 	for mddev in md_list_mddevs():
 		md_info = mddev_get_attr(mddev)
