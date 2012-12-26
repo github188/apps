@@ -23,11 +23,13 @@ _usage()
 
 start_scst()
 {
-	safe_exec modprobe scst
-	safe_exec modprobe scst_vdisk
-	safe_exec modprobe iscsi-scst
-	safe_exec scstadmin -config $SCST_CFG
-	[ $? -eq 0 ] && sys-manager iscsi --misc --update-cfg
+	modprobe scst
+	modprobe scst_vdisk
+	modprobe iscsi-scst
+	iscsi-scstd
+	scstadmin -config $SCST_CFG
+	[ $? -eq 0 ] && sys-manager iscsi --misc --update-cfg && return
+	sys-manager log --insert --module iSCSI --category Auto --event Error --content '启动iSCSI服务失败!请检查配置!'
 }
 
 case "${1:-}" in
