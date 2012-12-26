@@ -22,3 +22,7 @@ def debug_status(res):
 	if res[0] is False:
 		sys.exit(-1)
 
+def LogInsert(module, category, event, content):
+	cmd = 'sys-manager log --insert --module %s --category %s --event %s --content "%s"' % (module, category, event, content)
+	(module, category, event, content)
+	os.popen(cmd)

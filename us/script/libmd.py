@@ -44,7 +44,7 @@ def __state_post(p):
 	if state.find("degraded") != -1 :
 		if state.find("recovering") != -1:
 			return "rebuild"
-		return "degraded"
+		return "degrade"
 	elif state.find("FAILED") != -1:
 		return "fail"
 	elif state.find("resyncing") != -1:
@@ -129,6 +129,8 @@ def __md_fill_attr(str):
 	# 增加uuid供磁盘上下线使用
 	attr["raid_uuid"] = __find_attr(str, "UUID : (.*)")
 	attr["disk_working"] = int(__find_attr(str, "Working Devices : ([0-9]+)"))
+	# md设备应该拥有的磁盘个数
+	attr["disk_specs"] = int(__find_attr(str, "Raid Devices : ([0-9]+)"))
 
 	return attr
 
@@ -515,6 +517,10 @@ def disk_clean_hotrep(slot):
 
 if __name__ == "__main__":
 	import sys
+
+	x = mddev_get_attr('/dev/md1')
+	print x
+	sys.exit(0)
 
 	print '------', md_get_hotrep('f11ee90f:548a70c7:bf5b57cf:91230c43')
 	sys.exit(0)
