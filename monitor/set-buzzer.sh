@@ -5,12 +5,15 @@ BUZZER_BIN="/usr/local/bin/buzzer"
 
 case "$1" in
 	"on")
-		$BUZZER_BIN &
-		touch $ALARM_DIR/buzzer
+		ps au | grep buzzer | grep -v grep >/dev/null
+		if [ $? -ne 0 ]; then
+			$BUZZER_BIN &
+			touch $ALARM_DIR/buzzer
+		fi
 		;;
 	"off")
 		$BUZZER_BIN 0
-		killall $(basename $BUZZER_BIN)
+		killall $(basename $BUZZER_BIN) >/dev/null
 		[ $? -ne 0 ] && exit 1
 		rm -f $ALARM_DIR/buzzer
 		;;
