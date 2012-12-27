@@ -18,6 +18,8 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 """
 DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 
+TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
+
 def __def_post(p):
 	if len(p) == 0:
 		return ""
@@ -102,46 +104,107 @@ def __get_remain_capacity(md_name):
 	except:
 		return 0
 
-def __md_fill_attr(str):
-	attr = {}
-	attr["name"] = __find_attr(str, "Name : (.*)", __name_post)
-	attr["dev"] = __find_attr(str, "^(.*):")
-	attr["raid_level"] = __find_attr(str, "Raid Level : (.*)", __level_post)
-	attr["raid_state"] = __find_attr(str, "State : (.*)", __state_post)
-	attr["raid_strip"] = __find_attr(str, "Chunk Size : ([0-9]+[KMG])",
-			__chunk_post)
+class raid_attr:
+	def __init__(self):
+		self.name = ''		# raid1需要特殊处理
+		self.dev = ''
+		self.raid_level = ''
+		self.raid_state = ''	# raid1需要根据disk_cnt与disk_specs关系计算
+		self.raid_strip = ''	# raid1需要特殊处理
+		self.raid_rebuild = ''
+		self.capacity = 0
+		self.remain = 0
+		self.disk_cnt = 0	# 当前磁盘个数, raid1需要计算实际的disk_list
+		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
+		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
+		self.disk_working = 0	# 考虑使用disk_cnt替代
+		self.disk_specs = 0	# raid应该包含的磁盘个数，对应mdadm -D的'Raid Devices'字段
+
+def __md_fill_raid1_attr(attr = raid_attr()):
+	_dir = '%s/%s' % (TMP_RAID_INFO, dev_trim(attr.dev))
+	attr.name = AttrRead(_dir, 'name')
+	attr.disk_list = getDirList('%s/disk-list' % _dir)
+	attr.disk_cnt = len(attr.disk_list)
+	attr.raid_uuid = AttrRead(_dir, 'raid-uuid')
+	attr.raid_strip = AttrRead(_dir, 'raid-strip')
+	if attr.disk_cnt == 0:
+		attr.raid_state = 'fail'
+	elif attr.disk_cnt == attr.disk_specs:
+		attr.raid_state = 'normal'
+	elif attr.disk_cnt < attr.disk_specs:
+		attr.raid_state = 'degrade'
+	return dict(attr)
+
+def __md_fill_raid0_attr(attr = raid_attr()):
+	return
+
+def __md_fill_mdadm_attr(mddev):
+	cmd = 'mdadm -D %s 2>/dev/null' $ mddev
+	sts,output = commands.getstatusoutput(cmd)
+	
+	if sts != 0:
+		return None
+
+	attr = raid_attr()
+	attr.name = __find_attr(str, "Name : (.*)", __name_post)
+	attr.dev = __find_attr(str, "^(.*):")
+	attr.raid_level = __find_attr(str, "Raid Level : (.*)", __level_post)
+	attr.raid_state = __find_attr(str, "State : (.*)", __state_post)
+	attr.raid_strip = __find_attr(str, "Chunk Size : ([0-9]+[KMG])", __chunk_post)
 	rebuild_per = __find_attr(str, "Rebuild Status : ([0-9]+)\%")
 	resync_per = __find_attr(str, "Resync Status : ([0-9]+)\%")
 
 	if rebuild_per:
-		attr["raid_rebuild"] = rebuild_per
+		attr.raid_rebuild = rebuild_per
 	elif resync_per:
-		attr["raid_rebuild"] = resync_per
+		attr.raid_rebuild = resync_per
 	else:
-		attr["raid_rebuild"] = '0'
+		attr.raid_rebuild = '0'
 
-	attr["capacity"] = int(__get_sys_attr(attr["dev"], "size")) * 512
-	attr["remain"] = __get_remain_capacity(attr["name"])
-	attr["disk_cnt"] = int(__find_attr(str, "Total Devices : ([0-9]+)"))
-	attr["disk_list"] = __find_attr(str, "([0-9]+\s*){4}.*(/dev/.+)",
-			__disk_post)
-
-	# 增加uuid供磁盘上下线使用
-	attr["raid_uuid"] = __find_attr(str, "UUID : (.*)")
-	attr["disk_working"] = int(__find_attr(str, "Working Devices : ([0-9]+)"))
-	# md设备应该拥有的磁盘个数
-	attr["disk_specs"] = int(__find_attr(str, "Raid Devices : ([0-9]+)"))
+	attr.capacity = int(__get_sys_attr(attr["dev"], "size")) * 512
+	attr.remain = __get_remain_capacity(attr["name"])
+	attr.disk_cnt = int(__find_attr(str, "Total Devices : ([0-9]+)"))
+	attr.disk_list = __find_attr(str, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
+	attr.raid_uuid = __find_attr(str, "UUID : (.*)")
+	attr.disk_working = int(__find_attr(str, "Working Devices : ([0-9]+)"))
+	attr.disk_specs = int(__find_attr(str, "Raid Devices : ([0-9]+)"))
 
 	return attr
 
+
 def mddev_get_attr(mddev):
-	md_attr = {}
-	cmd = "mdadm -D %s 2>/dev/null" % mddev
-	sts,output = commands.getstatusoutput(cmd)
-	if (sts != 0) :
+	attr = __md_fill_mdadm_attr(str)
+	if None == attr:
 		return None
-	md_attr = __md_fill_attr(output)
-	return md_attr
+	if attr.raid_level == '1':
+		return __md_fill_raid1_attr(attr)
+	elif attr.raid_level == '0':
+		return __md_fill_raid0_attr(attr)
+	return dict(attr)
+
+# mddev - /dev/md<x>
+def update_md_info(mddev):
+	attr = __md_fill_mdadm_attr(mddev)
+	if None == attr:
+		return
+	_dir = '%s/by-dev/%s' % (TMP_RAID_INFO, dev_trim(mddev))
+	if not os.path.exists(_dir):
+		os.makedirs(_dir)
+	AttrWrite(_dir, 'name', attr.name)
+	AttrWrite(_dir, 'raid-uuid', attr.raid_uuid)
+	AttrWrite(_dir, 'raid-strip', attr.raid_strip)
+
+	_list_dir = '%s/dist-list' % _dir
+	if not os.path.exists(_list_dir):
+		os.makedirs(_list_dir)
+	for x in attr.disk_list:
+		AttrWrite(_list_dir, x, x)
+	return
+
+# mddev - /dev/md<x>
+def remove_md_info(mddev):
+	os.popen('%s/by-dev/%s' % (TMP_RAID_INFO, dev_trim(mddev)))
+
 
 def md_list_mddevs():
 	#return list_files("/dev", "md[0-9]+")

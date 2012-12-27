@@ -61,8 +61,8 @@ def __run_ext_cmd(cmd):
 
 # 从指定卷组删除掉盘的磁盘
 def __remove_disk_from_md(mdinfo, diskinfo):
-	__run_ext_cmd('mdadm --set-faulty %s %s 2>&1' % (mdinfo['dev'], __dev_trim(diskinfo.dev)))
-	if __run_ext_cmd('mdadm --remove %s %s 2>&1' % (mdinfo['dev'], __dev_trim(diskinfo.dev))):
+	__run_ext_cmd('mdadm --set-faulty %s %s 2>&1' % (mdinfo['dev'], dev_trim(diskinfo.dev)))
+	if __run_ext_cmd('mdadm --remove %s %s 2>&1' % (mdinfo['dev'], dev_trim(diskinfo.dev))):
 		__md_event_log('Info', '从卷组 %s 删除掉线磁盘 %s 成功!' % (mdinfo['name'], diskinfo.slot))
 	else:
 		__md_event_log('Info', '从卷组 %s 删除掉线磁盘 %s 失败!' % (mdinfo['name'], diskinfo.slot))
@@ -125,9 +125,6 @@ __level_state = {'0' : __md_level0_jbod_state,
 def __get_md_state(mdinfo):
 	return __level_state[mdinfo['raid_level']](mdinfo) if mdinfo['raid_level'] in __level_state.keys() else 'unknown'
 
-def __dev_trim(dev):
-	return dev.split('/')[-1]
-
 # 使用磁盘槽位号查找所在的卷组信息
 def __find_md_by_disk_dev(disk_dev):
 	mdinfo = None
@@ -137,7 +134,7 @@ def __find_md_by_disk_dev(disk_dev):
 			mddev = re.match('^md\d*', x)
 			if mddev is None:
 				continue
-			if __dev_trim(disk_dev) in re.findall('sd\w+', x):
+			if dev_trim(disk_dev) in re.findall('sd\w+', x):
 				mdinfo = mddev_get_attr('/dev/%s' % mddev.group())
 				break
 		f.close()
