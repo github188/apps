@@ -906,6 +906,8 @@ def __Add_User_initialize_Conf_Operating__(User_name, Share_name, rw):
 		e_conf.set(Share_name, 'comment', deviant(Share_name, "comment"))
 		e_conf.set(Share_name, 'path', deviant(Share_name, "path"))
 		e_conf.set(Share_name, 'browsable', 'yes')
+		if config.has_option(Share_name,  "hosts allow"):
+			e_conf.set(Share_name, 'hosts allow', deviant(Share_name, "hosts allow"))
 		e_conf.set(Share_name, 'inherit permissions', deviant(Share_name, "inherit permissions"))				
 		if rw == 'r' and User_name not in Conf_valid:
 			e_conf.set(Share_name, 'read only', 'yes')

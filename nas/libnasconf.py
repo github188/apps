@@ -46,7 +46,8 @@ if os.path.exists(DEF_NASCONF) == False:
 		pass
 if os.path.exists(DEF_NASCONF+'修改登陆密码.html') == False:
 	try:
-		os.symlink(WWW_PATH+'pwd.html', DEF_NASCONF+'修改登陆密码.html')
+		shutil.copy(WWW_PATH+'pwd.html', DEF_NASCONF+'修改登陆密码.html')
+		os.chmod(DEF_NASCONF+'修改登陆密码.html', stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
 	except:
 		pass
 
@@ -346,7 +347,8 @@ def nas_list(value):
 def __Share_List_out__(name):
 	Path = deviant(name, "path")
 	hosts = 'no'
-	if len(deviant(name, "hosts allow").strip()) > 0:
+	allow_str = deviant(name, "hosts allow").strip()
+	if len(allow_str) > 0 and allow_str != '*':
 		hosts = 'yes'
 	nfs_stat = 'no'
 	out = list_info()
@@ -587,21 +589,18 @@ def __Share_Access_Edit__(value, Original, NEW, read, write):
 def __Share_Nasallow_Edit__(name, U_list, allow):
 	if name != "" and U_list != "":
 		U_list = __User_Group_List__(U_list).split(',')
-		if allow != '':
-			for x in U_list:
+		for x in U_list:
+			if len(x) > 0:
 				xpath = SMB_USER_CONF_PATH + x
 				e_conf = ConfigParser.ConfigParser()  
-				e_conf.read(xpath) 
-				e_conf.set(name, 'hosts allow', allow)
+				e_conf.read(xpath)
+				if config.has_section(name):
+					if allow != '':
+						e_conf.set(name, 'hosts allow', allow)
+					else:
+						if e_conf.has_option(name,  "hosts allow"):
+							e_conf.remove_option(name,  "hosts allow")						
 				e_conf.write(open(xpath, 'w'))
-		else:
-			for x in U_list:
-				xpath = SMB_USER_CONF_PATH + x
-				e_conf = ConfigParser.ConfigParser()  
-				e_conf.read(xpath) 
-				if e_conf.has_option(name,  "hosts allow"):
-					e_conf.remove_option(name,  "hosts allow")
-					e_conf.write(open(xpath, 'w'))
 			
 #~ 从一个用户的配置中删除一个共享
 #~ name为共享名称
@@ -708,12 +707,15 @@ def edit(value):
 						else:
 							exist = False
 					else:
-						file = file + fileLine
+						nfs_path = fileLine.split(' ')
+						if len(nfs_path) > 1:
+							if os.path.exists(nfs_path[0]) == True and __Check__Nas_path__(nfs_path[0].strip()) == True:
+								file = file + fileLine
 			nfs_conf.close()
 		except:
 			nfs_conf.close()
 			Export(False, '操作失败！')
-		if exist == True:
+		if exist == True and value.allow_set != '':
 			operating = open(NFS_CONF_PATH, 'a')
 			try:
 				operating.write(path +  value.allow_set +'\n')
@@ -743,7 +745,8 @@ def __Del_Share__(name, U_list):
 		U_list = __User_Group_List__(U_list).split(',')
 		for x in U_list:
 			 __Del_User_Share__(name, x)
-	
+
+#~ 删除NAS共享
 def NASdel(value):
 	censor(value.name_set)
 	User_List = deviant(value.name_set, "valid users")
@@ -818,6 +821,7 @@ def get_sync(value):
 			operating.close()
 	SYSTEM_OUT(RESTART_SMB)
 
+#~ NAS高级设置
 def get_high(value):
 	if value.guest_state == True or value.privacy_state == True:
 		if value.guest_state == True:
@@ -868,7 +872,12 @@ def __System_User_Check__(User_array):
 				User_list.append(Name)
 	return ','.join(User_list)
 	
-
-
-
-
+def __Check__Nas_path__(path):
+	out_list = config.sections()
+	out_list= [i for i in out_list if i!='global' and i!='系统设置']
+	State = False
+	for name in out_list:
+		if deviant(name, "path") == path:
+			State = True
+			break
+	return State
