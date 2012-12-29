@@ -4,8 +4,10 @@
 import os
 import sys
 from libmd import md_info
+from libdisk import md_get_mddev
 
 # -----------------------------------------------------------------------------
+"""
 def getVGNameByDev(md_dev):
 	x = None
 	try:
@@ -13,6 +15,11 @@ def getVGNameByDev(md_dev):
 	except:
 		return 'N/A'
 	return x['name']
+"""
+
+def getVGDevByName(vg_name):
+	mddev = md_get_mddev(vg_name)
+	return mddev if mddev != None else ''
 
 # -----------------------------------------------------------------------------
 
@@ -46,18 +53,6 @@ def getMdList():
 	except:
 		pass
 	return md_list
-
-def getVGDevByName(vg_name):
-	md_dev = ''
-	try:
-		md_list = getMdList()
-		for x in md_list:
-			if x['name'] == vg_name:
-				md_dev = x['dev']
-	except:
-		pass
-	finally:
-		return md_dev
 
 # -----------------------------------------------------------------------------
 

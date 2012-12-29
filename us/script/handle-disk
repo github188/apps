@@ -61,11 +61,12 @@ def __run_ext_cmd(cmd):
 
 # 从指定卷组删除掉盘的磁盘
 def __remove_disk_from_md(mdinfo, diskinfo):
-	__run_ext_cmd('mdadm --set-faulty %s %s 2>&1' % (mdinfo['dev'], __dev_trim(diskinfo.dev)))
-	if __run_ext_cmd('mdadm --remove %s %s 2>&1' % (mdinfo['dev'], __dev_trim(diskinfo.dev))):
+	__run_ext_cmd('mdadm --set-faulty %s %s 2>&1' % (mdinfo['dev'], dev_trim(diskinfo.dev)))
+	if __run_ext_cmd('mdadm --remove %s %s 2>&1' % (mdinfo['dev'], dev_trim(diskinfo.dev))):
 		__md_event_log('Info', '从卷组 %s 删除掉线磁盘 %s 成功!' % (mdinfo['name'], diskinfo.slot))
 	else:
 		__md_event_log('Info', '从卷组 %s 删除掉线磁盘 %s 失败!' % (mdinfo['name'], diskinfo.slot))
+	tmpfs_remove_disk_from_md(mdinfo, diskinfo)
 
 # 将磁盘加入指定卷组
 def __add_disk_to_md(mdinfo, diskinfo):
@@ -77,6 +78,7 @@ def __add_disk_to_md(mdinfo, diskinfo):
 		__md_event_log('Warning', '卷组 %s 所属磁盘 %s 重新加入卷组操作失败!' % (mdinfo['name'], diskinfo.slot))
 
 
+"""
 # ---------------  获取不同级别的md状态 -------------------
 # 返回的状态: normal,degrade,fail,rebuild,initial,unknown
 
@@ -121,12 +123,11 @@ __level_state = {'0' : __md_level0_jbod_state,
 		'5' : __md_level5_state,
 		'6' : __md_level6_state,
 		'10' : __md_level10_state}
+"""
 
 def __get_md_state(mdinfo):
-	return __level_state[mdinfo['raid_level']](mdinfo) if mdinfo['raid_level'] in __level_state.keys() else 'unknown'
-
-def __dev_trim(dev):
-	return dev.split('/')[-1]
+	#return __level_state[mdinfo['raid_level']](mdinfo) if mdinfo['raid_level'] in __level_state.keys() else 'unknown'
+	return mdinfo['raid_state']
 
 # 使用磁盘槽位号查找所在的卷组信息
 def __find_md_by_disk_dev(disk_dev):
@@ -137,7 +138,7 @@ def __find_md_by_disk_dev(disk_dev):
 			mddev = re.match('^md\d*', x)
 			if mddev is None:
 				continue
-			if __dev_trim(disk_dev) in re.findall('sd\w+', x):
+			if dev_trim(disk_dev) in re.findall('sd\w+', x):
 				mdinfo = mddev_get_attr('/dev/%s' % mddev.group())
 				break
 		f.close()
@@ -170,6 +171,7 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 		return
 	__remove_disk_from_md(mdinfo, diskinfo)
 
+	mdinfo =  mddev_get_attr(mdinfo['dev'])	# 因为删除磁盘，重新获取状态
 	_state = __get_md_state(mdinfo)
 	if _state == 'degrade':
 		disk = md_get_hotrep(mdinfo['raid_uuid'])
@@ -220,9 +222,4 @@ def main():
 	__handle_md_event(event, diskinfo)
 
 if __name__ == "__main__":
-    main()
-    """
-    import json
-    x = __find_md_by_disk_dev('/dev/sdc')
-    print json.dumps(x)
-    """
+	main()
