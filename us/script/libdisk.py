@@ -49,9 +49,17 @@ def md_get_mddev(mdname):
 	for md in mddevs:
 		if md.find('p') >= 0:
 			continue
-		cmd = "mdadm -Ds %s | grep %s" % (md, mdname)
-		sts,out = commands.getstatusoutput(cmd)
-		if sts == 0:
+		# 尝试从mdadm获取信息
+		sts,out = commands.getstatusoutput('mdadm -D %s' % md)
+		if sts != 0:
+			continue
+		tmp = re.findall('Name : (.*)', out)
+		if len(tmp) > 0:
+			return md
+
+		# 尝试从tmpfs获取信息
+		_dir = '%s/%s' % (TMP_RAID_INFO, dev_trim(md))
+		if AttrRead(_dir, 'name') == mdname:
 			return md
 	return None
 

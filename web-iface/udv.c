@@ -161,10 +161,14 @@ int get_udv_remain()
 
 	uint64_t max_remain = 0,
 		 max_single = 0;
+	char err_msg[256];
 
 	n = udv_get_free_list(vg_name, &list);
 	if (n<0)
-		return_json_msg(MSG_ERROR, "无法获取剩余空间!");
+	{
+		build_err_msg(n, err_msg);
+		return_json_msg(MSG_ERROR, err_msg);
+	}
 	else if (n==0)
 		return printf("{\"vg\":\"%s\",\"max_avaliable\":0,\"max_single\":0}\n",
 				vg_name);

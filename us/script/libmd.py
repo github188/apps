@@ -18,7 +18,6 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 """
 DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 
-TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
 
 def __def_post(p):
 	if len(p) == 0:
@@ -55,10 +54,7 @@ def __state_post(p):
 		return "normal"
 
 def __name_post(p):
-	if len(p) == 0:
-		return "Unknown"
-	name=p[0];
-	return name.split(":")[0]
+	return p[0].split(":")[0] if len(p) > 0 else 'Unknown'
 
 def __disk_post(p):
 	if len(p) == 0:
@@ -117,42 +113,74 @@ class raid_attr:
 		self.disk_cnt = 0	# 当前磁盘个数, raid1需要计算实际的disk_list
 		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
 		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
-		self.disk_working = 0	# 考虑使用disk_cnt替代
-		self.disk_specs = 0	# raid应该包含的磁盘个数，对应mdadm -D的'Raid Devices'字段
+		#self.disk_working = 0	# 考虑使用disk_cnt替代
+		self.disk_specs = 0	# raid应该包含的磁盘个数，对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
 
-def __md_fill_raid1_attr(attr = raid_attr()):
+def __listdir_files(_dir):
+	if not os.path.isdir(_dir):
+		return []
+	_list = []
+	for x in os.listdir(_dir):
+		if not os.path.isfile('%s/%s' % (_dir, x)):
+			continue
+		_list.append(x)
+	return _list
+
+def __raid0_jobd_state(dspecs, dcnt):
+	return 'normal' if dcnt == dspecs else 'fail'
+
+def __raid1_state(dspecs, dcnt):
+	if dcnt == 0:
+		return 'fail'
+	elif dcnt < dspecs:
+		return 'degrade'
+	return 'normal'
+
+
+# 不同RAID级别在磁盘完全掉线后会导致部分信息缺失需要记录在tmpfs供查询使用
+def __md_fill_tmpfs_attr(attr = raid_attr()):
 	_dir = '%s/%s' % (TMP_RAID_INFO, dev_trim(attr.dev))
-	attr.name = AttrRead(_dir, 'name')
-	attr.disk_list = getDirList('%s/disk-list' % _dir)
-	attr.disk_cnt = len(attr.disk_list)
-	attr.raid_uuid = AttrRead(_dir, 'raid-uuid')
-	attr.raid_strip = AttrRead(_dir, 'raid-strip')
-	if attr.disk_cnt == 0:
-		attr.raid_state = 'fail'
-	elif attr.disk_cnt == attr.disk_specs:
-		attr.raid_state = 'normal'
-	elif attr.disk_cnt < attr.disk_specs:
-		attr.raid_state = 'degrade'
-	return dict(attr)
 
-def __md_fill_raid0_attr(attr = raid_attr()):
-	return
+	# 以下是raid级别0,1,5,6,JBOD需要获取的信息
+	if attr.name == 'Unknown' or attr.name == '':
+		attr.name = AttrRead(_dir, 'name')
+	if attr.raid_uuid == '':
+		attr.raid_uuid = AttrRead(_dir, 'raid-uuid')
+	
+	if attr.raid_level == '5' or attr.raid_level == '6':
+		return attr.__dict__
+
+	# 特殊处理: raid1,jbod没有strip属性
+	if attr.raid_level == '1' or attr.raid_level == 'JBOD':
+		attr.raid_strip = 'N/A'
+
+	# raid 0,1,jobd的磁盘列表需要单独处理
+	attr.disk_list = __listdir_files('%s/disk-list' % _dir)
+	attr.disk_cnt = len(attr.disk_list)
+
+	# raid 0,1,jbod的状态在掉盘后需要手动判断
+	if attr.raid_level == '0' or attr.raid_level == 'JBOD':
+		attr.raid_state = __raid0_jobd_state(attr.disk_specs, attr.disk_cnt)
+	elif attr.raid_level == '1':
+		attr.raid_state = __raid1_state(attr.disk_specs, attr.disk_cnt)
+
+	return attr.__dict__
 
 def __md_fill_mdadm_attr(mddev):
-	cmd = 'mdadm -D %s 2>/dev/null' $ mddev
+	cmd = 'mdadm -D %s 2>/dev/null' % mddev
 	sts,output = commands.getstatusoutput(cmd)
-	
+
 	if sts != 0:
 		return None
 
 	attr = raid_attr()
-	attr.name = __find_attr(str, "Name : (.*)", __name_post)
-	attr.dev = __find_attr(str, "^(.*):")
-	attr.raid_level = __find_attr(str, "Raid Level : (.*)", __level_post)
-	attr.raid_state = __find_attr(str, "State : (.*)", __state_post)
-	attr.raid_strip = __find_attr(str, "Chunk Size : ([0-9]+[KMG])", __chunk_post)
-	rebuild_per = __find_attr(str, "Rebuild Status : ([0-9]+)\%")
-	resync_per = __find_attr(str, "Resync Status : ([0-9]+)\%")
+	attr.name = __find_attr(output, "Name : (.*)", __name_post)
+	attr.dev = __find_attr(output, "^(.*):")
+	attr.raid_level = __find_attr(output, "Raid Level : (.*)", __level_post)
+	attr.raid_state = __find_attr(output, "State : (.*)", __state_post)
+	attr.raid_strip = __find_attr(output, "Chunk Size : ([0-9]+[KMG])", __chunk_post)
+	rebuild_per = __find_attr(output, "Rebuild Status : ([0-9]+)\%")
+	resync_per = __find_attr(output, "Resync Status : ([0-9]+)\%")
 
 	if rebuild_per:
 		attr.raid_rebuild = rebuild_per
@@ -161,40 +189,41 @@ def __md_fill_mdadm_attr(mddev):
 	else:
 		attr.raid_rebuild = '0'
 
-	attr.capacity = int(__get_sys_attr(attr["dev"], "size")) * 512
-	attr.remain = __get_remain_capacity(attr["name"])
-	attr.disk_cnt = int(__find_attr(str, "Total Devices : ([0-9]+)"))
-	attr.disk_list = __find_attr(str, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
-	attr.raid_uuid = __find_attr(str, "UUID : (.*)")
-	attr.disk_working = int(__find_attr(str, "Working Devices : ([0-9]+)"))
-	attr.disk_specs = int(__find_attr(str, "Raid Devices : ([0-9]+)"))
+	attr.capacity = int(__get_sys_attr(attr.dev, "size")) * 512
+	attr.remain = __get_remain_capacity(attr.name)
+	attr.disk_list = __find_attr(output, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
+	attr.disk_cnt = len(attr.disk_list)
+	attr.raid_uuid = __find_attr(output, "UUID : (.*)")
+	attr.disk_specs = int(__find_attr(output, "Raid Devices : ([0-9]+)"))
 
 	return attr
 
 
 def mddev_get_attr(mddev):
-	attr = __md_fill_mdadm_attr(str)
+	attr = __md_fill_mdadm_attr(mddev)
 	if None == attr:
 		return None
-	if attr.raid_level == '1':
-		return __md_fill_raid1_attr(attr)
-	elif attr.raid_level == '0':
-		return __md_fill_raid0_attr(attr)
-	return dict(attr)
+	return __md_fill_tmpfs_attr(attr)
+
+def tmpfs_remove_disk_from_md(mdinfo, diskinfo):
+	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']), diskinfo.slot)
+	return os.unlink(_file) if os.path.isfile(_file) else False
 
 # mddev - /dev/md<x>
-def update_md_info(mddev):
+def tmpfs_add_md_info(mddev):
 	attr = __md_fill_mdadm_attr(mddev)
 	if None == attr:
 		return
-	_dir = '%s/by-dev/%s' % (TMP_RAID_INFO, dev_trim(mddev))
+	_dir = '%s/%s' % (TMP_RAID_INFO, dev_trim(mddev))
 	if not os.path.exists(_dir):
 		os.makedirs(_dir)
 	AttrWrite(_dir, 'name', attr.name)
 	AttrWrite(_dir, 'raid-uuid', attr.raid_uuid)
-	AttrWrite(_dir, 'raid-strip', attr.raid_strip)
 
-	_list_dir = '%s/dist-list' % _dir
+	if attr.raid_level == '5' or attr.raid_level == '6':
+		return
+
+	_list_dir = '%s/disk-list' % _dir
 	if not os.path.exists(_list_dir):
 		os.makedirs(_list_dir)
 	for x in attr.disk_list:
@@ -202,8 +231,8 @@ def update_md_info(mddev):
 	return
 
 # mddev - /dev/md<x>
-def remove_md_info(mddev):
-	os.popen('%s/by-dev/%s' % (TMP_RAID_INFO, dev_trim(mddev)))
+def tmpfs_remove_md_info(mddev):
+	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, dev_trim(mddev)))
 
 
 def md_list_mddevs():
@@ -255,6 +284,9 @@ def md_stop(mddev):
 		return -1,'无法删除设备节点!'
 	return sts,''
 
+def __raid_level(_level):
+	return 'linear' if _level.lower() == 'jbod' else _level
+
 def md_create(mdname, level, chunk, slots):
 	#create raid
 	mddev = md_find_free_mddev()
@@ -264,7 +296,7 @@ def md_create(mdname, level, chunk, slots):
 	if len(devs) == 0:
 		return False, "没有磁盘"
 	dev_list = " ".join(devs)
-	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, chunk, len(devs), dev_list, mdname)
+	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, __raid_level(level), chunk, len(devs), dev_list, mdname)
 	if level in ('3', '4', '5', '6', '10', '50', '60'):
 		cmd += " --bitmap=internal"
 	sts,out = commands.getstatusoutput(cmd)
@@ -275,6 +307,9 @@ def md_create(mdname, level, chunk, slots):
 			disk_clean_hotrep(slot)
 	disk_slot_update(slots)
 	if sts != 0 :
+		# try to remove mddev
+		os.popen('mdadm -S %s 2>&1 >/dev/null' % mddev)
+		os.popen('rm -f %s 2>&1 >/dev/null' % mddev)
 		return False, "创建卷组失败"
 
 	msg = ''
@@ -288,6 +323,7 @@ def md_create(mdname, level, chunk, slots):
 	except:
 		msg = '初始化卷组未知错误!'
 		pass
+	tmpfs_add_md_info(mddev)
 	return True, '创建卷组成功!%s' % msg
 
 def __md_remove_devnode(mddev):
@@ -324,6 +360,9 @@ def md_del(mdname):
 		return False,"停止%s失败!%s" % (mdname, msg)
 	# 删除设备节点
 	__md_remove_devnode(mddev)
+
+	tmpfs_remove_md_info(mddev)
+
 	# 专用热备盘设置为空闲盘
 	for slot in md_get_special(md_uuid):
 		disk_set_type(slot, 'Free')
@@ -580,6 +619,8 @@ def disk_clean_hotrep(slot):
 
 if __name__ == "__main__":
 	import sys
+	print md_info('slash')
+	sys.exit(0)
 
 	x = mddev_get_attr('/dev/md1')
 	print x

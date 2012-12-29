@@ -11,11 +11,20 @@ def main():
 	if len(sys.argv) < 3:
 		return
 
+	log = initlog()
+
 	action = sys.argv[2]
+	mddev = sys.argv[1]
+
+	log.info('action: %s, mddev: %s' % (action, mddev))
 	if 'add' == action:
-		update_md_info(mddev)
+		tmpfs_add_md_info(mddev)
 	elif 'remove' == action:
-		remove_md_info(mddev)
+		tmpfs_remove_md_info(mddev)
 
 if __name__ == "__main__":
-    main()
+	#  此程序调试通过，暂时不使用，因为在创建md时候，
+	#  会首先收到add事件，但是此时取不到md信息
+	#  已经将响应创建md事件加入到了md_create()函数最后
+	# 将响应删除md事件加入到了md_del()函数最后
+	main()

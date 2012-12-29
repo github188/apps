@@ -3,6 +3,8 @@
 
 import os, re, json, sys
 
+TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
+
 def list_files(path, reg):
     if not path.endswith("/"):
         path += "/"
@@ -66,3 +68,22 @@ def getDirList(file_path):
 def dev_trim(dev):
 	return dev.split('/')[-1]
 
+
+def initlog():
+	import logging
+	
+	logger = logging.getLogger()
+
+	logfile = '/var/log/jw-log'
+	hdlr = logging.FileHandler('/var/log/jw-log')
+
+	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+	hdlr.setFormatter(formatter)
+
+	logger.addHandler(hdlr)
+	logger.setLevel(logging.INFO)
+	return logger
+
+if __name__ == '__main__':
+	log = initlog()
+	log.info('测试')

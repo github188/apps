@@ -376,6 +376,8 @@ static void remove_disk(struct us_disk_pool *dp, const char *dev)
 
 static int us_disk_on_event(const char *path, const char *dev, int act)
 {
+	/*
+	 * 目前仅处理md的add,remove事件，通过md_create()和md_del()函数处理
 	if (is_md(path)) {
 		char cmd[128];
 
@@ -387,6 +389,7 @@ static int us_disk_on_event(const char *path, const char *dev, int act)
 
 		return MA_HANDLED;
 	}
+	*/
 
 	if (!is_sata_sas(path))
 		return MA_NONE;
