@@ -50,11 +50,9 @@ def md_get_mddev(mdname):
 		if md.find('p') >= 0:
 			continue
 		# 尝试从mdadm获取信息
-		sts,out = commands.getstatusoutput('mdadm -D %s' % md)
-		if sts != 0:
-			continue
-		tmp = re.findall('Name : (.*)', out)
-		if len(tmp) > 0:
+		cmd = 'mdadm -D %s 2>&1 | grep %s >/dev/null' % (md, mdname)
+		sts,out = commands.getstatusoutput(cmd)
+		if sts == 0:
 			return md
 
 		# 尝试从tmpfs获取信息
