@@ -28,16 +28,16 @@ start_scst()
 	modprobe iscsi-scst
 	iscsi-scstd
 	scstadmin -config $SCST_CFG
-	[ $? -eq 0 ] && sys-manager iscsi --misc --update-cfg && return
-	sys-manager log --insert --module iSCSI --category Auto --event Error --content '启动iSCSI服务失败!请检查配置!'
+	[ $? -eq 0 ] && sys-manager iscsi --misc --update-cfg
 }
 
 case "${1:-}" in
 	start)
 		/usr/local/bin/md-assume.sh
 		sys-manager iscsi --misc --check-default-target
-		#/etc/init.d/scst start
+		/etc/init.d/scst start
 		start_scst
+		/opt/jw-conf/nas/self-load.sh
 	;;
 	*)
 		_usage

@@ -6,6 +6,28 @@ mdadm -Ss
 
 disk_list=''
 
+mddev_wait() # mddev
+{
+	mddev="$1"
+	for i in `seq 5`
+	do
+		mdadm -D $mddev 2>&1 >/dev/null
+		[ $? -eq 0 ] && break
+		sleep 1
+	done
+}
+
+mddev_part_wait() # mddev
+{
+	mddev="$1"
+	for i in `seq 5`
+	do
+		yes | parted $mddev print 2>&1 >/dev/null
+		[ $? -eq 0 ] && break
+		sleep 1
+	done
+}
+
 assemble() # arg1: md_num, arg2: disk_list
 {
 	if [ -z "$1" -o -z "$2" ]; then
@@ -39,6 +61,9 @@ assemble() # arg1: md_num, arg2: disk_list
 
 	# restore partitions
 	#yes Fix | parted "$mddev" print > /dev/null
+
+	mddev_wait $mddev
+	mddev_part_wait $mddev
 }
 
 while read LINE
