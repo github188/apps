@@ -517,7 +517,7 @@ def add(value):
 #~ 修改用户基本配置
 #~ user为用户		
 def __user_conf__(value,user):
-	if len(user) > 0':
+	if len(user) > 0:
 		xpath = SMB_USER_CONF_PATH + user
 		e_conf = ConfigParser.ConfigParser()  
 		e_conf.read(xpath) 
@@ -741,7 +741,7 @@ def edit(value):
 #~ name 共享名称
 #~ U_list 用户列表
 def __Del_Share__(name, U_list):
-	if len(name) > 0 andlen(U_list) > 0:
+	if len(name) > 0 and len(U_list) > 0:
 		U_list = __User_Group_List__(U_list).split(',')
 		for x in U_list:
 			 __Del_User_Share__(name, x)
