@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<monitor>
+	<global>
+	</global>
+
+	<modules>
+		<disk>
+			<event name="online" level="info" action="disk_online"/>
+			<event name="offline" level="warning" action="disk_offline"/>
+		</disk>
+
+		<vg>
+			<event name="add" level="info" action="vg_add"/>
+			<event name="remove" level="info" action="vg_revmoe"/>
+			<event name="degrade" level="warning" action="vg_degrade"/>
+			<event name="fail" level="error" action="vg_fail"/>
+			<event name="change" level="info" action="vg_change"/>
+		</vg>
+	</modules>
+
+	<self_run>
+		<item name="cpu-temp" source="file" file="abc" interval="60" action="range_check" min_threshold="35" max_threshold="55"/>
+	</self_run>
+
+	<actions>
+		<range_check active="enable">
+			<alarm name="buzzer"/>
+			<alarm name="sys-led"/>
+			<alarm name="disk-led"/>
+		</range_check>
+
+		<disk_online>
+		</disk_online>
+
+		<disk_offline>
+		</disk_offline>
+
+		<vg_add>
+		</vg_add>
+
+		<vg_remove>
+		</vg_remove>
+
+		<vg_degrade>
+		</vg_degrade>
+
+		<vg_fail>
+		</vg_fail>
+
+		<vg_change>
+		</vg_change>
+	</actions>
+</monitor>
