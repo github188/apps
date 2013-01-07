@@ -8,6 +8,37 @@ void sys_action_init()
 	list_init(&_gaction_list);
 }
 
+void _action_alarm_release(sys_action_t *a)
+{
+	struct list *n, *nt;
+	sys_alarm_t *alr;
+
+	list_iterate_safe(n, nt, &a->alarm_list)
+	{
+		alr = list_struct_base(n, sys_alarm_t, alarm_list);
+		list_del(&alr->alarm_list);
+		syslog(LOG_INFO, "release action '%s' -> alarm '%s' !", a->name, alr->name);
+		free(alr);
+	}
+}
+
+void sys_action_release()
+{
+	struct list *n, *nt;
+	sys_action_t *a;
+
+	list_iterate_safe(n, nt, &_gaction_list)
+	{
+		a = list_struct_base(n, sys_action_t, list);
+
+		_action_alarm_release(a);
+
+		list_del(&a->list);
+		syslog(LOG_INFO, "release action '%s' !", a->name);
+		free(a);
+	}
+}
+
 sys_action_t *sys_action_alloc()
 {
 	sys_action_t *action;
@@ -33,13 +64,14 @@ void _sys_action_default_alarm_add(const char *action)
 		sys_alarm_t *alarm;
 		if ( (alarm=sys_alarm_alloc()) != NULL )
 		{	
+			strcpy(alarm->name, "default");
 			sys_alarm_set_handler(alarm, "default");
 			sys_action_alarm_add(action, alarm);
-			syslog(LOG_NOTICE, "_sys_action_default_alarm_add(\"%s\"): add default alarm OK!", action);
+			syslog(LOG_NOTICE, "_sys_action_default_alarm_add('%s'): add default alarm OK!", action);
 			return;
 		}
 	}
-	syslog(LOG_NOTICE, "_sys_action_default_alarm_add(\"%s\"): add default alarm fail!", action);
+	syslog(LOG_NOTICE, "_sys_action_default_alarm_add('%s'): add default alarm fail!", action);
 }
 
 bool sys_action_add(const char *name)
@@ -53,11 +85,11 @@ bool sys_action_add(const char *name)
 		strcpy(action->name, name);
 		list_add(&_gaction_list, &action->list);
 		_sys_action_default_alarm_add(name);
-		syslog(LOG_NOTICE, "sys_action_add(\"%s\"): add OK!", name);
+		syslog(LOG_NOTICE, "sys_action_add('%s'): add OK!", name);
 		return true;
 	}
 
-	syslog(LOG_NOTICE, "sys_action_add(\"%s\"): add fail!", name);
+	syslog(LOG_NOTICE, "sys_action_add('%s'): add fail!", name);
 	return false;
 }
 
@@ -71,12 +103,12 @@ sys_action_t *sys_action_get(const char *name)
 		action = list_struct_base(n, sys_action_t, list);
 		if (!strcmp(action->name, name))
 		{
-			syslog(LOG_NOTICE, "sys_action_get(\"%s\"): found!", name);
+			syslog(LOG_NOTICE, "sys_action_get('%s'): found!", name);
 			return action;
 		}
 	}
 
-	syslog(LOG_NOTICE, "sys_action_get(\"%s\"): not found!", name);
+	syslog(LOG_NOTICE, "sys_action_get('%s'): not found!", name);
 	return NULL;
 }
 
@@ -106,11 +138,11 @@ bool sys_action_alarm_add(const char *name, sys_alarm_t *alarm)
 	{
 		list_add(&action->alarm_list, &alarm->alarm_list);
 
-		syslog(LOG_NOTICE, "sys_action_alarm_add(\"%s\", \"%s\"): OK!", name, alarm->name);
+		syslog(LOG_NOTICE, "sys_action_alarm_add('%s', '%s'): OK!", name, alarm->name);
 		return true;
 	}
 
-	syslog(LOG_NOTICE, "sys_action_alarm_add(\"%s\", \"%s\"): fail!", name, alarm->name);
+	syslog(LOG_NOTICE, "sys_action_alarm_add('%s', '%s'): fail!", name, alarm->name);
 	return false;
 }
 
@@ -128,12 +160,12 @@ sys_alarm_t *sys_action_alarm_get(const char *action, const char *alarm)
 		al = list_struct_base(n, sys_alarm_t, alarm_list);
 		if (!strcmp(al->name, alarm))
 		{
-			syslog(LOG_NOTICE, "sys_action_alarm_get(\"%s\", \"%s\"): found!", action, alarm);
+			syslog(LOG_NOTICE, "sys_action_alarm_get('%s', '%s'): found!", action, alarm);
 			return al;
 		}
 	}
 	
-	syslog(LOG_NOTICE, "sys_action_alarm_get(\"%s\", \"%s\"): not found!", action, alarm);
+	syslog(LOG_NOTICE, "sys_action_alarm_get('%s', '%s'): not found!", action, alarm);
 	return NULL;
 }
 
@@ -144,6 +176,8 @@ void do_sys_action(sys_action_t *action, void *event)
 
 	if (!action)
 		return;
+
+	syslog(LOG_INFO, "do_sys_action()");
 	
 	list_iterate_safe(n, nt, &action->alarm_list)
 	{

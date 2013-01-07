@@ -2,18 +2,22 @@
 
 void sys_alarm_default(void *event)
 {
+	syslog(LOG_INFO, "sys_alram_default()");
 }
 
 void sys_alarm_buzzer(void *event)
 {
+	syslog(LOG_INFO, "sys_alarm_buzzer()");
 }
 
 void sys_alarm_sysled(void *event)
 {
+	syslog(LOG_INFO, "sys_alarm_sysled()");
 }
 
 void sys_alarm_diskled(void *event)
 {
+	syslog(LOG_INFO, "sys_alarm_diskled()");
 }
 
 struct _handler_map {

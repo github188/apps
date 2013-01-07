@@ -2,6 +2,8 @@
 
 <monitor>
 	<global>
+		<tmpfs active="enable"/>
+		<message_buff info="10" warning="10" error="10"/>
 	</global>
 
 	<modules>
@@ -31,6 +33,9 @@
 		</range_check>
 
 		<disk_online>
+			<alarm name="buzzer"/>
+			<alarm name="sys-led"/>
+			<alarm name="disk-led"/>
 		</disk_online>
 
 		<disk_offline>

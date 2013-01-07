@@ -1,6 +1,10 @@
 #include <unistd.h>
 #include <ev.h>
 #include <json/json.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "sys-event.h"
 #include "sys-action.h"
 
@@ -16,13 +20,18 @@ static struct ev_loop *mon_loop = NULL;
 
 void mon_release(int sig)
 {
-	if (mon_loop)
-	{
-		//ev_io_stop(mon_loop, &mon_io.io);
-		//ev_loop_destroy(mon_loop);
-	}
+	signal(sig, SIG_IGN);
+
+	close(mon_io.sockfd);
+	ev_io_stop(mon_loop, &mon_io.io);
+	//ev_loop_destroy(mon_loop);
+	
+	sys_module_release();
+	sys_action_release();
 
 	log_release();
+
+	signal(sig, SIG_DFL);
 }
 
 
@@ -41,6 +50,8 @@ static void mon_io_cb(EV_P_ ev_io *w, int r)
 	}
 	buff[n] = '\0';
 
+	syslog(LOG_NOTICE, "ev: get msg from socket!");
+
 	sys_event_zero(&ev);
 	obj = json_tokener_parse( buff );
 	json_object_object_foreach(obj, key, val) {
@@ -49,7 +60,7 @@ static void mon_io_cb(EV_P_ ev_io *w, int r)
 		if ( json_object_get_type(val) == json_type_string )
 			sys_event_fill(&ev, key, json_object_get_string(val));
 		*/
-		sys_event_fill(&ev, key, json_object_to_json_string(val));
+		sys_event_fill(&ev, key, json_object_get_string(val));
 	}
 	
 	if ( (ec=sys_module_event_get(ev.module, ev.event)) != NULL )
@@ -65,7 +76,32 @@ static void mon_io_cb(EV_P_ ev_io *w, int r)
 
 int mon_serv_create()
 {
-	return 0;
+	struct sockaddr_un localaddr;
+	size_t addr_len;
+	int sockfd;
+
+	if ((sockfd=socket(AF_UNIX, SOCK_DGRAM, 0)) < 0)
+	{
+		syslog(LOG_ERR, "fail to create local socket!");
+		raise(SIGTERM);
+		return -1;
+	}
+
+	localaddr.sun_family = AF_UNIX;
+	strcpy(localaddr.sun_path, SYSMON_ADDR);
+	unlink(localaddr.sun_path);
+	addr_len = strlen(localaddr.sun_path) + sizeof(localaddr.sun_family);
+
+	if (bind(sockfd, (struct sockaddr*)&localaddr, addr_len) < 0)
+	{
+		syslog(LOG_ERR, "fail to bind local socket!");
+		close(sockfd);
+		raise(SIGTERM);
+		return -1;
+	}
+
+	syslog(LOG_INFO, "create local socket for sys-mon OK!");
+	return sockfd;
 }
 
 int main()
@@ -78,10 +114,10 @@ int main()
 	log_init();
 	sys_mon_load_conf();
 
+#ifndef _NDEBUG
 	dump_module_event();
 	dump_action_alarm();
-
-	while(1);
+#endif
 
 	mon_io.sockfd = mon_serv_create();
 
@@ -91,7 +127,9 @@ int main()
 	ev_io_start(mon_loop, &mon_io.io);
 	ev_run(mon_loop, 0);
 
-	mon_release(-1);
+	printf("break\n");
+
+	log_release();
 
 	return 0;
 }

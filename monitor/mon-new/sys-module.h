@@ -18,6 +18,8 @@ extern struct list _gmodule_list;
 
 void sys_module_init();
 
+void sys_module_release();
+
 bool sys_module_add(const char *name);
 
 sys_module_t *sys_module_get(const char *name);

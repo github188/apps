@@ -26,6 +26,8 @@ extern struct list _gaction_list;
 
 void sys_action_init();
 
+void sys_action_release();
+
 bool sys_action_add(const char *name);
 
 sys_action_t *sys_action_get(const char *name);

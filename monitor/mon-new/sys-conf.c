@@ -13,7 +13,7 @@ void _xml_module_event_parse(char *module, xmlNodePtr node)
 	{
 		if (!xmlStrcmp(node->name, BAD_CAST"event"))
 		{
-			syslog(LOG_NOTICE, "found a new event!");
+			syslog(LOG_NOTICE, "XML(module_event_parser): found a new event!");
 
 			sys_event_conf_t *ec = sys_event_conf_alloc();
 			strcpy(ec->module, module);
@@ -32,7 +32,7 @@ void _xml_module_parse(xmlNodePtr node)
 	{
 		_XML_IGN_CHECK(node)
 		{
-			syslog(LOG_NOTICE, "found a new module!");
+			syslog(LOG_NOTICE, "XML(module_parser): found a new module!");
 			sys_module_add(node->name);
 			_xml_module_event_parse(node->name, node->xmlChildrenNode);
 		}
@@ -46,7 +46,7 @@ void _xml_action_alarm_parse(char *action_name, xmlNodePtr node)
 	{
 		if (!xmlStrcmp(node->name, BAD_CAST"alarm"))
 		{
-			syslog(LOG_NOTICE, "find a new alarm!");
+			syslog(LOG_NOTICE, "XML(action_alarm_parser): find a new alarm!");
 
 			sys_alarm_t *alarm = sys_alarm_alloc();
 			strcpy(alarm->name, _XML_STR_VAL(node, "name"));
@@ -64,7 +64,7 @@ void _xml_action_parse(xmlNodePtr node)
 
 		_XML_IGN_CHECK(node)
 		{
-			syslog(LOG_NOTICE, "find a new action!");
+			syslog(LOG_NOTICE, "XML(action_parser): find a new action!");
 			sys_action_add(node->name);
 			_xml_action_alarm_parse(node->name, node->xmlChildrenNode);
 		}
@@ -94,13 +94,14 @@ void sys_mon_load_conf()
 
 	sys_mon_conf_check();
 
-	doc = xmlReadFile(SYS_MON_CONF, "UTF-8", XML_PARSE_RECOVER);
+	doc = xmlReadFile(SYSMON_CONF, "UTF-8", XML_PARSE_RECOVER);
 	if (!doc)
 	{
-		syslog(LOG_ERR, "Load system monitor configure file %s error!", SYS_MON_CONF);
+		syslog(LOG_ERR, "XML: Load system monitor configure file %s error!", SYSMON_CONF);
 		return;
 	}
 
+#if 0
 	node = xmlDocGetRootElement(doc);
 	if (!node)
 	{
@@ -112,6 +113,7 @@ void sys_mon_load_conf()
 
 		goto _conf_clean;
 	}
+#endif
 
 	if ( (node=xmlDocGetRootElement(doc)) &&
 		!xmlStrcmp(node->name, BAD_CAST"monitor") )
