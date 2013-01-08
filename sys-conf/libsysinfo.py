@@ -264,9 +264,9 @@ def __get_stat_vg(mod):
 	try:
 		_vg_list = json.loads(commands.getoutput('sys-manager vg --list'))
 		for _vg in _vg_list['rows']:
-			if _vg['state'] == 'fail':
+			if _vg['raid_state'] == 'fail':
 				_stat['value'] = _stat['value'] + '卷组%s失效 ' % _vg['name']
-			if _vg['state'] == 'degrade':
+			if _vg['raid_state'] == 'degrade':
 				_stat['value'] = _stat['value'] + '卷组%s降级 ' % _vg['name']
 	except:
 		pass
