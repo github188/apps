@@ -1,6 +1,6 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-JW_CONF_DIR="/opt/jw-conf"
+JW_CONF_DIR=/opt/jw-conf
 
 make_default_conf()
 {
@@ -8,12 +8,12 @@ make_default_conf()
 	cat /dev/null > /etc/exports
 
 	# jw
-	mkdir -pv "$JW_CONF_DIR"/{disk,iscsi,nas,system}
+	mkdir -pv $JW_CONF_DIR/{disk,iscsi,nas,system}
 	cat /dev/null > "$JW_CONF_DIR"/nas/self-load.sh
 	chmod +x "$JW_CONF_DIR"/nas/self-load.sh
 
 	# clear log
-	find /var/log/ -type f | xargs -x rm
+	find /var/log/ -type f -exec rm -f {} \;
 	mkdir -pv /opt/log
 	rm -f /opt/log/jw-log.db
 }
