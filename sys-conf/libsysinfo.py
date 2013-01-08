@@ -307,11 +307,9 @@ def __get_stat_fan(mod):
 def __get_stat_buzzer(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_val = AttrRead(ALARM_DIR, 'buzzer')
-	if _val == '':
-		_stat['value'] = '无法获取'
-	else:
-		_stat['value'] = _val
+	_stat['value'] = 'good'
+	if os.path.isfile('%s/buzzer' % ALARM_DIR):
+		_stat['value'] = '蜂鸣器告警'
 	return _stat
 
 _stat_list = {'disk': __get_stat_disk,
