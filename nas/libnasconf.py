@@ -46,7 +46,8 @@ if os.path.exists(DEF_NASCONF) == False:
 		pass
 if os.path.exists(DEF_NASCONF+'修改登陆密码.html') == False:
 	try:
-		os.symlink(WWW_PATH+'pwd.html', DEF_NASCONF+'修改登陆密码.html')
+		shutil.copy(WWW_PATH+'pwd.html', DEF_NASCONF+'修改登陆密码.html')
+		os.chmod(DEF_NASCONF+'修改登陆密码.html', stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
 	except:
 		pass
 
@@ -139,9 +140,9 @@ comment = 系统设置
 path = """+DEF_NASCONF+"""
 directory mask = 0777
 create mask = 0777
-read list = guest
+read list = guest,@users
 write list = root
-valid users = root,guest
+valid users = root,guest,@users
 inherit permissions = yes
 
 """
@@ -278,10 +279,10 @@ def nas_list(value):
 		json_info['comment'] = deviant(value.name_set, "comment")
 		json_info['path'] = deviant(value.name_set, "path")
 		json_info['browsable'] = deviant(value.name_set, "browsable")
-		json_info['invalid users'] = deviant(value.name_set, "invalid users")
-		json_info['read list'] = deviant(value.name_set, "read list")
-		json_info['write list'] = deviant(value.name_set, "write list")
-		json_info['valid users'] = deviant(value.name_set, "valid users")
+		json_info['invalid users'] =  __System_User_Check__(deviant(value.name_set, "invalid users"))
+		json_info['read list'] = __System_User_Check__(deviant(value.name_set, "read list"))
+		json_info['write list'] = __System_User_Check__(deviant(value.name_set, "write list"))
+		json_info['valid users'] = __System_User_Check__(deviant(value.name_set, "valid users"))
 		json_info['inherit permissions'] = deviant(value.name_set, "inherit permissions")
 		json_info['hosts allow'] = deviant(value.name_set, "hosts allow")
 		nfs_conf = open (NFS_CONF_PATH, 'r')
@@ -346,7 +347,8 @@ def nas_list(value):
 def __Share_List_out__(name):
 	Path = deviant(name, "path")
 	hosts = 'no'
-	if len(deviant(name, "hosts allow").strip()) > 0 and deviant(name, "hosts allow").strip() != '*':
+	allow_str = deviant(name, "hosts allow").strip()
+	if len(allow_str) > 0 and allow_str != '*':
 		hosts = 'yes'
 	nfs_stat = 'no'
 	out = list_info()
@@ -710,12 +712,15 @@ def edit(value):
 						else:
 							exist = False
 					else:
-						file = file + fileLine
+						nfs_path = fileLine.split(' ')
+						if len(nfs_path) > 1:
+							if os.path.exists(nfs_path[0]) == True and __Check__Nas_path__(nfs_path[0].strip()) == True:
+								file = file + fileLine
 			nfs_conf.close()
 		except:
 			nfs_conf.close()
 			Export(False, '操作失败！')
-		if exist == True:
+		if exist == True and value.allow_set != '':
 			operating = open(NFS_CONF_PATH, 'a')
 			try:
 				operating.write(path +  value.allow_set +'\n')
@@ -745,7 +750,8 @@ def __Del_Share__(name, U_list):
 		U_list = __User_Group_List__(U_list).split(',')
 		for x in U_list:
 			 __Del_User_Share__(name, x)
-	
+
+#~ 删除NAS共享
 def NASdel(value):
 	censor(value.name_set)
 	User_List = deviant(value.name_set, "valid users")
@@ -820,6 +826,7 @@ def get_sync(value):
 			operating.close()
 	SYSTEM_OUT(RESTART_SMB)
 
+#~ NAS高级设置
 def get_high(value):
 	if value.guest_state == True or value.privacy_state == True:
 		if value.guest_state == True:
@@ -854,7 +861,28 @@ def get_high(value):
 		else:
 			json_info['privacy'] = 'no'
 		print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+
+#~ 验证是否是系统用和组
+def __System_User_Check__(User_array):
+	if isinstance(User_array,list) != True:
+		User_array = User_array.split(',')
+	User_list = []
+	for Name in User_array:
+		if len(Name.split('@')) > 1:
+			u = Name.replace('@','')
+			if int(SYSTEM_OUT('cat /etc/group|grep "^'+u+':"|wc -l')) > 0:
+				User_list.append(Name)
+		else:
+			if int(SYSTEM_OUT('cat /etc/passwd|grep "^'+Name+':"|wc -l')) > 0:
+				User_list.append(Name)
+	return ','.join(User_list)
 	
-
-
-
+def __Check__Nas_path__(path):
+	out_list = config.sections()
+	out_list= [i for i in out_list if i!='global' and i!='系统设置']
+	State = False
+	for name in out_list:
+		if deviant(name, "path") == path:
+			State = True
+			break
+	return State
