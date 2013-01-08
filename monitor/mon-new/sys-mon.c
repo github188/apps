@@ -117,6 +117,7 @@ int main()
 #ifndef _NDEBUG
 	dump_module_event();
 	dump_action_alarm();
+	dump_sys_global();
 #endif
 
 	mon_io.sockfd = mon_serv_create();

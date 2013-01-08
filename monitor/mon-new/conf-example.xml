@@ -3,43 +3,70 @@
 <monitor>
 	<global>
 		<tmpfs active="enable"/>
-		<message_buff info="10" warning="10" error="10"/>
+		<msg_buff_size info="10" warning="10" error="10"/>
 	</global>
 
 	<modules>
 		<disk>
 			<event name="online" level="info" action="disk_online"/>
 			<event name="offline" level="warning" action="disk_offline"/>
+			<event name="fail" level="error" action="disk_fail"/>
+			<event name="spare" level="info" action="disk_spare"/>
+			<event name="smart-health" level="warning" action="disk_smart_health"/>
 		</disk>
 
 		<vg>
 			<event name="add" level="info" action="vg_add"/>
 			<event name="remove" level="info" action="vg_revmoe"/>
+			<event name="change" level="info" action="vg_change"/>
+
 			<event name="degrade" level="warning" action="vg_degrade"/>
 			<event name="fail" level="error" action="vg_fail"/>
-			<event name="change" level="info" action="vg_change"/>
+			<event name="good" level="info" action="vg_good"/>
+			<event name="rebuild" level="info" action="vg_rebuild"/>
 		</vg>
+
+		<power>
+			<event name="fail" level="warning" action="power_fail"/>
+		</power>
 	</modules>
 
 	<self_run>
 		<item name="cpu-temp" source="file" file="abc" interval="60" action="range_check" min_threshold="35" max_threshold="55"/>
 	</self_run>
 
+	<!-- 执行的动作，每个标签名字对应event的action属性 -->
 	<actions>
+		<!-- 每个动作下面的alarm标签对应内置的函数 -->
+
 		<range_check active="enable">
 			<alarm name="buzzer"/>
 			<alarm name="sys-led"/>
 			<alarm name="disk-led"/>
 		</range_check>
 
+		<!-- 磁盘在线，工作灯常亮，故障灯熄灭 -->
 		<disk_online>
 			<alarm name="buzzer"/>
 			<alarm name="sys-led"/>
 			<alarm name="disk-led"/>
 		</disk_online>
 
+		<!-- 磁盘掉线，工作灯和故障灯都熄灭 -->
 		<disk_offline>
 		</disk_offline>
+
+		<!-- 磁盘故障，故障灯每秒闪烁5下，输出磁盘故障声音 -->
+		<disk_fail>
+		</disk_fail>
+
+		<!-- 热备盘，故障灯需要常亮 -->
+		<disk_spare>
+		</disk_spare>
+
+		<!-- 磁盘SMART健康度低，故障灯每2秒闪烁1下 -->
+		<disk_smart_health>
+		</disk_smart_health>
 
 		<vg_add>
 		</vg_add>
@@ -47,13 +74,26 @@
 		<vg_remove>
 		</vg_remove>
 
+		<vg_change>
+		</vg_change>
+
+		<!-- RAID故障，把手故障灯为红色，在线的RAID磁盘告警灯为红色，蜂鸣器告警 -->
 		<vg_degrade>
 		</vg_degrade>
 
 		<vg_fail>
 		</vg_fail>
 
-		<vg_change>
-		</vg_change>
+		<!-- RAID正常状态，把手故障灯关闭，在线的RAID磁盘告警灯关闭，关闭蜂鸣器 -->
+		<vg_good>
+		</vg_good>
+
+		<!-- RAID重建状态，故障灯每2秒闪烁一下，关闭蜂鸣器告警 -->
+		<vg_rebuild>
+		</vg_rebuild>
+
+		<!-- 电源故障，把手告警灯为红色，特殊的告警声音 -->
+		<power_fail>
+		</power_fail>
 	</actions>
 </monitor>

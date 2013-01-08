@@ -6,6 +6,8 @@
 
 #define _XML_STR_VAL(node, key) (char*)xmlGetProp(node, BAD_CAST(key))
 #define _XML_IGN_CHECK(node) if (xmlStrcmp(node->name, BAD_CAST"text"))
+#define _XML_NODE_NAME(node, name1) (!xmlStrcmp(node->name, BAD_CAST(name1)))
+#define _XML_ATTR_EQU(node, key, value) (!strcmp(_XML_STR_VAL(node, key), value))
 
 void _xml_module_event_parse(char *module, xmlNodePtr node)
 {
@@ -74,6 +76,24 @@ void _xml_action_parse(xmlNodePtr node)
 
 void _xml_global_parse(xmlNodePtr node)
 {
+	while(node)
+	{
+		char *tmp;
+
+		// tmpfs
+		if (_XML_NODE_NAME(node, "tmpfs") && _XML_ATTR_EQU(node, "active", "enable"))
+			gconf.tmpfs = true;
+		if _XML_NODE_NAME(node, "msg_buff_size")
+		{
+			if ((tmp=_XML_STR_VAL(node, "info")))
+				gconf.info_size = atoi(tmp);
+			if ((tmp=_XML_STR_VAL(node, "warning")))
+				gconf.warning_size = atoi(tmp);
+			if ((tmp=_XML_STR_VAL(node, "error")))
+				gconf.error_size = atoi(tmp);
+		}
+		node = node->next;
+	}
 }
 
 void _xml_self_run_parse(xmlNodePtr node)
@@ -91,6 +111,7 @@ void sys_mon_load_conf()
 
 	sys_action_init();
 	sys_module_init();
+	sys_global_init();
 
 	sys_mon_conf_check();
 
@@ -100,20 +121,6 @@ void sys_mon_load_conf()
 		syslog(LOG_ERR, "XML: Load system monitor configure file %s error!", SYSMON_CONF);
 		return;
 	}
-
-#if 0
-	node = xmlDocGetRootElement(doc);
-	if (!node)
-	{
-		syslog(LOG_ERR, "Parse xml error!");
-
-		xmlErrorPtr err = xmlGetLastError();
-		if (err && err->message)
-			syslog(LOG_ERR, "xml err: %s\n", err->message);
-
-		goto _conf_clean;
-	}
-#endif
 
 	if ( (node=xmlDocGetRootElement(doc)) &&
 		!xmlStrcmp(node->name, BAD_CAST"monitor") )
