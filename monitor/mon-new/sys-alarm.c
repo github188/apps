@@ -1,4 +1,5 @@
 #include "sys-action.h"
+#include "sys-event.h"
 
 int _gconf_level_count(const char *level)
 {

@@ -1,5 +1,10 @@
 #include <stdbool.h>
 #include <syslog.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #ifndef __SYS_GLOBAL_H__
 #define __SYS_GLOBAL_H__
@@ -42,7 +47,7 @@ int tmpfs_msg_count(const char *level);
 const char *tmpfs_msg_insert(const char *level, const char *msg);
 const char *tmpfs_msg_remove_oldest(const char *level);
 ssize_t tmpfs_msg_sorted_link(const char *file);
-ssize_t tmpfs_msg_sorted_unline(const char *file);
+ssize_t tmpfs_msg_sorted_unlink(const char *file);
 
 void dump_sys_global();
 
