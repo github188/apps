@@ -57,6 +57,7 @@ class iSCSIArgs:
 		self.force_close_sid = None
 		self.get_privilage_set = False
 		self.update_cfg = False
+		self.restore_cfg = True
 		self.default_target = False
 
 	def setMode(self, mode):
@@ -230,6 +231,9 @@ def iscsiMiscProc(args = iSCSIArgs()):
 	if args.update_cfg:
 		ret,msg = iSCSIUpdateCFG()
 		iscsiExit(ret,msg)
+	if args.restore_cfg:
+		ret,msg = iSCSIRestoreCFG()
+		iscsiExit(ret,msg)
 	if args.default_target:
 		ret = iSCSISetDefaultTarget()
 		iscsiExit(ret, '')
@@ -256,6 +260,7 @@ iscsi --target --list [--target-name <name>]
       --session --force-close <session_id>
 
       --misc --update-cfg
+      --misc --restore-cfg
       --misc --check-default-target
 """
 	sys.exit(-1)
@@ -269,7 +274,8 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'volume', 'udv=', 'block-size=', 'read-only=', 'nv-cache=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
 	'session', 'volume-name=', 'lun-read-only=', 'wr-method=', 'force-close=', 'initiator=',
-	'modify', 'current-initiator=', 'fresh-initiator=', 'misc', 'update-cfg', 'check-default-target']
+	'modify', 'current-initiator=', 'fresh-initiator=', 'misc', 'update-cfg',
+	'check-default-target', 'restore-cfg']
 
 def iscsi_main():
 	try:
@@ -350,6 +356,8 @@ def iscsi_main():
 			iscsiArgs.fre_initor = arg
 		elif opt == '--update-cfg':
 			iscsiArgs.update_cfg = True
+		elif opt == '--restore-cfg':
+			iscsiArgs.restore_cfg = True
 		elif opt == '--check-default-target':
 			iscsiArgs.default_target = True
 
