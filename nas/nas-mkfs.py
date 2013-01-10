@@ -11,6 +11,7 @@ import getopt
 import sys, os
 
 from libnas import *
+from libcommon import LogInsert
 
 MOUNT_ROOT = '/mnt/Share'
 
@@ -40,6 +41,8 @@ def nas_mkfs(dev, filesystem):
 	args = shlex.split(cmd)
 	calc_start = False  # 检查 Writing inode tables
 	progress = 0.00
+	conf_added = False
+	counter = 3
 
 	nas_tmpfs_set_value('state', 'format-starting')
 	p = sp.Popen(args, stdout=sp.PIPE)
@@ -53,6 +56,24 @@ def nas_mkfs(dev, filesystem):
 			nas_tmpfs_set_value('state', 'format-finished')
 			return True
 		elif ret is None:	# 程序正在运行
+			if progress > 90.0 and counter > 0:
+				LogInsert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 90% 已经接近完成，请耐心等待')
+				counter = counter - 1
+			elif progress >= 70.0 and counter > 0:
+				LogInsert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 70% 请耐心等待')
+				counter = counter - 1
+			elif progress >= 30.0 and counter > 0:
+				LogInsert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 30% 请耐心等待')
+				counter = counter - 1
+
+			if not conf_added and progress > 0.00:
+				conf = NasVolumeAttr()
+				tmp_dir = nas_tmpfs_get_dir()
+				conf.state = nas_tmpfs_get_value('%s/state' % tmp_dir)
+				conf.volume_name = nas_tmpfs_get_value('%s/volume_name'% tmp_dir)
+				conf.fs_type = nas_tmpfs_get_value('%s/fs_type' % tmp_dir)
+				ret,msg = nas_conf_add(conf)
+				conf_added = ret
 			p.stdout.flush()
 			line = p.stdout.readline().strip()
 			if not calc_start and line.find('Writing inode tables') >= 0:
@@ -70,12 +91,24 @@ def nas_mkfs(dev, filesystem):
 		else:	# 程序异常退出
 			return False
 
+def _name(mnt):
+	return mnt.split('/')[-1]
+
+def _remove_udv(mnt):
+	udv_name = mnt.split('/')[-1]
+	os.popen('sys-manager udv --delete %s' % udv_name)
+	return
+
 def do_run(dev, mnt, filesystem):
 	try:
 		# 格式化
+		LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化开始!' % _name(mnt))
 		if not nas_mkfs(dev, filesystem):
 			nas_tmpfs_set_value('state', 'format-error')
+			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 格式化失败!' % _name(mnt))
+			_remove_udv(mnt)
 			return
+
 		# 挂载
 		nas_tmpfs_set_value('state', 'mounting')
 		if not os.path.exists(MOUNT_ROOT):
@@ -85,18 +118,18 @@ def do_run(dev, mnt, filesystem):
 		ret,msg = commands.getstatusoutput('mount %s %s' % (dev, mnt))
 		if ret != 0:
 			nas_tmpfs_set_value('state', 'mount-error')
+			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！' % _name(mnt))
+			_remove_udv(mnt)
 			return
 
 		# 设置访问权限 777
 		os.chmod(mnt, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
 
-		# 加入配置文件
-		ret,msg = nas_conf_add(dev, mnt)
-		if not ret:
-			nas_tmpfs_set_value('state', 'conf-error')
-
 		# 操作成功，退出
 		nas_tmpfs_set_value('state', 'mounted')
+		LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % _name(mnt))
+
+		nasUpdateCFG()
 		sys.exit(0)
 	except:
 		pass
