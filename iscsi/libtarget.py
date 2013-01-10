@@ -140,44 +140,13 @@ def __genDefaultCfg(fname, tgt):
 		return False
 	return True
 
-def iSCSISetDefaultTarget():
-	# check default target exist
-	"""
-	_tgt = __getDefaultTarget()
-	if _tgt == '':
-		_tgt = __genDefaultTarget()
-	"""
+def iSCSISetDefaultTarget(force = False):
 	_tgt = __genDefaultTarget() if __getDefaultTarget() == '' else __getDefaultTarget()
 	
 	# check & set default scst.conf
-	if not os.path.exists(SCST.CFG):
+	if force or not os.path.exists(SCST.CFG):
 		return __genDefaultCfg(SCST.CFG, _tgt)
-
 	return True
-
-"""
-def iSCSISetDefaultTarget():
-
-	if iSCSIGetTargetList() != []:
-		return True
-
-	# check default target
-	if not os.path.isfile('%s/%s' % (JW_ISCSI, JW_ISCSI_DFT_TARGET)):
-		_tgt = __genDefaultTarget()
-	else:
-		_tgt = AttrRead(JW_ISCSI, JW_ISCSI_DFT_TARGET)
-
-	if isTargetExist(_tgt):
-		return True
-
-	# make sure module loaded
-	os.popen('modprobe scst')
-	os.popen('modprobe iscsi-scst')
-	os.popen('modprobe scst_vdisk')
-	os.popen('iscsi-scstd')
-
-	return iSCSICreateTarget(_tgt)
-"""
 
 def iSCSIGetTargetList(tgt = ''):
 	target_list = []
