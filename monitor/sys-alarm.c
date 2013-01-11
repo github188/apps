@@ -19,12 +19,11 @@ void sys_alarm_default(void *event)
 {
 	syslog(LOG_INFO, "sys_alram_default()");
 
-	sys_event_t *ev;
-
+	sys_event_t *ev = (sys_event_t*)event;
+	
 	// 如果配置关闭了tmpfs告警，则不处理
 	if (!gconf.tmpfs)
 		return;
-	ev = (sys_event_t*)event;
 
 	// 检查当前告警级别是否超出了配置上限，如果是，首先删除1条最旧的信息
 	if (tmpfs_msg_count(ev->level) >= _gconf_level_count(ev->level))
