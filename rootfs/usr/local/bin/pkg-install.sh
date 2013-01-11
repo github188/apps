@@ -16,17 +16,19 @@ local_install()
 	tar jxvf "$_pkg"
 	if [ $? -eq 0 ]; then
 		echo "---------- package $_pkg installed OK! ------------"
+		sys-manager log --insert --module SysConf --category Auto --event Info --content '存储系统软件包升级成功!'
 	else
 		echo "---------- package $_pkg install failed! ------------"
 	fi
 	/etc/init.d/jw-apps start
+	rm -fr "$_pkg"
 }
 
 remote_install()
 {
 	local _pkg="$1"
 	local _rmt="$2"
-	scp "$_pkg" "root@$_rmt":/tmp/
+	scp "$_pkg" "root@$_rmt:$_pkg"
 	ssh "root@$_rmt" "pkg-install.sh --package $_pkg"
 }
 
