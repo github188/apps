@@ -21,6 +21,11 @@ _usage()
 	echo "Usage: $(basename "$0")  {start}"
 }
 
+start_md()
+{
+	/usr/local/bin/md-assume.sh
+}
+
 start_scst()
 {
 	modprobe scst
@@ -34,12 +39,12 @@ start_scst()
 
 start_nas()
 {
-	/opt/jw-conf/nas/self-load.sh
+	sys-manager nas --misc --restore-cfg
 }
 
 case "${1:-}" in
 	start)
-		/usr/local/bin/md-assume.sh
+		start_md
 		start_scst
 		start_nas
 	;;
