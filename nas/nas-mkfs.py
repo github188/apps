@@ -129,7 +129,9 @@ def do_run(dev, mnt, filesystem):
 		nas_tmpfs_set_value('state', 'mounted')
 		LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % _name(mnt))
 
+		print 'start update cfg'
 		nasUpdateCFG()
+		print 'end update cfg'
 		sys.exit(0)
 	except:
 		pass

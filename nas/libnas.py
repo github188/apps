@@ -172,14 +172,12 @@ def nas_conf_add(conf):
 # 删除指定配置项
 def nas_conf_remove(mnt):
 	try:
-		conf_list = []
-		s = open(NAS_CONF_FILE, 'r')
+		s = open(NAS_CONF_FILE)
 		d = open(NAS_CONF_TEMP, 'w')
 		for x in s.readlines():
-			if x.find(mnt) >= 0:
-				continue
-			conf_list.append(x)
-		d.writelines(conf_list)
+			conf = json.loads(x)
+			if conf['volume_name'] != volume:
+				d.write(x)
 		s.close()
 		d.close()
 		os.rename(NAS_CONF_TEMP, NAS_CONF_FILE)
@@ -316,10 +314,12 @@ def isNasVolume(volume_name):
 			return True
 	return False
 
-def nasUpdateCfg():
+def nasUpdateCFG():
 	try:
 		f = open(NAS_CONF_TEMP, 'w')
+		print 'open tmp file'
 		for x in nasGetList():
+			print x.__dict__
 			f.write('%s\n' % json.dumps(x.__dict__))
 		f.close()
 		os.rename(NAS_CONF_TEMP, NAS_CONF_FILE)
