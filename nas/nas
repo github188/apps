@@ -48,12 +48,12 @@ nas --list [--volume <name>]
     --map --udv <name> [--filesystem <ext3|ext4>]
     --unmap --volume <name>
     --misc --update-cfg
-    --misc --reload-cfg
+    --misc --restore-cfg
 """
 	sys.exit(-1)
 
 OP_MODE = ['--list', '--map', '--unmap', '--misc']
-nas_long_opt = ['list', 'volume=', 'map', 'udv=', 'unmap', 'filesystem=', 'misc', 'update-cfg', 'reload-cfg']
+nas_long_opt = ['list', 'volume=', 'map', 'udv=', 'unmap', 'filesystem=', 'misc', 'update-cfg', 'restore-cfg']
 
 def nas_main():
 	try:
@@ -66,6 +66,7 @@ def nas_main():
 	arg_udv = ''
 	arg_fs = 'ext4'
 	arg_update = False
+	arg_restore = False
 	for opt,arg in opts:
 		if opt in OP_MODE:
 			arg_op_mode = opt
@@ -78,6 +79,8 @@ def nas_main():
 			arg_fs = arg
 		elif opt == '--update-cfg':
 			arg_update = True
+		elif opt == '--restore-cfg':
+			arg_restore = True
 
 	if arg_op_mode == '--list':
 		UniOutput(nasGetList(arg))
@@ -91,8 +94,8 @@ def nas_main():
 		if arg_update:
 			ret,msg = nasUpdateCFG()
 			nasExit(ret, msg)
-		elif arg_reload:
-			ret,msg = nasReloadCFG()
+		elif arg_restore:
+			ret,msg = nasRestoreCFG()
 			nasExit(ret, msg)
 
 	nasUsage()

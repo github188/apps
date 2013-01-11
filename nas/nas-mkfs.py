@@ -72,6 +72,7 @@ def nas_mkfs(dev, filesystem):
 				conf.state = nas_tmpfs_get_value('%s/state' % tmp_dir)
 				conf.volume_name = nas_tmpfs_get_value('%s/volume_name'% tmp_dir)
 				conf.fs_type = nas_tmpfs_get_value('%s/fs_type' % tmp_dir)
+				conf.path = nas_tmpfs_get_value('%s/path' % tmp_dir)
 				ret,msg = nas_conf_add(conf)
 				conf_added = ret
 			p.stdout.flush()
@@ -129,9 +130,7 @@ def do_run(dev, mnt, filesystem):
 		nas_tmpfs_set_value('state', 'mounted')
 		LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % _name(mnt))
 
-		print 'start update cfg'
 		nasUpdateCFG()
-		print 'end update cfg'
 		sys.exit(0)
 	except:
 		pass
