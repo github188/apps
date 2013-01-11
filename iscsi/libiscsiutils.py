@@ -64,12 +64,10 @@ def iSCSIUpdateCFG():
 	except:
 		return False, '写入配置文件失败，未知原因'
 
-def iSCSIReloadCFG():
+def iSCSIRestoreCFG():
 	try:
 		_cmd = 'scstadmin -config %s' % iSCSI_SCST_cfg_restore()
 		ret,msg = commands.getstatusoutput(_cmd)
-		print _cmd
-		print ret
 		if ret == 0:
 			return True, '加载iSCSI配置成功'
 		# 设置默认配置，保证target能启动
