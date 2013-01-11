@@ -1,140 +1,136 @@
 #include <unistd.h>
-#include <signal.h>
-#include <stdbool.h>
-#include "sys-mon.h"
+#include <ev.h>
+#include <json/json.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "sys-event.h"
+#include "sys-action.h"
 
-void mon_event(mon_conf_t *conf)
+struct mon_io {
+	ev_io io;
+	int sockfd;
+};
+
+static void mon_io_cb(EV_P_ ev_io *w, int r);
+static int mon_serv_create();
+static struct mon_io mon_io;
+static struct ev_loop *mon_loop = NULL;
+
+void mon_release(int sig)
 {
-	char msg[256] = {0};
-	int value;
+	signal(sig, SIG_IGN);
 
+	close(mon_io.sockfd);
+	ev_io_stop(mon_loop, &mon_io.io);
+	//ev_loop_destroy(mon_loop);
+	
+	sys_module_release();
+	sys_action_release();
 
-	if (!isExpried(conf))
-		return;
-	update(conf);
-
-	if (!isExecutable(conf))
-	{
-		syslog(LOG_ERR, "mod: %s , the capture function is not executable!", conf->name);
-		return;
-	}
-
-	value = conf->_capture();
-	if ( !isValid(value) )
-	{
-		syslog(LOG_INFO, "capture value invalid! (mod: %s val: %d)", conf->name, value);
-		return;
-	}
-
-	if ( isValid(conf->min_alr) && (value < conf->min_alr) )
-		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最低告警值 %d !",
-				conf->name, value, conf->min_alr);
-	else if ( isValid(conf->max_alr) && (value > conf->max_alr) )
-		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最高告警值 %d !",
-				conf->name, value, conf->max_alr);
-	else if ( isValid(conf->min_thr) && (value < conf->min_thr) )
-		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最低阀值 %d !",
-				conf->name, value, conf->min_thr);
-	else if ( isValid(conf->max_thr) && (value > conf->max_thr) )
-		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最高阀值 %d !",
-				conf->name, value, conf->max_thr);
-
-	if (msg[0] != '\0')
-	{
-		char _tmp[128];
-		sprintf(_tmp, "%d", value);
-		write_alarm(conf->_alarm_file, _tmp);
-		raise_alarm(conf->name, msg);
-	}
-	else
-	{
-		write_alarm(conf->_alarm_file, "good");
-	}
-}
-
-void check_interval()
-{
-	struct list *n, *nt;
-
-	list_iterate_safe(n, nt, &gconf)
-	{
-		mon_event(list_struct_base(n, mon_conf_t, list));
-	}
-}
-
-
-void sig_alarm(int sig)
-{
-	if (sig==SIGALRM)
-		check_interval();
-	alarm(CHECK_INTVAL);
-}
-
-void mon_init()
-{
-	log_init();
-	mon_conf_load();
-	mon_alarm_load();
-}
-
-void mon_fini()
-{
-	syslog(LOG_ERR, "SIGINT or SIGTERM received!");
-	mon_conf_release();
-	mon_alarm_release();
 	log_release();
-	exit(0);
+
+	signal(sig, SIG_DFL);
 }
 
-void mon_reload()
+
+static void mon_io_cb(EV_P_ ev_io *w, int r)
 {
-	syslog(LOG_INFO, "SIGHUP recieved!\n");
-	mon_conf_reload();
-	mon_alarm_reload();
+	ssize_t n;
+	sys_event_t ev;
+	sys_event_conf_t *ec;
+	char buff[1024];
+	struct json_object *obj;
+
+	struct mon_io *mi = (struct mon_io*)w;
+	
+	if ( (n=read(mi->sockfd, buff, sizeof(buff)-1)) <= 0 )
+	{
+	}
+	buff[n] = '\0';
+
+	syslog(LOG_NOTICE, "ev: get msg from socket!");
+
+	sys_event_zero(&ev);
+	obj = json_tokener_parse( buff );
+	json_object_object_foreach(obj, key, val) {
+
+		/*
+		if ( json_object_get_type(val) == json_type_string )
+			sys_event_fill(&ev, key, json_object_get_string(val));
+		*/
+		sys_event_fill(&ev, key, json_object_get_string(val));
+	}
+	
+	if ( (ec=sys_module_event_get(ev.module, ev.event)) != NULL )
+	{
+		sys_module_event_update(ec);
+		ev.level = ec->level;
+		do_sys_action(ec->action, &ev);
+		return;
+	}
+
+	// TODO:记录出错日志
 }
 
-/* -------------------------------------------------------------------------- */
-/*  test                                                                      */
-/* -------------------------------------------------------------------------- */
-
-#ifndef NDEBUG
-void test()
+int mon_serv_create()
 {
-#if 1
-	create_default_conf("/tmp/sys/abc/test.xml", MON_CONF_CONTENT);
-	return;
+	struct sockaddr_un localaddr;
+	size_t addr_len;
+	int sockfd;
 
-	printf("test load conf!\n");
-	printf("load: %d\n", mon_conf_load());
-	//dump_mon_conf();
+	if ((sockfd=socket(AF_UNIX, SOCK_DGRAM, 0)) < 0)
+	{
+		syslog(LOG_ERR, "fail to create local socket!");
+		raise(SIGTERM);
+		return -1;
+	}
 
-	mon_conf_reload();
-	//dump_mon_conf();
-	mon_conf_release();
-#else
-	printf("load alarm: %d\n", mon_alarm_load());
-	mon_alarm_reload();
-	mon_alarm_release();
-#endif
+	localaddr.sun_family = AF_UNIX;
+	strcpy(localaddr.sun_path, SYSMON_ADDR);
+	unlink(localaddr.sun_path);
+	addr_len = strlen(localaddr.sun_path) + sizeof(localaddr.sun_family);
+
+	if (bind(sockfd, (struct sockaddr*)&localaddr, addr_len) < 0)
+	{
+		syslog(LOG_ERR, "fail to bind local socket!");
+		close(sockfd);
+		raise(SIGTERM);
+		return -1;
+	}
+
+	syslog(LOG_INFO, "create local socket for sys-mon OK!");
+	return sockfd;
 }
-#endif
 
 int main()
 {
-#ifdef NDEBUG
-	mon_init();
-	signal(SIGALRM, sig_alarm);
-	signal(SIGTERM, mon_fini);
-	signal(SIGINT, mon_fini);
-	signal(SIGHUP, mon_reload);
+	// set signal
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGTERM, mon_release);
+	signal(SIGINT, mon_release);
 
-	while(true)
-	{
-		check_interval();
-		sleep(5);
-	}
-#else
-	test();
+	log_init();
+	sys_mon_load_conf();
+
+#ifndef _NDEBUG
+	dump_module_event();
+	dump_action_alarm();
+	dump_sys_global();
 #endif
+
+	mon_io.sockfd = mon_serv_create();
+
+	// ev loop
+	mon_loop = EV_DEFAULT;
+	ev_io_init(&mon_io.io, mon_io_cb, mon_io.sockfd, EV_READ);
+	ev_io_start(mon_loop, &mon_io.io);
+	ev_run(mon_loop, 0);
+
+	printf("break\n");
+
+	log_release();
+
 	return 0;
 }

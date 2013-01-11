@@ -1,9 +1,25 @@
-CFLAGS+=-DNDEBUG
-CFLAGS+=-I/usr/include/libxml2 -g
+CFLAGS = -Wall -O2 -DDEBUG -g
+CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
+CFLAGS += -I/usr/include/libxml2
+CFLAGS += -std=c99
+#CFLAGS += -D_NDEBUG
 
-all:
-	gcc $(CFLAGS) -o sys-mon mon-conf.c mon-capture.c sys-mon.c list.c mon-alarm.c ../common/debug.c -lxml2 -L../common -llog -lsqlite3
-	gcc -o buzzer AlarmSW.c
+OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o
+
+all: daemon libsysmon.a
+
+daemon: $(OBJS)
+	gcc $(CFLAGS) -o sys-mon sys-mon.c $(OBJS) -lxml2 -ljson -L../../common -llog -lev
+
+libsysmon.a:
+	gcc -c libsysmon.c
+	ar -rcs libsysmon.a libsysmon.o
+
+test: libsysmon.a
+	gcc -o test test.c -L./ -lsysmon -ljson
+
+test1: $(OBJS)
+	gcc -o test1 test1.c $(OBJS) -lxml2 -ljson -lev -L../../common -llog
 
 clean:
-	rm -fr sys-mon core* a.out *.o buzzer
+	rm -fr sys-mon core $(OBJS)  libsysmon.a test
