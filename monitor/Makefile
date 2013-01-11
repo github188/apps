@@ -7,6 +7,7 @@ CFLAGS += -std=c99
 OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o
 
 all: daemon libsysmon.a
+	gcc -o buzzer AlarmSW.c
 
 daemon: $(OBJS)
 	gcc $(CFLAGS) -o sys-mon sys-mon.c $(OBJS) -lxml2 -ljson -L../common -llog -lev

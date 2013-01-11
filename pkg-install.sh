@@ -1,0 +1,1 @@
+rootfs/usr/local/bin/pkg-install.sh
