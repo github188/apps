@@ -1,5 +1,4 @@
 # for running use
-aptitude install libev4 libev-dev -y
 aptitude install libatasmart-dev libatasmart4 -y
 aptitude install python-dev -y
 aptitude install sqlite3 libsqlite0 libsqlite3-0 libsqlite3-dev python-sqlite -y

@@ -6,13 +6,12 @@ import statvfs
 import json
 import commands
 import stat
+from libcommon import LogInsert
 
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-NAS_CONF_FILE = '/opt/jw-conf/nas/self-load.sh'
-#NAS_CONF_START_SEP = '# *** JW-NAS-CONF-START ***'
-#NAS_CONF_END_SEP = '# *** JW-NAS-CONF-END ***'
+NAS_CONF_FILE = '/opt/jw-conf/nas/last-conf'
 NAS_CONF_TEMP = '/opt/jw-conf/nas/.nas_tmp_conf'
 TMP_DIR = '/tmp/.nas_info'
 
@@ -25,9 +24,6 @@ def nas_tmpfs_set_value(key, value):
 		f = open(file_name, 'w')
 		f.write(value)
 		f.close()
-	except IOError, e:
-		print 'IO Error while write file', e
-		sys.exit(-1)
 	except:
 		pass
 	return
@@ -38,9 +34,6 @@ def nas_tmpfs_get_value(key):
 		f = open(key)
 		content = f.readline().strip()
 		f.close()
-	except IOError, e:
-		print 'IOError ', e
-		sys.exit(-1)
 	except:
 		pass
 	return content
@@ -147,109 +140,45 @@ class NasVolumeAttr:
 def __touch_default_nas_conf():
 	return
 
-# 检查配置项是否存在
-def __conf_exist(mnt):
-	exist = False
+#  增加配置项
+def nas_conf_add(conf):
 	try:
-		# check and create dir
-		d,x = os.path.split(NAS_CONF_FILE)
-		if not os.path.isdir(d):
-			os.makedirs(d)
+		exist = False
 		if os.path.isfile(NAS_CONF_FILE):
-			f = open(NAS_CONF_FILE, 'r')
-			for line in f.readlines():
-				if line.find(mnt) >= 0:
+			f = open(NAS_CONF_FILE)
+			for x in f.readlines():
+				y = json.loads(x)
+				if conf.volume_name == y['volume_name']:
 					exist = True
 					break
 			f.close()
-		else:
-			f = open(NAS_CONF_FILE, 'w')
-			f.close()
-	except:
-		return False
-	return exist
 
-#  增加配置项
-def nas_conf_add(dev, mnt):
-	if __conf_exist(mnt):
-		return False, '记录已经存在!'
-	try:
+		if exist:
+			return False, '增加记录失败，记录已经存在'
+
 		f = open(NAS_CONF_FILE, 'r+')
 		f.seek(0, os.SEEK_END)
-		f.write('mount %s %s\n' % (dev, mnt))
+		f.write('%s\n' % json.dumps(conf.__dict__))
 		f.close()
-		os.chmod(NAS_CONF_FILE, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 	except:
 		return False, '增加记录失败!'
 	return True, '增加记录成功!'
 
 # 删除指定配置项
 def nas_conf_remove(mnt):
-	if not __conf_exist(mnt):
-		return False,'记录不存在!'
 	try:
-		conf_list = []
-		s = open(NAS_CONF_FILE, 'r')
+		s = open(NAS_CONF_FILE)
 		d = open(NAS_CONF_TEMP, 'w')
 		for x in s.readlines():
-			if x.find(mnt) >= 0:
-				continue
-			conf_list.append(x)
-		d.writelines(conf_list)
+			conf = json.loads(x)
+			if conf['volume_name'] != volume:
+				d.write(x)
 		s.close()
 		d.close()
 		os.rename(NAS_CONF_TEMP, NAS_CONF_FILE)
-		os.chmod(NAS_CONF_FILE, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 	except:
 		return False,'删除配置文件记录失败!'
 	return True, '删除配置文件记录成功!'
-
-
-# 获取配置项列表
-def __nas_conf_get_list():
-	nas_conf_list = []
-	conf_start = False
-	conf_end = False
-	try:
-		f = open(NAS_CONF_FILE)
-		for line in f.readlines():
-			if line.find(NAS_CONF_START_SEP) >= 0:
-				conf_start = True
-				continue
-			if line.find(NAS_CONF_END_SEP) >= 0:
-				conf_end = True
-				continue
-
-			# load conf line:
-			# (FORMAT): mount /dev/md1p1 /mnt/Share/udv1
-			if conf_start and not conf_end:
-				nas_dev = line.split()[1]
-				mnt_path = line.split()[-1]
-				nas_conf_list.append((nas_dev, mnt_path))
-	except:
-		pass
-	finally:
-		f.close()
-	return nas_conf_list
-
-def nas_conf_get_list():
-	nas_conf_list = []
-	try:
-		for nas_dev,mnt_path in __nas_conf_get_list():
-			nas_conf = NasVolumeAttr()
-			nas_conf.path = mnt_path
-			nas_conf.volume_name = __get_udv_name_by_dev(nas_dev) # conv /dev/md1p1 => udv1
-			nas_conf.state = 'mounted'
-			nas_conf.fmt_percent = 0
-			nas_conf.capacity = __get_nas_volume_capacity(nas_conf.path)
-			nas_conf.occupancy = __get_nas_volume_occupancy(nas_conf.path)
-			nas_conf.remain = __get_nas_volume_remain(nas_conf.path)
-			nas_conf.fs_type = __get_nas_volume_fstype(nas_conf.path)
-			nas_conf_list.append(nas_conf.__dict__)
-	except:
-		pass
-	return nas_conf_list
-
 
 
 """
@@ -314,17 +243,23 @@ def nas_mount_get_list():
 """
 API
 """
+
+def _check_remove_duplicate(fmt_list, volume):
+	for f in fmt_list:
+		if f.volume_name == volume:
+			fmt_list.remove(f)
+			break
+	return
+
 # 获取指定或者所有NAS卷列表
 def nasGetList(volume_name = ''):
-	"""
-	nas_list = nas_conf_get_list() + nas_fmt_get_list()
-	if volume_name == '':
-		return nas_list
-	"""
 	# 仅查看已经加载的nas卷列表
 	if volume_name == '':
 		_mnt_list = nas_mount_get_list()
 		_fmt_list = nas_fmt_get_list()
+		# 避免在nas-mkfs.py挂载后更新列表出现重复条目
+		for m in _mnt_list:
+			_check_remove_duplicate(_fmt_list, m.volume_name)
 		return _mnt_list + _fmt_list
 
 	_nas_list = []
@@ -343,6 +278,8 @@ def nasGetList(volume_name = ''):
 # 映射NAS卷
 def nasMapping(udv_name, filesystem = 'ext4'):
 	# 检查udv是否存在
+	if udv_name == '':
+		return False, '请设置需要映射的用户数据卷名称!'
 
 	# 检查是否已经映射
 	if isNasVolume(udv_name):
@@ -353,93 +290,95 @@ def nasMapping(udv_name, filesystem = 'ext4'):
 	if dev=='':
 		return False, '无法获取用户数据卷对应的设备节点名称!'
 	mount_dir = '/mnt/Share/%s' % udv_name
-	os.popen('/usr/local/bin/nas-mkfs.py --udv %s --dev %s --mount %s --filesystem %s &' % (udv_name, dev, mount_dir, filesystem))
+	cmd =  '/usr/local/bin/nas-mkfs.py --udv %s --dev %s --mount %s --filesystem %s' % (udv_name, dev, mount_dir, filesystem)
+	os.popen('%s &' % cmd)
 	return True, '映射NAS卷开始，请耐心等待格式化结束!'
 
 # 解除NAS卷映射
 def nasUnmapping(volume_name):
-	#if not isNasVolume(volume_name):
-	#	return False, 'NAS卷 %s 未映射!' % volume_name
 	nas_volume_path = '/mnt/Share/%s' % volume_name
 	try:
 		umount_ret, umount_result = commands.getstatusoutput('2>&1 umount %s' % nas_volume_path)
 		if umount_ret == 0:
 			nas_conf_remove(nas_volume_path)
+			LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 解除映射成功!' % volume_name)
 			return True,'解除NAS卷映射成功!'
 		elif umount_result.find('not found') >= 0:
+			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷不存在' % volume_name)
 			return False,'NAS卷 %s 不存在!' % volume_name
 		elif umount_result.find('device is busy') >= 0:
+			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷正在被使用' % volume_name)
 			return False,'NAS卷 %s 正在被使用，请检查是否有未关闭的文件!'
 		elif umount_result.find('not mounted') >= 0:
+			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷未挂载' % volume_name)
 			return False,'解除NAS卷 %s 映射失败，卷未被挂载!' % volume_name
 		else:
+			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败!未知原因' % volume_name)
 			return False,'解除NAS卷 %s 映射失败，原因未知!' % volume_name
 	except:
+		LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败!程序异常退出' % volume_name)
 		return False,'解除NAS卷 %s 映射失败，程序异常退出!' % volume_name
 
 # 检查是否为NAS卷
 def isNasVolume(volume_name):
-	"""
-	for nas_dev,mnt_path in __nas_conf_get_list():
-		if mnt_path.find(volume_name) >= 0:
-			return True
-	for x in nas_fmt_get_list():
-		if x['volume_name'] == volume_name:
-			return True
-	"""
 	for x in nas_mount_get_list() + nas_fmt_get_list():
 		if x.volume_name == volume_name:
 			return True
 	return False
 
-def nasUpdateCfg():
+def nasUpdateCFG():
 	try:
 		f = open(NAS_CONF_TEMP, 'w')
 		for x in nasGetList():
-			dev = __get_udv_dev_by_name(x.volume_name)
-			mnt = x.path
-			f.write('mount %s %s\n' % (dev, mnt))
+			f.write('%s\n' % json.dumps(x.__dict__))
 		f.close()
 		os.rename(NAS_CONF_TEMP, NAS_CONF_FILE)
-		os.chmod(NAS_CONF_FILE, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 	except:
+		LogInsert('NAS', 'Auto', 'Error', '更新NAS配置失败!')
 		return False, '更新配置文件失败!'
+	LogInsert('NAS', 'Auto', 'Info', '更新NAS配置成功!')
 	return True, '更新配置文件成功'
 
+"""
+{"capacity": 66932322304, "remain": 63343767552, "occupancy": 3588554752, "state": "mounted",
+"fs_type": "ext4", "volume_name": "Udv9_2", "path": "/mnt/Share/Udv9_2", "fmt_percent": 0}
+"""
+def _load_conf(conf):
+	udv_dev = __get_udv_dev_by_name(conf['volume_name'])
+	if udv_dev == '':
+		LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！用户数据卷不存在！' % conf['volume_name'])
+		return False
+	if conf['state'] == 'formatting':
+		cmd = '/usr/local/bin/nas-mkfs.py'
+		cmd = cmd + ' --udv %s' % conf['volume_name']
+		cmd = cmd + ' --dev %s' % udv_dev
+		cmd = cmd + ' --mount %s' % conf['path']
+		cmd = cmd + ' --filesystem %s' % conf['fs_type']
+		os.popen('2>&1 %s >/dev/null &' % cmd)
+	else:
+		cmd = 'mount %s %s' % (udv_dev, conf['path'])
+		ret,msg = commands.getstatusoutput(cmd)
+		if ret == 0:
+			LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % conf['volume_name'])
+		else:
+			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败!' % conf['volume_name'])
+	return True
+
+def nasRestoreCFG():
+	try:
+		f = open(NAS_CONF_FILE)
+		for x in f.readlines():
+			_load_conf(json.loads(x))
+		f.close()
+	except:
+		False, '解析配置文件失败'
+	return True,'加载NAS配置完毕'
+
+
 if __name__ == '__main__':
-	print isNasVolume(sys.argv[1])
-	sys.exit(0)
-	for x in nas_fmt_get_list():
-		print x.__dict__
-	sys.exit(0)
-	#for x in nas_fmt_get_list():
-	#	print x.__dict__
-	#for x in nas_mount_get_list():
-	#	print x.__dict__
 	"""
-	print nasGetList('Udv299_1')
-	for x in nas_conf_get_list():
-		print x
-
-	sys.exit(0)
+	conf = NasVolumeAttr()
+	conf.volume_name = 'Udv8_31'
+	print nas_conf_add(conf)
 	"""
-	#print __conf_exist('/mnt/Share/udv2')
-	#sys.exit(0)
-	#print nas_conf_add('/dev/md1p2', '/mnt/Share/udv2')
-	#ret,msg  = nas_conf_remove('/mnt/Share/udv2')
-	#print msg
-	nasUpdateCfg()
-"""
-	if nas_conf_is_exist('/mnt/Share/udv2'):
-		print 'exist'
-	else:
-		print 'not exist'
-	if nas_conf_is_exist('/mnt/Share/udv1'):
-		print 'exist'
-	else:
-		print 'not exist'
-
-	# test list
-	for x in nas_conf_get_list():
-		print x.__dict__
-"""
+	print nas_conf_remove('Udv8_3')

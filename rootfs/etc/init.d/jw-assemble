@@ -27,17 +27,21 @@ start_scst()
 	modprobe scst_vdisk
 	modprobe iscsi-scst
 	iscsi-scstd
-	scstadmin -config $SCST_CFG
-	[ $? -eq 0 ] && sys-manager iscsi --misc --update-cfg
+	if [ $? -eq 0 ]; then
+		sys-manager iscsi --misc --restore-cfg
+	fi
+}
+
+start_nas()
+{
+	/opt/jw-conf/nas/self-load.sh
 }
 
 case "${1:-}" in
 	start)
 		/usr/local/bin/md-assume.sh
-		sys-manager iscsi --misc --check-default-target
-		/etc/init.d/scst start
 		start_scst
-		/opt/jw-conf/nas/self-load.sh
+		start_nas
 	;;
 	*)
 		_usage

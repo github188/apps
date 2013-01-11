@@ -1,21 +1,20 @@
 #!/usr/bin/env sh
 
-ALARM_DIR="/tmp/jw/alarm"
+BUZZER_FILE="/tmp/jw/alarm/buzzer"
 BUZZER_BIN="/usr/local/bin/buzzer"
 
 case "$1" in
 	"on")
-		ps au | grep buzzer | grep -v grep >/dev/null
-		if [ $? -ne 0 ]; then
+		if [ ! -f $BUZZER_FILE ]; then
 			$BUZZER_BIN &
-			touch $ALARM_DIR/buzzer
+			touch $BUZZER_FILE
 		fi
 		;;
 	"off")
 		$BUZZER_BIN 0
-		killall $(basename $BUZZER_BIN) >/dev/null
+		>/dev/null 2>&1 killall $(basename $BUZZER_BIN)
 		[ $? -ne 0 ] && exit 1
-		rm -f $ALARM_DIR/buzzer
+		rm -f $BUZZER_FILE
 		;;
 	*)
 		echo "$(basename $0) <on|off>" && exit 1

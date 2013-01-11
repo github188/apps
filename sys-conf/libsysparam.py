@@ -22,6 +22,8 @@ def __set_http_port(value):
 	return False, '暂时不支持设置http端口操作'
 
 def __set_buzzer(value):
+	if value == 'mute':
+		value = 'off'
 	ret,msg = commands.getstatusoutput('set-buzzer.sh %s' % value)
 	if ret == 0:
 		return True, '关闭蜂鸣器成功!'

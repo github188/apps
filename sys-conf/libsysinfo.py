@@ -264,9 +264,9 @@ def __get_stat_vg(mod):
 	try:
 		_vg_list = json.loads(commands.getoutput('sys-manager vg --list'))
 		for _vg in _vg_list['rows']:
-			if _vg['state'] == 'fail':
+			if _vg['raid_state'] == 'fail':
 				_stat['value'] = _stat['value'] + '卷组%s失效 ' % _vg['name']
-			if _vg['state'] == 'degrade':
+			if _vg['raid_state'] == 'degrade':
 				_stat['value'] = _stat['value'] + '卷组%s降级 ' % _vg['name']
 	except:
 		pass
@@ -307,11 +307,9 @@ def __get_stat_fan(mod):
 def __get_stat_buzzer(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_val = AttrRead(ALARM_DIR, 'buzzer')
-	if _val == '':
-		_stat['value'] = '无法获取'
-	else:
-		_stat['value'] = _val
+	_stat['value'] = 'good'
+	if os.path.isfile('%s/buzzer' % ALARM_DIR):
+		_stat['value'] = '蜂鸣器告警'
 	return _stat
 
 _stat_list = {'disk': __get_stat_disk,
