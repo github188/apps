@@ -6,7 +6,7 @@
 #include <sys/param.h>
 #include <time.h>
 #include "sys-global.h"
-#include "../../common/jw-unistd.h"
+#include "../common/jw-unistd.h"
 
 #define TMPFS_MSG_ROOT "/tmp/.sys-mon/message"
 #define _SORTED_ROOT TMPFS_MSG_ROOT"/sorted-all/"
