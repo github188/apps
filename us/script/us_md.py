@@ -74,6 +74,11 @@ def do_duplicate_check(mdname):
 		return True, '卷组 %s 已经存在!' % mdname
 	return False, '卷组 %s 不存在!' % mdname
 
+def do_misc(arg):
+	if arg == "--restore":
+		md_restore()
+	sys.exit(0)
+
 def main(argv):
 	ret = ""
 	if len(argv) < 2:
@@ -101,6 +106,8 @@ def main(argv):
 		res = do_generate_name(argv[2] if len(argv)==3 else '')
 	elif cmd == "--duplicate-check":
 		res = do_duplicate_check(argv[2] if len(argv)==3 else '')
+	elif cmd == "--misc":
+		do_misc(argv[2])
 	else:
 		usage()
 	return res;
@@ -113,6 +120,7 @@ Usage:
 	--list [vg_name]
 	--generate-name <suffix>
 	--duplicate-check <vg_name>
+	--misc --restore
 """
 	#return False,help_str
 	print help_str

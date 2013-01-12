@@ -388,6 +388,11 @@ def md_info(mdname=None):
 		mddevs = [md_get_mddev(mdname)];
 	return md_info_mddevs(mddevs);
 
+def md_restore():
+	for mddev in md_list_mddevs():
+		tmpfs_add_md_info(mddev)
+	return
+
 # -----------------------------------------------------------------------------
 # 供磁盘自动重建使用
 # -----------------------------------------------------------------------------
@@ -619,6 +624,9 @@ def disk_clean_hotrep(slot):
 
 if __name__ == "__main__":
 	import sys
+	md_restore()
+	sys.exit(0)
+
 	print md_info('slash')
 	sys.exit(0)
 
