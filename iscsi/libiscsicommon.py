@@ -116,10 +116,6 @@ if __name__ == "__main__":
 	xx = AttrWrite('/sys/kernel/scst_tgt/targets/iscsi/iqn.2012-abc/io_grouping_type', 'auto')
 	print xx
 	"""
-	ret,msg = iSCSIUpdateCFG()
-	print ret,msg
-	sys.exit(0)
-
 	print 'udv2: ', getUdvDevByName('udv2')
 	print '/dev/sdg1: ', getUdvNameByDev('/dev/sdg1')
 

@@ -11,7 +11,6 @@ from libtarget import *
 from libvolume import *
 from liblun import *
 from libsession import *
-from libiscsiutils import *
 
 
 class iSCSIArgs:
