@@ -9,6 +9,7 @@ import uuid
 #os.chdir(os.path.dirname(__file__))
 
 from libiscsicommon import *
+from libtarget import iSCSIUpdateCFG
 
 # 参数约束条件
 VOL_BLOCK_SIZE = [512, 1024, 2048, 4096]
