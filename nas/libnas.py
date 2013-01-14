@@ -156,7 +156,7 @@ def nas_conf_add(conf):
 		if exist:
 			return False, '增加记录失败，记录已经存在'
 
-		f = open(NAS_CONF_FILE, 'r+')
+		f = open(NAS_CONF_FILE, 'wr+')
 		f.seek(0, os.SEEK_END)
 		f.write('%s\n' % json.dumps(conf.__dict__))
 		f.close()
@@ -165,13 +165,13 @@ def nas_conf_add(conf):
 	return True, '增加记录成功!'
 
 # 删除指定配置项
-def nas_conf_remove(mnt):
+def nas_conf_remove(volume_name):
 	try:
 		s = open(NAS_CONF_FILE)
 		d = open(NAS_CONF_TEMP, 'w')
 		for x in s.readlines():
 			conf = json.loads(x)
-			if conf['volume_name'] != volume:
+			if conf['volume_name'] != volume_name:
 				d.write(x)
 		s.close()
 		d.close()
@@ -300,7 +300,7 @@ def nasUnmapping(volume_name):
 	try:
 		umount_ret, umount_result = commands.getstatusoutput('2>&1 umount %s' % nas_volume_path)
 		if umount_ret == 0:
-			nas_conf_remove(nas_volume_path)
+			nas_conf_remove(volume_name)
 			LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 解除映射成功!' % volume_name)
 			return True,'解除NAS卷映射成功!'
 		elif umount_result.find('not found') >= 0:
@@ -376,9 +376,8 @@ def nasRestoreCFG():
 
 
 if __name__ == '__main__':
-	"""
 	conf = NasVolumeAttr()
 	conf.volume_name = 'Udv8_31'
 	print nas_conf_add(conf)
-	"""
-	print nas_conf_remove('Udv8_3')
+	#nasUpdateCFG()
+	#print nas_conf_remove('Udv13_2')
