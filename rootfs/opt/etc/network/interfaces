@@ -1,0 +1,32 @@
+#请不要直接修改本配置文件
+#修改IP地址请使用 network 命令
+
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+address 192.168.70.123
+netmask 255.255.255.0
+gateway 192.168.70.254
+
+auto eth1
+iface eth1 inet static
+address 192.168.71.123
+netmask 255.255.255.0
+
+auto eth2
+iface eth2 inet static
+address 192.168.72.123
+netmask 255.255.255.0
+
+auto eth3
+iface eth3 inet static
+address 192.168.73.123
+netmask 255.255.255.0
+
+auto eth4
+iface eth4 inet static
+address 192.168.74.123
+netmask 255.255.255.0
+
