@@ -23,4 +23,4 @@ test1: $(OBJS)
 	gcc -o test1 test1.c $(OBJS) -lxml2 -ljson -lev -L../common -llog
 
 clean:
-	rm -fr sys-mon core $(OBJS)  libsysmon.a test
+	rm -fr sys-mon core $(OBJS)  libsysmon.a test buzzer test1
