@@ -371,8 +371,8 @@ def nasRestoreCFG():
 			_load_conf(json.loads(x))
 		f.close()
 	except:
-		False, '解析配置文件失败'
-	return True,'加载NAS配置完毕'
+		False, 'Fail to Load NAS Conf!'
+	return True,'Load NAS Conf OK!'
 
 
 if __name__ == '__main__':

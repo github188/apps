@@ -242,11 +242,11 @@ def iSCSIRestoreCFG():
 		_cmd = 'scstadmin -config %s' % SCST.CFG
 		ret,msg = commands.getstatusoutput(_cmd)
 		if ret == 0:
-			return True, '加载用户iSCSI配置失败，尝试加载默认配置成功'
+			return True, 'Load iSCSI Conf OK!'
 		else:
-			return False, '加载用户iSCSI配置失败，尝试加默认配置失败'
+			return False, 'Fail to Load iSCSI Conf!'
 	except:
-		return False, '加载iSCSI配置失败，未知原因'
+		return False, 'Fail to Load iSCSI Conf! Some exception raised!'
 
 # 测试代码
 if __name__ == '__main__':
