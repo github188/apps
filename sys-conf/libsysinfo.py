@@ -76,9 +76,9 @@ def __get_fan_speed(mod):
 		temp = __read_value(NCT_ROOT, 'fan3_input')
 		if temp != '' and temp != 'good':
 			_item['value'] = _item['value'] + '  [ 机箱风扇2: %s RPM ]' % temp
-		temp = __read_value(NCT_ROOT, 'fan2_input')
-		if temp != '' and temp != 'good':
-			_item['value'] = _item['value'] + '  [ CPU风扇: %s RPM ]' % temp
+		#temp = __read_value(NCT_ROOT, 'fan2_input')
+		#if temp != '' and temp != 'good':
+		#	_item['value'] = _item['value'] + '  [ CPU风扇: %s RPM ]' % temp
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item
