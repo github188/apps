@@ -258,7 +258,7 @@ def __get_stat_disk(mod):
 def __get_stat_vg(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_stat['value'] = 'good'
+	_stat['value'] = ''
 
 	# 通过外部命令获取
 	try:
