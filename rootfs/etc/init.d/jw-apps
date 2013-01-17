@@ -39,6 +39,9 @@ do_apps_start()
 	__start_daemon $US_PID $US_DAEMON
 	__start_daemon $LOG_PID $LOG_DAEMON
 	__start_daemon $SYS_PID $SYS_DAEMON
+
+	# for jw-assemble
+	sys-manager vg --misc --restore >> /root/r-log
 }
 
 do_apps_stop()
