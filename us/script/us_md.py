@@ -4,6 +4,7 @@
 import sys, commands, json
 import getopt
 import uuid
+import time
 
 from libdisk import *
 from libmd import *
@@ -76,7 +77,19 @@ def do_duplicate_check(mdname):
 
 def do_misc(arg):
 	if arg == "--restore":
-		md_restore()
+		count = 0
+		while True:
+			if count >= 15:
+				break
+			if not os.path.exists('/tmp/.us_d/updated'):
+				time.sleep(1)
+				count = count + 1
+			else:
+				break
+		if count < 15:
+			md_restore()
+		else:
+			LogInsert('VG', 'Auto', 'Error', '更新VG信息失败!')
 	sys.exit(0)
 
 def main(argv):
