@@ -161,8 +161,8 @@ def __handle_md_disk_add(mdinfo, diskinfo):
 
 	if __get_md_state(mdinfo) == 'degrade':
 		__add_disk_to_md(mdinfo, diskinfo)
-	else:
-		__md_event_log('Info', '卷组 %s 非降级状态，无需处理相关的磁盘!' % mdinfo['name'])
+	#else:
+	#	__md_event_log('Info', '卷组 %s 非降级状态，无需处理相关的磁盘!' % mdinfo['name'])
 
 
 # 磁盘下线事件触发md相关处理
