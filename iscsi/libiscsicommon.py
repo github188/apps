@@ -109,6 +109,43 @@ def iscsiExit(ret = True, msg = ''):
 		sys.exit(0)
 	sys.exit(-1)
 
+# ----------------------------------------
+# xml操作
+# ----------------------------------------
+
+def __load_xml(filename):
+	try:
+		doc = minidom.parse(filename)
+	except IOError,e:
+		return False, '读取配置分区出错！%s' % e
+	except xml.parsers.expat.ExpatError, e:
+		return False, '磁盘配置文件格式出错！%s' % e
+	except e:
+		return False, '无法解析磁盘配置文件！%s' % e
+	except:
+		return False, '加载配置文件失败，未知错误!'
+	return True,doc
+
+def __get_xmlnode(node, name):
+	return node.getElementsByTagName(name) if node else None
+
+def __add_xmlnode(root, name):
+	_impl = minidom.getDOMImplementation()
+	_dom = _impl.createDocument(None, name, None)
+	_node = _dom.createElement(name)
+	root.appendChild(_node)
+	return _node
+
+def __get_attrvalue(node, attrname):
+	return node.getAttribute(attrname) if node else None
+
+def __set_attrvalue(node, attr, value):
+	return node.setAttribute(attr, value)
+
+def __remove_attr(node, attr):
+	return node.removeAttribute(attr)
+
+
 if __name__ == "__main__":
 	"""
 	ss = AttrRead('/sys/kernel/scst_tgt/targets/iscsi/iqn.2012-abc', 'io_grouping_type')

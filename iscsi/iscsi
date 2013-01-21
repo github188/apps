@@ -11,6 +11,7 @@ from libtarget import *
 from libvolume import *
 from liblun import *
 from libsession import *
+from libchap import *
 
 
 class iSCSIArgs:
@@ -59,6 +60,10 @@ class iSCSIArgs:
 		self.update_cfg = False
 		self.restore_cfg = True
 		self.default_target = False
+		self.chap_user_str = ''
+		self.chap_pass_str = ''
+		self.chap_set_str = ''	# enable, disable
+		self.chap_type = ''	# incoming, outgoing
 
 	def setMode(self, mode):
 		if self.mode == '':
@@ -238,6 +243,38 @@ def iscsiMiscProc(args = iSCSIArgs()):
 		ret = iSCSISetDefaultTarget()
 		iscsiExit(ret, '')
 
+def iscsiChapProc(args = iSCSIArgs()):
+	if args.mode != '--chap':
+		return
+	if not args.list_set and args.chap_type != 'incoming' and args.chap_type != 'outgoing':
+		iscsiExit(False, '请设置正确的CHAP认证方向(incoming 或者 outgoing)!')
+	# chap add user
+	if args.add_set:
+		ret,msg = iSCSIChapAddUser(args.target_name_str, args.chap_user_str, args.chap_pass_str)
+		iscsiExit(ret, msg)
+	# chap remove user
+	if args.remove_set:
+		ret,msg = iSCSIChapRemoveUser(args.target_name_str, args.chap_user_str)
+		iscsiExit(ret, msg)
+	# chap set user
+	if args.chap_set_str == 'enable':
+		if args.chap_user_str != '':
+			ret,msg = iSCSIChapEnableUser(args.target_name_str, args.chap_user_str)
+		else:
+			ret,msg = iSCSIChapEnable(args.target_name_str)
+		iscsiExit(ret, msg)
+	elif args.chap_set_str == 'disable':
+		if args.chap_user_str != '':
+			ret,msg = iSCSIChapDisableUser(args.target_name_str, args.chap_user_str)
+		else:
+			ret,msg = iSCSIChapDisable(args.target_name_str)
+		iscsiExit(ret, msg)
+	# chap list
+	if args.list_set:
+		UniOutput(iSCSIChapList(args.target_name_str))
+	iscsiExit(False, '请输入正确的CHAP操作参数!')
+	return
+
 def iscsiUsage():
 	print """
 iscsi --target --list [--target-name <name>]
@@ -259,6 +296,11 @@ iscsi --target --list [--target-name <name>]
       --session --list [--target-name <name>]
       --session --force-close <session_id>
 
+      --chap --target-name <name> --incoming --add --user <name> --pass <word>
+      --chap --target-name <name> --incoming --remove <name>
+      --chap --target-name <name> --incoming --set <enable|disable> [--user <name>]
+      --chap --list [--target-name <name>]
+
       --misc --update-cfg
       --misc --restore-cfg
       --misc --check-default-target
@@ -266,7 +308,7 @@ iscsi --target --list [--target-name <name>]
 	sys.exit(-1)
 
 
-OP_MODE = ['--target', '--volume', '--lun', '--session', '--misc']
+OP_MODE = ['--target', '--volume', '--lun', '--session', '--chap', '--misc']
 
 iscsi_long_opt = ['target', 'list', 'target-name=',
 	'modify', 'attribute=', 'value=',
@@ -275,7 +317,7 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
 	'session', 'volume-name=', 'lun-read-only=', 'wr-method=', 'force-close=', 'initiator=',
 	'modify', 'current-initiator=', 'fresh-initiator=', 'misc', 'update-cfg',
-	'check-default-target', 'restore-cfg']
+	'check-default-target', 'restore-cfg', 'chap', 'incoming', 'user=', 'pass=', 'set=']
 
 def iscsi_main():
 	try:
@@ -360,12 +402,21 @@ def iscsi_main():
 			iscsiArgs.restore_cfg = True
 		elif opt == '--check-default-target':
 			iscsiArgs.default_target = True
+		elif opt == '--incoming':
+			iscsiArgs.chap_type = 'incoming'
+		elif opt == '--user':
+			iscsiArgs.chap_user_str = arg
+		elif opt == '--pass':
+			iscsiArgs.chap_pass_str = arg
+		elif opt == '--set':
+			iscsiArgs.chap_set_str = arg
 
 	iscsiTargetProc(iscsiArgs)
 	iscsiVolumeProc(iscsiArgs)
 	iscsiLunProc(iscsiArgs)
 	iscsiSessionProc(iscsiArgs)
 	iscsiMiscProc(iscsiArgs)
+	iscsiChapProc(iscsiArgs)
 
 	iscsiUsage()
 
