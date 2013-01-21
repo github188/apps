@@ -318,6 +318,8 @@ def iSCSIChapList(tgt = ''):
 def iSCSIChapAddUser(tgt, user, pwd):
 	if _chap_user_exist(tgt, user):
 		return False, '增加CHAP用户失败，用户 %s 已经存在!' % user
+	if len(pwd) < 12:
+		return False, '增加CHAP用户 %s 失败，密码长度至少为12个英文或数字!'
 	ret,msg = _chap_sysfs_user_add(tgt, user, pwd)
 	if not ret:
 		return ret,msg
