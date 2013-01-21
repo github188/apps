@@ -92,3 +92,4 @@ sys-manager
 nas/tr-simple
 common/log-daemon
 monitor/sys-mon
+monitor/buzzer
