@@ -271,6 +271,7 @@ def iSCSIChapList(tgt = ''):
 	for x in iSCSIGetTargetList(tgt):
 		chap = iSCSICHAP()
 		chap.target_name = x.name
+		chap.active = 'enable'
 
 		_dir = '%s/%s' % (SCST.TARGET_DIR, x.name)
 		for y in os.listdir(_dir):
@@ -292,7 +293,7 @@ def iSCSIChapList(tgt = ''):
 	for x in __get_xmlnode(root, 'target'):
 		chap = None
 		for y in chap_list:
-			if y.target_name == x:
+			if y.target_name == __get_attrvalue(x, 'name'):
 				chap = y
 				break
 		if chap is None:
