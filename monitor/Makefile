@@ -11,7 +11,7 @@ all: daemon libsysmon.a
 	gcc -o buzzer AlarmSW.c
 
 daemon: $(OBJS)
-	gcc $(CFLAGS) -o sys-mon sys-mon.c $(OBJS) -lxml2 -ljson -L../common -llog -lev
+	gcc -o sys-mon sys-mon.c $(OBJS) -lxml2 -ljson -L../common -llog -lev $(CFLAGS)
 
 libsysmon.a:
 	gcc -c libsysmon.c

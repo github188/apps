@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <sys/types.h>
+#include <regex.h>
 #include "sys-action.h"
 #include "sys-event.h"
 #include "../pic_ctl/pic_ctl.h"
@@ -46,9 +49,38 @@ void sys_alarm_buzzer_off(void *event)
 	syslog(LOG_INFO, "sys_alarm_buzzer()");
 }
 
-char *_get_next_disk_slot(const char *str)
+const char *_get_next_disk_slot(const char *str)
 {
-	static char buf[128] = {0};
+	int cflags = REG_EXTENDED;
+	int status;
+	regmatch_t pmatch[1];
+	const size_t nmatch = 1;
+	regex_t reg;
+	const char *pattern = "[0-9]:[0-9]+$";
+	static char buf[128];
+	static char slot[12];
+
+	if (buf[0] == '\0')
+		strcpy(buf, str);
+
+	slot[0] = '\0';
+	regcomp(&reg, pattern, cflags);
+	status = regexec(&reg, buf, nmatch, pmatch, 0);
+	if (status==0)
+	{
+		/*
+		int j;
+		for (j=pmatch[0].rm_so; j<pmatch[0].rm_eo; j++)
+			putchar(buf[j]);
+		*/
+		buf[pmatch[0].rm_so-1] = '\0';
+		strncpy(slot, &buf[pmatch[0].rm_so], pmatch[0].rm_eo);
+	}
+	regfree(&reg);
+
+	if (slot[0]=='\0')
+		return NULL;
+	return slot;
 }
 
 void sys_alarm_diskled_on(void *event)
