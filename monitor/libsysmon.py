@@ -13,6 +13,21 @@ class ev:
 		self.param = ''
 		self.msg = ''
 
+# module  event            param
+# ----------------------------------------
+#   disk  online
+#         offline          disk-slot
+#         fail             disk-slot
+#         spare            disk-slot
+#         smart-health     disk-slot
+#     vg  add
+#         remove
+#         change
+#         degrade          disk-slot-list
+#         fail
+#         good             disk-slot-list
+#         rebuild          disk-slot-list
+#  power  fail
 def sysmon_event(module, event, param, msg):
 	_ev = ev()
 	_ev.module = module

@@ -1,6 +1,7 @@
 CFLAGS = -Wall -O2 -DDEBUG -g
 CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
 CFLAGS += -I/usr/include/libxml2
+CFLAGS += -L../pic_ctl -lpic
 CFLAGS += -std=c99
 #CFLAGS += -D_NDEBUG
 
