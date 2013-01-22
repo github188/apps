@@ -215,9 +215,11 @@ def main():
 	if event == 'add':
 		msg = '磁盘 %s 上线!' % diskinfo.slot if diskinfo.slot != '' else '磁盘上线!'
 		__md_event_log('Info', msg)
+		sysmon_event('disk', 'online', 'disk=%s' % diskinfo.slot, msg)
 	elif event == 'remove':
 		msg = '磁盘 %s 掉线!' % diskinfo.slot if diskinfo.slot != '' else '磁盘掉线!'
 		__md_event_log('Info', msg)
+		sysmon_event('disk', 'offline', 'disk=%s' % diskinfo.slot, msg)
 	
 	__handle_md_event(event, diskinfo)
 
