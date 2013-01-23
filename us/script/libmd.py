@@ -220,6 +220,16 @@ def tmpfs_add_md_info(mddev):
 	AttrWrite(_dir, 'name', attr.name)
 	AttrWrite(_dir, 'raid-uuid', attr.raid_uuid)
 
+	# check vg state, notify to sysmon
+	if attr.raid_state == 'degrade':
+		sysmon_event('vg', 'degrade', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 降级' % attr.name)
+	elif attr.raid_state == 'fail':
+		sysmon_event('vg', 'fail', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 失效' % attr.name)
+	elif attr.raid_state == 'normal':
+		sysmon_event('vg', 'good', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 状态正常' % attr.name)
+	elif attr.raid_state == 'rebuild':
+		sysmon_event('vg', 'rebuild', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 状态正常' % attr.name)
+
 	if attr.raid_level == '5' or attr.raid_level == '6':
 		return
 
@@ -233,6 +243,8 @@ def tmpfs_add_md_info(mddev):
 # mddev - /dev/md<x>
 def tmpfs_remove_md_info(mddev):
 	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, dev_trim(mddev)))
+	attr = mddev_get_attr(mddev)
+	sysmon_event('vg', 'remove', '', '卷组 %s 删除成功!' % attr['name'])
 
 
 def md_list_mddevs():
