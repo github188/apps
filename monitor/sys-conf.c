@@ -5,7 +5,7 @@
 #include "sys-action.h"
 
 #define _XML_STR_VAL(node, key) (char*)xmlGetProp(node, BAD_CAST(key))
-#define _XML_IGN_CHECK(node) if (xmlStrcmp(node->name, BAD_CAST"text"))
+#define _XML_IGN_CHECK(node) if ((xmlStrcmp(node->name, BAD_CAST"text")) || xmlStrcmp(node->name, BAD_CAST"comment"))
 #define _XML_NODE_NAME(node, name1) (!xmlStrcmp(node->name, BAD_CAST(name1)))
 #define _XML_ATTR_EQU(node, key, value) (!strcmp(_XML_STR_VAL(node, key), value))
 
@@ -66,7 +66,7 @@ void _xml_action_parse(xmlNodePtr node)
 
 		_XML_IGN_CHECK(node)
 		{
-			syslog(LOG_NOTICE, "XML(action_parser): find a new action!");
+			syslog(LOG_NOTICE, "XML(action_parser): find a new action %s!", node->name);
 			sys_action_add(node->name);
 			_xml_action_alarm_parse(node->name, node->xmlChildrenNode);
 		}

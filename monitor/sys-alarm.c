@@ -63,18 +63,15 @@ const char *_get_next_disk_slot(const char *str)
 	if (buf[0] == '\0')
 		strcpy(buf, str);
 
-	slot[0] = '\0';
+	bzero(slot, 12);
 	regcomp(&reg, pattern, cflags);
 	status = regexec(&reg, buf, nmatch, pmatch, 0);
 	if (status==0)
 	{
-		/*
-		int j;
-		for (j=pmatch[0].rm_so; j<pmatch[0].rm_eo; j++)
-			putchar(buf[j]);
-		*/
+		int i,j;
+		for (j=0, i=pmatch[0].rm_so; i<pmatch[0].rm_eo; i++, j++)
+			slot[j] = buf[i];
 		buf[pmatch[0].rm_so-1] = '\0';
-		strncpy(slot, &buf[pmatch[0].rm_so], pmatch[0].rm_eo);
 	}
 	regfree(&reg);
 
@@ -86,6 +83,8 @@ const char *_get_next_disk_slot(const char *str)
 void sys_alarm_diskled_on(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
+
+	syslog(LOG_INFO, "sys_alarm_diskled_on()");
 	
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
@@ -93,12 +92,15 @@ void sys_alarm_diskled_on(void *event)
 		int enc,slot;
 		sscanf("%d:%d", p, &enc, &slot);
 		pic_set_led(slot, PIC_LED_ON, 0);
+		syslog(LOG_INFO, "set disk %d:%d on", enc, slot);
 	}
 }
 
 void sys_alarm_diskled_off(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
+
+	syslog(LOG_INFO, "sys_alarm_diskled_off()");
 	
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
@@ -106,6 +108,7 @@ void sys_alarm_diskled_off(void *event)
 		int enc,slot;
 		sscanf("%d:%d", p, &enc, &slot);
 		pic_set_led(slot, PIC_LED_OFF, 0);
+		syslog(LOG_INFO, "set disk %d:%d off", enc, slot);
 	}
 }
 
@@ -125,13 +128,16 @@ void sys_alarm_diskled_blink1(void *event)
 void sys_alarm_diskled_blink5(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
+
+	syslog(LOG_INFO, "sys_alarm_diskled_blink5()");
 	
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
-		int enc,slot;
-		sscanf("%d:%d", p, &enc, &slot);
+		int enc = -1, slot = -1;
+		sscanf(p, "%d:%d", &enc, &slot);
 		pic_set_led(slot, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
+		syslog(LOG_INFO, "set disk %d:%d to blink5", enc, slot);
 	}
 }
 
