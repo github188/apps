@@ -6,6 +6,7 @@ all:
 	$(MAKE) -C nas
 	$(MAKE) -C us/md-auto-resume/mdscan
 	$(MAKE) -C web-iface
+	$(MAKE) -C pic_ctl
 	$(MAKE) -C monitor
 
 clean:
@@ -16,3 +17,4 @@ clean:
 	$(MAKE) -C us/md-auto-resume/mdscan clean
 	$(MAKE) -C common clean
 	$(MAKE) -C monitor clean
+	$(MAKE) -C pic_ctl clean

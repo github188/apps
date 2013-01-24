@@ -39,6 +39,13 @@ sync_rootfs()
 	chmod -fv 440 $_target/etc/sudoers
 }
 
+sync_conf()
+{
+	local _target="$1"
+	mkdir -pv $_target/opt/jw-conf/system/
+	cp -fav monitor/conf-example.xml "$_target"/opt/jw-conf/system/sysmon-conf.xml
+}
+
 tar_pkg()
 {
 	local _target="$1"
@@ -54,4 +61,5 @@ rm -fr $_target
 
 sync_apps "$target"
 [ "$1" = "--with-rootfs" ] && sync_rootfs "$target"
+sync_conf "$target"
 tar_pkg "$target"
