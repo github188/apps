@@ -5,6 +5,7 @@ import sys
 import commands, re, os
 from libdisk import *
 from xml.dom import minidom
+from libsysmon import sysmon_event
 import xml
 
 import sys
@@ -222,13 +223,13 @@ def tmpfs_add_md_info(mddev):
 
 	# check vg state, notify to sysmon
 	if attr.raid_state == 'degrade':
-		sysmon_event('vg', 'degrade', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 降级' % attr.name)
+		sysmon_event('vg', 'degrade', 'disks=%s' % attr.disk_list, '卷组 %s 降级' % attr.name)
 	elif attr.raid_state == 'fail':
-		sysmon_event('vg', 'fail', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 失效' % attr.name)
+		sysmon_event('vg', 'fail', 'disks=%s' % attr.disk_list, '卷组 %s 失效' % attr.name)
 	elif attr.raid_state == 'normal':
-		sysmon_event('vg', 'good', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 状态正常' % attr.name)
+		sysmon_event('vg', 'good', 'disks=%s' % attr.disk_list, '卷组 %s 状态正常' % attr.name)
 	elif attr.raid_state == 'rebuild':
-		sysmon_event('vg', 'rebuild', 'disks=%s' % attr.disk_list.__dict__, '卷组 %s 状态正常' % attr.name)
+		sysmon_event('vg', 'rebuild', 'disks=%s' % attr.disk_list, '卷组 %s 状态正常' % attr.name)
 
 	if attr.raid_level == '5' or attr.raid_level == '6':
 		return

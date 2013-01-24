@@ -15,7 +15,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 . /lib/lsb/init-functions
 
 do_start() {
-	/opt/run.sh &
+	[ -x /opt/run.sh ] && /opt/run.sh >/dev/null 2>&1 &
 	if [ -x /etc/rc.local ]; then
 	        [ "$VERBOSE" != no ] && log_begin_msg "Running local boot scripts (/etc/rc.local)"
 		/etc/rc.local

@@ -2,7 +2,7 @@
 
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin
 
-mdadm -Ss
+mdadm -Ss >/dev/null 2>&1
 
 disk_list=''
 
@@ -11,7 +11,7 @@ mddev_wait() # mddev
 	mddev="$1"
 	for i in `seq 5`
 	do
-		mdadm -D $mddev 2>&1 >/dev/null
+		mdadm -D $mddev >/dev/null 2>&1
 		[ $? -eq 0 ] && break
 		sleep 1
 	done
@@ -22,7 +22,7 @@ mddev_part_wait() # mddev
 	mddev="$1"
 	for i in `seq 5`
 	do
-		yes | parted $mddev print 2>&1 >/dev/null
+		yes | parted $mddev print >/dev/null 2>&1
 		[ $? -eq 0 ] && break
 		sleep 1
 	done
@@ -40,10 +40,10 @@ assemble() # arg1: md_num, arg2: disk_list
 	local slaves
 	local disk_name
 	local array_state
-	mdadm -Af $mddev $disks
+	mdadm -Af $mddev $disks >/dev/null 2>&1
 	array_state=`cat /sys/block/md$1/md/array_state`
 	if [ "$array_state" = "inactive" ]; then
-		mdadm -S $mddev
+		mdadm -S $mddev >/dev/null 2>&1
 		return
 	fi
 	slaves=`ls /sys/block/md$1/slaves 2>/dev/null`
@@ -55,7 +55,7 @@ assemble() # arg1: md_num, arg2: disk_list
 	do
 		disk_name=${disk##*/}
 		if ! echo $slaves | grep -w "$disk_name" 1>/dev/null 2>&1; then
-			mdadm -a $mddev $disk
+			mdadm -a $mddev $disk >/dev/null 2>&1
 		fi
 	done
 
@@ -68,7 +68,7 @@ assemble() # arg1: md_num, arg2: disk_list
 
 while read LINE
 do
-        echo "$LINE"
+        #echo "$LINE"
         if `echo "$LINE" | grep "Get md" >/dev/null`; then
 		if [ ! -z "$disk_list" ]; then
 			assemble $md_num "$disk_list"
@@ -86,3 +86,6 @@ if [ ! -z "$disk_list" ]; then
 	assemble $md_num "$disk_list"
 fi
 
+if [ $? -eq 0 ]; then
+	echo "VG ReAssembled OK"
+fi
