@@ -244,8 +244,6 @@ def tmpfs_add_md_info(mddev):
 # mddev - /dev/md<x>
 def tmpfs_remove_md_info(mddev):
 	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, dev_trim(mddev)))
-	attr = mddev_get_attr(mddev)
-	sysmon_event('vg', 'remove', '', '卷组 %s 删除成功!' % attr['name'])
 
 
 def md_list_mddevs():
@@ -387,6 +385,8 @@ def md_del(mdname):
 	res = set_disks_free(disks)
 	if res != "":
 		return False,"清除磁盘信息失败，请手动清除"
+
+	sysmon_event('vg', 'remove', 'disks=%s' % disks, '卷组 %s 删除成功!' % mdinfo['name'])
 	return True,"删除卷组成功"
 
 def md_info_mddevs(mddevs=None):
