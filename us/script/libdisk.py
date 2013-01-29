@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import commands
+import os
 from libcommon import *
 
 def disk_name(slot):
@@ -31,6 +32,12 @@ def disk_slot_update(slots):
 			commands.getoutput(cmd)
 	except:
 		pass
+
+def disk_bad_sect_redirection(disk_dev):
+	dev_name = os.path.basename(disk_dev)
+	cmd = 'echo "enable" > /sys/block/%s/bad_sect_map/stat' % dev_name
+	ret,msg = commands.getstatusoutput(cmd)
+	return True if ret == 0 else False
 
 def disks_from_slot(slots):
 	devs = [];

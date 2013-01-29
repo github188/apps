@@ -18,3 +18,4 @@ clean:
 	$(MAKE) -C common clean
 	$(MAKE) -C monitor clean
 	$(MAKE) -C pic_ctl clean
+	find . -name '*.pyc' -delete

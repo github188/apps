@@ -309,6 +309,11 @@ def md_create(mdname, level, chunk, slots):
 	if len(devs) == 0:
 		return False, "没有磁盘"
 	dev_list = " ".join(devs)
+
+	# enable all disk bad sect redirection
+	for d in dev_list.split():
+		disk_bad_sect_redirection(d)
+
 	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, __raid_level(level), chunk, len(devs), dev_list, mdname)
 	if level in ('3', '4', '5', '6', '10', '50', '60'):
 		cmd += " --bitmap=internal"
