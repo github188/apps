@@ -3,6 +3,7 @@
 #include <libxml/tree.h>
 #include "sys-module.h"
 #include "sys-action.h"
+#include "sys-interval-check.h"
 
 #define _XML_STR_VAL(node, key) (char*)xmlGetProp(node, BAD_CAST(key))
 #define _XML_IGN_CHECK(node) if ((xmlStrcmp(node->name, BAD_CAST"text")) || xmlStrcmp(node->name, BAD_CAST"comment"))
@@ -98,6 +99,25 @@ void _xml_global_parse(xmlNodePtr node)
 
 void _xml_self_run_parse(xmlNodePtr node)
 {
+	while(node)
+	{
+		if (!xmlStrcmp(node->name, BAD_CAST"item") &&
+			isCaptureSupported(_XML_STR_VAL(node, "name")))
+		{
+			syslog(LOG_NOTICE, "XML(self_run_parse): find a new alarm %s!", _XML_STR_VAL(node, "name"));
+
+			sys_capture_t *cap = sys_capture_alloc();
+			if (cap)
+			{
+				strcpy(cap->name, _XML_STR_VAL(node, "name"));
+				cap->check_intval = atoi(_XML_STR_VAL(node, "interval"));
+				cap->min_thr = atoi(_XML_STR_VAL(node, "min_threshold"));
+				cap->max_thr = atoi(_XML_STR_VAL(node, "max_threshold"));
+				sys_capture_set_handler(cap);
+				sys_capture_add(cap);
+			}
+		}
+	}
 }
 
 void sys_mon_conf_check()
@@ -112,6 +132,7 @@ void sys_mon_load_conf()
 	sys_action_init();
 	sys_module_init();
 	sys_global_init();
+	sys_capture_init();
 
 	sys_mon_conf_check();
 

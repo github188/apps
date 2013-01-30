@@ -29,10 +29,20 @@
 		<power>
 			<event name="fail" level="warning" action="power_fail"/>
 		</power>
+
+		<self_run>
+			<event name="env_exception_raise" level="error" action="env_raise_exception"/>
+			<event name="env_exception_backout" level="error" action="env_backout_exception"/>
+		</self_run>
 	</modules>
 
 	<self_run>
-		<item name="cpu-temp" source="file" file="abc" interval="60" action="range_check" min_threshold="35" max_threshold="55"/>
+		<item name="cpu-temp" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="env-temp" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="case-temp" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="case-fan1" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="case-fan2" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="cpu-fan" interval="60" min_threshold="35" max_threshold="55"/>
 	</self_run>
 
 	<!-- 执行的动作，每个标签名字对应event的action属性 -->
@@ -106,5 +116,14 @@
 			<alarm name="sys-led-on"/>
 			<alarm name="buzzer-on"/>
 		</power_fail>
+
+		<!-- 环境监控告警，蜂鸣器 -->
+		<env_raise_exception>
+			<alarm name="buzzer-on"/>
+		</env_raise_exception>
+
+		<env_backout_exception>
+			<alarm name="buzzer-off"/>
+		</env_backout_exception>
 	</actions>
 </monitor>

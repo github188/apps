@@ -3,15 +3,16 @@ CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
 CFLAGS += -I/usr/include/libxml2
 CFLAGS += -L../pic_ctl -lpic
 CFLAGS += -std=c99
+CFLAGS += -L./
 #CFLAGS += -D_NDEBUG
 
-OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o
+OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o
 
 all: daemon libsysmon.a
 	gcc -o buzzer AlarmSW.c
 
-daemon: $(OBJS)
-	gcc -o sys-mon sys-mon.c $(OBJS) -lxml2 -ljson -L../common -llog -lev $(CFLAGS)
+daemon: $(OBJS) libsysmon.a
+	gcc -o sys-mon sys-mon.c $(OBJS) -lxml2 -ljson -L../common -llog -lev -lsysmon $(CFLAGS)
 
 libsysmon.a:
 	gcc -c libsysmon.c

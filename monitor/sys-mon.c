@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "sys-event.h"
 #include "sys-action.h"
+#include "sys-interval-check.h"
 
 struct mon_io {
 	ev_io io;
@@ -110,6 +111,7 @@ int main()
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, mon_release);
 	signal(SIGINT, mon_release);
+	signal(SIGALRM, do_interval_check);
 
 	log_init();
 	sys_mon_load_conf();
@@ -120,6 +122,7 @@ int main()
 	dump_sys_global();
 #endif
 
+	alarm(CHECK_INTVAL);
 	mon_io.sockfd = mon_serv_create();
 
 	// ev loop
