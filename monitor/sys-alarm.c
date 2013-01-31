@@ -3,6 +3,7 @@
 #include <regex.h>
 #include "sys-action.h"
 #include "sys-event.h"
+#include "sys-utils.h"
 #include "../pic_ctl/pic_ctl.h"
 
 int _gconf_level_count(const char *level)
@@ -143,12 +144,14 @@ void sys_alarm_diskled_blink5(void *event)
 
 void sys_alarm_sysled_on(void *event)
 {
-	syslog(LOG_INFO, "sys_alarm_sysled()");
+	syslog(LOG_INFO, "sys_alarm_sysled_on()");
+	sb_gpio28_set(true);
 }
 
 void sys_alarm_sysled_off(void *event)
 {
-	syslog(LOG_INFO, "sys_alarm_sysled()");
+	syslog(LOG_INFO, "sys_alarm_sysled_off()");
+	sb_gpio28_set(false);
 }
 
 struct _handler_map {

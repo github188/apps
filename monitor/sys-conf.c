@@ -99,6 +99,7 @@ void _xml_global_parse(xmlNodePtr node)
 
 void _xml_self_run_parse(xmlNodePtr node)
 {
+	return;
 	while(node)
 	{
 		if (!xmlStrcmp(node->name, BAD_CAST"item") &&
@@ -170,6 +171,10 @@ void sys_mon_load_conf()
 			node = node->next;
 		}
 	}
+
+#ifndef _NDEBUG
+	printf("conf loaded!\n");
+#endif
 
 _conf_clean:
 	xmlFreeDoc(doc);

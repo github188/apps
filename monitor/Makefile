@@ -6,7 +6,7 @@ CFLAGS += -std=c99
 CFLAGS += -L./
 #CFLAGS += -D_NDEBUG
 
-OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o
+OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o util-gpio.o
 
 all: daemon libsysmon.a
 	gcc -o buzzer AlarmSW.c
