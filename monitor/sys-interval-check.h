@@ -40,4 +40,6 @@ void sys_capture_add(sys_capture_t *cap);
 
 void do_interval_check(int sig);
 
+void dump_self_run();
+
 #endif/*_SYS_INTERVAL_CHECK_*/

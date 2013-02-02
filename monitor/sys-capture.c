@@ -121,6 +121,20 @@ void sys_capture_init()
 	list_init(&_g_capture);
 }
 
+void sys_capture_release()
+{
+	struct list *n, *nt;
+	sys_capture_t *c;
+
+	list_iterate_safe(n, nt, &_g_capture)
+	{
+		c = list_struct_base(n, sys_capture_t, list);
+		list_del(&c->list);
+		syslog(LOG_INFO, "release capture '%s' !", c->name);
+		free(c);
+	}
+}
+
 sys_capture_t *sys_capture_alloc()
 {
 	sys_capture_t *tmp;
@@ -147,5 +161,5 @@ void sys_capture_set_handler(sys_capture_t *cap)
 void sys_capture_add(sys_capture_t *cap)
 {
 	if (cap)
-		list_add(&cap->list, &_g_capture);
+		list_add(&_g_capture, &cap->list);
 }

@@ -10,6 +10,8 @@
 
 #define TMPFS_MSG_ROOT "/tmp/.sys-mon/message"
 #define _SORTED_ROOT TMPFS_MSG_ROOT"/sorted-all/"
+#define TMPFS_ALARM_ROOT "/tmp/.sys-mon/alarm/"
+
 
 #define DIRPTR _ptr
 #define STAT _stat
@@ -142,6 +144,24 @@ ssize_t tmpfs_msg_sorted_link(const char *file)
 		return symlink(file, link);
 	}
 	return -1;
+}
+
+void tmpfs_write_alarm(const char *fname, const char *msg)
+{
+	char fpath[PATH_MAX];
+	int fd;
+
+	if (fname && mkdir_p(TMPFS_ALARM_ROOT))
+	{
+		sprintf(fpath, "%s%s", TMPFS_ALARM_ROOT, fname);
+		printf("fpath: %s\n", fpath);
+
+		if ( (fd=open(fpath, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) > 0 )
+		{
+			write(fd, msg, strlen(msg));
+			close(fd);
+		}
+	}
 }
 
 // 删除指定全局告警信息

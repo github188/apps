@@ -33,10 +33,19 @@ extern sys_global_t gconf;
 /*
  * tmpfs:
  *  /tmp/.sys-mon/message
- *                   |------/info/          记录info类型事件，上限sys_global.recent.info
- *                   |------/warning/       记录warning类型事件，上限sys_global.recent.warning
- *                   |------/error/         记录error类型事件，上限sys_global.recent.error
- *                   |------/sorted-all/    所有事件列表（链接）
+ *           |       |------/info/          记录info类型事件，上限sys_global.recent.info
+ *           |       |------/warning/       记录warning类型事件，上限sys_global.recent.warning
+ *           |       |------/error/         记录error类型事件，上限sys_global.recent.error
+ *           |       |------/sorted-all/    所有事件列表（链接）
+ *           |
+ *           |--/alarm
+ *                 |-----cpu-temp      CPU温度告警
+ *                 |-----env-temp      环境温度告警
+ *                 |-----case-temp     机箱温度告警
+ *                 |-----case-fan1     机箱风扇1告警
+ *                 |-----case-fan2     机箱风扇2告警
+ *                 |-----cpu-fan       CPU风扇告警
+ *                           (注：告警文件内容为'good'表示正常，否则为告警信息)
  */
 
 void sys_global_init();
@@ -48,6 +57,8 @@ const char *tmpfs_msg_insert(const char *level, const char *msg);
 const char *tmpfs_msg_remove_oldest(const char *level);
 ssize_t tmpfs_msg_sorted_link(const char *file);
 ssize_t tmpfs_msg_sorted_unlink(const char *file);
+
+void tmpfs_write_alarm(const char *fname, const char *msg);
 
 void dump_sys_global();
 

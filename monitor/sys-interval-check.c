@@ -6,29 +6,30 @@ struct list _g_capture;
 
 void _value_check(int value, sys_capture_t *cap)
 {
-	char msg[128];
+	char msg[128] = {0};
 
-	if (isValid(value) && (value >= cap->min_thr) && (value <= cap->max_thr))
+	if (value == VAL_IGNORE)
 	{
-		//write_alarm(conf->_alarm_file, "good");
 		sysmon_event("self_run", "env_exception_backout", cap->name, "good");
 		return;
 	}
 
-	if ( value < cap->min_thr )
-		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最低告警值 %d !",
-				cap->name, value, cap->min_thr);
+	if (value == VAL_INVALID)
+		strcpy(msg, "无法获取告警值");
+	else if ( value < cap->min_thr )
+		sprintf(msg, "当前取值 %d 已经超过最低告警值 %d !", value, cap->min_thr);
 	else if ( value > cap->max_thr )
-		sprintf(msg, "%s模块告警：当前取值 %d 已经超过最高告警值 %d !",
-				cap->name, value, cap->max_thr);
+		sprintf(msg, "当前取值 %d 已经超过最高告警值 %d !", value, cap->max_thr);
 
 	sysmon_event("self_run", "env_exception_raise", cap->name, msg);
 }
 
 void _capture(sys_capture_t *cap)
 {
+	/*
 	if (!isExpried(cap))
 		return;
+	*/
 	update(cap);
 
 	if (cap->_capture)
@@ -53,6 +54,23 @@ void do_interval_check(int sig)
 	{
 		signal(SIGALRM, SIG_IGN);
 		_check_interval();
+		signal(SIGALRM, do_interval_check);
 		alarm(CHECK_INTVAL);
+	}
+}
+
+void dump_self_run()
+{
+	struct list *n, *nt;
+	sys_capture_t *cap;
+
+	puts("------------------- dump capture -------------------");
+	list_iterate_safe(n, nt, &_g_capture)
+	{
+		cap = list_struct_base(n, sys_capture_t, list);
+		printf("capture: %s\n", cap->name);
+		printf("\tcheck interval: %d\n", cap->check_intval);
+		printf("\tmin: %d\n", cap->min_thr);
+		printf("\tmax: %d\n", cap->max_thr);
 	}
 }

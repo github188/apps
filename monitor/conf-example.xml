@@ -120,10 +120,12 @@
 		<!-- 环境监控告警，蜂鸣器 -->
 		<env_raise_exception>
 			<alarm name="buzzer-on"/>
+			<alarm name="notify-tmpfs"/>
 		</env_raise_exception>
 
 		<env_backout_exception>
 			<alarm name="buzzer-off"/>
+			<alarm name="notify-tmpfs"/>
 		</env_backout_exception>
 	</actions>
 </monitor>

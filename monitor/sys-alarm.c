@@ -50,6 +50,19 @@ void sys_alarm_buzzer_off(void *event)
 	syslog(LOG_INFO, "sys_alarm_buzzer()");
 }
 
+void sys_alarm_notify_tmpfs(void *event)
+{
+	sys_event_t *ev = (sys_event_t*)event;
+
+	syslog(LOG_INFO, "sys_alarm_notify_tmpfs()");
+
+	if (ev)
+	{
+		printf("notify: %s %s\n", ev->param, ev->msg);
+		tmpfs_write_alarm(ev->param, ev->msg);
+	}
+}
+
 const char *_get_next_disk_slot(const char *str)
 {
 	int cflags = REG_EXTENDED;
@@ -169,6 +182,7 @@ struct _handler_map _map[] = {
 	{"disk-led-blink5", sys_alarm_diskled_blink5},
 	{"sys-led-on", sys_alarm_sysled_on},
 	{"sys-led-off", sys_alarm_sysled_off},
+	{"notify-tmpfs", sys_alarm_notify_tmpfs},
 	{'\0', 0}
 };
 

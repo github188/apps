@@ -111,7 +111,7 @@ int main()
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, mon_release);
 	signal(SIGINT, mon_release);
-	//signal(SIGALRM, do_interval_check);
+	signal(SIGALRM, do_interval_check);
 
 	log_init();
 	sys_mon_load_conf();
@@ -120,9 +120,10 @@ int main()
 	dump_module_event();
 	dump_action_alarm();
 	dump_sys_global();
+	dump_self_run();
 #endif
 
-	//alarm(CHECK_INTVAL);
+	alarm(CHECK_INTVAL);
 	mon_io.sockfd = mon_serv_create();
 
 	// ev loop

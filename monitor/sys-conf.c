@@ -99,7 +99,6 @@ void _xml_global_parse(xmlNodePtr node)
 
 void _xml_self_run_parse(xmlNodePtr node)
 {
-	return;
 	while(node)
 	{
 		if (!xmlStrcmp(node->name, BAD_CAST"item") &&
@@ -118,6 +117,7 @@ void _xml_self_run_parse(xmlNodePtr node)
 				sys_capture_add(cap);
 			}
 		}
+		node = node->next;
 	}
 }
 
