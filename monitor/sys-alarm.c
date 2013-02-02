@@ -58,12 +58,11 @@ void sys_alarm_notify_tmpfs(void *event)
 
 	if (ev)
 	{
-		printf("notify: %s %s\n", ev->param, ev->msg);
 		tmpfs_write_alarm(ev->param, ev->msg);
 	}
 }
 
-const char *_get_next_disk_slot(const char *str)
+char *_get_next_disk_slot(const char *str)
 {
 	int cflags = REG_EXTENDED;
 	int status;
@@ -73,7 +72,7 @@ const char *_get_next_disk_slot(const char *str)
 	const char *pattern = "[0-9]:[0-9]+$";
 	static char buf[128];
 	static char slot[12];
-
+	
 	if (buf[0] == '\0')
 		strcpy(buf, str);
 
@@ -84,13 +83,19 @@ const char *_get_next_disk_slot(const char *str)
 	{
 		int i,j;
 		for (j=0, i=pmatch[0].rm_so; i<pmatch[0].rm_eo; i++, j++)
+		{
 			slot[j] = buf[i];
+		}
 		buf[pmatch[0].rm_so-1] = '\0';
+		slot[j] = '\0';
 	}
 	regfree(&reg);
 
 	if (slot[0]=='\0')
+	{
+		buf[0] = '\0';
 		return NULL;
+	}
 	return slot;
 }
 
@@ -104,8 +109,8 @@ void sys_alarm_diskled_on(void *event)
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
 		int enc,slot;
-		sscanf("%d:%d", p, &enc, &slot);
-		pic_set_led(slot, PIC_LED_ON, 0);
+		sscanf(p, "%d:%d", &enc, &slot);
+		pic_set_led(slot-1, PIC_LED_ON, 0);
 		syslog(LOG_INFO, "set disk %d:%d on", enc, slot);
 	}
 }
@@ -115,13 +120,13 @@ void sys_alarm_diskled_off(void *event)
 	sys_event_t *ev = (sys_event_t*)event;
 
 	syslog(LOG_INFO, "sys_alarm_diskled_off()");
-	
+
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
 		int enc,slot;
-		sscanf("%d:%d", p, &enc, &slot);
-		pic_set_led(slot, PIC_LED_OFF, 0);
+		sscanf(p, "%d:%d", &enc, &slot);
+		pic_set_led(slot-1, PIC_LED_OFF, 0);
 		syslog(LOG_INFO, "set disk %d:%d off", enc, slot);
 	}
 }
@@ -134,8 +139,8 @@ void sys_alarm_diskled_blink1(void *event)
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
 		int enc,slot;
-		sscanf("%d:%d", p, &enc, &slot);
-		pic_set_led(slot, PIC_LED_BLINK, PIC_LED_FREQ_SLOW);
+		sscanf(p, "%d:%d", &enc, &slot);
+		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW);
 	}
 }
 
@@ -150,7 +155,7 @@ void sys_alarm_diskled_blink5(void *event)
 	{
 		int enc = -1, slot = -1;
 		sscanf(p, "%d:%d", &enc, &slot);
-		pic_set_led(slot, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
+		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
 		syslog(LOG_INFO, "set disk %d:%d to blink5", enc, slot);
 	}
 }
@@ -183,7 +188,7 @@ struct _handler_map _map[] = {
 	{"sys-led-on", sys_alarm_sysled_on},
 	{"sys-led-off", sys_alarm_sysled_off},
 	{"notify-tmpfs", sys_alarm_notify_tmpfs},
-	{'\0', 0}
+	{'\0', NULL}
 };
 
 void sys_alarm_set_handler(sys_alarm_t *alarm, const char *handler_name)

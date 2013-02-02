@@ -26,10 +26,8 @@ void _value_check(int value, sys_capture_t *cap)
 
 void _capture(sys_capture_t *cap)
 {
-	/*
 	if (!isExpried(cap))
 		return;
-	*/
 	update(cap);
 
 	if (cap->_capture)
