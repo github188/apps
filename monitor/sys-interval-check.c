@@ -15,7 +15,7 @@ void _value_check(int value, sys_capture_t *cap)
 	}
 
 	if (value == VAL_INVALID)
-		strcpy(msg, "无法获取告警值");
+		strcpy(msg, "设备不存在");
 	else if ( value < cap->min_thr )
 		sprintf(msg, "当前取值 %d 已经超过最低告警值 %d !", value, cap->min_thr);
 	else if ( value > cap->max_thr )
