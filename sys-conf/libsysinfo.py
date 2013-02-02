@@ -178,7 +178,7 @@ def __attch_ver():
 
 # 编译日期
 def __build_date():
-	return 'Build Date:'
+	return 'Build Date: ' + get_sys_file('/usr/local/bin/.build-date')
 
 def __get_sys_version():
 	return __mab_ver() + VER_SEP + __bkp_ver() + VER_SEP + __mcu_ver() + VER_SEP + __kernel_ver() + VER_SEP + __rootfs_ver() + VER_SEP + __apps_ver() + VER_SEP + __web_ver() + VER_SEP + __attch_ver() + '  ' + __build_date()
@@ -291,13 +291,13 @@ def __get_stat_fan(mod):
 	_tmp = AttrRead(ALARM_DIR, 'case-fan1')
 	_value = ''
 	if _tmp != '' and _tmp != 'good':
-		_value = _value + '[机箱风扇1告警，转速: %s] ' % _tmp
+		_value = _value + '[机箱风扇1告警: %s] ' % _tmp
 	_tmp = AttrRead(ALARM_DIR, 'case-fan2')
 	if _tmp != '' and _tmp != 'good':
-		_value = _value + '[机箱风扇2告警, 转速: %s] ' % _tmp
+		_value = _value + '[机箱风扇2告警: %s] ' % _tmp
 	_tmp = AttrRead(ALARM_DIR, 'cpu-fan')
 	if _tmp != '' and _tmp != 'good':
-		_value = _value + '[CPU风扇告警, 转速: %s]' % _tmp
+		_value = _value + '[CPU风扇告警: %s]' % _tmp
 	if _value != '':
 		_stat['value'] = _value
 	else:

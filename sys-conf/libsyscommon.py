@@ -16,3 +16,6 @@ def sys_global(item_list=[]):
 	_global['rows'] = item_list
 	_global['total'] = len(_global['rows'])
 	return _global
+
+if __name__ == '__main__':
+	print get_sys_file('/home/gonglei/git/apps/sys-conf/.build-date')

@@ -1,5 +1,4 @@
 all:
-	#$(MAKE) -C udv CFLAG=-D_UDV_DEBUG
 	$(MAKE) -C common
 	$(MAKE) -C udv
 	$(MAKE) -C us
@@ -8,6 +7,7 @@ all:
 	$(MAKE) -C web-iface
 	$(MAKE) -C pic_ctl
 	$(MAKE) -C monitor
+	$(MAKE) -C sys-conf
 
 clean:
 	$(MAKE) -C udv clean
@@ -18,4 +18,5 @@ clean:
 	$(MAKE) -C common clean
 	$(MAKE) -C monitor clean
 	$(MAKE) -C pic_ctl clean
+	$(MAKE) -C sys-conf clean
 	find . -name '*.pyc' -delete
