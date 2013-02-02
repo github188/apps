@@ -49,14 +49,9 @@
 	<actions>
 		<!-- 每个动作下面的alarm标签对应内置的函数 -->
 
-		<range_check active="enable">
-			<alarm name="buzzer"/>
-			<alarm name="sys-led"/>
-			<alarm name="disk-led"/>
-		</range_check>
-
 		<!-- 磁盘在线，工作灯常亮，故障灯熄灭 -->
 		<disk_online>
+			<alarm name="disk-led-off"/>
 		</disk_online>
 
 		<!-- 磁盘掉线，工作灯和故障灯都熄灭 -->
