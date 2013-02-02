@@ -8,7 +8,11 @@
 #define MAX_RAID_DEVS (32)
 #define MD_NUM_UNKNOWN (0xFF)
 
-#define MD_SB_MAGIC		0xa92b4efc
+/* 
+ * old value: 0xa92b4efc
+ * value 0xa006a392 indicate that reserved 100MB space before data_offset
+ */
+#define MD_SB_MAGIC		0xa006a392
 
 #define MD_FEATURE_BITMAP_OFFSET	1
 
