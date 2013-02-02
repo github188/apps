@@ -120,6 +120,7 @@ void sys_alarm_diskled_off(void *event)
 	sys_event_t *ev = (sys_event_t*)event;
 
 	syslog(LOG_INFO, "sys_alarm_diskled_off()");
+	syslog(LOG_NOTICE, "param: %s", ev->param);
 
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)

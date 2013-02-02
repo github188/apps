@@ -20,6 +20,9 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 
 
+def disk_list_str(dlist=[]):
+	return ','.join([str(x) for x in dlist])
+
 def __def_post(p):
 	if len(p) == 0:
 		return ""
@@ -223,13 +226,13 @@ def tmpfs_add_md_info(mddev):
 
 	# check vg state, notify to sysmon
 	if attr.raid_state == 'degrade':
-		sysmon_event('vg', 'degrade', 'disks=%s' % attr.disk_list, '卷组 %s 降级' % attr.name)
+		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
 	elif attr.raid_state == 'fail':
-		sysmon_event('vg', 'fail', 'disks=%s' % attr.disk_list, '卷组 %s 失效' % attr.name)
+		sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
 	elif attr.raid_state == 'normal':
-		sysmon_event('vg', 'good', 'disks=%s' % attr.disk_list, '卷组 %s 状态正常' % attr.name)
+		sysmon_event('vg', 'good', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
 	elif attr.raid_state == 'rebuild':
-		sysmon_event('vg', 'rebuild', 'disks=%s' % attr.disk_list, '卷组 %s 状态正常' % attr.name)
+		sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
 
 	if attr.raid_level == '5' or attr.raid_level == '6':
 		return
@@ -386,7 +389,7 @@ def md_del(mdname):
 	if res != "":
 		return False,"清除磁盘信息失败，请手动清除"
 
-	sysmon_event('vg', 'remove', 'disks=%s' % disks, '卷组 %s 删除成功!' % mdinfo['name'])
+	sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 %s 删除成功!' % mdinfo['name'])
 	return True,"删除卷组成功"
 
 def md_info_mddevs(mddevs=None):
@@ -640,8 +643,25 @@ def disk_clean_hotrep(slot):
 
 # -----------------------------------------------------------------------------
 
+def _disk_slot_list_str(dlist=[]):
+	return ','.join([disk_slot(x) for x in dlist])
+
 if __name__ == "__main__":
 	import sys
+	attr = __md_fill_mdadm_attr('/dev/md1')
+	print disk_list_str(attr.disk_list)
+	disks = mddev_get_disks('/dev/md1')
+	print _disk_slot_list_str(disks)
+
+	mdinfo =  mddev_get_attr('/dev/md1')
+	print disk_list_str(mdinfo['disk_list'])
+	#sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 删除成功!')
+	#sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
+	#sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
+	sysmon_event('vg', 'good', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
+	#sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
+	sys.exit(0)
+
 	md_restore()
 	sys.exit(0)
 

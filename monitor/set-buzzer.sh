@@ -7,14 +7,14 @@ case "$1" in
 	"on")
 		if [ ! -f $BUZZER_FILE ]; then
 			$BUZZER_BIN &
-			touch $BUZZER_FILE
+			#touch $BUZZER_FILE
 		fi
 		;;
 	"off")
 		$BUZZER_BIN 0
 		>/dev/null 2>&1 killall $(basename $BUZZER_BIN)
 		[ $? -ne 0 ] && exit 1
-		rm -f $BUZZER_FILE
+		#rm -f $BUZZER_FILE
 		;;
 	*)
 		echo "$(basename $0) <on|off>" && exit 1
