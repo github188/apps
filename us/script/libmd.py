@@ -213,8 +213,39 @@ def tmpfs_remove_disk_from_md(mdinfo, diskinfo):
 	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']), diskinfo.slot)
 	return os.unlink(_file) if os.path.isfile(_file) else False
 
+# 作用：区分创建RAID时获取md信息和重组RAID时获取信息的问题
+# 产生原因：启动时重组RAID后，如果盘较多，/dev/md[x]节点出现会滞后，
+#           需要在handle-md脚本中通过add事件响应；对于创建RAID操作，
+#           可以直接更新RAID信息
+
+def __create_lock():
+	_dir = os.path.dirname(TMP_RAID_LOCK)
+	if not os.path.exists(_dir):
+		os.makedirs(_dir)
+	try:
+		f = open(TMP_RAID_LOCK, 'w')
+		f.write('')
+		f.close()
+	except:
+		return False
+	return True
+
+def __create_unlock():
+	try:
+		os.remove(TMP_RAID_LOCK)
+	except:
+		return False
+	return True
+
+# 检查是否被创建函数加锁
+def __try_create_lock():
+	return os.path.isfile(TMP_RAID_LOCK)
+
 # mddev - /dev/md<x>
 def tmpfs_add_md_info(mddev):
+	if __try_create_lock():
+		return
+
 	attr = __md_fill_mdadm_attr(mddev)
 	if None == attr:
 		return
@@ -302,6 +333,12 @@ def __raid_level(_level):
 	return 'linear' if _level.lower() == 'jbod' else _level
 
 def md_create(mdname, level, chunk, slots):
+	ret,msg = __md_create(mdname, level, chunk, slots)
+	__create_unlock()
+	return ret,msg
+
+def __md_create(mdname, level, chunk, slots):
+	__create_lock()
 	#create raid
 	mddev = md_find_free_mddev()
 	if mddev == None:
@@ -342,6 +379,7 @@ def md_create(mdname, level, chunk, slots):
 	except:
 		msg = '初始化卷组未知错误!'
 		pass
+	__create_unlock()
 	tmpfs_add_md_info(mddev)
 	return True, '创建卷组成功!%s' % msg
 
@@ -648,6 +686,11 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
+	print 'lock: ', __create_lock()
+	print 'try lock: ', __try_create_lock()
+	print 'unlock: ', __create_unlock()
+	sys.exit(0)
+
 	attr = __md_fill_mdadm_attr('/dev/md1')
 	print disk_list_str(attr.disk_list)
 	disks = mddev_get_disks('/dev/md1')
