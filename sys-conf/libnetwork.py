@@ -156,6 +156,7 @@ iface lo inet loopback\n
 				iflist = deviant(name, 'iflist').split(',')
 				if len(iflist) > 0:
 					for i in iflist:
+						bond_str = bond_str + 'ifconfig ' + i + ' 0.0.0.0 > /dev/null\n'
 						bond_str = bond_str + 'ifdown ' + i + ' > /dev/null\n'
 						bond_str = bond_str + 'echo +' + i + ' > /sys/class/net/' + name  + '/bonding/slaves\n'
 						
@@ -271,7 +272,7 @@ def AUsage(err=""):
 	print """
 network --list < --iface <name> | --filter |--intbond >
 	--ifconfig --iface <name> < --dhcp  | [ --ip <address> --mask <netmask> --gw <gateway> ] > 		##设置IP地址
-	--bond --iface <bond0|bond1> --nic <eth1,eth2,eth3,eth4,.....> --mode <bonding mode(0|1|4)> --ip <address> --mask <netmask> [--gw<gateway>]		###配置启用BOND接口
+	--bond --iface <bond0|bond1> --nic <eth1,eth2,eth3,eth4,.....> --mode <bonding mode(1|2|4)> --ip <address> --mask <netmask> [--gw<gateway>]		###配置启用BOND接口
 	--bond --remove --iface <bond0|bond1>			###卸载bond接口
 	--dns < --val <nameserver1,nameserver2> >
 	--default [--iface <eth0> ]		###恢复默认
@@ -333,7 +334,10 @@ def NIC_List(value):
 		list = []
 		json_info = {'total':0, 'rows':[]}
 		inti = 0
-		for name in __NET_LIST__():
+		NET_LIST_NEW = __NET_LIST__()
+		if len(__NET_LIST__()) > 4 and value.filter_set == True:
+			NET_LIST_NEW= [i for i in NET_LIST_NEW if i!='eth0']
+		for name in NET_LIST_NEW:
 			if __deviant__(name, 'bond') == '':
 				nic = nic_info()
 				nic.Network_Name = name
@@ -456,12 +460,12 @@ def BOND_Set(value):
 				for x in  Nic_Array:
 					if len(x) > 0:
 						config.set(x, 'bond',  name)
+						os.system('ifconfig '+x+' > /dev/null')
 						os.system('ifdown '+x+' > /dev/null')
 						SYSTEM_OUT('echo +'+x+' > /sys/class/net/'+name+'/bonding/slaves')
 						route_str = SYSTEM_OUT('ip route|grep "'+x+'  proto"|cut -d " " -f1,2,3')
 						if len(route_str) > 9:
 							SYSTEM_OUT('ip ro del '+route_str)
-							
 				for n in __NET_LIST__():
 					if n not in Nic_Array:
 						if __deviant__(n, 'bond') == name:
