@@ -460,7 +460,7 @@ def BOND_Set(value):
 				for x in  Nic_Array:
 					if len(x) > 0:
 						config.set(x, 'bond',  name)
-						os.system('ifconfig '+x+' > /dev/null')
+						os.system('ifconfig '+x+' 0.0.0.0 > /dev/null')
 						os.system('ifdown '+x+' > /dev/null')
 						SYSTEM_OUT('echo +'+x+' > /sys/class/net/'+name+'/bonding/slaves')
 						route_str = SYSTEM_OUT('ip route|grep "'+x+'  proto"|cut -d " " -f1,2,3')
