@@ -64,6 +64,7 @@ class iSCSIArgs:
 		self.chap_pass_str = ''
 		self.chap_set_str = ''	# enable, disable
 		self.chap_type = ''	# incoming, outgoing
+		self.chap_dup = False
 
 	def setMode(self, mode):
 		if self.mode == '':
@@ -256,6 +257,18 @@ def iscsiChapProc(args = iSCSIArgs()):
 	if args.remove_set:
 		ret,msg = iSCSIChapRemoveUser(args.target_name_str, args.chap_user_str)
 		iscsiExit(ret, msg)
+	
+	# chap dup
+	if args.chap_dup:
+		dup_ret = {}
+		dup_ret['user'] = args.chap_user_str
+		if iSCSIChapUserExist(args.target_name_str, args.chap_user_str):
+			dup_ret['duplicate'] = True
+		else:
+			dup_ret['duplicate'] = False
+		print json.dumps(dup_ret)
+		sys.exit(0)
+
 	# chap set user
 	if args.chap_set_str == 'enable':
 		if args.chap_user_str != '':
@@ -299,6 +312,7 @@ iscsi --target --list [--target-name <name>]
       --chap --target-name <name> --incoming --add --user <name> --pass <word>
       --chap --target-name <name> --incoming --remove <name>
       --chap --target-name <name> --incoming --set <enable|disable> [--user <name>]
+      --chap --target-name <name> --incoming --duplicate-check --user <name>
       --chap --list [--target-name <name>]
 
       --misc --update-cfg
@@ -317,7 +331,8 @@ iscsi_long_opt = ['target', 'list', 'target-name=',
 	'lun', 'map', 'lun-id=', 'unmap', 'get-privilage', 'target-name=',
 	'session', 'volume-name=', 'lun-read-only=', 'wr-method=', 'force-close=', 'initiator=',
 	'modify', 'current-initiator=', 'fresh-initiator=', 'misc', 'update-cfg',
-	'check-default-target', 'restore-cfg', 'chap', 'incoming', 'user=', 'pass=', 'set=']
+	'check-default-target', 'restore-cfg', 'chap', 'incoming', 'user=', 'pass=', 'set=',
+	'duplicate-check']
 
 def iscsi_main():
 	try:
@@ -410,6 +425,8 @@ def iscsi_main():
 			iscsiArgs.chap_pass_str = arg
 		elif opt == '--set':
 			iscsiArgs.chap_set_str = arg
+		elif opt == '--duplicate-check':
+			iscsiArgs.chap_dup = True
 
 	iscsiTargetProc(iscsiArgs)
 	iscsiVolumeProc(iscsiArgs)

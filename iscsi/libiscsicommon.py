@@ -47,6 +47,7 @@ class iSCSI_Protocol:
 		self.MaxOutstandingR2T = 16
 		self.MaxRecvDataSegmentLength = 1024
 		self.MaxXmitDataSegmentLength = 1024
+		self.IncomingChap = "disable"
 
 SCST = SCST_CONFIG()
 
@@ -86,6 +87,17 @@ def getDirList(file_path):
 	finally:
 		return dir_list
 
+def _iscsi_find_incoming(tgt_path):
+	chap_switch = 'disable'
+	try:
+		for x in os.listdir(tgt_path):
+			if x.find('IncomingUser') == 0:
+				chap_switch = 'enable'
+				break
+	except:
+		pass
+	return chap_switch
+
 def getISCSIProto(tgt_name):
 	tgt_full_path = SCST.ROOT_DIR + '/targets/iscsi/' + tgt_name
 	proto = iSCSI_Protocol()
@@ -98,6 +110,7 @@ def getISCSIProto(tgt_name):
 	proto.MaxOutstandingR2T = int(AttrRead(tgt_full_path, 'MaxOutstandingR2T'))
 	proto.MaxRecvDataSegmentLength = int(AttrRead(tgt_full_path, 'MaxRecvDataSegmentLength'))
 	proto.MaxXmitDataSegmentLength = int(AttrRead(tgt_full_path, 'MaxXmitDataSegmentLength'))
+	proto.IncomingChap = _iscsi_find_incoming(tgt_full_path)
 	return proto
 
 def iscsiExit(ret = True, msg = ''):

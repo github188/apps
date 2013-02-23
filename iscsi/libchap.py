@@ -258,7 +258,7 @@ def _chap_conf_user_disable(tgt, user, set_all = False):
 	
 	return True, ''
 
-def _chap_user_exist(tgt, user):
+def iSCSIChapUserExist(tgt, user):
 	for x in iSCSIChapList(tgt):
 		for y in x.incoming:
 			if y['user'] == user:
@@ -335,7 +335,7 @@ def iSCSIChapList(tgt = ''):
 	return final_list
 
 def iSCSIChapAddUser(tgt, user, pwd):
-	if _chap_user_exist(tgt, user):
+	if iSCSIChapUserExist(tgt, user):
 		return False, '增加CHAP用户失败，用户 %s 已经存在!' % user
 	if len(pwd) < 12:
 		return False, '增加CHAP用户 %s 失败，密码长度至少为12个英文或数字!'
@@ -351,7 +351,7 @@ def iSCSIChapAddUser(tgt, user, pwd):
 	return True, '增加CHAP用户 %s 成功!' % user
 
 def iSCSIChapRemoveUser(tgt, user):
-	if not _chap_user_exist(tgt, user):
+	if not iSCSIChapUserExist(tgt, user):
 		return False, '删除CHAP用户失败， 用户 %s 不存在!' % user
 	ret,msg = _chap_sysfs_user_remove(tgt, user)
 	if not ret:
@@ -365,7 +365,7 @@ def iSCSIChapRemoveUser(tgt, user):
 	return True, '删除CHAP用户 %s 成功!' % user
 
 def iSCSIChapDisableUser(tgt, user):
-	if not _chap_user_exist(tgt, user):
+	if not iSCSIChapUserExist(tgt, user):
 		return False, '禁用CHAP用户失败，用户 %s 不存在!' % user
 	ret,msg = _chap_sysfs_user_remove(tgt, user)
 	if not ret:
@@ -379,7 +379,7 @@ def iSCSIChapDisableUser(tgt, user):
 	return True, '禁用CHAP用户 %s 成功!' % user
 
 def iSCSIChapEnableUser(tgt, user):
-	if not _chap_user_exist(tgt, user):
+	if not iSCSIChapUserExist(tgt, user):
 		return False, '启用CHAP用户失败，用户 %s 不存在!' % user
 	incoming = _chap_conf_user_get(tgt, user)
 	if incoming is None:
@@ -427,7 +427,7 @@ if __name__ == '__main__':
 	#print x.__dict__
 	#print _chap_conf_user_enable('abc', 'u123')
 	#print _chap_conf_user_disable('abc', 'u123')
-	#print _chap_user_exist('abc', 'u123')
+	#print iSCSIChapUserExist('abc', 'u123')
 	#print iSCSIChapList()
 	#_chap_sysfs_user_add('iqn.2012-12.com.jwele:tgt-2eb526c4', 'abc', '111111111111')
 	#_chap_sysfs_user_remove('iqn.2012-12.com.jwele:tgt-2eb526c4', 'abc')
