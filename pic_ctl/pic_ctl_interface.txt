@@ -1,0 +1,29 @@
+pic接口函数：
+int pic_init(void);
+    初始化pic
+
+void pic_release(void);
+     释放pic
+
+int pic_get_version(uint32_t *version);
+    获取pic版本信息。
+    version：返回的版本号。0-7：次版本号；8-15：主版本号；16-31：保留
+
+int pic_set_led(uint8_t led, uint8_t sts, uint8_t freq);
+    设置led状态
+    led：led索引，0-15
+    sts：led状态：
+        PIC_LED_OFF，灭；
+        PIC_LED_ON，亮；	= 0x01,
+	PIC_LED_BLINK，闪烁；
+    freq：闪烁状态，仅sts为PIC_LED_BLINK有效
+        PIC_LED_FREQ_NORMAL，正常闪烁，1s
+        PIC_LED_FREQ_SLOW，慢速闪烁，2s
+        PIC_LED_FREQ_FAST，快速闪烁，1/4s
+
+int pic_start_watchdog(void);
+    启动看门狗
+    注：看门狗启动后，需要每隔5s喂狗（调用pic_start_watchdog）
+
+int pic_stop_watchdog(void);
+    停止看门狗
