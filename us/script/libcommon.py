@@ -4,6 +4,7 @@
 import os, re, json, sys
 
 TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
+TMP_RAID_LOCK = '/tmp/.raid-info/create-lock'
 
 def list_files(path, reg):
     if not path.endswith("/"):

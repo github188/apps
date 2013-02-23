@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 	us_mon_enum_dev();
 	clog(LOG_INFO, "Monitor start\n");
 	us_loop();
+	puts("break!---------------");
 	us_mod_release();
 	clog_release();
 

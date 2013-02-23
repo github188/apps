@@ -5,6 +5,7 @@ import sys
 import commands, re, os
 from libdisk import *
 from xml.dom import minidom
+from libsysmon import sysmon_event
 import xml
 
 import sys
@@ -18,6 +19,9 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 """
 DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 
+
+def disk_list_str(dlist=[]):
+	return ','.join([str(x) for x in dlist])
 
 def __def_post(p):
 	if len(p) == 0:
@@ -209,8 +213,39 @@ def tmpfs_remove_disk_from_md(mdinfo, diskinfo):
 	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']), diskinfo.slot)
 	return os.unlink(_file) if os.path.isfile(_file) else False
 
+# 作用：区分创建RAID时获取md信息和重组RAID时获取信息的问题
+# 产生原因：启动时重组RAID后，如果盘较多，/dev/md[x]节点出现会滞后，
+#           需要在handle-md脚本中通过add事件响应；对于创建RAID操作，
+#           可以直接更新RAID信息
+
+def __create_lock():
+	_dir = os.path.dirname(TMP_RAID_LOCK)
+	if not os.path.exists(_dir):
+		os.makedirs(_dir)
+	try:
+		f = open(TMP_RAID_LOCK, 'w')
+		f.write('')
+		f.close()
+	except:
+		return False
+	return True
+
+def __create_unlock():
+	try:
+		os.remove(TMP_RAID_LOCK)
+	except:
+		return False
+	return True
+
+# 检查是否被创建函数加锁
+def __try_create_lock():
+	return os.path.isfile(TMP_RAID_LOCK)
+
 # mddev - /dev/md<x>
 def tmpfs_add_md_info(mddev):
+	if __try_create_lock():
+		return
+
 	attr = __md_fill_mdadm_attr(mddev)
 	if None == attr:
 		return
@@ -219,6 +254,16 @@ def tmpfs_add_md_info(mddev):
 		os.makedirs(_dir)
 	AttrWrite(_dir, 'name', attr.name)
 	AttrWrite(_dir, 'raid-uuid', attr.raid_uuid)
+
+	# check vg state, notify to sysmon
+	if attr.raid_state == 'degrade':
+		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
+	elif attr.raid_state == 'fail':
+		sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
+	elif attr.raid_state == 'normal':
+		sysmon_event('vg', 'good', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
+	elif attr.raid_state == 'rebuild':
+		sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
 
 	if attr.raid_level == '5' or attr.raid_level == '6':
 		return
@@ -288,6 +333,12 @@ def __raid_level(_level):
 	return 'linear' if _level.lower() == 'jbod' else _level
 
 def md_create(mdname, level, chunk, slots):
+	ret,msg = __md_create(mdname, level, chunk, slots)
+	__create_unlock()
+	return ret,msg
+
+def __md_create(mdname, level, chunk, slots):
+	__create_lock()
 	#create raid
 	mddev = md_find_free_mddev()
 	if mddev == None:
@@ -296,6 +347,11 @@ def md_create(mdname, level, chunk, slots):
 	if len(devs) == 0:
 		return False, "没有磁盘"
 	dev_list = " ".join(devs)
+
+	# enable all disk bad sect redirection
+	for d in dev_list.split():
+		disk_bad_sect_redirection(d)
+
 	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, __raid_level(level), chunk, len(devs), dev_list, mdname)
 	if level in ('3', '4', '5', '6', '10', '50', '60'):
 		cmd += " --bitmap=internal"
@@ -323,6 +379,7 @@ def md_create(mdname, level, chunk, slots):
 	except:
 		msg = '初始化卷组未知错误!'
 		pass
+	__create_unlock()
 	tmpfs_add_md_info(mddev)
 	return True, '创建卷组成功!%s' % msg
 
@@ -369,6 +426,8 @@ def md_del(mdname):
 	res = set_disks_free(disks)
 	if res != "":
 		return False,"清除磁盘信息失败，请手动清除"
+
+	sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 %s 删除成功!' % mdinfo['name'])
 	return True,"删除卷组成功"
 
 def md_info_mddevs(mddevs=None):
@@ -387,6 +446,11 @@ def md_info(mdname=None):
 	else:
 		mddevs = [md_get_mddev(mdname)];
 	return md_info_mddevs(mddevs);
+
+def md_restore():
+	for mddev in md_list_mddevs():
+		tmpfs_add_md_info(mddev)
+	return
 
 # -----------------------------------------------------------------------------
 # 供磁盘自动重建使用
@@ -617,8 +681,33 @@ def disk_clean_hotrep(slot):
 
 # -----------------------------------------------------------------------------
 
+def _disk_slot_list_str(dlist=[]):
+	return ','.join([disk_slot(x) for x in dlist])
+
 if __name__ == "__main__":
 	import sys
+	print 'lock: ', __create_lock()
+	print 'try lock: ', __try_create_lock()
+	print 'unlock: ', __create_unlock()
+	sys.exit(0)
+
+	attr = __md_fill_mdadm_attr('/dev/md1')
+	print disk_list_str(attr.disk_list)
+	disks = mddev_get_disks('/dev/md1')
+	print _disk_slot_list_str(disks)
+
+	mdinfo =  mddev_get_attr('/dev/md1')
+	print disk_list_str(mdinfo['disk_list'])
+	#sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 删除成功!')
+	#sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
+	#sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
+	sysmon_event('vg', 'good', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
+	#sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
+	sys.exit(0)
+
+	md_restore()
+	sys.exit(0)
+
 	print md_info('slash')
 	sys.exit(0)
 

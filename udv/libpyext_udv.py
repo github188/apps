@@ -7,7 +7,6 @@ from libmd import md_info
 from libdisk import md_get_mddev
 
 # -----------------------------------------------------------------------------
-"""
 def getVGNameByDev(md_dev):
 	x = None
 	try:
@@ -15,7 +14,6 @@ def getVGNameByDev(md_dev):
 	except:
 		return 'N/A'
 	return x['name']
-"""
 
 def getVGDevByName(vg_name):
 	mddev = md_get_mddev(vg_name)

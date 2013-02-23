@@ -1,14 +1,20 @@
 # for running use
-aptitude install libev4 libev-dev -y
-aptitude install libatasmart-dev libatasmart4 -y
-aptitude install python-dev -y
-aptitude install sqlite3 libsqlite0 libsqlite3-0 libsqlite3-dev python-sqlite -y
-aptitude install lighttpd php5-cgi -y
-aptitude install libudev-dev libudev0 udev -y
-aptitude install libxml2-dev libxml2 -y
-aptitude install nfs-common nfs-kernel-server nfs-server nfs-client -y
+aptitude install libatasmart4
+aptitude install sqlite3 libsqlite0 libsqlite3-0 python-sqlite
+aptitude install lighttpd php5-cgi
+aptitude install libudev0 udev
+aptitude install libxml2
+aptitude install nfs-common nfs-kernel-server nfs-server nfs-client
+aptitude install libdevmapper libdevmapper-event1.02.1 libdevmapper1.02.1
+aptitude install libjson0
 
-# for parted 3.1 complie use
-aptitude install libdevmapper libdevmapper-dev libdevmapper-event1.02.1 libdevmapper1.02.1 -y
-aptitude install uuid-dev -y
-aptitude install libreadline-dev -y
+# for complie use
+aptitude install libatasmart-dev
+aptitude install python-dev
+aptitude install libsqlite3-dev
+aptitude install libudev-dev
+aptitude install libxml2-dev
+aptitude install libdevmapper-dev
+aptitude install uuid-dev
+aptitude install libreadline-dev
+aptitude install libjson0-dev

@@ -1,3 +1,4 @@
 #!/bin/bash
 
-/opt/bond_conf.sh &
+/opt/etc/network/bond_conf.sh &
+

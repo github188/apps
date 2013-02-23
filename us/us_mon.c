@@ -9,6 +9,12 @@
 #include "types.h"
 #include "us_mon.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include "../common/jw-unistd.h"
+
 #define MAX_SLOT	(128)
 
 struct us_mon {
@@ -129,6 +135,18 @@ void us_mon_unregister_notifier(struct mon_node *node)
 	list_del(&node->list);
 }
 
+void _disk_set_updated()
+{
+	// 创建 /tmp/.us_d/updated 文件，us_d 更新磁盘列表完毕
+	mkdir_p("/tmp/.us_d/");
+	int fd = open("/tmp/.us_d/updated", O_CREAT|O_WRONLY, S_IRWXU | S_IRWXG | S_IRWXO);
+	if (fd)
+	{
+		write(fd, "disk updated", 12);
+		close(fd);
+	}
+}
+
 void us_mon_enum_dev(void)
 {
 	struct us_mon *ud = &us_mon;
@@ -180,6 +198,8 @@ void us_mon_enum_dev(void)
 		}
 		udev_device_unref(dev);
 	}
+
+	_disk_set_updated();
 
 out:
 	udev_enumerate_unref(uenum);

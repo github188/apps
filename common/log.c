@@ -46,6 +46,8 @@ int LogInsert(
 	MSG_HEADER_INIT(msg, LOG_REQ_WRITE);
 	if (user)
 		strcpy(msg->user, user);
+	else
+		msg->user[0] = '\0';
 	msg->module = LogModuleInt(module);
 	msg->category = LogCategoryInt(category);
 	msg->event = LogEventInt(event);

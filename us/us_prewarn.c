@@ -128,6 +128,8 @@ int us_prewarn_init(void)
 	int nl_fd;
 	int warning_level = WARNING_LEVEL_3;
 
+	return 0;
+
 	if ((nl_fd = nl_open()) < 0) {
 		clog(CL_ERROR, "netlink open failed");
 		return -1;

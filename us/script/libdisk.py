@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import commands
+import os
 from libcommon import *
 
 def disk_name(slot):
@@ -32,6 +33,12 @@ def disk_slot_update(slots):
 	except:
 		pass
 
+def disk_bad_sect_redirection(disk_dev):
+	dev_name = os.path.basename(disk_dev)
+	cmd = 'echo "enable" > /sys/block/%s/bad_sect_map/stat' % dev_name
+	ret,msg = commands.getstatusoutput(cmd)
+	return True if ret == 0 else False
+
 def disks_from_slot(slots):
 	devs = [];
 	failed_slot = []
@@ -50,11 +57,9 @@ def md_get_mddev(mdname):
 		if md.find('p') >= 0:
 			continue
 		# 尝试从mdadm获取信息
-		sts,out = commands.getstatusoutput('mdadm -D %s' % md)
-		if sts != 0:
-			continue
-		tmp = re.findall('Name : (.*)', out)
-		if len(tmp) > 0:
+		cmd = 'mdadm -D %s 2>&1 | grep %s >/dev/null' % (md, mdname)
+		sts,out = commands.getstatusoutput(cmd)
+		if sts == 0:
 			return md
 
 		# 尝试从tmpfs获取信息

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<monitor>
+	<global>
+		<tmpfs active="enable"/>
+		<msg_buff_size info="10" warning="10" error="10"/>
+	</global>
+
+	<modules>
+		<disk>
+			<event name="online" level="info" action="disk_online"/>
+			<event name="offline" level="warning" action="disk_offline"/>
+			<event name="fail" level="error" action="disk_fail"/>
+			<event name="spare" level="info" action="disk_spare"/>
+			<event name="smart-health" level="warning" action="disk_smart_health"/>
+		</disk>
+
+		<vg>
+			<event name="add" level="info" action="vg_add"/>
+			<event name="remove" level="info" action="vg_revmoe"/>
+			<event name="change" level="info" action="vg_change"/>
+
+			<event name="degrade" level="warning" action="vg_degrade"/>
+			<event name="fail" level="error" action="vg_fail"/>
+			<event name="good" level="info" action="vg_good"/>
+			<event name="rebuild" level="info" action="vg_rebuild"/>
+		</vg>
+
+		<power>
+			<event name="fail" level="warning" action="power_fail"/>
+		</power>
+
+		<self_run>
+			<event name="env_exception_raise" level="error" action="env_raise_exception"/>
+			<event name="env_exception_backout" level="error" action="env_backout_exception"/>
+		</self_run>
+	</modules>
+
+	<self_run>
+		<item name="cpu-temp" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="env-temp" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="case-temp" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="case-fan1" interval="60" min_threshold="500" max_threshold="6000"/>
+		<item name="case-fan2" interval="60" min_threshold="500" max_threshold="6000"/>
+		<item name="cpu-fan" interval="60" min_threshold="500" max_threshold="6000"/>
+	</self_run>
+
+	<!-- 执行的动作，每个标签名字对应event的action属性 -->
+	<actions>
+		<!-- 每个动作下面的alarm标签对应内置的函数 -->
+
+		<!-- 磁盘在线，工作灯常亮，故障灯熄灭 -->
+		<disk_online>
+			<alarm name="disk-led-off"/>
+		</disk_online>
+
+		<!-- 磁盘掉线，工作灯和故障灯都熄灭 -->
+		<disk_offline>
+			<alarm name="disk-led-off"/>
+		</disk_offline>
+
+		<!-- 磁盘故障，故障灯每秒闪烁5下，输出磁盘故障声音 -->
+		<disk_fail>
+			<alarm name="disk-led-blink5"/>
+		</disk_fail>
+
+		<!-- 热备盘，故障灯需要常亮 -->
+		<disk_spare>
+			<alarm name="disk-led-on"/>
+		</disk_spare>
+
+		<!-- 磁盘SMART健康度低，故障灯每2秒闪烁1下 -->
+		<disk_smart_health>
+			<alarm name="disk-led-blink1"/>
+		</disk_smart_health>
+
+		<vg_add>
+		</vg_add>
+
+		<vg_remove>
+		</vg_remove>
+
+		<vg_change>
+		</vg_change>
+
+		<!-- RAID故障，把手故障灯为红色，在线的RAID磁盘告警灯为红色，蜂鸣器告警 -->
+		<vg_degrade>
+			<alarm name="sys-led-on"/>
+			<alarm name="disk-led-on"/>
+			<alarm name="buzzer-on"/>
+		</vg_degrade>
+
+		<vg_fail>
+		</vg_fail>
+
+		<!-- RAID正常状态，把手故障灯关闭，在线的RAID磁盘告警灯关闭，关闭蜂鸣器 -->
+		<vg_good>
+			<alarm name="sys-led-off"/>
+			<alarm name="disk-led-off"/>
+			<alarm name="buzzer-off"/>
+		</vg_good>
+
+		<!-- RAID重建状态，故障灯每2秒闪烁一下，关闭蜂鸣器告警 -->
+		<vg_rebuild>
+			<alarm name="sys-led-blink1"/>
+			<alarm name="buzzer-off"/>
+		</vg_rebuild>
+
+		<!-- 电源故障，把手告警灯为红色，特殊的告警声音 -->
+		<power_fail>
+			<alarm name="sys-led-on"/>
+			<alarm name="buzzer-on"/>
+		</power_fail>
+
+		<!-- 环境监控告警，蜂鸣器 -->
+		<env_raise_exception>
+			<alarm name="buzzer-on"/>
+			<alarm name="notify-tmpfs"/>
+		</env_raise_exception>
+
+		<env_backout_exception>
+			<alarm name="buzzer-off"/>
+			<alarm name="notify-tmpfs"/>
+		</env_backout_exception>
+	</actions>
+</monitor>

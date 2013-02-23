@@ -519,7 +519,7 @@ def add(value):
 #~ 修改用户基本配置
 #~ user为用户		
 def __user_conf__(value,user):
-	if user != '':
+	if len(user) > 0:
 		xpath = SMB_USER_CONF_PATH + user
 		e_conf = ConfigParser.ConfigParser()  
 		e_conf.read(xpath) 
@@ -587,26 +587,31 @@ def __Share_Access_Edit__(value, Original, NEW, read, write):
 #~ U_list用户列表
 #~ allow为配置
 def __Share_Nasallow_Edit__(name, U_list, allow):
-	if name != "" and U_list != "":
+	if len(name) > 0 and len(U_list) > 0:
 		U_list = __User_Group_List__(U_list).split(',')
-		for x in U_list:
-			if len(x) > 0:
-				xpath = SMB_USER_CONF_PATH + x
-				e_conf = ConfigParser.ConfigParser()  
-				e_conf.read(xpath)
-				if config.has_section(name):
-					if allow != '':
-						e_conf.set(name, 'hosts allow', allow)
-					else:
-						if e_conf.has_option(name,  "hosts allow"):
-							e_conf.remove_option(name,  "hosts allow")						
-				e_conf.write(open(xpath, 'w'))
+		if allow != '':
+			for x in U_list:
+				if len(x) > 0:
+					xpath = SMB_USER_CONF_PATH + x
+					e_conf = ConfigParser.ConfigParser()  
+					e_conf.read(xpath) 
+					e_conf.set(name, 'hosts allow', allow)
+					e_conf.write(open(xpath, 'w'))
+		else:
+			for x in U_list:
+				if len(x) > 0:
+					xpath = SMB_USER_CONF_PATH + x
+					e_conf = ConfigParser.ConfigParser()  
+					e_conf.read(xpath) 
+					if e_conf.has_option(name,  "hosts allow"):
+						e_conf.remove_option(name,  "hosts allow")
+						e_conf.write(open(xpath, 'w'))
 			
 #~ 从一个用户的配置中删除一个共享
 #~ name为共享名称
 #~ use为用户名称
 def __Del_User_Share__(name, use):
-	if use != '':
+	if len(name) > 0 and len(use) > 0:
 		xpath = SMB_USER_CONF_PATH + use
 		e_conf = ConfigParser.ConfigParser()  
 		e_conf.read(xpath)
@@ -741,7 +746,7 @@ def edit(value):
 #~ name 共享名称
 #~ U_list 用户列表
 def __Del_Share__(name, U_list):
-	if name != "" and U_list != "":
+	if len(name) > 0 and len(U_list) > 0:
 		U_list = __User_Group_List__(U_list).split(',')
 		for x in U_list:
 			 __Del_User_Share__(name, x)

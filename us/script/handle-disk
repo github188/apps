@@ -161,8 +161,6 @@ def __handle_md_disk_add(mdinfo, diskinfo):
 
 	if __get_md_state(mdinfo) == 'degrade':
 		__add_disk_to_md(mdinfo, diskinfo)
-	else:
-		__md_event_log('Info', '卷组 %s 非降级状态，无需处理相关的磁盘!' % mdinfo['name'])
 
 
 # 磁盘下线事件触发md相关处理
@@ -174,6 +172,7 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 	mdinfo =  mddev_get_attr(mdinfo['dev'])	# 因为删除磁盘，重新获取状态
 	_state = __get_md_state(mdinfo)
 	if _state == 'degrade':
+		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
 		disk = md_get_hotrep(mdinfo['raid_uuid'])
 		if disk == {}:
 			__md_event_log('Warning', '卷组 %s 降级，未找到热备盘，重建失败!' % mdinfo['name'])
@@ -188,6 +187,7 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 		else:
 			__md_event_log('Warning', '卷组 %s 降级，使用 %s 热备盘开始重建操作失败!' % (mdinfo['name'], slot))
 	elif _state == 'fail':
+		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 失效!' % mdinfo['name'])
 		__md_event_log('Error', '卷组 %s 已经失效，请检查!' % mdinfo['name'])
 		__buzzer_alarm()
 	else:
@@ -215,9 +215,11 @@ def main():
 	if event == 'add':
 		msg = '磁盘 %s 上线!' % diskinfo.slot if diskinfo.slot != '' else '磁盘上线!'
 		__md_event_log('Info', msg)
+		sysmon_event('disk', 'online', 'disk=%s' % diskinfo.slot, msg)
 	elif event == 'remove':
 		msg = '磁盘 %s 掉线!' % diskinfo.slot if diskinfo.slot != '' else '磁盘掉线!'
 		__md_event_log('Info', msg)
+		sysmon_event('disk', 'offline', 'disk=%s' % diskinfo.slot, msg)
 	
 	__handle_md_event(event, diskinfo)
 

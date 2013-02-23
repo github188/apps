@@ -76,9 +76,9 @@ def __get_fan_speed(mod):
 		temp = __read_value(NCT_ROOT, 'fan3_input')
 		if temp != '' and temp != 'good':
 			_item['value'] = _item['value'] + '  [ 机箱风扇2: %s RPM ]' % temp
-		temp = __read_value(NCT_ROOT, 'fan2_input')
-		if temp != '' and temp != 'good':
-			_item['value'] = _item['value'] + '  [ CPU风扇: %s RPM ]' % temp
+		#temp = __read_value(NCT_ROOT, 'fan2_input')
+		#if temp != '' and temp != 'good':
+		#	_item['value'] = _item['value'] + '  [ CPU风扇: %s RPM ]' % temp
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item
@@ -178,7 +178,7 @@ def __attch_ver():
 
 # 编译日期
 def __build_date():
-	return 'Build Date: 2012-11-28 15:25'
+	return 'Build Date: ' + get_sys_file('/usr/local/bin/.build-date')
 
 def __get_sys_version():
 	return __mab_ver() + VER_SEP + __bkp_ver() + VER_SEP + __mcu_ver() + VER_SEP + __kernel_ver() + VER_SEP + __rootfs_ver() + VER_SEP + __apps_ver() + VER_SEP + __web_ver() + VER_SEP + __attch_ver() + '  ' + __build_date()
@@ -217,7 +217,7 @@ def get_sys_info(item=None):
 
 #------------------------------------------------------------------------------
 
-ALARM_DIR='/tmp/jw/alarm'
+ALARM_DIR='/tmp/.sys-mon/alarm'
 
 def AttrRead(dir_path, attr_name):
 	value = ''
@@ -258,15 +258,15 @@ def __get_stat_disk(mod):
 def __get_stat_vg(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_stat['value'] = 'good'
+	_stat['value'] = ''
 
 	# 通过外部命令获取
 	try:
 		_vg_list = json.loads(commands.getoutput('sys-manager vg --list'))
 		for _vg in _vg_list['rows']:
-			if _vg['state'] == 'fail':
+			if _vg['raid_state'] == 'fail':
 				_stat['value'] = _stat['value'] + '卷组%s失效 ' % _vg['name']
-			if _vg['state'] == 'degrade':
+			if _vg['raid_state'] == 'degrade':
 				_stat['value'] = _stat['value'] + '卷组%s降级 ' % _vg['name']
 	except:
 		pass
@@ -291,13 +291,13 @@ def __get_stat_fan(mod):
 	_tmp = AttrRead(ALARM_DIR, 'case-fan1')
 	_value = ''
 	if _tmp != '' and _tmp != 'good':
-		_value = _value + '[机箱风扇1告警，转速: %s] ' % _tmp
+		_value = _value + '[机箱风扇1告警: %s] ' % _tmp
 	_tmp = AttrRead(ALARM_DIR, 'case-fan2')
 	if _tmp != '' and _tmp != 'good':
-		_value = _value + '[机箱风扇2告警, 转速: %s] ' % _tmp
-	_tmp = AttrRead(ALARM_DIR, 'cpu-fan')
-	if _tmp != '' and _tmp != 'good':
-		_value = _value + '[CPU风扇告警, 转速: %s]' % _tmp
+		_value = _value + '[机箱风扇2告警: %s] ' % _tmp
+	#_tmp = AttrRead(ALARM_DIR, 'cpu-fan')
+	#if _tmp != '' and _tmp != 'good':
+	#	_value = _value + '[CPU风扇告警: %s]' % _tmp
 	if _value != '':
 		_stat['value'] = _value
 	else:
@@ -307,11 +307,9 @@ def __get_stat_fan(mod):
 def __get_stat_buzzer(mod):
 	_stat = {}
 	_stat['item'] = mod
-	_val = AttrRead(ALARM_DIR, 'buzzer')
-	if _val == '':
-		_stat['value'] = '无法获取'
-	else:
-		_stat['value'] = _val
+	_stat['value'] = 'good'
+	if os.path.isfile('%s/buzzer' % ALARM_DIR):
+		_stat['value'] = '蜂鸣器告警'
 	return _stat
 
 _stat_list = {'disk': __get_stat_disk,
