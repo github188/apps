@@ -5,7 +5,7 @@ lib-objs := pmu_ctl.o
 
 -include config.mk
 
-all: libpmu.a 
+all: libpmu.a test
 
 libpmu.a: $(call to-progs,$(lib-objs))
 	$(QUIET_AR)
