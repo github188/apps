@@ -353,9 +353,7 @@ def iSCSIChapAddUser(tgt, user, pwd):
 def iSCSIChapRemoveUser(tgt, user):
 	if not iSCSIChapUserExist(tgt, user):
 		return False, '删除CHAP用户失败， 用户 %s 不存在!' % user
-	ret,msg = _chap_sysfs_user_remove(tgt, user)
-	if not ret:
-		return ret,msg
+	_chap_sysfs_user_remove(tgt, user)
 	ret,msg = _chap_conf_user_remove(tgt, user)
 	if not ret:
 		return ret,msg
