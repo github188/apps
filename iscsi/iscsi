@@ -255,7 +255,7 @@ def iscsiChapProc(args = iSCSIArgs()):
 		iscsiExit(ret, msg)
 	# chap remove user
 	if args.remove_set:
-		ret,msg = iSCSIChapRemoveUser(args.target_name_str, args.chap_user_str)
+		ret,msg = iSCSIChapRemoveUser(args.target_name_str, args.remove_str)
 		iscsiExit(ret, msg)
 	
 	# chap dup
