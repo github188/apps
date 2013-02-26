@@ -178,7 +178,7 @@ def __attch_ver():
 
 # 编译日期
 def __build_date():
-	return 'Build Date: ' + get_sys_file('/usr/local/bin/.build-date')
+	return get_sys_file('/usr/local/bin/.build-date')
 
 def __get_sys_version():
 	return __mab_ver() + VER_SEP + __bkp_ver() + VER_SEP + __mcu_ver() + VER_SEP + __kernel_ver() + VER_SEP + __rootfs_ver() + VER_SEP + __apps_ver() + VER_SEP + __web_ver() + VER_SEP + __attch_ver() + '  ' + __build_date()
