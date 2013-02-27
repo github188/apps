@@ -643,9 +643,10 @@ def md_get_hotrep(md_uuid=''):
 			# 专用热备盘
 			if md_uuid == __get_attrvalue(item, 'md_uuid'):
 				disk_info = tmp_info
+				disk_info['type'] = '专用热备盘'
 				break
 			# 全局热备盘
-			if tmp_info['type'] == 'Global':
+			if tmp_info['type'] == '全局热备盘':
 				disk_info = tmp_info
 	except:
 		pass
@@ -686,6 +687,9 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
+	print md_get_hotrep('a99e6ad5:db5020f9:e25d3994:c9605473')
+	sys.exit(0)
+
 	print 'lock: ', __create_lock()
 	print 'try lock: ', __try_create_lock()
 	print 'unlock: ', __create_unlock()

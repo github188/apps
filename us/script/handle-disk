@@ -14,6 +14,7 @@
 # -----------------------------------------------------------------------------
 
 import sys,os
+import time
 from libmd import *
 from libdisk import *
 
@@ -74,56 +75,11 @@ def __add_disk_to_md(mdinfo, diskinfo):
 	ret,msg = commands.getstatusoutput(cmd)
 	if ret == 0:
 		__md_event_log('Info', '卷组 %s 所属磁盘 %s 重新加入卷组操作成功! 卷组重建开始!' % (mdinfo['name'], diskinfo.slot))
+		mdinfo =  mddev_get_attr(mdinfo['dev'])
+		sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
 	else:
 		__md_event_log('Warning', '卷组 %s 所属磁盘 %s 重新加入卷组操作失败!' % (mdinfo['name'], diskinfo.slot))
 
-
-"""
-# ---------------  获取不同级别的md状态 -------------------
-# 返回的状态: normal,degrade,fail,rebuild,initial,unknown
-
-def __md_level0_jbod_state(mdinfo):
-	return 'normal' if mdinfo['disk_specs'] == mdinfo['disk_working'] else 'fail'
-
-def __md_level1_state(mdinfo):
-	if mdinfo['disk_specs'] == mdinfo['disk_working']:
-		return 'normal'
-	elif mdinfo['disk_working'] < mdinfo['disk_specs']:
-		return 'degrade'
-	elif mdinfo['disk_working'] == 0:
-		return 'fail'
-	return 'unknown'
-
-def __md_level5_state(mdinfo):
-	_diff = mdinfo['disk_specs'] - mdinfo['disk_working']
-	if _diff == 0:
-		return 'normal'
-	elif _diff == 1:
-		return 'degrade'
-	elif _diff > 1:
-		return 'fail'
-	return 'unknown'
-
-def __md_level6_state(mdinfo):
-	_diff = mdinfo['disk_specs'] - mdinfo['disk_working']
-	if _diff == 0:
-		return 'normal'
-	elif _diff <= 2:
-		return 'degrade'
-	elif _diff > 2:
-		return 'fail'
-	return 'unknown'
-
-def __md_level10_state(mdinfo):
-	return 'unknown'  # because raid10 not supported currently
-
-__level_state = {'0' : __md_level0_jbod_state,
-		'JBOD' : __md_level0_jbod_state,
-		'1' : __md_level1_state,
-		'5' : __md_level5_state,
-		'6' : __md_level6_state,
-		'10' : __md_level10_state}
-"""
 
 def __get_md_state(mdinfo):
 	#return __level_state[mdinfo['raid_level']](mdinfo) if mdinfo['raid_level'] in __level_state.keys() else 'unknown'
@@ -162,6 +118,23 @@ def __handle_md_disk_add(mdinfo, diskinfo):
 	if __get_md_state(mdinfo) == 'degrade':
 		__add_disk_to_md(mdinfo, diskinfo)
 
+DISK_PB_TIMEOUT = 300
+
+# 等待5分钟，如果磁盘没有插会则返回失败
+def __waiting_disk_push_back(mddev):
+	global DISK_PB_TIMTOUT
+	
+	start_time = time.time()
+	cur_time = start_time
+
+	while cur_time - start_time <= DISK_PB_TIMEOUT:
+		time.sleep(5)
+		mdinfo = mddev_get_attr(mddev)
+		_state = __get_md_state(mdinfo)
+		if _state != 'degrade' and _state != 'fail':
+			return True
+		cur_time = time.time()
+	return False
 
 # 磁盘下线事件触发md相关处理
 def __handle_md_disk_remove(mdinfo, diskinfo):
@@ -173,19 +146,29 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 	_state = __get_md_state(mdinfo)
 	if _state == 'degrade':
 		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
+		if __waiting_disk_push_back(mdinfo['dev']):
+			return
+
+		# 如果磁盘没有重新插回，则使用热备盘重建
 		disk = md_get_hotrep(mdinfo['raid_uuid'])
 		if disk == {}:
-			__md_event_log('Warning', '卷组 %s 降级，未找到热备盘，重建失败!' % mdinfo['name'])
-			__buzzer_alarm()
+			disk = get_free_disk()
+		if disk == {}:
+			__md_event_log('Error', '卷组 %s 降级，未找到热备盘或者空闲盘，重建失败!' % mdinfo['name'])
+			#__buzzer_alarm()
 			return
 		slot = disk_serial2slot(disk['serial'])
 		name = disk_name(slot)
 		if __run_ext_cmd('mdadm --add %s %s 2>&1' % (mdinfo['dev'], name)):
-			__md_event_log('Info', '卷组 %s 降级，使用 %s 热备盘开始重建操作成功!' % (mdinfo['name'], slot))
+			__md_event_log('Info', '卷组 %s 降级，使用 %s %s开始重建操作成功!' %
+					(mdinfo['name'], slot, disk['type']))
 			disk_clean_hotrep(slot)
 			disk_slot_update(slot)
+			mdinfo =  mddev_get_attr(mdinfo['dev'])
+			sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
 		else:
-			__md_event_log('Warning', '卷组 %s 降级，使用 %s 热备盘开始重建操作失败!' % (mdinfo['name'], slot))
+			__md_event_log('Error', '卷组 %s 降级，使用 %s %s开始重建操作失败!' %
+					(mdinfo['name'], slot, disk['type']))
 	elif _state == 'fail':
 		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 失效!' % mdinfo['name'])
 		__md_event_log('Error', '卷组 %s 已经失效，请检查!' % mdinfo['name'])
