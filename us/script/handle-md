@@ -4,6 +4,12 @@
 import sys
 from libmd import *
 
+def handle_md_rsync_complished(mddev):
+	mdinfo = mddev_get_attr(mddev)
+	if mdinfo['raid_state'] == 'normal':
+		LogInsert('VG', 'Auto', 'Info', '卷组 %s 初始化完成！' % mdinfo['name'])
+	return
+
 # args [0]  - self
 #      [1]  - dev eg. /dev/md1
 #      [2]  - action 'add', 'remove', 'change'
@@ -22,6 +28,8 @@ def main():
 		tmpfs_add_md_info(mddev)
 	elif 'remove' == action:
 		tmpfs_remove_md_info(mddev)
+	elif 'change' == action:
+		handle_md_rsync_complished(mddev)
 
 if __name__ == "__main__":
 	#  此程序调试通过，暂时不使用，因为在创建md时候，
