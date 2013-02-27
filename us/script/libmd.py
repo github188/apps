@@ -165,8 +165,8 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 	# raid 0,1,jbod的状态在掉盘后需要手动判断
 	if attr.raid_level == '0' or attr.raid_level == 'JBOD':
 		attr.raid_state = __raid0_jobd_state(attr.disk_specs, attr.disk_cnt)
-	elif attr.raid_level == '1':
-		attr.raid_state = __raid1_state(attr.disk_specs, attr.disk_cnt)
+	#elif attr.raid_level == '1':
+	#	attr.raid_state = __raid1_state(attr.disk_specs, attr.disk_cnt)
 
 	return attr.__dict__
 
