@@ -335,6 +335,10 @@ def __raid_level(_level):
 def md_create(mdname, level, chunk, slots):
 	ret,msg = __md_create(mdname, level, chunk, slots)
 	__create_unlock()
+	if ret:
+		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功！卷组初始化开始！' % (slots, level, mdname))
+	else:
+		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败！%s' % (slots, level, mdname, msg))
 	return ret,msg
 
 def __md_create(mdname, level, chunk, slots):
@@ -400,6 +404,14 @@ def __md_used(mdname):
 	return True
 
 def md_del(mdname):
+	ret,msg = __md_del(mdname)
+	if ret:
+		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 成功！' % mdname)
+	else:
+		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 失败！%s' % (mdname, msg))
+	return ret,msg
+
+def __md_del(mdname):
 	mddev = md_get_mddev(mdname)
 	if (mddev == None):
 		return False, "卷组 %s 不存在!" % mdname

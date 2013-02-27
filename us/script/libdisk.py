@@ -146,4 +146,5 @@ def get_free_disk():
 	return disk_info
 
 if __name__ == '__main__':
-	print get_free_disk()
+	#print get_free_disk()
+	disk_slot_update('0:16')
