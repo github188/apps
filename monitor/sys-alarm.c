@@ -74,7 +74,11 @@ char *_get_next_disk_slot(const char *str)
 	static char slot[12];
 	
 	if (buf[0] == '\0')
+	{
+		if (strncmp(str, "disk", 4))
+			return NULL;
 		strcpy(buf, str);
+	}
 
 	bzero(slot, 12);
 	regcomp(&reg, pattern, cflags);
@@ -103,15 +107,13 @@ void sys_alarm_diskled_on(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
-	syslog(LOG_INFO, "sys_alarm_diskled_on()");
-	
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
 		int enc,slot;
 		sscanf(p, "%d:%d", &enc, &slot);
+		//printf("led on: %d\n", slot);
 		pic_set_led(slot-1, PIC_LED_ON, 0);
-		syslog(LOG_INFO, "set disk %d:%d on", enc, slot);
 	}
 }
 
@@ -119,57 +121,82 @@ void sys_alarm_diskled_off(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
-	syslog(LOG_INFO, "sys_alarm_diskled_off()");
-	syslog(LOG_NOTICE, "param: %s", ev->param);
-
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
 		int enc,slot;
 		sscanf(p, "%d:%d", &enc, &slot);
+		//printf("led off: %d\n", slot);
 		pic_set_led(slot-1, PIC_LED_OFF, 0);
-		syslog(LOG_INFO, "set disk %d:%d off", enc, slot);
 	}
 }
 
-void sys_alarm_diskled_blink1(void *event)
+/* 需求：每两秒闪烁1下
+ * 实际：每一秒闪烁1下
+ */
+void sys_alarm_diskled_blink2s1(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
+
+	//if (ev->param)
+		//printf("param: %s\n", ev->param);
 	
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
 		int enc,slot;
 		sscanf(p, "%d:%d", &enc, &slot);
-		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW);
+		//printf("disk led blink 2s1: %d\n", slot);
+		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_NORMAL);
 	}
 }
 
-void sys_alarm_diskled_blink5(void *event)
+/* 需求：每秒闪烁5下
+ * 实际：每秒闪烁4下
+ */
+void sys_alarm_diskled_blink1s5(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
-	syslog(LOG_INFO, "sys_alarm_diskled_blink5()");
+	char *p;
+	while( (p=_get_next_disk_slot(ev->param)) != NULL)
+	{
+		int enc = -1, slot = -1;
+		sscanf(p, "%d:%d", &enc, &slot);
+		//printf("disk led blink 1s5: %d\n", slot);
+		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
+	}
+}
+
+/* 需求：每两秒快速闪烁2下
+ * 实际：每两秒闪烁1下
+ */
+void sys_alarm_diskled_blink2s2(void *event)
+{
+	sys_event_t *ev = (sys_event_t*)event;
+
+	syslog(LOG_INFO, "sys_alarm_diskled_blink2s2()");
 	
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{
 		int enc = -1, slot = -1;
 		sscanf(p, "%d:%d", &enc, &slot);
-		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
-		syslog(LOG_INFO, "set disk %d:%d to blink5", enc, slot);
+		//printf("disk led blink 2s2: %d\n", slot);
+		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW);
 	}
 }
 
+
 void sys_alarm_sysled_on(void *event)
 {
-	syslog(LOG_INFO, "sys_alarm_sysled_on()");
+	//printf("sys led on\n");
 	sb_gpio28_set(true);
 }
 
 void sys_alarm_sysled_off(void *event)
 {
-	syslog(LOG_INFO, "sys_alarm_sysled_off()");
+	//printf("sys led off\n");
 	sb_gpio28_set(false);
 }
 
@@ -184,8 +211,9 @@ struct _handler_map _map[] = {
 	{"buzzer-off", sys_alarm_buzzer_off},
 	{"disk-led-on", sys_alarm_diskled_on},
 	{"disk-led-off", sys_alarm_diskled_off},
-	{"disk-led-blink1", sys_alarm_diskled_blink1},
-	{"disk-led-blink5", sys_alarm_diskled_blink5},
+	{"disk-led-blink1s5", sys_alarm_diskled_blink1s5},
+	{"disk-led-blink2s1", sys_alarm_diskled_blink2s1},
+	{"disk-led-blink2s2", sys_alarm_diskled_blink2s2},
 	{"sys-led-on", sys_alarm_sysled_on},
 	{"sys-led-off", sys_alarm_sysled_off},
 	{"notify-tmpfs", sys_alarm_notify_tmpfs},

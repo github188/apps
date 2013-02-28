@@ -16,13 +16,17 @@
 		</disk>
 
 		<vg>
-			<event name="add" level="info" action="vg_add"/>
-			<event name="remove" level="info" action="vg_revmoe"/>
-			<event name="change" level="info" action="vg_change"/>
+			<!-- add,remove,normal 属于正常状态 -->
+			<event name="add" level="info" action="vg_normal"/>
+			<event name="remove" level="info" action="vg_normal"/>
+			<event name="normal" level="info" action="vg_normal"/>
 
-			<event name="degrade" level="warning" action="vg_degrade"/>
-			<event name="fail" level="error" action="vg_fail"/>
-			<event name="good" level="info" action="vg_good"/>
+			<!-- degrade,fail 属于异常状态 -->
+			<event name="degrade" level="error" action="vg_exception"/>
+			<event name="fail" level="error" action="vg_exception"/>
+
+			<!-- initial,rebuild 属于重建状态 -->
+			<event name="initial" level="info" action="vg_rebuild"/>
 			<event name="rebuild" level="info" action="vg_rebuild"/>
 		</vg>
 
@@ -61,7 +65,7 @@
 
 		<!-- 磁盘故障，故障灯每秒闪烁5下，输出磁盘故障声音 -->
 		<disk_fail>
-			<alarm name="disk-led-blink5"/>
+			<alarm name="disk-led-blink1s5"/>
 		</disk_fail>
 
 		<!-- 热备盘，故障灯需要常亮 -->
@@ -69,40 +73,27 @@
 			<alarm name="disk-led-on"/>
 		</disk_spare>
 
-		<!-- 磁盘SMART健康度低，故障灯每2秒闪烁1下 -->
+		<!-- 磁盘SMART健康度低，故障灯每2秒快速闪烁2下 -->
 		<disk_smart_health>
-			<alarm name="disk-led-blink1"/>
+			<alarm name="disk-led-blink2s2"/>
 		</disk_smart_health>
 
-		<vg_add>
-		</vg_add>
-
-		<vg_remove>
-		</vg_remove>
-
-		<vg_change>
-		</vg_change>
-
-		<!-- RAID故障，把手故障灯为红色，在线的RAID磁盘告警灯为红色，蜂鸣器告警 -->
-		<vg_degrade>
-			<alarm name="sys-led-on"/>
-			<alarm name="disk-led-on"/>
-			<alarm name="buzzer-on"/>
-		</vg_degrade>
-
-		<vg_fail>
-		</vg_fail>
-
 		<!-- RAID正常状态，把手故障灯关闭，在线的RAID磁盘告警灯关闭，关闭蜂鸣器 -->
-		<vg_good>
+		<vg_normal>
 			<alarm name="sys-led-off"/>
 			<alarm name="disk-led-off"/>
 			<alarm name="buzzer-off"/>
 		</vg_good>
 
+		<!-- RAID异常，把手故障灯为红色，蜂鸣器告警 -->
+		<vg_exception>
+			<alarm name="sys-led-on"/>
+			<alarm name="buzzer-on"/>
+		</vg_exception>
+
 		<!-- RAID重建状态，故障灯每2秒闪烁一下，关闭蜂鸣器告警 -->
 		<vg_rebuild>
-			<alarm name="sys-led-blink1"/>
+			<alarm name="disk-led-blink2s1"/>
 			<alarm name="buzzer-off"/>
 		</vg_rebuild>
 
