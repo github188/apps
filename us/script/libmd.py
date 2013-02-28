@@ -165,8 +165,8 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 	# raid 0,1,jbod的状态在掉盘后需要手动判断
 	if attr.raid_level == '0' or attr.raid_level == 'JBOD':
 		attr.raid_state = __raid0_jobd_state(attr.disk_specs, attr.disk_cnt)
-	elif attr.raid_level == '1':
-		attr.raid_state = __raid1_state(attr.disk_specs, attr.disk_cnt)
+	#elif attr.raid_level == '1':
+	#	attr.raid_state = __raid1_state(attr.disk_specs, attr.disk_cnt)
 
 	return attr.__dict__
 
@@ -335,6 +335,10 @@ def __raid_level(_level):
 def md_create(mdname, level, chunk, slots):
 	ret,msg = __md_create(mdname, level, chunk, slots)
 	__create_unlock()
+	if ret:
+		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功！卷组初始化开始！' % (slots, level, mdname))
+	else:
+		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败！%s' % (slots, level, mdname, msg))
 	return ret,msg
 
 def __md_create(mdname, level, chunk, slots):
@@ -400,6 +404,14 @@ def __md_used(mdname):
 	return True
 
 def md_del(mdname):
+	ret,msg = __md_del(mdname)
+	if ret:
+		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 成功！' % mdname)
+	else:
+		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 失败！%s' % (mdname, msg))
+	return ret,msg
+
+def __md_del(mdname):
 	mddev = md_get_mddev(mdname)
 	if (mddev == None):
 		return False, "卷组 %s 不存在!" % mdname
@@ -643,9 +655,10 @@ def md_get_hotrep(md_uuid=''):
 			# 专用热备盘
 			if md_uuid == __get_attrvalue(item, 'md_uuid'):
 				disk_info = tmp_info
+				disk_info['type'] = '专用热备盘'
 				break
 			# 全局热备盘
-			if tmp_info['type'] == 'Global':
+			if tmp_info['type'] == '全局热备盘':
 				disk_info = tmp_info
 	except:
 		pass
@@ -686,6 +699,9 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
+	print md_get_hotrep('a99e6ad5:db5020f9:e25d3994:c9605473')
+	sys.exit(0)
+
 	print 'lock: ', __create_lock()
 	print 'try lock: ', __try_create_lock()
 	print 'unlock: ', __create_unlock()

@@ -127,3 +127,24 @@ def set_disks_free(disks):
 			res += " " + dev
 	disk_name_update(disks)
 	return res
+
+def get_free_disk():
+	disk_info = {}
+	try:
+		_cmd = 'us_cmd disk --list'
+		ret,text = commands.getstatusoutput(_cmd)
+		if ret != 0:
+			return disk_info
+		disk_list = json.loads(text)
+		for x in disk_list['rows']:
+			if x['state'] == 'Free':
+				disk_info['type'] = '空闲盘'
+				disk_info['serial'] = x['serial']
+				break
+	except:
+		pass
+	return disk_info
+
+if __name__ == '__main__':
+	#print get_free_disk()
+	disk_slot_update('0:16')
