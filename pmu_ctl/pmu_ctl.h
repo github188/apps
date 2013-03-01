@@ -2,6 +2,9 @@
 #define PMU_CTL_H
 
 #define PMU_ADDRESS	(0x59)
+#define PMU1_DEV	(PMU_ADDRESS)
+#define PMU2_DEV	(PUM_ADDRESS+1)
+
 enum {
 	PMU_ERR_SUCCESS	= 0,	/* ok */
 	PMU_ERR_NODEV	= -1,	/* Can't open i2c-0 */
@@ -21,6 +24,6 @@ struct pmu_info {
 		is_temp_fault : 1;
 };
 
-int pmu_get_info(struct pmu_info *info);
+int pmu_get_info(unsigned int pmu_addr, struct pmu_info *info);
 
 #endif

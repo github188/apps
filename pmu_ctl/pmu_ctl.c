@@ -53,7 +53,7 @@ static int __pmu_read_word(uint8_t reg, uint16_t *v)
 	return 0;
 }
 
-int pmu_init(void)
+int pmu_init(unsigned int addr)
 {
 	int fd;
 
@@ -62,7 +62,7 @@ int pmu_init(void)
 	fd = open(I2C_DEV, O_RDWR);
 	if (fd < 0)
 		return PMU_ERR_NODEV;
-	if (ioctl(fd, I2C_SLAVE_FORCE, PMU_ADDRESS) < 0) {
+	if (ioctl(fd, I2C_SLAVE_FORCE, addr) < 0) {
 		close(fd);
 		return PMU_ERR_NODEV;
 	}
@@ -81,8 +81,8 @@ void pmu_release(void)
 	}
 }
 
-#define PMU_CHECK_INIT()	do {		\
-	int ret = pmu_init();			\
+#define PMU_CHECK_INIT(addr)	do {		\
+	int ret = pmu_init(addr);			\
 	if (ret < 0)				\
 		return ret;			\
 } while (0)
@@ -164,12 +164,12 @@ static int pmu_get_fan_speed(struct pmu_info *info)
 	return pmu_read_linear(REG_FAN, &info->fan_speed);
 }
 
-int pmu_get_info(struct pmu_info *info)
+int pmu_get_info(unsigned int pmu_addr, struct pmu_info *info)
 {
 	int ret;
 
 	memset(info, 0, sizeof(*info));
-	PMU_CHECK_INIT();
+	PMU_CHECK_INIT(pmu_addr);
 	ret = pmu_get_status(info);
 	if (ret < 0)
 		return ret;

@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 	int ret;
 	struct pmu_info info;
 
-	ret = pmu_get_info(&info);
+	ret = pmu_get_info(PMU1_DEV, &info);
 	printf("ret = %d\n", ret);
 	if (ret < 0) {
 		fprintf(stderr, "Get pm information failed\n");
