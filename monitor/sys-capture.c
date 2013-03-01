@@ -10,12 +10,12 @@ const char *mod_cap_list[] = {"cpu-temp", "env-temp", "case-temp", "case-fan1", 
 
 bool isCaptureSupported(const char *mod)
 {
-	const char *p = mod_cap_list[0];
-	for (;p;)
+	int i;
+
+	for (i=0;mod_cap_list[i];i++)
 	{
-		if (!strcmp(p, mod))
+		if (!strcmp(mod_cap_list[i], mod))
 			return true;
-		p++;
 	}
 	return false;
 }
