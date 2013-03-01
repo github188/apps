@@ -8,6 +8,7 @@ void sys_global_init()
 	gconf.info_size = 10;
 	gconf.warning_size = 10;
 	gconf.error_size = 10;
+	gconf.power_cnt = 1;
 }
 
 void dump_sys_global()
@@ -21,4 +22,5 @@ void dump_sys_global()
 	printf("\tinfo: %d\n", gconf.info_size);
 	printf("\twarning: %d\n", gconf.warning_size);
 	printf("\terror: %d\n", gconf.error_size);
+	printf("power_cnt: %d\n", gconf.power_cnt);
 }

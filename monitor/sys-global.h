@@ -23,6 +23,7 @@ struct _sys_global {
 	struct {
 		int info, warning, error;
 	} msg_buff_size;
+	int power_cnt;
 };
 #define info_size msg_buff_size.info
 #define warning_size msg_buff_size.warning

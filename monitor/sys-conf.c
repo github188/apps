@@ -83,8 +83,10 @@ void _xml_global_parse(xmlNodePtr node)
 
 		// tmpfs
 		if (_XML_NODE_NAME(node, "tmpfs") && _XML_ATTR_EQU(node, "active", "enable"))
+		{
 			gconf.tmpfs = true;
-		if _XML_NODE_NAME(node, "msg_buff_size")
+		}
+		else if _XML_NODE_NAME(node, "msg_buff_size")
 		{
 			if ((tmp=_XML_STR_VAL(node, "info")))
 				gconf.info_size = atoi(tmp);
@@ -93,26 +95,49 @@ void _xml_global_parse(xmlNodePtr node)
 			if ((tmp=_XML_STR_VAL(node, "error")))
 				gconf.error_size = atoi(tmp);
 		}
+		else if _XML_NODE_NAME(node, "power")
+		{
+			if (_XML_ATTR_EQU(node, "config", "double"))
+				gconf.power_cnt = 2;
+			else
+				gconf.power_cnt = 1;
+		}
 		node = node->next;
 	}
 }
 
 void _xml_self_run_parse(xmlNodePtr node)
 {
+	char *tmp;
+
 	while(node)
 	{
 		if (!xmlStrcmp(node->name, BAD_CAST"item") &&
 			isCaptureSupported(_XML_STR_VAL(node, "name")))
 		{
-			syslog(LOG_NOTICE, "XML(self_run_parse): find a new alarm %s!", _XML_STR_VAL(node, "name"));
+			//syslog(LOG_NOTICE, "XML(self_run_parse): find a new alarm %s!", _XML_STR_VAL(node, "name"));
+			printf("node: %s\n", _XML_STR_VAL(node, "name"));
 
 			sys_capture_t *cap = sys_capture_alloc();
 			if (cap)
 			{
 				strcpy(cap->name, _XML_STR_VAL(node, "name"));
-				cap->check_intval = atoi(_XML_STR_VAL(node, "interval"));
-				cap->min_thr = atoi(_XML_STR_VAL(node, "min_threshold"));
-				cap->max_thr = atoi(_XML_STR_VAL(node, "max_threshold"));
+				if ((tmp=_XML_STR_VAL(node, "interval")) != NULL)
+					cap->check_intval = atoi(tmp);
+
+				tmp = _XML_STR_VAL(node, "preset");
+				if (!strcmp(tmp, "true"))
+				{
+					//cap->_preset = true;
+					printf("preset to true\n");
+				}
+				else
+				{
+					if ((tmp=_XML_STR_VAL(node, "min_threshold")) != NULL)
+						cap->min_thr = atoi(tmp);
+					if ((tmp=_XML_STR_VAL(node, "max_threshold")) != NULL)
+						cap->max_thr = atoi(_XML_STR_VAL(node, "max_threshold"));
+				}
 				sys_capture_set_handler(cap);
 				sys_capture_add(cap);
 			}

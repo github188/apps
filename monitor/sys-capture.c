@@ -6,7 +6,7 @@
 
 #define NCT_ROOT "/sys/devices/platform/nct6106.656"
 
-const char *mod_cap_list[] = {"cpu-temp", "env-temp", "case-temp", "case-fan1", "case-fan2", "cpu-fan", NULL};
+const char *mod_cap_list[] = {"cpu-temp", "env-temp", "case-temp", "case-fan1", "case-fan2", "cpu-fan", "power", NULL};
 
 bool isCaptureSupported(const char *mod)
 {
@@ -57,7 +57,7 @@ int __read_int_value(const char *file)
 	return __atoi(__read_file_line(file));
 }
 
-int capture_cpu_temp()
+int capture_cpu_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp17_input");
 	if (val>0)
@@ -65,7 +65,7 @@ int capture_cpu_temp()
 	return val;
 }
 
-int capture_env_temp()
+int capture_env_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp20_input");
 	if (val > 0)
@@ -73,7 +73,7 @@ int capture_env_temp()
 	return val;
 }
 
-int capture_case_temp()
+int capture_case_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp18_input");
 	if (val > 0)
@@ -81,22 +81,25 @@ int capture_case_temp()
 	return val;
 }
 
-int capture_case_fan1()
+int capture_case_fan1(char *msg)
 {
 	syslog(LOG_INFO, "capture case fan1");
 	return __read_int_value(NCT_ROOT"/fan1_input");
 }
 
-int capture_case_fan2()
+int capture_case_fan2(char *msg)
 {
 	return __read_int_value(NCT_ROOT"/fan3_input");
 }
 
-int capture_cpu_fan()
+int capture_cpu_fan(char *msg)
 {
 	return __read_int_value(NCT_ROOT"/fan2_input");
 }
 
+int capture_power(char *msg)
+{
+}
 
 capture_func capture_get(const char *mod)
 {
@@ -115,6 +118,8 @@ capture_func capture_get(const char *mod)
 		return capture_case_fan2;
 	else if (!strcmp(mod, "cpu-fan"))
 		return capture_cpu_fan;
+	else if (!strcmp(mod, "power"))
+		return capture_power;
 	return NULL;
 }
 
@@ -150,6 +155,7 @@ sys_capture_t *sys_capture_alloc()
 		tmp->_last_update = time(NULL);
 		tmp->_capture = NULL;
 		tmp->_error = false;
+		tmp->_preset = false;
 	}
 
 	return tmp;
