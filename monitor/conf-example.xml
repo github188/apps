@@ -41,12 +41,12 @@
 	</modules>
 
 	<self_run>
-		<item name="cpu-temp" interval="60" min_threshold="35" max_threshold="55"/>
-		<item name="env-temp" interval="60" min_threshold="35" max_threshold="55"/>
-		<item name="case-temp" interval="60" min_threshold="35" max_threshold="55"/>
+		<item name="cpu-temp" interval="60" min_threshold="10" max_threshold="55"/>
+		<item name="env-temp" interval="60" min_threshold="10" max_threshold="55"/>
+		<item name="case-temp" interval="60" min_threshold="10" max_threshold="55"/>
 		<item name="case-fan1" interval="60" min_threshold="500" max_threshold="6000"/>
 		<item name="case-fan2" interval="60" min_threshold="500" max_threshold="6000"/>
-		<item name="cpu-fan" interval="60" min_threshold="500" max_threshold="6000"/>
+		<!--<item name="cpu-fan" interval="60" min_threshold="500" max_threshold="6000"/>-->
 	</self_run>
 
 	<!-- 执行的动作，每个标签名字对应event的action属性 -->
@@ -83,7 +83,7 @@
 			<alarm name="sys-led-off"/>
 			<alarm name="disk-led-off"/>
 			<alarm name="buzzer-off"/>
-		</vg_good>
+		</vg_normal>
 
 		<!-- RAID异常，把手故障灯为红色，蜂鸣器告警 -->
 		<vg_exception>

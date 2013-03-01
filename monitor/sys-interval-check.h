@@ -29,6 +29,7 @@ struct _sys_capture_conf {
 	int min_thr, max_thr;
 	time_t _last_update;		// 最后更新时间
 	capture_func _capture;		// 获取系统信息的函数
+	bool _error;			// true - 获取的值出错, false - 出错事件解除
 };
 
 extern struct list _g_capture;

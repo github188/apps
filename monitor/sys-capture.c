@@ -44,9 +44,11 @@ const char *__read_file_line(const char *file)
 
 int __atoi(const char *p)
 {
+	int tmp = -1;
+
 	if (p)
-		return atoi(p);
-	return -1;
+		tmp = atoi(p);
+	return tmp;
 }
 
 // retcode: -1 表示文件不存在
@@ -147,6 +149,7 @@ sys_capture_t *sys_capture_alloc()
 		tmp->min_thr = tmp->max_thr = VAL_INVALID;
 		tmp->_last_update = time(NULL);
 		tmp->_capture = NULL;
+		tmp->_error = false;
 	}
 
 	return tmp;

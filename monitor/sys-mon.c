@@ -116,7 +116,7 @@ int main()
 	log_init();
 	sys_mon_load_conf();
 
-#ifndef _NDEBUG
+#ifdef _DEBUG
 	dump_module_event();
 	dump_action_alarm();
 	dump_sys_global();
@@ -131,8 +131,6 @@ int main()
 	ev_io_init(&mon_io.io, mon_io_cb, mon_io.sockfd, EV_READ);
 	ev_io_start(mon_loop, &mon_io.io);
 	ev_run(mon_loop, 0);
-
-	printf("break\n");
 
 	log_release();
 

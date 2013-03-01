@@ -154,7 +154,9 @@ void tmpfs_write_alarm(const char *fname, const char *msg)
 	if (fname && mkdir_p(TMPFS_ALARM_ROOT))
 	{
 		sprintf(fpath, "%s%s", TMPFS_ALARM_ROOT, fname);
+#ifdef _DEBUG
 		printf("fpath: %s\n", fpath);
+#endif
 
 		if ( (fd=open(fpath, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)) > 0 )
 		{

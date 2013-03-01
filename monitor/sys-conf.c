@@ -172,7 +172,7 @@ void sys_mon_load_conf()
 		}
 	}
 
-#ifndef _NDEBUG
+#ifdef _DEBUG
 	printf("conf loaded!\n");
 #endif
 

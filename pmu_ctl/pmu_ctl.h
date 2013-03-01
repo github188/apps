@@ -1,7 +1,7 @@
 #ifndef PMU_CTL_H
 #define PMU_CTL_H
 
-#define PMU_ADDRESS	(0x55)
+#define PMU_ADDRESS	(0x59)
 enum {
 	PMU_ERR_SUCCESS	= 0,	/* ok */
 	PMU_ERR_NODEV	= -1,	/* Can't open i2c-0 */

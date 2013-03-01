@@ -1,20 +1,14 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
-BUZZER_FILE="/tmp/jw/alarm/buzzer"
 BUZZER_BIN="/usr/local/bin/buzzer"
 
 case "$1" in
 	"on")
-		if [ ! -f $BUZZER_FILE ]; then
-			$BUZZER_BIN &
-			#touch $BUZZER_FILE
-		fi
+		$BUZZER_BIN &
 		;;
 	"off")
-		$BUZZER_BIN 0
 		>/dev/null 2>&1 killall $(basename $BUZZER_BIN)
-		[ $? -ne 0 ] && exit 1
-		#rm -f $BUZZER_FILE
+		$BUZZER_BIN 0
 		;;
 	*)
 		echo "$(basename $0) <on|off>" && exit 1

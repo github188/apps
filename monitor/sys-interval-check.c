@@ -7,28 +7,50 @@ struct list _g_capture;
 void _value_check(int value, sys_capture_t *cap)
 {
 	char msg[128] = {0};
+	char _cur_error = false;
 
-	if (value == VAL_IGNORE)
-	{
-		sysmon_event("self_run", "env_exception_backout", cap->name, "good");
-		return;
-	}
+#ifdef _DEBUG
+	printf(" value: %d, min: %d, max: %d\n", value, cap->min_thr, cap->max_thr);
+#endif
 
 	if (value == VAL_INVALID)
+	{
 		strcpy(msg, "设备不存在");
+		_cur_error = true;
+	}
 	else if ( value < cap->min_thr )
+	{
 		sprintf(msg, "当前取值 %d 已经超过最低告警值 %d !", value, cap->min_thr);
+		_cur_error = true;
+	}
 	else if ( value > cap->max_thr )
+	{
 		sprintf(msg, "当前取值 %d 已经超过最高告警值 %d !", value, cap->max_thr);
+		_cur_error = true;
+	}
 
-	sysmon_event("self_run", "env_exception_raise", cap->name, msg);
+	/* 出错的值仅处理一次 */
+	if (_cur_error && !cap->_error)
+	{
+		sysmon_event("self_run", "env_exception_raise", cap->name, msg);
+		cap->_error = true;
+	}
+	else if (!_cur_error && cap->_error)
+	{
+		sysmon_event("self_run", "env_exception_backout", cap->name, "good");
+		cap->_error = false;
+	}
 }
 
 void _capture(sys_capture_t *cap)
 {
+#ifndef _DEBUG
 	if (!isExpried(cap))
 		return;
 	update(cap);
+#else
+	printf(" handler: %.8x", cap->_capture);
+#endif/*_DEBUG*/
 
 	if (cap->_capture)
 		return _value_check(cap->_capture(), cap);
@@ -39,10 +61,19 @@ void _capture(sys_capture_t *cap)
 void _check_interval()
 {
 	struct list *n, *nt;
+	sys_capture_t *cap;
+
+#ifdef _DEBUG
+	printf("enter _check_interval()\n");
+#endif
 
 	list_iterate_safe(n, nt, &_g_capture)
 	{
-		_capture(list_struct_base(n, sys_capture_t, list));
+		cap = list_struct_base(n, sys_capture_t, list);
+#ifdef _DEBUG
+		printf("capture: %s", cap->name);
+#endif
+		_capture(cap);
 	}
 }
 

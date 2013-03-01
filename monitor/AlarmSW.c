@@ -62,7 +62,6 @@ int main(int argc,char **argv)
 	unsigned int time_alert[]={  
 		20,40  
 	};  
-	//printf("%s\n",argv[0]);
 	
 	if (argc == 1){
 		while(1) 
@@ -73,24 +72,14 @@ int main(int argc,char **argv)
 		int k;
 		k = atoi(argv[1]);
 		if (k){
-			//ѭ??5?β??ž?????
 			for(i = 0; i< k; i++)  
 			{  
 				play(freq_alert ,time_alert);  
 			}  
 		}else{
-			play(freq_alert ,time_alert);  
 			Stop(); 
 		}
 	}			
-	//???Ÿ???1
-	
-	//play(freq ,time);
-	
-	//???Ÿ???2  
-	//play(freq2 ,time2);  
-	
-	//??????????��?رշ?????,??Ȼ?ϽУ???????
 }  
 
 void play(unsigned int* freq ,unsigned int* time)  
@@ -118,5 +107,3 @@ int speaker(unsigned int freq,unsigned int delay)
 	usleep(10000*delay);  
 	outb(0xfc | bit,0x61);  
 }
-
-

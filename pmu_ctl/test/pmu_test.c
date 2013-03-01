@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 	struct pmu_info info;
 
 	ret = pmu_get_info(&info);
+	printf("ret = %d\n", ret);
 	if (ret < 0) {
 		fprintf(stderr, "Get pm information failed\n");
 		return -1;

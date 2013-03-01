@@ -6,6 +6,25 @@
 #include "sys-utils.h"
 #include "../pic_ctl/pic_ctl.h"
 
+#define SHELL "/bin/sh"
+#define BUZZER_ON_CMD "/usr/local/bin/set-buzzer.sh on"
+#define BUZZER_OFF_CMD "/usr/local/bin/set-buzzer.sh off"
+
+int _safe_system(const char *cmd)
+{
+	pid_t pid;
+
+	pid = fork();
+	if (pid < 0)
+		return -1;
+	if (pid == 0) {
+		execl(SHELL, "sh", "-c", cmd, NULL);
+		exit(127);
+	}
+
+	return 0;
+}
+
 int _gconf_level_count(const char *level)
 {
 	if (!level)
@@ -40,27 +59,46 @@ void sys_alarm_default(void *event)
 	tmpfs_msg_sorted_link(tmpfs_msg_insert(ev->level, ev->msg));
 }
 
+//----------------------------------------------------------------------------
+// Buzzer
+//----------------------------------------------------------------------------
+
+static int buzzer_cnt = 0;
+
 void sys_alarm_buzzer_on(void *event)
 {
-	syslog(LOG_INFO, "sys_alarm_buzzer()");
+	if (buzzer_cnt == 0)
+		_safe_system(BUZZER_ON_CMD);
+	buzzer_cnt++;
+#ifdef _DEBUG
+	printf("buzzer_cnt: %d\n", buzzer_cnt);
+#endif
 }
 
 void sys_alarm_buzzer_off(void *event)
 {
-	syslog(LOG_INFO, "sys_alarm_buzzer()");
+	if (buzzer_cnt > 0)
+		buzzer_cnt--;
+	if (buzzer_cnt == 0)
+		_safe_system(BUZZER_OFF_CMD);
+#ifdef _DEBUG
+	printf("buzzer_cnt: %d\n", buzzer_cnt);
+#endif
 }
 
 void sys_alarm_notify_tmpfs(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
-	syslog(LOG_INFO, "sys_alarm_notify_tmpfs()");
-
 	if (ev)
 	{
 		tmpfs_write_alarm(ev->param, ev->msg);
 	}
 }
+
+//----------------------------------------------------------------------------
+//  Disk Led
+//----------------------------------------------------------------------------
 
 char *_get_next_disk_slot(const char *str)
 {
@@ -188,16 +226,32 @@ void sys_alarm_diskled_blink2s2(void *event)
 }
 
 
+//----------------------------------------------------------------------------
+// Sys Led
+//----------------------------------------------------------------------------
+
+static int sysled_cnt = 0;
+
 void sys_alarm_sysled_on(void *event)
 {
 	//printf("sys led on\n");
-	sb_gpio28_set(true);
+	if (sysled_cnt == 0)
+		sb_gpio28_set(true);
+	sysled_cnt++;
+#ifdef _DEBUG
+	printf("sysled_cnt: %d\n", sysled_cnt);
+#endif
 }
 
 void sys_alarm_sysled_off(void *event)
 {
-	//printf("sys led off\n");
-	sb_gpio28_set(false);
+	if (sysled_cnt > 0)
+		sysled_cnt--;
+	if (sysled_cnt == 0)
+		sb_gpio28_set(false);
+#ifdef _DEBUG
+	printf("sysled_cnt: %d\n", sysled_cnt);
+#endif
 }
 
 struct _handler_map {
