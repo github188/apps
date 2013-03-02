@@ -699,13 +699,14 @@ def md_get_hotrep(md_uuid=''):
 		for item in __get_xmlnode(doc_root, 'disk'):
 			tmp_info['serial'] = __get_attrvalue(item, 'serial')
 			tmp_info['type'] = __get_attrvalue(item, 'type')
+
 			# 专用热备盘
 			if md_uuid == __get_attrvalue(item, 'md_uuid'):
 				disk_info = tmp_info
 				disk_info['type'] = '专用热备盘'
 				break
 			# 全局热备盘
-			if tmp_info['type'] == '全局热备盘':
+			if tmp_info['type'] == 'Global':
 				disk_info = tmp_info
 	except:
 		pass
@@ -746,11 +747,11 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
-	ret,msg = disk_set_type('0:11', 'Special', 'VG_4a04')
-	print msg
+	print md_get_hotrep('8884de17:62750eb4:213d13ef:3e7c8dff')
 	sys.exit(0)
 
-	print md_get_hotrep('a99e6ad5:db5020f9:e25d3994:c9605473')
+	ret,msg = disk_set_type('0:11', 'Special', 'VG_4a04')
+	print msg
 	sys.exit(0)
 
 	print 'lock: ', __create_lock()
