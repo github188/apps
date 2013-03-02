@@ -537,11 +537,42 @@ def __set_attrvalue(node, attr, value):
 def __remove_attr(node, attr):
 	return node.removeAttribute(attr)
 
-# 设置磁盘管理类型：
-#	* global   - 全局热备盘
-#	* special  -  专用热备盘
-def disk_set_type(slot, disk_type, mdname=''):
+def _rebuild_md(mdinfo, disk_slot, disk_type):
+	name = disk_name(disk_slot)
+	ret,msg = commands.getstatusoutput('mdadm --add %s %s 2>&1' % (mdinfo['dev'], name))
+	if ret == 0:
+		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作成功!' % (disk_slot, disk_type, mdinfo['name'])
+		disk_clean_hotrep(disk_slot)
+		disk_slot_update(disk_slot)
+	else:
+		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作失败!' % (disk_slot, disk_type, mdinfo['name'])
+	LogInsert('VG', 'Auto', 'Info', _content)
+	return
 
+# 手动重建
+def _manually_rebuild(slot, disk_type, mdname):
+	# check special first
+	if 'Special' == disk_type:
+		if '' == mdname:
+			return
+		_tmp = md_info(mdname)['rows'];
+		if len(_tmp) > 0:
+			mdinfo = _tmp[0]
+		_rebuild_md(mdinfo, slot, '专用热备盘')
+		return
+	# for global spare
+	for mdinfo in md_info()['rows']:
+		if mdinfo['raid_state'] != 'degrade':
+			continue
+		_rebuild_md(mdinfo, slot, '全局热备盘')
+		break
+	return
+
+# 设置磁盘管理类型：
+#	* Global   - 全局热备盘
+#	* Special  - 专用热备盘
+#       * Free     - 空闲盘
+def disk_set_type(slot, disk_type, mdname=''):
 
 	if slot == '':
 		return False, '请输入磁盘槽位号!'
@@ -616,7 +647,14 @@ def disk_set_type(slot, disk_type, mdname=''):
 
 	# 通知disk监控进程
 	disk_slot_update(slot)
-	return True, '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
+
+	_content = '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
+	LogInsert('VG', 'Auto', 'Info', _content)
+
+	# 尝试手动重建
+	_manually_rebuild(slot, disk_type, mdname)
+
+	return True, _content
 
 def __xml_load(fname):
 	__check_disk_hotrep_conf()
@@ -699,6 +737,10 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
+	ret,msg = disk_set_type('0:9', 'Global', '')
+	print msg
+	sys.exit(0)
+
 	print md_get_hotrep('a99e6ad5:db5020f9:e25d3994:c9605473')
 	sys.exit(0)
 
