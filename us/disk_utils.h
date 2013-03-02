@@ -43,12 +43,12 @@ int disk_get_raid_info(const char *dev, struct disk_md_info *i);
 
 static inline const char *disk_get_smart_status(const struct disk_info *info)
 {
-	if (!info->is_smart_avail)
-		return "None";
+	//if (!info->is_smart_avail)
+	//	return "None";
 	if (!info->si.health_good)
-		return "BAD";
-	if (info->si.pending_sectors || info->si.uncorrectable_sectors)
-		return "BAD Sectors";
+		return "LowHealth";
+	//if (info->si.pending_sectors || info->si.uncorrectable_sectors)
+	//	return "BAD Sectors";
 	return "GOOD";
 }
 

@@ -558,9 +558,13 @@ def _manually_rebuild(slot, disk_type, mdname):
 		if '' == mdname:
 			return
 		_tmp = md_info(mdname)['rows'];
-		if len(_tmp) > 0:
-			mdinfo = _tmp[0]
-		_rebuild_md(mdinfo, slot, '专用热备盘')
+		if len(_tmp) <= 0:
+			return
+		mdinfo = _tmp[0]
+		if mdinfo['name'] != mdname:
+			return
+		if mdinfo['raid_state'] == 'degrade':
+			_rebuild_md(mdinfo, slot, '专用热备盘')
 		return
 	# for global spare
 	for mdinfo in md_info()['rows']:
@@ -739,7 +743,7 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
-	ret,msg = disk_set_type('0:9', 'Global', '')
+	ret,msg = disk_set_type('0:11', 'Special', 'VG_4a04')
 	print msg
 	sys.exit(0)
 
