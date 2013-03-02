@@ -90,9 +90,10 @@
 			<alarm name="buzzer-off"/>
 		</vg_normal>
 
-		<!-- RAID异常，把手故障灯为红色，蜂鸣器告警 -->
+		<!-- RAID异常，把手故障灯为红色，磁盘告警灯停止闪烁，蜂鸣器告警 -->
 		<vg_exception>
 			<alarm name="sys-led-on"/>
+			<alarm name="disk-led-off"/>
 			<alarm name="buzzer-on"/>
 		</vg_exception>
 
@@ -106,18 +107,19 @@
 		<!--
 		<power_fail>
 			<alarm name="sys-led-on"/>
-			<alarm name="buzzer-on"/>
 		</power_fail>
 		-->
 
 		<!-- 环境监控告警，蜂鸣器 -->
 		<env_raise_exception>
 			<alarm name="buzzer-on"/>
+			<alarm name="sys-led-on"/>
 			<alarm name="notify-tmpfs"/>
 		</env_raise_exception>
 
 		<env_backout_exception>
 			<alarm name="buzzer-off"/>
+			<alarm name="sys-led-off"/>
 			<alarm name="notify-tmpfs"/>
 		</env_backout_exception>
 	</actions>
