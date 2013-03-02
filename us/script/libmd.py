@@ -657,6 +657,9 @@ def disk_set_type(slot, disk_type, mdname=''):
 	_content = '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
 	LogInsert('VG', 'Auto', 'Info', _content)
 
+	# 通知监控进程
+	sysmon_event('disk', 'spare', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为热备盘' % slot)
+
 	# 尝试手动重建
 	_manually_rebuild(slot, disk_type, mdname)
 
