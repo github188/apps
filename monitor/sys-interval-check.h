@@ -35,6 +35,8 @@ struct _sys_capture_conf {
 };
 
 extern struct list _g_capture;
+extern const char *mod_cap_list[];
+extern const char *mod_ch_name[];
 
 void sys_capture_init();
 sys_capture_t *sys_capture_alloc();

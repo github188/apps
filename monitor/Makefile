@@ -3,6 +3,7 @@ CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
 CFLAGS += -I/usr/include/libxml2
 CFLAGS += -L../pic_ctl -lpic
 CFLAGS += -L../pmu_ctl -lpmu
+CFLAGS += -L../common -llog -lsqlite3
 CFLAGS += -std=c99
 CFLAGS += -L./
 #CFLAGS += -D_DEBUG

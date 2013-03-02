@@ -1,8 +1,24 @@
 #include <signal.h>
 #include "sys-global.h"
 #include "sys-interval-check.h"
+#include "../common/log.h"
 
 struct list _g_capture;
+
+static MOD_NAME(const char *mod)
+{
+	int i;
+	static char _not_found[2] = "";
+
+	for (i=0;mod_cap_list[i];i++)
+	{
+		if (!strcmp(mod_cap_list[i], mod))
+			return mod_ch_name[i];
+	}
+
+	return _not_found;
+}
+
 
 bool _value_check_error(int value, sys_capture_t *cap, char *msg)
 {
@@ -62,16 +78,22 @@ void _capture(sys_capture_t *cap)
 		_cur_error = _value_check_error(cap->_capture(NULL), cap, msg);
 	}
 
+	char log_msg[256];
+
 	/* 出错的值仅处理一次 */
 	if (_cur_error && !cap->_error)
 	{
 		sysmon_event("self_run", "env_exception_raise", cap->name, msg);
 		cap->_error = true;
+		sprintf(log_msg, "监控模块%s告警: %s", MOD_NAME(cap->name), msg);
+		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
 	}
 	else if (!_cur_error && cap->_error)
 	{
 		sysmon_event("self_run", "env_exception_backout", cap->name, "good");
 		cap->_error = false;
+		sprintf(log_msg, "监控模块%s告警解除", MOD_NAME(cap->name));
+		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
 	}
 }
 

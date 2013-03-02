@@ -8,6 +8,7 @@
 #define NCT_ROOT "/sys/devices/platform/nct6106.656"
 
 const char *mod_cap_list[] = {"cpu-temp", "env-temp", "case-temp", "case-fan1", "case-fan2", "cpu-fan", "power", NULL};
+const char *mod_ch_name[] = {"CPU温度", "环境温度", "机箱温度", "机箱风扇1", "机箱风扇2", "CPU风扇", "电源", NULL};
 
 bool isCaptureSupported(const char *mod)
 {
