@@ -3,7 +3,7 @@
 
 #define PMU_ADDRESS	(0x59)
 #define PMU1_DEV	(PMU_ADDRESS)
-#define PMU2_DEV	(PUM_ADDRESS+1)
+#define PMU2_DEV	(PMU_ADDRESS+1)
 
 enum {
 	PMU_ERR_SUCCESS	= 0,	/* ok */

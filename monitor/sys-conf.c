@@ -115,9 +115,6 @@ void _xml_self_run_parse(xmlNodePtr node)
 		if (!xmlStrcmp(node->name, BAD_CAST"item") &&
 			isCaptureSupported(_XML_STR_VAL(node, "name")))
 		{
-			//syslog(LOG_NOTICE, "XML(self_run_parse): find a new alarm %s!", _XML_STR_VAL(node, "name"));
-			printf("node: %s\n", _XML_STR_VAL(node, "name"));
-
 			sys_capture_t *cap = sys_capture_alloc();
 			if (cap)
 			{
@@ -128,8 +125,7 @@ void _xml_self_run_parse(xmlNodePtr node)
 				tmp = _XML_STR_VAL(node, "preset");
 				if (!strcmp(tmp, "true"))
 				{
-					//cap->_preset = true;
-					printf("preset to true\n");
+					cap->_preset = true;
 				}
 				else
 				{

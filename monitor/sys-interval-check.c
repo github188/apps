@@ -10,6 +10,10 @@ bool _value_check_error(int value, sys_capture_t *cap, char *msg)
 	printf(" value: %d, min: %d, max: %d\n", value, cap->min_thr, cap->max_thr);
 #endif
 
+	if (value == VAL_IGNORE)
+	{
+		return false;
+	}
 	if (value == VAL_INVALID)
 	{
 		strcpy(msg, "设备不存在");
@@ -50,7 +54,7 @@ void _capture(sys_capture_t *cap)
 
 	if (cap->_preset)
 	{
-		if (cap->_capture(msg))
+		if (cap->_capture(msg) == VAL_INVALID)
 			_cur_error = true;
 	}
 	else
@@ -110,7 +114,7 @@ void dump_self_run()
 	list_iterate_safe(n, nt, &_g_capture)
 	{
 		cap = list_struct_base(n, sys_capture_t, list);
-		printf("capture: %s\n", cap->name);
+		printf("capture: %.8x %s\n", cap, cap->name);
 		printf("\tcheck interval: %d\n", cap->check_intval);
 		printf("\tmin: %d\n", cap->min_thr);
 		printf("\tmax: %d\n", cap->max_thr);

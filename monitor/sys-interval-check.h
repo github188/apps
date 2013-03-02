@@ -9,7 +9,8 @@
 #define isValid(val) ( ((val)!=VAL_IGNORE) && ((val)!=VAL_INVALID) )
 
 #define isExecutable(item) (item->_capture)
-#define isExpried(item) ((int)difftime(time(NULL), item->_last_update) >= item->check_intval)
+//#define isExpried(item) ((int)difftime(time(NULL), item->_last_update) >= item->check_intval)
+#define isExpried(item) (time(NULL) - item->_last_update >= item->check_intval)
 #define update(item) item->_last_update = time(NULL)
 #define execute(item) item->_capture()
 

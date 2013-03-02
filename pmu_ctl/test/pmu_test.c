@@ -16,6 +16,7 @@ static void dump_info(struct pmu_info *info)
 		printf(" TEMP");
 	if (info->is_fan_fault)
 		printf(" FAN");
+	puts("");
 }
 
 int main(int argc, char *argv[])
@@ -23,8 +24,17 @@ int main(int argc, char *argv[])
 	int ret;
 	struct pmu_info info;
 
+	puts("---------- PMU1 -----------");
 	ret = pmu_get_info(PMU1_DEV, &info);
-	printf("ret = %d\n", ret);
+	if (ret < 0) {
+		fprintf(stderr, "Get pm information failed\n");
+		return -1;
+	} else {
+		dump_info(&info);
+	}
+
+	puts("---------- PMU2 -----------");
+	ret = pmu_get_info(PMU2_DEV, &info);
 	if (ret < 0) {
 		fprintf(stderr, "Get pm information failed\n");
 		return -1;

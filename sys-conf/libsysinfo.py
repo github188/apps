@@ -279,10 +279,10 @@ def __get_stat_power(mod):
 	_stat = {}
 	_stat['item'] = mod
 	_val = AttrRead(ALARM_DIR, 'power')
-	if _val == '':
-		_stat['value'] = '无法获取'
-	else:
+	if _val != '' and _val != 'good':
 		_stat['value'] = _val
+	else:
+		_stat['value'] = 'good'
 	return _stat
 
 def __get_stat_fan(mod):

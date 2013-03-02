@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "sys-interval-check.h"
+#include "../pmu_ctl/pmu_ctl.h"
 
 #define NCT_ROOT "/sys/devices/platform/nct6106.656"
 
@@ -97,8 +98,93 @@ int capture_cpu_fan(char *msg)
 	return __read_int_value(NCT_ROOT"/fan2_input");
 }
 
+void _power_check(int module_no, struct pmu_info *info, char *msg)
+{
+	char _tmp[128];
+
+#if 0
+	_tmp[0] = '\0';
+	// input 200 ~ 240
+	if (info->vin < 200)
+		sprintf(_tmp, "电源模块%d输入电压过低!", module_no);
+	else if (info->vin > 240)
+		sprintf(_tmp, "电源模块%d输入电压过高!", module_no);
+	if (_tmp[0] != '\0')
+		strcat(msg, _tmp);
+
+	_tmp[0] = '\0';
+	// output 10 ~ 13
+	if (info->vout < 10)
+		sprintf(_tmp, "电源模块%d输出电压过低!", module_no);
+	else if (info->vout > 13)
+		sprintf(_tmp, "电源模块%d输出电压过高!", module_no);
+	if (_tmp[0] != '\0')
+		strcat(msg, _tmp);
+
+	_tmp[0] = '\0';
+	// temp 10 ~ 55
+	if (info->temp < 10)
+		sprintf(_tmp, "电源模块%d温度过低!", module_no);
+	else if(info->temp > 55)
+		sprintf(_tmp, "电源模块%d温度过高!", module_no);
+	if (_tmp[0] != '\0')
+		strcat(msg, _tmp);
+
+	_tmp[0] = '\0';
+	// fan 1500 ~ 5000
+	if (info->fan_speed < 1500)
+		sprintf(_tmp, "电源模块%d风扇转速过低!", module_no);
+	else if (info->fan_speed > 5000)
+		sprintf(_tmp, "电源模块%d风扇转速过高!", module_no);
+	if (_tmp[0] != '\0')
+		strcat(msg, _tmp);
+#endif
+	_tmp[0] = '\0';
+	if (info->is_vin_fault)
+		sprintf(_tmp, "电源模块%d输入电压异常!", module_no);
+	strcat(msg, _tmp);
+
+	_tmp[0] = '\0';
+	if (info->is_vout_fault)
+		sprintf(_tmp, "电源模块%d输出电压异常!", module_no);
+	strcat(msg, _tmp);
+
+	_tmp[0] = '\0';
+	if (info->is_temp_fault)
+		sprintf(_tmp, "电源模块%d温度异常!", module_no);
+	strcat(msg, _tmp);
+
+	_tmp[0] = '\0';
+	if (info->is_fan_fault)
+		sprintf(_tmp, "电源模块%d风扇异常!", module_no);
+	strcat(msg, _tmp);
+}
+
 int capture_power(char *msg)
 {
+	int fail_cnt = 0;
+	struct pmu_info info;
+
+	if (!msg)
+		return VAL_IGNORE;
+
+	msg[0] = '\0';
+	if (!pmu_get_info(PMU1_DEV, &info))
+		_power_check(1, &info, msg);
+	else
+		fail_cnt++;
+
+	if (!pmu_get_info(PMU2_DEV, &info))
+		_power_check(2, &info, msg);
+	else
+		fail_cnt++;
+
+	if ((fail_cnt > 0) && (gconf.power_cnt > 1))
+		strcat(msg, "缺少电源模块!");
+
+	if (msg[0] == '\0')
+		return VAL_IGNORE;
+	return VAL_INVALID;
 }
 
 capture_func capture_get(const char *mod)

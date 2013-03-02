@@ -20,12 +20,12 @@ class ev:
 #         fail             disk-slot
 #         spare            disk-slot
 #         smart-health     disk-slot
-#     vg  add
-#         remove
-#         change
+#     vg  add              disk-slot-list
+#         remove           disk-slot-list
+#         normal           disk-slot-list
 #         degrade          disk-slot-list
-#         fail
-#         good             disk-slot-list
+#         fail             disk-slot-list
+#         initial          disk-slot-list
 #         rebuild          disk-slot-list
 #  power  fail
 def sysmon_event(module, event, param, msg):
@@ -37,10 +37,14 @@ def sysmon_event(module, event, param, msg):
 
 	ev_msg = json.dumps(_ev.__dict__)
 
-	client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-	client.connect(SYSMON_ADDR)
-	client.send(ev_msg)
-	client.close()
+	try:
+		client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+		client.connect(SYSMON_ADDR)
+		client.send(ev_msg)
+		client.close()
+	except:
+		return False
+	return True
 
 if __name__ == '__main__':
 	sysmon_event('disk', 'online', '0:1', '磁盘上线')

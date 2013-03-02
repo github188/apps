@@ -1,10 +1,11 @@
-CFLAGS = -Wall -O2 -DDEBUG -g
+CFLAGS = -Wall -O2 -g
 CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
 CFLAGS += -I/usr/include/libxml2
 CFLAGS += -L../pic_ctl -lpic
+CFLAGS += -L../pmu_ctl -lpmu
 CFLAGS += -std=c99
 CFLAGS += -L./
-CFLAGS += -D_DEBUG
+#CFLAGS += -D_DEBUG
 
 OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o util-gpio.o
 
