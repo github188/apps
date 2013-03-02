@@ -338,7 +338,7 @@ def md_create(mdname, level, chunk, slots):
 	if ret:
 		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功！卷组初始化开始！' % (slots, level, mdname))
 	else:
-		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败！%s' % (slots, level, mdname, msg))
+		LogInsert('VG', 'Auto', 'Error', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败！%s' % (slots, level, mdname, msg))
 	return ret,msg
 
 def __md_create(mdname, level, chunk, slots):
@@ -408,7 +408,7 @@ def md_del(mdname):
 	if ret:
 		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 成功！' % mdname)
 	else:
-		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 失败！%s' % (mdname, msg))
+		LogInsert('VG', 'Auto', 'Error', '删除卷组 %s 失败！%s' % (mdname, msg))
 	return ret,msg
 
 def __md_del(mdname):
@@ -541,12 +541,14 @@ def _rebuild_md(mdinfo, disk_slot, disk_type):
 	name = disk_name(disk_slot)
 	ret,msg = commands.getstatusoutput('mdadm --add %s %s 2>&1' % (mdinfo['dev'], name))
 	if ret == 0:
+		_event = 'Info'
 		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作成功!' % (disk_slot, disk_type, mdinfo['name'])
 		disk_clean_hotrep(disk_slot)
 		disk_slot_update(disk_slot)
 	else:
+		_event = 'Error'
 		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作失败!' % (disk_slot, disk_type, mdinfo['name'])
-	LogInsert('VG', 'Auto', 'Info', _content)
+	LogInsert('VG', 'Auto', _event, _content)
 	return
 
 # 手动重建
