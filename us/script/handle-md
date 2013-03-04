@@ -8,6 +8,7 @@ def handle_md_rsync_complished(mddev):
 	mdinfo = mddev_get_attr(mddev)
 	if mdinfo['raid_state'] == 'normal':
 		LogInsert('VG', 'Auto', 'Info', '卷组 %s 初始化完成！' % mdinfo['name'])
+		sysmon_event('vg', 'normal', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 初始化完成！' % mdinfo['name'])
 	return
 
 # args [0]  - self
