@@ -147,8 +147,9 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 	_state = __get_md_state(mdinfo)
 	if _state == 'degrade':
 		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
-		if __waiting_disk_push_back(mdinfo['dev']):
-			return
+
+		#if __waiting_disk_push_back(mdinfo['dev']):
+		#	return
 
 		# 如果磁盘没有重新插回，则使用热备盘重建
 		disk = md_get_hotrep(mdinfo['raid_uuid'])
