@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <signal.h>
+#include <time.h>
 #include "../monitor/sys-utils.h"
 #include "../pic_ctl/pic_ctl.h"
 
@@ -30,14 +32,33 @@ void sysled_on()
 	}
 }
 
+void sig_alrm()
+{
+	sb_gpio28_set(false);
+}
+
 void sysled_blink()
 {
+	struct timespec sl;
+
+	printf("not support!\n");
+	return;
+
+	sl.tv_sec = 0;
+	sl.tv_nsec = 3000;
+
+	if (expried)
+	{
+		signal(SIGALRM, sig_alrm);
+		alarm(expried);
+	}
+
 	do {
-		sb_gpio28_set(false);
 		sb_gpio28_set(true);
-		sleep(1);
+		nanosleep(&sl, NULL);
 		sb_gpio28_set(false);
-	} while(expried--);
+		nanosleep(&sl, NULL);
+	} while(expried);
 }
 
 void diskled_off()
@@ -76,9 +97,10 @@ void diskled_blink()
 		pic_set_led(i, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
 
 	if (expried)
+	{
 		sleep(expried);
-
-	diskled_off();
+		diskled_off();
+	}
 }
 
 int main(int argc, char *argv[])
@@ -91,7 +113,7 @@ int main(int argc, char *argv[])
 	if (argc < 3)
 		_usage("args not enough!\n");
 
-	if ((argc >= 5) && (!strcmp(argv[3], "--expried")))
+	if ((argc >= 5) && (!strcmp(argv[3], "--exprie")))
 		expried = atoi(argv[4]);
 
 	if (!strcmp(argv[1], "--sysled"))
