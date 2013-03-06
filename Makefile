@@ -8,6 +8,7 @@ all:
 	$(MAKE) -C pic_ctl
 	$(MAKE) -C monitor
 	$(MAKE) -C sys-conf
+	$(MAKE) -C test-utils
 
 clean:
 	$(MAKE) -C udv clean
@@ -19,4 +20,5 @@ clean:
 	$(MAKE) -C monitor clean
 	$(MAKE) -C pic_ctl clean
 	$(MAKE) -C sys-conf clean
+	$(MAKE) -C test-utils clean
 	find . -name '*.pyc' -delete

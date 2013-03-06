@@ -154,7 +154,12 @@ def __bkp_ver():
 
 # 单片机版本
 def __mcu_ver():
-	return '0.9'
+	try:
+		ret,msg = commands.getstatusoutput('/usr/local/bin/pic-version')
+		return msg
+	except:
+		pass
+	return '[MCU:NoVersionFound!]'
 
 # 内核版本
 def __kernel_ver():
