@@ -6,6 +6,7 @@ all:
 	$(MAKE) -C us/md-auto-resume/mdscan
 	$(MAKE) -C web-iface
 	$(MAKE) -C pic_ctl
+	$(MAKE) -C pmu_ctl
 	$(MAKE) -C monitor
 	$(MAKE) -C sys-conf
 	$(MAKE) -C test-utils
@@ -19,6 +20,7 @@ clean:
 	$(MAKE) -C common clean
 	$(MAKE) -C monitor clean
 	$(MAKE) -C pic_ctl clean
+	$(MAKE) -C pmu_ctl clean
 	$(MAKE) -C sys-conf clean
 	$(MAKE) -C test-utils clean
 	find . -name '*.pyc' -delete
