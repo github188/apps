@@ -263,7 +263,7 @@ def iSCSILunGetList(tgt = ''):
 					lun = vol.__dict__
 					lun['lun_id'] = int(k)
 					lun['target_name'] = t.name
-					lun['initiator'] = l.split('-')[0]
+					lun['initiator'] = l.split('-grp')[0]
 					if vol.read_only == 'enable':
 						lun['read_only'] = vol.read_only
 					else:
