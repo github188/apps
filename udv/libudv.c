@@ -464,7 +464,7 @@ ssize_t udv_delete(const char *name)
 	PedDevice *device;
 	PedDisk *disk;
 	PedPartition *part;
-	ssize_t retcode = E_SYS_ERROR;
+	ssize_t retcode = E_OK;
 
 	// 参数检查
 	if (!name)
@@ -483,8 +483,12 @@ ssize_t udv_delete(const char *name)
 		return E_UDV_MOUNTED_NAS;
 
 	// 删除分区
-	if (!(device = ped_device_get(udv->vg_dev)))
+	device = ped_device_get(udv->vg_dev);
+	if (!device)
+	{
+		retcode = E_DEVNODE_NOT_EXIST;
 		goto error_eio;
+	}
 
 	if (!(disk = ped_disk_new(device)))
 	{
@@ -503,15 +507,8 @@ ssize_t udv_delete(const char *name)
 	}
 
 	// 删除设备节点
-	if (unlink(udv->dev))
-	{
-		retcode = E_DEVNODE_NOT_EXIST;
-		// TODO: 检查创建udv没有建立节点的原因
-		//goto error;
-	}
+	unlink(udv->dev);
 
-	//success:
-	return E_OK;
 error:
 	ped_device_destroy(device);
 error_eio:

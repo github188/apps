@@ -14,7 +14,7 @@
  * Defination
  */
 
-#define MAX_UDV 10
+#define MAX_UDV 128
 
 /* Error code for c call py */
 enum {
