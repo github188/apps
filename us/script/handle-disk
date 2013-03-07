@@ -77,7 +77,7 @@ def __add_disk_to_md(mdinfo, diskinfo):
 		__md_event_log('Info', '卷组 %s 所属磁盘 %s 重新加入卷组操作成功! 卷组重建开始!' % (mdinfo['name'], diskinfo.slot))
 		disk_slot_update(diskinfo.slot)
 		mdinfo =  mddev_get_attr(mdinfo['dev'])
-		sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
+		sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 开始重建!' % mdinfo['name'])
 	else:
 		__md_event_log('Warning', '卷组 %s 所属磁盘 %s 重新加入卷组操作失败!' % (mdinfo['name'], diskinfo.slot))
 
@@ -167,7 +167,7 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 			disk_clean_hotrep(slot)
 			disk_slot_update(slot)
 			mdinfo =  mddev_get_attr(mdinfo['dev'])
-			sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
+			sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 开始重建!' % mdinfo['name'])
 		else:
 			__md_event_log('Error', '卷组 %s 降级，使用 %s %s开始重建操作失败!' %
 					(mdinfo['name'], slot, disk['type']))
