@@ -288,6 +288,7 @@ void build_err_msg(int err_code, char *err_msg)
 	{
 		case E_OK:
 			sprintf(err_msg, "操作成功!");
+			break;
 		case E_FMT_ERROR:
 			sprintf(err_msg, "操作失败,参数格式错误!");
 			break;
@@ -330,7 +331,8 @@ void build_err_msg(int err_code, char *err_msg)
 int force_init_vg(const char *vg)
 {
 	ssize_t ret = udv_force_init_vg(vg);
-	char _msg[128];
+	char _msg[128] = {0};
+
 	if (0 != ret)
 	{
 		build_err_msg(ret, _msg);
@@ -349,7 +351,7 @@ int udv_main(int argc, char *argv[])
 {
 	char c;
 	list_type_t t;
-	char err_msg[256];
+	char err_msg[256] = {0};
 	char _tmp[512];
 	ssize_t _ret;
 

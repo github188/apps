@@ -54,6 +54,8 @@ int main(int argc, char *argv[])
 	struct list list, *n, *nt;
 	struct geom_stru *tmp;
 
+	test_list();
+
 	//printf("is nas: %d\n", isNasVolume("abc"));
 	/*
 	if (argc!=2)
@@ -89,6 +91,7 @@ int main(int argc, char *argv[])
 
 	//printf("=========== after delete =============\n");
 	//printf("=========== after create =============\n");
+	/*
 	if (udv_get_free_list("slash", &list)>0)
 	{
 		list_iterate_safe(n, nt, &list)
@@ -98,6 +101,7 @@ int main(int argc, char *argv[])
 					tmp->geom.start, tmp->geom.end);
 		}
 	}
+	*/
 	//test_list();
 	//test_create();
 	//test_list();
