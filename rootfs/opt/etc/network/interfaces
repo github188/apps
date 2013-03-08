@@ -6,27 +6,27 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet static
-address 192.168.70.123
+address 192.168.0.100
 netmask 255.255.255.0
 gateway 192.168.70.254
 
 auto eth1
 iface eth1 inet static
-address 192.168.71.123
+address 192.168.1.100
 netmask 255.255.255.0
 
 auto eth2
 iface eth2 inet static
-address 192.168.72.123
+address 192.168.2.100
 netmask 255.255.255.0
 
 auto eth3
 iface eth3 inet static
-address 192.168.73.123
+address 192.168.3.100
 netmask 255.255.255.0
 
 auto eth4
 iface eth4 inet static
-address 192.168.74.123
+address 192.168.4.100
 netmask 255.255.255.0
 
