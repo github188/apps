@@ -5,14 +5,15 @@ lib-objs := pic_ctl.o
 
 -include config.mk
 
-all: libpic.a test
+#all: libpic.a test
+all: test
 
 libpic.a: $(call to-progs,$(lib-objs))
 	$(QUIET_AR)
 
 test:
 	@echo "  MAKE    test"
-	@make -C test
+	@$(CROSS_COMPILE)$(CC) -o pic_test pic_test.c -L../ -lpic
 
 $(OBJS) : %.o : %.c
 	$(QUIET_CC)
@@ -21,5 +22,5 @@ $(OBJS) : %.o : %.c
 
 clean::
 	@echo "  CLEAN   test"
-	@make -C test clean
+	@rm -fr pic_test
 	$(call QUIET_RM,*.o *.a *.so)
