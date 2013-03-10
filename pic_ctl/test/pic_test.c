@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 	int ret;
 
 	static int sts[] = {
-		PIC_LED_ON, PIC_LED_OFF, PIC_LED_BLINK,
+		PIC_LED_ON, PIC_LED_OFF, PIC_LED_BLINK, PIC_LED_B2,
 	};
 
 	static int freq[] = {
