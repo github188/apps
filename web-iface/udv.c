@@ -73,6 +73,54 @@ struct _list_type{
 	bool iscsi, nas, raw;
 };
 
+void build_err_msg(int err_code, char *err_msg)
+{
+	if (!err_msg)
+		return;
+	switch(err_code)
+	{
+		case E_OK:
+			sprintf(err_msg, "操作成功!");
+			break;
+		case E_FMT_ERROR:
+			sprintf(err_msg, "操作失败,参数格式错误!");
+			break;
+		case E_VG_NONEXIST:
+			sprintf(err_msg, "操作失败,VG不存在!");
+			break;
+		case E_UDV_NONEXIST:
+			sprintf(err_msg, "操作失败,UDV不存在!");
+			break;
+		case E_VG_EXIST:
+			sprintf(err_msg, "操作失败,VG已经存在!");
+			break;
+		case E_UDV_EXIST:
+			sprintf(err_msg, "操作失败,UDV已经存在!");
+			break;
+		case E_SYS_ERROR:
+			sprintf(err_msg, "操作失败,系统调用出错!");
+			break;
+		case E_NO_FREE_SPACE:
+			sprintf(err_msg, "操作失败,可供使用的有效剩余空间不足!");
+			break;
+		case E_DEVICE_NOTMD:
+			sprintf(err_msg, "操作失败,设备类型不是VG设备!");
+			break;
+		case E_DEVNODE_NOT_EXIST:
+			sprintf(err_msg, "操作失败,设备节点不存在!");
+			break;
+		case E_UDV_MOUNTED_ISCSI:
+			sprintf(err_msg, "操作失败,用户数据卷已经被挂载为iSCSI卷!");
+			break;
+		case E_UDV_MOUNTED_NAS:
+			sprintf(err_msg, "操作失败,用户数据卷已经被挂载为NAS卷!");
+			break;
+		default:
+			sprintf(err_msg, "操作失败,未知错误!");
+			break;
+	}
+}
+
 static inline void __udv_set_state(char *udv_state_str, udv_state state)
 {
 	if (UDV_RAW == state)
@@ -172,13 +220,15 @@ int get_udv_remain()
 		return_json_msg(MSG_ERROR, err_msg);
 	}
 	else if (n==0)
+	{
 		return printf("{\"vg\":\"%s\",\"max_avaliable\":0,\"max_single\":0}\n",
 				vg_name);
+	}
 
 	list_iterate_safe(nn, nt, &list)
 	{
 		elem = list_struct_base(nn, struct geom_stru, list);
-
+		
 		max_remain += elem->geom.capacity;
 
 		if (max_single < elem->geom.capacity)
@@ -278,54 +328,6 @@ int duplicate_check(const char *udv_name)
 
 	printf("{\"udv_name\":\"%s\",\"duplicate\":false}\n", udv_name);
 	return 0;
-}
-
-void build_err_msg(int err_code, char *err_msg)
-{
-	if (!err_msg)
-		return;
-	switch(err_code)
-	{
-		case E_OK:
-			sprintf(err_msg, "操作成功!");
-			break;
-		case E_FMT_ERROR:
-			sprintf(err_msg, "操作失败,参数格式错误!");
-			break;
-		case E_VG_NONEXIST:
-			sprintf(err_msg, "操作失败,VG不存在!");
-			break;
-		case E_UDV_NONEXIST:
-			sprintf(err_msg, "操作失败,UDV不存在!");
-			break;
-		case E_VG_EXIST:
-			sprintf(err_msg, "操作失败,VG已经存在!");
-			break;
-		case E_UDV_EXIST:
-			sprintf(err_msg, "操作失败,UDV已经存在!");
-			break;
-		case E_SYS_ERROR:
-			sprintf(err_msg, "操作失败,系统调用出错!");
-			break;
-		case E_NO_FREE_SPACE:
-			sprintf(err_msg, "操作失败,可供使用的有效剩余空间不足!");
-			break;
-		case E_DEVICE_NOTMD:
-			sprintf(err_msg, "操作失败,设备类型不是VG设备!");
-			break;
-		case E_DEVNODE_NOT_EXIST:
-			sprintf(err_msg, "操作失败,设备节点不存在!");
-			break;
-		case E_UDV_MOUNTED_ISCSI:
-			sprintf(err_msg, "操作失败,用户数据卷已经被挂载为iSCSI卷!");
-			break;
-		case E_UDV_MOUNTED_NAS:
-			sprintf(err_msg, "操作失败,用户数据卷已经被挂载为NAS卷!");
-			break;
-		default:
-			sprintf(err_msg, "操作失败,未知错误!");
-			break;
-	}
 }
 
 int force_init_vg(const char *vg)

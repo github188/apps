@@ -370,8 +370,6 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 
 	struct geom_stru *gs;
 	ssize_t ret_code = E_FMT_ERROR;
-	udv_geom last_geom = { 0, 0, 0 };
-	uint64_t end_pos = 0;
 	char vg_dev[PATH_MAX];
 
 	if ( !(vg_name && list) )
@@ -390,12 +388,14 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 		ret_code = E_SYS_ERROR;
 		goto err_out;
 	}
-	end_pos = device->length * device->sector_size - 1;
 
 	if ( ped_disk_probe(device) && (disk=ped_disk_new(device)) )
 	{
 		if (!strcmp(disk->type->name, "gpt"))
 		{
+
+			uint64_t last_sect = ALIGN_BEGIN_SECT;
+			ret_code = 0;
 
 			for (part = ped_disk_next_partition(disk, NULL); part;
 					part = ped_disk_next_partition(disk, part) )
@@ -403,43 +403,34 @@ ssize_t udv_get_free_list(const char *vg_name, struct list *list)
 				if (part->num < 0)
 					continue;
 
-				gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
-				gs->geom.start = last_geom.end;
-				if (gs->geom.start == 0)
+				if (last_sect < part->geom.start)
 				{
-					gs->geom.start = DFT_ALIGN_BEGIN;
+					gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
+					list_init(&gs->list);
+
+					gs->geom.start = (last_sect + 1) * device->sector_size;
+					gs->geom.end = part->geom.start * device->sector_size - 1;
+					gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
+
+					list_add(list, &gs->list);
+					ret_code++;
 				}
-				gs->geom.end = part->geom.start * DFT_SECTOR_SIZE - 1;
+				last_sect = part->geom.end;
+			}
+
+			if (last_sect < device->length)
+			{
+				gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
+				list_init(&gs->list);
+
+				gs->geom.start = (last_sect + 1) * device->sector_size;
+				gs->geom.end = (device->length + 1) * device->sector_size - 1;
 				gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
+
 				list_add(list, &gs->list);
-
-				last_geom.end = (part->geom.end+1) * DFT_SECTOR_SIZE;
-
-				if (ret_code<0)
-					ret_code = 0;
 				ret_code++;
 			}
 		}
-	}
-
-	if (last_geom.end < end_pos)
-	{
-		gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
-
-		gs->geom.start = last_geom.end;
-		if (gs->geom.start == 0)
-		{
-			gs->geom.start = DFT_ALIGN_BEGIN;
-		}
-		gs->geom.end = end_pos;
-		gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
-
-		list_add(list, &gs->list);
-
-		if (ret_code < 0)
-			ret_code = 1;
-		else
-			ret_code++;
 	}
 
 	if (disk)
