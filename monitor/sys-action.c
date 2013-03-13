@@ -17,7 +17,6 @@ void _action_alarm_release(sys_action_t *a)
 	{
 		alr = list_struct_base(n, sys_alarm_t, alarm_list);
 		list_del(&alr->alarm_list);
-		syslog(LOG_INFO, "release action '%s' -> alarm '%s' !", a->name, alr->name);
 		free(alr);
 	}
 }
@@ -34,7 +33,6 @@ void sys_action_release()
 		_action_alarm_release(a);
 
 		list_del(&a->list);
-		syslog(LOG_INFO, "release action '%s' !", a->name);
 		free(a);
 	}
 }
@@ -48,8 +46,6 @@ sys_action_t *sys_action_alloc()
 		list_init(&action->list);
 		list_init(&action->alarm_list);
 		action->name[0] = '\0';
-
-		syslog(LOG_NOTICE, "sys_action_alloc(): alloc OK!");
 		return action;
 	}
 
@@ -67,7 +63,6 @@ void _sys_action_default_alarm_add(const char *action)
 			strcpy(alarm->name, "default");
 			sys_alarm_set_handler(alarm, "default");
 			sys_action_alarm_add(action, alarm);
-			syslog(LOG_NOTICE, "_sys_action_default_alarm_add('%s'): add default alarm OK!", action);
 			return;
 		}
 	}
@@ -85,7 +80,6 @@ bool sys_action_add(const char *name)
 		strcpy(action->name, name);
 		list_add(&_gaction_list, &action->list);
 		_sys_action_default_alarm_add(name);
-		syslog(LOG_NOTICE, "sys_action_add('%s'): add OK!", name);
 		return true;
 	}
 
@@ -103,7 +97,6 @@ sys_action_t *sys_action_get(const char *name)
 		action = list_struct_base(n, sys_action_t, list);
 		if (!strcmp(action->name, name))
 		{
-			syslog(LOG_NOTICE, "sys_action_get('%s'): found!", name);
 			return action;
 		}
 	}
@@ -121,8 +114,6 @@ sys_alarm_t *sys_alarm_alloc()
 		list_init(&alarm->alarm_list);
 		alarm->name[0] = '\0';
 		alarm->handler = NULL;
-
-		syslog(LOG_NOTICE, "sys_alarm_alloc(): OK!");
 		return alarm;
 	}
 	
@@ -137,8 +128,6 @@ bool sys_action_alarm_add(const char *name, sys_alarm_t *alarm)
 	if ( (action=sys_action_get(name)) != NULL )
 	{
 		list_add(&action->alarm_list, &alarm->alarm_list);
-
-		syslog(LOG_NOTICE, "sys_action_alarm_add('%s', '%s'): OK!", name, alarm->name);
 		return true;
 	}
 
@@ -160,7 +149,6 @@ sys_alarm_t *sys_action_alarm_get(const char *action, const char *alarm)
 		al = list_struct_base(n, sys_alarm_t, alarm_list);
 		if (!strcmp(al->name, alarm))
 		{
-			syslog(LOG_NOTICE, "sys_action_alarm_get('%s', '%s'): found!", action, alarm);
 			return al;
 		}
 	}
@@ -177,8 +165,6 @@ void do_sys_action(sys_action_t *action, void *event)
 	if (!action)
 		return;
 
-	syslog(LOG_INFO, "do_sys_action()");
-	
 	list_iterate_safe(n, nt, &action->alarm_list)
 	{
 		alarm = list_struct_base(n, sys_alarm_t, alarm_list);

@@ -16,7 +16,6 @@ void _module_event_release(sys_module_t *m)
 	{
 		e = list_struct_base(n, sys_event_conf_t, event_list);
 		list_del(&e->event_list);
-		syslog(LOG_INFO, "release module '%s' -> event '%s' !", m->name, e->event);
 		free(e);
 	}
 }
@@ -33,7 +32,6 @@ void sys_module_release()
 		_module_event_release(m);
 
 		list_del(&m->list);
-		syslog(LOG_INFO, "release module '%s' !", m->name);
 		free(m);
 	}
 }
@@ -54,7 +52,6 @@ bool sys_module_add(const char *name)
 		list_init(&module->list);
 		list_init(&module->event_list);
 		list_add(&_gmodule_list, &module->list);
-		syslog(LOG_NOTICE, "sys_module_add('%s'): add OK!", name);
 		return true;
 	}
 
@@ -72,7 +69,6 @@ sys_module_t *sys_module_get(const char *name)
 		module = list_struct_base(n, sys_module_t, list);
 		if (!strcmp(module->name, name))
 		{
-			syslog(LOG_NOTICE, "sys_module_get('%s'): found!", name);
 			return module;
 		}
 	}
@@ -92,7 +88,6 @@ bool sys_module_event_add(const char *name, sys_event_conf_t *event)
 	}
 
 	list_add(&module->event_list, &event->event_list);
-	syslog(LOG_NOTICE, "sys_module_event_add('%s', '%s'): OK!", name, event->event);
 	return true;
 }
 
@@ -113,7 +108,6 @@ sys_event_conf_t *sys_module_event_get(const char *name, const char *event)
 		ec = list_struct_base(n, sys_event_conf_t, event_list);
 		if (!strcmp(ec->event, event))
 		{
-			syslog(LOG_NOTICE, "sys_module_event_get('%s', '%s'): found!", name, event);
 			return ec;
 		}
 	}
@@ -126,7 +120,6 @@ void sys_module_event_update(sys_event_conf_t *ec)
 {
 	if (ec)
 		ec->count++;
-	syslog(LOG_INFO, "sys_module_event_update(): counter = %d", ec->count);
 }
 
 void _dump_event(sys_module_t *module)

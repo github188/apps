@@ -43,8 +43,6 @@ int _gconf_level_count(const char *level)
 
 void sys_alarm_default(void *event)
 {
-	syslog(LOG_INFO, "sys_alram_default()");
-
 	sys_event_t *ev = (sys_event_t*)event;
 	
 	// 如果配置关闭了tmpfs告警，则不处理
@@ -213,8 +211,6 @@ void sys_alarm_diskled_blink2s2(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
-	syslog(LOG_INFO, "sys_alarm_diskled_blink2s2()");
-	
 	char *p;
 	while( (p=_get_next_disk_slot(ev->param)) != NULL)
 	{

@@ -16,8 +16,6 @@ sys_event_conf_t *sys_event_conf_alloc()
 		list_init(&ec->event_list);
 		ec->count = 0;
 		ec->action = NULL;
-
-		syslog(LOG_NOTICE, "sys_event_conf_alloc(): OK!");
 		return ec;
 	}
 

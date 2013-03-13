@@ -16,8 +16,6 @@ void _xml_module_event_parse(char *module, xmlNodePtr node)
 	{
 		if (!xmlStrcmp(node->name, BAD_CAST"event"))
 		{
-			syslog(LOG_NOTICE, "XML(module_event_parser): found a new event!");
-
 			sys_event_conf_t *ec = sys_event_conf_alloc();
 			strcpy(ec->module, module);
 			strcpy(ec->event, _XML_STR_VAL(node, "name"));
@@ -35,7 +33,6 @@ void _xml_module_parse(xmlNodePtr node)
 	{
 		_XML_IGN_CHECK(node)
 		{
-			syslog(LOG_NOTICE, "XML(module_parser): found a new module!");
 			sys_module_add(node->name);
 			_xml_module_event_parse(node->name, node->xmlChildrenNode);
 		}
@@ -49,8 +46,6 @@ void _xml_action_alarm_parse(char *action_name, xmlNodePtr node)
 	{
 		if (!xmlStrcmp(node->name, BAD_CAST"alarm"))
 		{
-			syslog(LOG_NOTICE, "XML(action_alarm_parser): find a new alarm!");
-
 			sys_alarm_t *alarm = sys_alarm_alloc();
 			strcpy(alarm->name, _XML_STR_VAL(node, "name"));
 			sys_alarm_set_handler(alarm, _XML_STR_VAL(node, "name"));
@@ -67,7 +62,6 @@ void _xml_action_parse(xmlNodePtr node)
 
 		_XML_IGN_CHECK(node)
 		{
-			syslog(LOG_NOTICE, "XML(action_parser): find a new action %s!", node->name);
 			sys_action_add(node->name);
 			_xml_action_alarm_parse(node->name, node->xmlChildrenNode);
 		}

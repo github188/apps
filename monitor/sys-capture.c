@@ -37,7 +37,7 @@ const char *__read_file_line(const char *file)
 	}
 	else
 	{
-		syslog(LOG_INFO, "%s : fail to read %s", __func__, file);
+		syslog(LOG_NOTICE, "%s : fail to read %s", __func__, file);
 		return NULL;
 	}
 
@@ -85,7 +85,6 @@ int capture_case_temp(char *msg)
 
 int capture_case_fan1(char *msg)
 {
-	syslog(LOG_INFO, "capture case fan1");
 	return __read_int_value(NCT_ROOT"/fan1_input");
 }
 
@@ -224,7 +223,6 @@ void sys_capture_release()
 	{
 		c = list_struct_base(n, sys_capture_t, list);
 		list_del(&c->list);
-		syslog(LOG_INFO, "release capture '%s' !", c->name);
 		free(c);
 	}
 }
