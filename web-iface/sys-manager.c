@@ -2,8 +2,8 @@
 
 struct cmd_map cmd_map[] = {
   {"udv", udv_main},
-  {"disk", external_main},
-  {"vg", external_main},
+  {"disk", python_cmd_main},
+  {"vg", python_cmd_main},
   {"iscsi", python_cmd_main},
   {"nas", python_cmd_main},
   {"network", python_cmd_main},
