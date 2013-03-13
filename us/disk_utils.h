@@ -63,7 +63,7 @@ static inline const char *disk_get_md_state(const struct disk_md_info *mi)
 	else if (mi->is_fault)
 		stat = "Fault";
 	else if (mi->is_spare)
-		stat = "Spare";
+		stat = "SpecialSpare";
 	else
 		stat = "RAID";
 
