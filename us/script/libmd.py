@@ -213,6 +213,10 @@ def tmpfs_remove_disk_from_md(mdinfo, diskinfo):
 	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']), diskinfo.slot)
 	return os.unlink(_file) if os.path.isfile(_file) else False
 
+def tmpfs_add_disk_to_md(mdinfo, diskinfo):
+	_dir = '%s/%s/disk-list' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']))
+	return AttrWrite(_dir, diskinfo.slot, diskinfo.slot)
+
 # 作用：区分创建RAID时获取md信息和重组RAID时获取信息的问题
 # 产生原因：启动时重组RAID后，如果盘较多，/dev/md[x]节点出现会滞后，
 #           需要在handle-md脚本中通过add事件响应；对于创建RAID操作，
@@ -747,6 +751,7 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
+	sys.exit(0)
 	print md_get_hotrep('8884de17:62750eb4:213d13ef:3e7c8dff')
 	sys.exit(0)
 

@@ -78,6 +78,7 @@ def __add_disk_to_md(mdinfo, diskinfo):
 		disk_slot_update(diskinfo.slot)
 		mdinfo =  mddev_get_attr(mdinfo['dev'])
 		sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 开始重建!' % mdinfo['name'])
+		tmpfs_add_disk_to_md(mdinfo, diskinfo)
 	else:
 		__md_event_log('Warning', '卷组 %s 所属磁盘 %s 重新加入卷组操作失败!' % (mdinfo['name'], diskinfo.slot))
 
@@ -119,24 +120,6 @@ def __handle_md_disk_add(mdinfo, diskinfo):
 	if __get_md_state(mdinfo) == 'degrade':
 		__add_disk_to_md(mdinfo, diskinfo)
 
-DISK_PB_TIMEOUT = 300
-
-# 等待5分钟，如果磁盘没有插会则返回失败
-def __waiting_disk_push_back(mddev):
-	global DISK_PB_TIMTOUT
-	
-	start_time = time.time()
-	cur_time = start_time
-
-	while cur_time - start_time <= DISK_PB_TIMEOUT:
-		time.sleep(5)
-		mdinfo = mddev_get_attr(mddev)
-		_state = __get_md_state(mdinfo)
-		if _state != 'degrade' and _state != 'fail':
-			return True
-		cur_time = time.time()
-	return False
-
 # 磁盘下线事件触发md相关处理
 def __handle_md_disk_remove(mdinfo, diskinfo):
 	if mdinfo == None:
@@ -147,9 +130,6 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 	_state = __get_md_state(mdinfo)
 	if _state == 'degrade':
 		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 降级!' % mdinfo['name'])
-
-		#if __waiting_disk_push_back(mdinfo['dev']):
-		#	return
 
 		# 如果磁盘没有重新插回，则使用热备盘重建
 		disk = md_get_hotrep(mdinfo['raid_uuid'])
@@ -168,6 +148,7 @@ def __handle_md_disk_remove(mdinfo, diskinfo):
 			disk_slot_update(slot)
 			mdinfo =  mddev_get_attr(mdinfo['dev'])
 			sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 开始重建!' % mdinfo['name'])
+			tmpfs_add_disk_to_md(mdinfo, diskinfo)
 		else:
 			__md_event_log('Error', '卷组 %s 降级，使用 %s %s开始重建操作失败!' %
 					(mdinfo['name'], slot, disk['type']))
@@ -189,6 +170,7 @@ def __handle_md_event(event, diskinfo):
 
 # 主函数
 def main():
+
 	# 参数检查
 	if len(sys.argv) < 2:
 		# 记录日志，返回
