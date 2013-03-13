@@ -10,7 +10,8 @@ CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
 LDFLAGS =
 LDLIBS =
 uslibs = -lev -ludev -latasmart -lxml2  -L../common -llog -lsqlite3
-progs = us_d mon_test us_cmd
+#progs = us_d mon_test us_cmd
+progs = us_d us_cmd
 
 us_modules = us_regex.o us_ev.o us_mon.o us_disk.o us_cmd.o us_cl.o modules.o us_prewarn.o
 us_utils = disk_utils.o safe_popen.o os_utils.o
