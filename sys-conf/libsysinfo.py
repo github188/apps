@@ -271,8 +271,10 @@ def __get_stat_vg(mod):
 		for _vg in _vg_list['rows']:
 			if _vg['raid_state'] == 'fail':
 				_stat['value'] = _stat['value'] + '卷组%s失效 ' % _vg['name']
-			if _vg['raid_state'] == 'degrade':
+			elif _vg['raid_state'] == 'degrade':
 				_stat['value'] = _stat['value'] + '卷组%s降级 ' % _vg['name']
+			elif _vg['raid_state'] == 'rebuild':
+				_stat['value'] = _stat['value'] + '卷组%s重建 ' % _vg['name']
 	except:
 		pass
 		_stat['value'] = '无法获取'
