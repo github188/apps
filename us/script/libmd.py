@@ -151,7 +151,15 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 	if attr.raid_uuid == '':
 		attr.raid_uuid = AttrRead(_dir, 'raid-uuid')
 	
-	if attr.raid_level == '5' or attr.raid_level == '6':
+	if attr.raid_level == '6':
+		if attr.raid_state == 'degrade' or attr.raid_state == 'rebuild':
+			if attr.disk_cnt < attr.disk_specs:
+				attr.raid_state = 'degrade'
+			else:
+				attr.raid_state = 'rebuild'
+		return
+
+	if attr.raid_level == '5':
 		return attr.__dict__
 
 	# 特殊处理: raid1,jbod没有strip属性
@@ -751,20 +759,11 @@ def _disk_slot_list_str(dlist=[]):
 
 if __name__ == "__main__":
 	import sys
-	sys.exit(0)
-	print md_get_hotrep('8884de17:62750eb4:213d13ef:3e7c8dff')
+
+	attr = __md_fill_mdadm_attr('/dev/md2')
+	print attr.__dict__
 	sys.exit(0)
 
-	ret,msg = disk_set_type('0:11', 'Special', 'VG_4a04')
-	print msg
-	sys.exit(0)
-
-	print 'lock: ', __create_lock()
-	print 'try lock: ', __try_create_lock()
-	print 'unlock: ', __create_unlock()
-	sys.exit(0)
-
-	attr = __md_fill_mdadm_attr('/dev/md1')
 	print disk_list_str(attr.disk_list)
 	disks = mddev_get_disks('/dev/md1')
 	print _disk_slot_list_str(disks)
