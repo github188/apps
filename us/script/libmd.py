@@ -157,7 +157,7 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 				attr.raid_state = 'degrade'
 			else:
 				attr.raid_state = 'rebuild'
-		return
+		return attr.__dict__
 
 	if attr.raid_level == '5':
 		return attr.__dict__
@@ -457,7 +457,7 @@ def __md_del(mdname):
 def md_info_mddevs(mddevs=None):
 	if (mddevs == None):
 		mddevs = md_list_mddevs()
-	md_attrs = [];
+	md_attrs = []
 	for mddev in mddevs:
 		attr = mddev_get_attr(mddev)
 		if (attr):
@@ -760,8 +760,8 @@ def _disk_slot_list_str(dlist=[]):
 if __name__ == "__main__":
 	import sys
 
-	attr = __md_fill_mdadm_attr('/dev/md2')
-	print attr.__dict__
+	print md_info()
+
 	sys.exit(0)
 
 	print disk_list_str(attr.disk_list)
