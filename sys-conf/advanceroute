@@ -1,0 +1,25 @@
+#!/bin/sh -x
+
+do_set()
+{
+	IP=`ifconfig $NIC | grep "inet addr" | cut -d ':' -f 2 | cut -d ' ' -f 1`
+	if [ -z "$IP" ]; then
+		continue
+	fi
+	ip rule del table $NIC
+	ip route add dev $NIC src $IP table $NIC
+	ip rule add from $IP table $NIC
+}
+
+if [ "$1" = "auto" ]; then
+	NICs=`ls /sys/class/net | grep eth`
+	for NIC in $NICs
+	do
+		do_set
+	done
+fi
+
+if [ ! -z "$1" ]; then
+	NIC=$1
+	do_set
+fi
