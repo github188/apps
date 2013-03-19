@@ -19,9 +19,11 @@ if [ "$1" = "auto" ]; then
 	do
 		do_set
 	done
+	exit
 fi
 
 if [ ! -z "$1" ]; then
 	NIC=$1
 	do_set
+	exit
 fi
