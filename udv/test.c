@@ -51,10 +51,7 @@ void test_list()
 
 int main(int argc, char *argv[])
 {
-	struct list list, *n, *nt;
-	struct geom_stru *tmp;
-
-	test_list();
+	//test_list();
 
 	//printf("is nas: %d\n", isNasVolume("abc"));
 	/*
@@ -106,12 +103,11 @@ int main(int argc, char *argv[])
 	//test_create();
 	//test_list();
 
-	/*
 	struct list list, *nn, *nt;
 	ssize_t n;
 	struct geom_stru *elem;
 
-	n = get_udv_free_list("/dev/md1", &list);
+	n = udv_get_free_list("/dev/md2", &list);
 	printf("n = %d\n", n);
 
 	list_iterate_safe(nn, nt, &list)
@@ -120,7 +116,6 @@ int main(int argc, char *argv[])
 		printf("start = %llu, end = %llu, capacity = %llu\n",
 			elem->geom.start, elem->geom.end, elem->geom.capacity);
 	}
-	*/
 
 	return 0;
 }
