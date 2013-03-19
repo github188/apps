@@ -153,8 +153,7 @@ iface lo inet loopback\n
 				bond_str = bond_str + 'echo ' + deviant(name, 'mode')  + ' > /sys/class/net/' + name  + '/bonding/mode\n'
 				bond_str = bond_str + 'echo 2 > /sys/class/net/' + name  + '/bonding/xmit_hash_policy\n'
 				bond_str = bond_str + 'ifconfig ' + name  + ' ' + deviant(name, 'address')  + ' netmask ' + deviant(name, 'netmask')  + ' up\n'
-				bond_str = bond_str + 'ip route add dev ' + name + ' src ' + deviant(name, 'address') + ' table ' + name + '\n'
-				bond_str = bond_str + 'ip rule add from ' + deviant(name, 'address') + ' table ' + name + '\n'
+				bond_str = bond_str + 'advanceroute ' + name + '\n'
 				bond_str = bond_str + 'echo 100 > /sys/class/net/' + name  + '/bonding/miimon\n'
 				iflist = deviant(name, 'iflist').split(',')
 				if len(iflist) > 0:
@@ -420,7 +419,7 @@ def NIC_Set(value):
 				if len(gw) > 0:
 					SYSTEM_OUT('route add default gw '+gw+' dev ' + name)
 				__Conf_Save__()
-				os.system('advancerote ' + name)
+				os.system('advanceroute ' + name)
 			Export(True, '设置成功！')
 		else:
 			Export(False, '该接口是聚合组成员，不能设置！')
@@ -462,9 +461,7 @@ def BOND_Set(value):
 				SYSTEM_OUT('echo '+value.mode_set+' > /sys/class/net/'+name+'/bonding/mode')
 				os.system('echo 2 > /sys/class/net/' +name+ '/bonding/xmit_hash_policy')
 				SYSTEM_OUT('ifconfig '+name+' '+ip+' netmask '+mask+' up')
-				os.system('ip route add dev ' +name+ ' src ' +ip+ ' table ' +name)
-				os.system('ip rule del table ' +name)
-				os.system('ip rule add from ' +ip+ ' table ' +name)
+				os.system('advanceroute ' + name)
 				if len(gw) > 0:
 					SYSTEM_OUT('route add default gw '+gw+' dev ' + name)
 				for x in  Nic_Array:
