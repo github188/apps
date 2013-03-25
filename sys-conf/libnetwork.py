@@ -139,7 +139,7 @@ def OUT_CONF():
 auto lo
 iface lo inet loopback\n
 """
-	bond_str = '#!/bin/bash\n\nmodprobe bonding\necho -bond0 > /sys/class/net/bonding_masters\n\n'
+	bond_str = '#!/bin/bash\n\n'
 	dns_str = ''
 
 	OUT = ConfigParser.ConfigParser()  
@@ -153,7 +153,6 @@ iface lo inet loopback\n
 				bond_str = bond_str + 'echo ' + deviant(name, 'mode')  + ' > /sys/class/net/' + name  + '/bonding/mode\n'
 				bond_str = bond_str + 'echo 2 > /sys/class/net/' + name  + '/bonding/xmit_hash_policy\n'
 				bond_str = bond_str + 'ifconfig ' + name  + ' ' + deviant(name, 'address')  + ' netmask ' + deviant(name, 'netmask')  + ' up\n'
-				bond_str = bond_str + 'advanceroute ' + name + '\n'
 				bond_str = bond_str + 'echo 100 > /sys/class/net/' + name  + '/bonding/miimon\n'
 				iflist = deviant(name, 'iflist').split(',')
 				if len(iflist) > 0:

@@ -14,7 +14,7 @@ do_set()
 }
 
 if [ "$1" = "auto" ]; then
-	NICs=`ls /sys/class/net | grep eth`
+	NICs=`ls /sys/class/net | grep -E 'eth[0-9]|bond[0-9]'`
 	for NIC in $NICs
 	do
 		do_set
