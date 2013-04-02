@@ -616,6 +616,8 @@ def disk_set_type(slot, disk_type, mdname=''):
 		disk_clean_hotrep(slot)
 		set_disk_free(disk_name(slot))
 		disk_slot_update(slot)
+		# 通知监控进程
+		sysmon_event('disk', 'free', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为空闲盘' % slot)
 		return True, '设置槽位号为 %s 的磁盘为空闲盘成功!' % slot
 	elif disk_type != 'Global':
 		return False, '参数不正确:请指定需要设置的磁盘类型'

@@ -14,6 +14,7 @@
 			<event name="offline" level="warning" action="disk_offline"/>
 			<event name="fail" level="error" action="disk_fail"/>
 			<event name="spare" level="info" action="disk_spare"/>
+			<event name="free" level="info" action="disk_free"/>
 			<event name="smart-health" level="warning" action="disk_smart_health"/>
 		</disk>
 
@@ -77,6 +78,11 @@
 		<disk_spare>
 			<alarm name="disk-led-on"/>
 		</disk_spare>
+
+		<!-- 空闲盘，故障灯需要熄灭 -->
+		<disk_free>
+			<alarm name="disk-led-off"/>
+		</disk_free>
 
 		<!-- 磁盘SMART健康度低，故障灯每2秒快速闪烁2下 -->
 		<disk_smart_health>
