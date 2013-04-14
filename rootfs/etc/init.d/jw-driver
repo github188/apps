@@ -17,6 +17,7 @@ export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 do_driver_start()
 {
 	modprobe nct6106
+	modprobe smbus-power
 }
 
 do_driver_stop()
