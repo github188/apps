@@ -3,7 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "sys-interval-check.h"
-#include "../pmu_ctl/pmu_ctl.h"
+#include "pmu-info.h"
 
 #define NCT_ROOT "/sys/devices/platform/nct6106.656"
 
@@ -169,12 +169,12 @@ int capture_power(char *msg)
 		return VAL_IGNORE;
 
 	msg[0] = '\0';
-	if (!pmu_get_info(PMU1_DEV, &info))
+	if (!pmu_get_info(PMU_DEV1, &info))
 		_power_check(1, &info, msg);
 	else
 		fail_cnt++;
 
-	if (!pmu_get_info(PMU2_DEV, &info))
+	if (!pmu_get_info(PMU_DEV2, &info))
 		_power_check(2, &info, msg);
 	else
 		fail_cnt++;
