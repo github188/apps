@@ -92,7 +92,7 @@ def __get_sys_attr(dev, attr):
 	sys_path = '/sys/block/' + dev_name
 	return __attr_read(sys_path, attr)
 
-# 目前先调用外部程序，以后考虑使用函数级调用的方式实现
+# 目前先调用外部程序, 以后考虑使用函数级调用的方式实现
 # sys-manager udv --remain-capacity --vg /dev/md1
 # 输出格式：
 # {"vg":"/dev/md1","max_avaliable":212860928,"max_single":212860928}
@@ -118,7 +118,7 @@ class raid_attr:
 		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
 		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
 		#self.disk_working = 0	# 考虑使用disk_cnt替代
-		self.disk_specs = 0	# raid应该包含的磁盘个数，对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
+		self.disk_specs = 0	# raid应该包含的磁盘个数, 对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
 
 def __listdir_files(_dir):
 	if not os.path.isdir(_dir):
@@ -225,38 +225,8 @@ def tmpfs_add_disk_to_md(mdinfo, diskinfo):
 	_dir = '%s/%s/disk-list' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']))
 	return AttrWrite(_dir, diskinfo.slot, diskinfo.slot)
 
-# 作用：区分创建RAID时获取md信息和重组RAID时获取信息的问题
-# 产生原因：启动时重组RAID后，如果盘较多，/dev/md[x]节点出现会滞后，
-#           需要在handle-md脚本中通过add事件响应；对于创建RAID操作，
-#           可以直接更新RAID信息
-
-def __create_lock():
-	_dir = os.path.dirname(TMP_RAID_LOCK)
-	if not os.path.exists(_dir):
-		os.makedirs(_dir)
-	try:
-		f = open(TMP_RAID_LOCK, 'w')
-		f.write('')
-		f.close()
-	except:
-		return False
-	return True
-
-def __create_unlock():
-	try:
-		os.remove(TMP_RAID_LOCK)
-	except:
-		return False
-	return True
-
-# 检查是否被创建函数加锁
-def __try_create_lock():
-	return os.path.isfile(TMP_RAID_LOCK)
-
 # mddev - /dev/md<x>
 def tmpfs_add_md_info(mddev):
-	if __try_create_lock():
-		return
 
 	attr = __md_fill_mdadm_attr(mddev)
 	if None == attr:
@@ -334,11 +304,11 @@ def md_stop(mddev):
 	cmd = "mdadm -S %s 2>&1" % mddev
 	sts, out = commands.getstatusoutput(cmd)
 	if out.find('mdadm: stopped') < 0:
-		return -1,'设备正在被占用!'
+		return -1,'设备正在被占用'
 	cmd = "rm -f %s >/dev/null 2>&1" % mddev
 	sts,out = commands.getstatusoutput(cmd)
 	if sts != 0:
-		return -1,'无法删除设备节点!'
+		return -1,'无法删除设备节点'
 	return sts,''
 
 def __raid_level(_level):
@@ -346,15 +316,13 @@ def __raid_level(_level):
 
 def md_create(mdname, level, chunk, slots):
 	ret,msg = __md_create(mdname, level, chunk, slots)
-	__create_unlock()
 	if ret:
-		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功！卷组初始化开始！' % (slots, level, mdname))
+		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功' % (slots, level, mdname))
 	else:
-		LogInsert('VG', 'Auto', 'Error', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败！%s' % (slots, level, mdname, msg))
+		LogInsert('VG', 'Auto', 'Error', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败%s' % (slots, level, mdname, msg))
 	return ret,msg
 
 def __md_create(mdname, level, chunk, slots):
-	__create_lock()
 	#create raid
 	mddev = md_find_free_mddev()
 	if mddev == None:
@@ -371,6 +339,12 @@ def __md_create(mdname, level, chunk, slots):
 	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, __raid_level(level), chunk, len(devs), dev_list, mdname)
 	if level in ('3', '4', '5', '6', '10', '50', '60'):
 		cmd += " --bitmap=internal"
+		sts,size = commands.getstatusoutput('cat /tmp/disk_use_size')
+		if sts != 0:
+			size = 0
+		if size >= 1000000:
+			cmd += " -z " + size
+
 	sts,out = commands.getstatusoutput(cmd)
 	# 更新热备盘配置
 	for slot in slots.split():
@@ -393,11 +367,9 @@ def __md_create(mdname, level, chunk, slots):
 			force = json.loads(out)
 			msg = force['msg']
 	except:
-		msg = '初始化卷组未知错误!'
+		msg = '初始化卷组未知错误'
 		pass
-	__create_unlock()
-	tmpfs_add_md_info(mddev)
-	return True, '创建卷组成功!%s' % msg
+	return True, '创建卷组成功%s' % msg
 
 def __md_remove_devnode(mddev):
 	try:
@@ -418,17 +390,17 @@ def __md_used(mdname):
 def md_del(mdname):
 	ret,msg = __md_del(mdname)
 	if ret:
-		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 成功！' % mdname)
+		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 成功' % mdname)
 	else:
-		LogInsert('VG', 'Auto', 'Error', '删除卷组 %s 失败！%s' % (mdname, msg))
+		LogInsert('VG', 'Auto', 'Error', '删除卷组 %s 失败%s' % (mdname, msg))
 	return ret,msg
 
 def __md_del(mdname):
 	mddev = md_get_mddev(mdname)
 	if (mddev == None):
-		return False, "卷组 %s 不存在!" % mdname
+		return False, "卷组 %s 不存在" % mdname
 	if __md_used(mdname):
-		return False, '卷组 %s 存在未删除的用户数据卷，请先删除！' % mdname
+		return False, '卷组 %s 存在未删除的用户数据卷, 请先删除' % mdname
 
 	try:
 		mdinfo = md_info(mdname)['rows'][0]
@@ -438,20 +410,16 @@ def __md_del(mdname):
 	disks = mddev_get_disks(mddev)
 	sts,msg = md_stop(mddev)
 	if sts != 0:
-		return False,"停止%s失败!%s" % (mdname, msg)
-	# 删除设备节点
-	__md_remove_devnode(mddev)
-
-	tmpfs_remove_md_info(mddev)
+		return False,"停止%s失败%s" % (mdname, msg)
 
 	# 专用热备盘设置为空闲盘
 	for slot in md_get_special(md_uuid):
 		disk_set_type(slot, 'Free')
 	res = set_disks_free(disks)
 	if res != "":
-		return False,"清除磁盘信息失败，请手动清除"
+		return False,"清除磁盘信息失败, 请手动清除"
 
-	sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 %s 删除成功!' % mdinfo['name'])
+	sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 %s 删除成功' % mdinfo['name'])
 	return True,"删除卷组成功"
 
 def md_info_mddevs(mddevs=None):
@@ -527,7 +495,7 @@ def disk_get_state(slot):
 		pass
 	return state
 
-# 检查磁盘热备盘配置，如果不存在就创建默认配置
+# 检查磁盘热备盘配置, 如果不存在就创建默认配置
 def __check_disk_hotrep_conf():
 	if not os.path.isfile(DISK_HOTREP_CONF):
 		d,f = os.path.split(DISK_HOTREP_CONF)
@@ -554,12 +522,12 @@ def _rebuild_md(mdinfo, disk_slot, disk_type):
 	ret,msg = commands.getstatusoutput('mdadm --add %s %s 2>&1' % (mdinfo['dev'], name))
 	if ret == 0:
 		_event = 'Info'
-		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作成功!' % (disk_slot, disk_type, mdinfo['name'])
+		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作成功' % (disk_slot, disk_type, mdinfo['name'])
 		disk_clean_hotrep(disk_slot)
 		disk_slot_update(disk_slot)
 	else:
 		_event = 'Error'
-		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作失败!' % (disk_slot, disk_type, mdinfo['name'])
+		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作失败' % (disk_slot, disk_type, mdinfo['name'])
 	LogInsert('VG', 'Auto', _event, _content)
 	return
 
@@ -593,32 +561,32 @@ def _manually_rebuild(slot, disk_type, mdname):
 def disk_set_type(slot, disk_type, mdname=''):
 
 	if slot == '':
-		return False, '请输入磁盘槽位号!'
+		return False, '请输入磁盘槽位号'
 
 	state = disk_get_state(slot)
 	if state == 'N/A':
-		return False, '无法获取槽位号为 %s 的磁盘状态!' % slot
+		return False, '无法获取槽位号为 %s 的磁盘状态' % slot
 	elif state == 'RAID':
-		return False, '槽位号为 %s 的磁盘是RAID盘，无法设置%s!' % (slot, DISK_TYPE_MAP[disk_type])
+		return False, '槽位号为 %s 的磁盘是RAID盘, 无法设置%s' % (slot, DISK_TYPE_MAP[disk_type])
 	elif state == disk_type:
-		return True, '槽位号为 %s 磁盘已经是%s，无需设置!' % (slot, DISK_TYPE_MAP[state])
+		return True, '槽位号为 %s 磁盘已经是%s, 无需设置' % (slot, DISK_TYPE_MAP[state])
 
 	md_uuid = ''
 	if disk_type == 'Special':
 		if mdname == '':
-			return False, '参数不正确,设置专用热备盘必须指定卷组名称!'
+			return False, '参数不正确,设置专用热备盘必须指定卷组名称'
 		for mdinfo in md_info(mdname)['rows']:
 			if mdinfo['name'] == mdname:
 				md_uuid = mdinfo["raid_uuid"]
 		if md_uuid == '':
-			return False, '卷组 %s 不存在，请检查参数!' % mdname
+			return False, '卷组 %s 不存在, 请检查参数' % mdname
 	elif disk_type == 'Free':
 		disk_clean_hotrep(slot)
 		set_disk_free(disk_name(slot))
 		disk_slot_update(slot)
 		# 通知监控进程
 		sysmon_event('disk', 'free', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为空闲盘' % slot)
-		return True, '设置槽位号为 %s 的磁盘为空闲盘成功!' % slot
+		return True, '设置槽位号为 %s 的磁盘为空闲盘成功' % slot
 	elif disk_type != 'Global':
 		return False, '参数不正确:请指定需要设置的磁盘类型'
 
@@ -627,11 +595,11 @@ def disk_set_type(slot, disk_type, mdname=''):
 	try:
 		doc = minidom.parse(DISK_HOTREP_CONF)
 	except IOError,e:
-		return False, '读取配置分区出错！%s' % e
+		return False, '读取配置分区出错 %s' % e
 	except xml.parsers.expat.ExpatError, e:
-		return False, '磁盘配置文件格式出错！%s' % e
+		return False, '磁盘配置文件格式出错 %s' % e
 	except e:
-		return False, '无法解析磁盘配置文件！%s' % e
+		return False, '无法解析磁盘配置文件 %s' % e
 
 	disk_serial = disk_slot2serial(slot)
 
@@ -668,7 +636,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 	# 通知disk监控进程
 	disk_slot_update(slot)
 
-	_content = '设置槽位号为 %s 的磁盘为热备盘成功！' % slot
+	_content = '设置槽位号为 %s 的磁盘为热备盘成功' % slot
 	LogInsert('VG', 'Auto', 'Info', _content)
 
 	# 通知监控进程
@@ -704,7 +672,7 @@ def md_get_special(md_uuid=''):
 	return spec_list
 
 # 获取热备盘
-# 优先返回专用热备盘，如果没有则返回全局热备盘，如果没有则返回None
+# 优先返回专用热备盘, 如果没有则返回全局热备盘, 如果没有则返回None
 def md_get_hotrep(md_uuid=''):
 	disk_info = {}
 	tmp_info = {}
@@ -732,11 +700,11 @@ def disk_clean_hotrep(slot):
 	try:
 		doc = minidom.parse(DISK_HOTREP_CONF)
 	except IOError,e:
-		return False, '读取配置分区出错！%s' % e
+		return False, '读取配置分区出错 %s' % e
 	except xml.parsers.expat.ExpatError, e:
-		return False, '磁盘配置文件格式出错！%s' % e
+		return False, '磁盘配置文件格式出错 %s' % e
 	except e:
-		return False, '无法解析磁盘配置文件！%s' % e
+		return False, '无法解析磁盘配置文件 %s' % e
 
 	disk_serial = disk_slot2serial(slot)
 	is_set = False
@@ -750,9 +718,9 @@ def disk_clean_hotrep(slot):
 		f = open(DISK_HOTREP_CONF, 'w')
 		doc.writexml(f, encoding='utf-8')
 		f.close()
-		return True, '移除磁盘 %s 的热备盘配置成功!' % slot
+		return True, '移除磁盘 %s 的热备盘配置成功' % slot
 
-	return False, '移除磁盘 %s 的热备盘失败，配置不存在!' % slot
+	return False, '移除磁盘 %s 的热备盘失败, 配置不存在' % slot
 
 # -----------------------------------------------------------------------------
 
@@ -772,7 +740,7 @@ if __name__ == "__main__":
 
 	mdinfo =  mddev_get_attr('/dev/md1')
 	print disk_list_str(mdinfo['disk_list'])
-	#sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 删除成功!')
+	#sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 删除成功')
 	#sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
 	#sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
 	sysmon_event('vg', 'good', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)

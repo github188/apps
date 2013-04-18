@@ -1,4 +1,4 @@
-#include <signal.h>
+﻿#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "clog.h"
@@ -35,15 +35,14 @@ static void dbg_init(void)
 }
 #endif
 
-static int mon_print_dev(const char *path, const char *dev, int act)
+static int mon_print_dev(const char *path, const char *dev, const char *act)
 {
-	printf("    %s: %s\n",
-	       dev, act == MA_ADD? "add" : "remove");
+	printf("    %s: %s\n", dev, act);
 
 	return MA_HANDLED;
 }
 
-static int mon_print(const char *path, const char *dev, int act)
+static int mon_print(const char *path, const char *dev, const char *act)
 {
 	printf("%s\n", path);
 

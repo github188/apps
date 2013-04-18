@@ -36,9 +36,6 @@ assemble() # arg1: md_num, arg2: disk_list
 
 	local mddev=/dev/md$1
 	local disks=$2
-	local disk
-	local slaves
-	local disk_name
 	local array_state
 	mdadm -Af $mddev $disks >/dev/null 2>&1
 	array_state=`cat /sys/block/md$1/md/array_state`
@@ -46,21 +43,6 @@ assemble() # arg1: md_num, arg2: disk_list
 		mdadm -S $mddev >/dev/null 2>&1
 		return
 	fi
-	slaves=`ls /sys/block/md$1/slaves 2>/dev/null`
-	if [ -z "$slaves" ]; then
-		return
-	fi
-
-	for disk in $disks
-	do
-		disk_name=${disk##*/}
-		if ! echo $slaves | grep -w "$disk_name" 1>/dev/null 2>&1; then
-			mdadm -a $mddev $disk >/dev/null 2>&1
-		fi
-	done
-
-	# restore partitions
-	#yes Fix | parted "$mddev" print > /dev/null
 
 	mddev_wait $mddev
 	mddev_part_wait $mddev

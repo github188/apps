@@ -265,9 +265,9 @@ struct _msg_request
 /* -------------------------------------------------------------------------- */
 /* Log Utils                                                                  */
 /* -------------------------------------------------------------------------- */
-bool log_db_exist();
+bool log_db_exist(void);
 
-bool log_db_create();
+bool log_db_create(void);
 
 /* -------------------------------------------------------------------------- */
 /*   API                                                                      */
@@ -284,7 +284,7 @@ int LogInsert(
 	);
 
 /* 获取日志数量 */
-ssize_t LogGetQuantity();
+ssize_t LogGetQuantity(void);
 
 /* 获取日志
  * session_id 为0时，不关心page_size大小

@@ -3,8 +3,8 @@
 # reassume md devices
 
 ### BEGIN INIT INFO
-# Provides:          jw-mdassume
-# Required-Start:    jw-driver
+# Provides:          jw-assemble
+# Required-Start:    jw-apps
 # Required-Stop:
 # Default-Start:     2
 # Default-Stop:      0 1 6
@@ -24,7 +24,7 @@ _usage()
 start_md()
 {
 	/usr/local/bin/md-assume.sh
-	sys-manager vg --misc --restore &
+	#sys-manager vg --misc --restore
 }
 
 start_scst()
@@ -34,13 +34,13 @@ start_scst()
 	modprobe iscsi-scst
 	iscsi-scstd
 	if [ $? -eq 0 ]; then
-		sys-manager iscsi --misc --restore-cfg
+		sys-manager iscsi --misc --restore-cfg | awk -F':' '{ print $NF }' | sed 's/^ //'| tr -d '}"!'
 	fi
 }
 
 start_nas()
 {
-	sys-manager nas --misc --restore-cfg
+	sys-manager nas --misc --restore-cfg | awk -F':' '{ print $NF }' | sed 's/^ //' | tr -d '}"!'
 }
 
 case "${1:-}" in

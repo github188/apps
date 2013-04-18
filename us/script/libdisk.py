@@ -103,7 +103,7 @@ def set_spare(mdname, slots):
 
 def set_slots_free(slots):
 	if len(slots) == 0:
-		return False,"请输入设置空闲盘的磁盘槽位号!"
+		return False,"请输入设置空闲盘的磁盘槽位号"
 
 	failed = []
 	for slot in slots:

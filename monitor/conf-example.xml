@@ -69,9 +69,9 @@
 			<alarm name="disk-led-off"/>
 		</disk_offline>
 
-		<!-- 磁盘故障，故障灯每秒闪烁5下，输出磁盘故障声音 -->
+		<!-- 磁盘故障，故障灯快速闪烁，每秒闪4下，输出磁盘故障声音 -->
 		<disk_fail>
-			<alarm name="disk-led-blink1s5"/>
+			<alarm name="disk-led-blink1s4"/>
 		</disk_fail>
 
 		<!-- 热备盘，故障灯需要常亮 -->
@@ -84,9 +84,9 @@
 			<alarm name="disk-led-off"/>
 		</disk_free>
 
-		<!-- 磁盘SMART健康度低，故障灯每2秒快速闪烁2下 -->
+		<!-- 磁盘SMART健康度低，故障灯慢速闪烁 每2秒闪1下 -->
 		<disk_smart_health>
-			<alarm name="disk-led-blink2s2"/>
+			<alarm name="disk-led-blink2s1"/>
 		</disk_smart_health>
 
 		<!-- RAID正常状态，把手故障灯关闭，在线的RAID磁盘告警灯关闭，关闭蜂鸣器 -->
@@ -103,9 +103,9 @@
 			<alarm name="buzzer-on"/>
 		</vg_exception>
 
-		<!-- RAID重建状态，故障灯每2秒闪烁一下，关闭蜂鸣器告警 -->
+		<!-- RAID重建状态，故障灯正常闪烁，每1秒闪1下，关闭蜂鸣器告警 -->
 		<vg_rebuild>
-			<alarm name="disk-led-blink2s1"/>
+			<alarm name="disk-led-blink1s1"/>
 			<alarm name="buzzer-off"/>
 		</vg_rebuild>
 

@@ -54,7 +54,7 @@ def __get_mdname_list():
 
 def do_generate_name(suffix):
 	if suffix == '':
-		return False, '请输入获取卷组名称的前缀!'
+		return False, '请输入获取卷组名称的前缀'
 	md_list = __get_mdname_list()
 	check_max = 10
 	while check_max > 0:
@@ -66,14 +66,14 @@ def do_generate_name(suffix):
 		if tstr not in md_list:
 			return True, tstr
 		check_max = check_max - 1
-	return False, '无法生成卷组名称!'
+	return False, '无法生成卷组名称'
 
 def do_duplicate_check(mdname):
 	if mdname == '':
-		return False, '请输入卷组名称!'
+		return False, '请输入卷组名称'
 	if mdname in __get_mdname_list():
-		return True, '卷组 %s 已经存在!' % mdname
-	return False, '卷组 %s 不存在!' % mdname
+		return True, '卷组 %s 已经存在' % mdname
+	return False, '卷组 %s 不存在' % mdname
 
 def do_misc(arg):
 	if arg == "--restore":
@@ -89,7 +89,7 @@ def do_misc(arg):
 		if count < 15:
 			md_restore()
 		else:
-			LogInsert('VG', 'Auto', 'Error', '更新VG信息失败!')
+			LogInsert('VG', 'Auto', 'Error', '更新VG信息失败')
 	sys.exit(0)
 
 def main(argv):

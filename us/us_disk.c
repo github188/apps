@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+﻿#define _GNU_SOURCE
 #include <libudev.h>
 #include <stdint.h>
 #include <regex.h>
@@ -374,20 +374,18 @@ static void remove_disk(struct us_disk_pool *dp, const char *dev)
 	strcpy(disk->dev_node, dev);
 }
 
-static int us_disk_on_event(const char *path, const char *dev, int act)
+static int us_disk_on_event(const char *path, const char *dev, const char *act)
 {
 	/*
 	 * 目前仅在重组时处理md的add,remove事件
 	 * 创建和删除操作产生的事件通过md_create()和md_del()函数处理
 	 */
 	if (is_md(path)) {
-		char cmd[128];
-
-		sprintf(cmd, "%s %s %s",
-		        MD_SCRIPT, dev,
-		        act == MA_ADD ? "add" :
-		        act == MA_REMOVE ? "remove" : "change");
-		safe_system(cmd);
+		if (strcmp(act, MA_CHANGE) != 0 && strcmp(act, MA_ADD) != 0) {
+			char cmd[128];
+			sprintf(cmd, "%s %s %s", MD_SCRIPT, dev, act);
+			safe_system(cmd);
+		}
 
 		return MA_HANDLED;
 	}
@@ -396,20 +394,19 @@ static int us_disk_on_event(const char *path, const char *dev, int act)
 		return MA_NONE;
 
 	// 调用磁盘上下线处理脚本
-	char cmd[128];
-	sprintf(cmd, "%s %s %s",
-		DISK_SCRIPT, dev,
-		act == MA_ADD ? "add" :
-		act == MA_REMOVE ? "remove" : "change");
-	safe_system(cmd);
+	if (strcmp(act, MA_CHANGE) != 0) {
+		char cmd[128];
+		sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, act);
+		safe_system(cmd);
+	}
 
-	printf("%s: %d\n", dev, act);
+	printf("%s: %s\n", dev, act);
 
-	if (act == MA_ADD)
+	if (strcmp(act, MA_ADD) == 0)
 		add_disk(&us_dp, dev, path);
-	else if (act == MA_REMOVE)
+	else if (strcmp(act, MA_REMOVE) == 0)
 		remove_disk(&us_dp, dev);
-	else if (act == MA_CHANGE)
+	else
 		update_disk(&us_dp, dev);
 
 	return MA_HANDLED;

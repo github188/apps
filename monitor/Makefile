@@ -5,7 +5,7 @@ CFLAGS += -L../pic_ctl -lpic
 CFLAGS += -L../common -llog -lsqlite3
 CFLAGS += -std=c99
 CFLAGS += -L./
-#CFLAGS += -D_DEBUG
+CFLAGS += -D_DEBUG
 
 OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o util-gpio.o pmu-info.o
 

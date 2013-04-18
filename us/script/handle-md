@@ -4,11 +4,59 @@
 import sys
 from libmd import *
 
-def handle_md_rsync_complished(mddev):
+def handle_md_sync(mddev):
 	mdinfo = mddev_get_attr(mddev)
+	mdname = mddev.split('/')[-1]
+	cmd = 'cat /sys/block/' + mdname + '/md/sync_action'
+	sts,sync_action = commands.getstatusoutput(cmd)
+	if sts != 0:
+		return None
+
+	msg = '卷组 %s ' % mdinfo['name']
+	if sync_action == 'resync':
+		msg += '初始化 开始'
+	elif sync_action == 'recover':
+		msg += '重建 开始'
+	else:
+		return None
+	
+	dir = TMP_RAID_INFO + '/' + mdname
+	if not os.path.exists(dir):
+		os.makedirs(dir)
+	cmd = 'echo ' + sync_action + ' > ' + dir + '/sync_action'
+	os.system(cmd)
+
+	LogInsert('VG', 'Auto', 'Info', msg)
+	sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), msg)
+	tmpfs_add_disk_to_md(mdinfo, diskinfo)
+	return
+
+def handle_md_syncdone(mddev):
+	mdinfo = mddev_get_attr(mddev)
+	mdname = mddev.split('/')[-1]
+	
+	cmd = 'cat ' + TMP_RAID_INFO + '/' + mdname + '/sync_action'
+	sts,sync_action = commands.getstatusoutput(cmd)
+	if sts != 0:
+		return None
+	
+	os.remove(TMP_RAID_INFO + '/' + mdname + '/sync_action')
+
+	msg = '卷组 %s ' % mdinfo['name']
+	if sync_action == 'resync':
+		msg += '初始化' 
+	elif sync_action == 'recover':
+		msg += '重建'
+	else:
+		return None
+	
 	if mdinfo['raid_state'] == 'normal':
-		LogInsert('VG', 'Auto', 'Info', '卷组 %s 初始化完成！' % mdinfo['name'])
-		sysmon_event('vg', 'normal', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '卷组 %s 初始化完成！' % mdinfo['name'])
+		msg += ' 完成'
+	else:
+		msg += ' 失败'
+	
+	LogInsert('VG', 'Auto', 'Info', msg)
+	sysmon_event('vg', 'normal', 'disks=%s' % disk_list_str(mdinfo['disk_list']), msg)
 	return
 
 # args [0]  - self
@@ -25,16 +73,18 @@ def main():
 	mddev = sys.argv[1]
 
 	log.info('action: %s, mddev: %s' % (action, mddev))
-	if 'add' == action:
+	if 'online' == action:
 		tmpfs_add_md_info(mddev)
 	elif 'remove' == action:
 		tmpfs_remove_md_info(mddev)
-	elif 'change' == action:
-		handle_md_rsync_complished(mddev)
+	elif 'sync' == action:
+		handle_md_sync(mddev)
+	elif 'syncdone'== action:
+		handle_md_syncdone(mddev)
 
 if __name__ == "__main__":
-	#  此程序调试通过，暂时不使用，因为在创建md时候，
-	#  会首先收到add事件，但是此时取不到md信息
+	#  此程序调试通过, 暂时不使用, 因为在创建md时候, 
+	#  会首先收到add事件, 但是此时取不到md信息
 	#  已经将响应创建md事件加入到了md_create()函数最后
 	# 将响应删除md事件加入到了md_del()函数最后
 	main()

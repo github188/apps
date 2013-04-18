@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, re, json, sys
+import os, re, json, sys, fcntl
 
 TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
 TMP_RAID_LOCK = '/tmp/.raid-info/create-lock'
@@ -84,6 +84,19 @@ def initlog():
 	logger.addHandler(hdlr)
 	logger.setLevel(logging.INFO)
 	return logger
+
+def lock_file(filepath):
+	try:
+		f = open(filepath, 'w')
+	except:
+		return None
+	
+	fcntl.flock(f, fcntl.LOCK_EX)
+	return f
+	
+def unlock_file(f):
+	fcntl.flock(f, fcntl.LOCK_UN)  
+	f.close() 
 
 if __name__ == '__main__':
 	log = initlog()

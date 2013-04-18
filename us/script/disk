@@ -61,7 +61,7 @@ def diskSetProc(arg = diskArgs()):
 		if ret != True:
 			diskExit(ret, msg)
 
-	diskExit(True, '设置磁盘 %s 为%s成功!' % (str(arg.slot_list), DISK_TYPE_MAP[arg.type_set]))
+	diskExit(True, '设置磁盘 %s 为%s成功' % (str(arg.slot_list), DISK_TYPE_MAP[arg.type_set]))
 
 def diskUsage():
 	print """

@@ -1,20 +1,24 @@
-#ifndef __US_MON_H
+﻿#ifndef __US_MON_H
 #define __US_MON_H
 
 #include "list.h"
 
-enum {
-	MA_ADD		= 0,
-	MA_REMOVE	= 1,
-	MA_CHANGE	= 2,
+#define MA_ADD				"add"
+#define MA_REMOVE			"remove"
+#define MA_CHANGE			"change"
+#define MA_ONLINE			"online"
+#define MA_SYNC				"sync"
+#define MA_SYNCDONE			"syncdone"
+#define MA_KICKED			"kicked"
 
+enum {
 	MA_HANDLED	= 0,
 	MA_NONE		= -1,
 };
 
 struct mon_node {
 	struct list list;
-	int (*on_event)(const char *path, const char *dev, int action);
+	int (*on_event)(const char *path, const char *dev, const char *action);
 };
 
 void us_mon_enum_dev(void);

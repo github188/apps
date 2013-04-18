@@ -21,7 +21,7 @@
 __BEGIN_DECLS
 
 void set_dbgstamp(bool stamp);
-bool get_dbgstamp();
+bool get_dbgstamp(void);
 
 #ifdef NDEBUG
 /* NDEBUG: turn off */

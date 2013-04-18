@@ -167,10 +167,10 @@ void sys_alarm_diskled_off(void *event)
 	}
 }
 
-/* 需求：每两秒闪烁1下
- * 实际：每一秒闪烁1下
+/* 
+ * 正常闪烁：每一秒闪烁1下
  */
-void sys_alarm_diskled_blink2s1(void *event)
+void sys_alarm_diskled_blink1s1(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
@@ -182,15 +182,15 @@ void sys_alarm_diskled_blink2s1(void *event)
 	{
 		int enc,slot;
 		sscanf(p, "%d:%d", &enc, &slot);
-		//printf("disk led blink 2s1: %d\n", slot);
+		//printf("disk led blink 1s1: %d\n", slot);
 		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_NORMAL);
 	}
 }
 
-/* 需求：每秒闪烁5下
- * 实际：每秒闪烁4下
+/* 
+ * 快速闪烁：每秒闪烁4下
  */
-void sys_alarm_diskled_blink1s5(void *event)
+void sys_alarm_diskled_blink1s4(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
@@ -199,15 +199,15 @@ void sys_alarm_diskled_blink1s5(void *event)
 	{
 		int enc = -1, slot = -1;
 		sscanf(p, "%d:%d", &enc, &slot);
-		//printf("disk led blink 1s5: %d\n", slot);
+		//printf("disk led blink 1s4: %d\n", slot);
 		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
 	}
 }
 
-/* 需求：每两秒快速闪烁2下
- * 实际：每两秒闪烁1下
+/* 
+ * 慢速闪烁：每两秒闪烁1下
  */
-void sys_alarm_diskled_blink2s2(void *event)
+void sys_alarm_diskled_blink2s1(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
@@ -216,7 +216,7 @@ void sys_alarm_diskled_blink2s2(void *event)
 	{
 		int enc = -1, slot = -1;
 		sscanf(p, "%d:%d", &enc, &slot);
-		//printf("disk led blink 2s2: %d\n", slot);
+		//printf("disk led blink 2s1: %d\n", slot);
 		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW);
 	}
 }
@@ -261,9 +261,9 @@ struct _handler_map _map[] = {
 	{"buzzer-off", sys_alarm_buzzer_off},
 	{"disk-led-on", sys_alarm_diskled_on},
 	{"disk-led-off", sys_alarm_diskled_off},
-	{"disk-led-blink1s5", sys_alarm_diskled_blink1s5},
+	{"disk-led-blink1s4", sys_alarm_diskled_blink1s4},
+	{"disk-led-blink1s1", sys_alarm_diskled_blink1s1},
 	{"disk-led-blink2s1", sys_alarm_diskled_blink2s1},
-	{"disk-led-blink2s2", sys_alarm_diskled_blink2s2},
 	{"sys-led-on", sys_alarm_sysled_on},
 	{"sys-led-off", sys_alarm_sysled_off},
 	{"notify-tmpfs", sys_alarm_notify_tmpfs},
