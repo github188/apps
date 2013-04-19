@@ -80,7 +80,7 @@ bond_down() {
 	done
     done
 }
-set -x
+
 case "$1" in
 start)
 	process_options
