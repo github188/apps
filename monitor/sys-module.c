@@ -20,7 +20,7 @@ void _module_event_release(sys_module_t *m)
 	}
 }
 
-void sys_module_release()
+void sys_module_release(void)
 {
 	struct list *n, *nt;
 	sys_module_t *m;

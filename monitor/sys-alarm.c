@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <regex.h>
+#include <strings.h>
 #include "sys-action.h"
 #include "sys-event.h"
 #include "sys-utils.h"
@@ -9,6 +10,12 @@
 #define SHELL "/bin/sh"
 #define BUZZER_ON_CMD "/usr/local/bin/set-buzzer.sh on"
 #define BUZZER_OFF_CMD "/usr/local/bin/set-buzzer.sh off"
+
+struct event_record
+{
+	char param[128];
+	struct list list_entry;
+};
 
 int _safe_system(const char *cmd)
 {
@@ -49,6 +56,9 @@ void sys_alarm_default(void *event)
 	if (!gconf.tmpfs)
 		return;
 
+	if (strlen(ev->msg) == 0)
+		return;
+
 	// 检查当前告警级别是否超出了配置上限，如果是，首先删除1条最旧的信息
 	if (tmpfs_msg_count(ev->level) >= _gconf_level_count(ev->level))
 		tmpfs_msg_sorted_unlink(tmpfs_msg_remove_oldest(ev->level));
@@ -61,10 +71,25 @@ void sys_alarm_default(void *event)
 // Buzzer
 //----------------------------------------------------------------------------
 
+static LIST_INIT(buzzer_list);
 static int buzzer_cnt = 0;
 
 void sys_alarm_buzzer_on(void *event)
 {
+	struct list *n, *nt;
+	struct event_record *er;
+	sys_event_t *ev = (sys_event_t*)event;
+	
+	list_iterate_safe(n, nt, &buzzer_list) {
+		er = list_struct_base(n, struct event_record, list_entry);
+		if (strcmp(er->param, ev->param) == 0)
+			return;
+	}
+
+	er = malloc(sizeof(*er));
+	strcpy(er->param, ev->param);
+	list_add(&buzzer_list, &er->list_entry);
+
 	if (buzzer_cnt == 0)
 		_safe_system(BUZZER_ON_CMD);
 	buzzer_cnt++;
@@ -75,23 +100,36 @@ void sys_alarm_buzzer_on(void *event)
 
 void sys_alarm_buzzer_off(void *event)
 {
-	if (buzzer_cnt > 0)
-		buzzer_cnt--;
-	if (buzzer_cnt == 0)
-		_safe_system(BUZZER_OFF_CMD);
+	struct list *n, *nt;
+	struct event_record *er;
+	sys_event_t *ev = (sys_event_t*)event;
+	
+	list_iterate_safe(n, nt, &buzzer_list) {
+		er = list_struct_base(n, struct event_record, list_entry);
+		if (strcmp(er->param, ev->param) == 0) {
+			list_del(&er->list_entry);
+			free(er);
+
+			if (buzzer_cnt > 0)
+				buzzer_cnt--;
+			if (buzzer_cnt == 0)
+				_safe_system(BUZZER_OFF_CMD);
 #ifdef _DEBUG
-	printf("buzzer_cnt: %d\n", buzzer_cnt);
+			printf("buzzer_cnt: %d\n", buzzer_cnt);
 #endif
+		}
+	}
 }
 
 void sys_alarm_notify_tmpfs(void *event)
 {
 	sys_event_t *ev = (sys_event_t*)event;
 
+	if (strlen(ev->msg) == 0)
+		return;
+
 	if (ev)
-	{
 		tmpfs_write_alarm(ev->param, ev->msg);
-	}
 }
 
 //----------------------------------------------------------------------------
@@ -226,10 +264,25 @@ void sys_alarm_diskled_blink2s1(void *event)
 // Sys Led
 //----------------------------------------------------------------------------
 
+static LIST_INIT(sysled_list);
 static int sysled_cnt = 0;
 
 void sys_alarm_sysled_on(void *event)
 {
+	struct list *n, *nt;
+	struct event_record *er;
+	sys_event_t *ev = (sys_event_t*)event;
+	
+	list_iterate_safe(n, nt, &sysled_list) {
+		er = list_struct_base(n, struct event_record, list_entry);
+		if (strcmp(er->param, ev->param) == 0)
+			return;
+	}
+
+	er = malloc(sizeof(*er));
+	strcpy(er->param, ev->param);
+	list_add(&sysled_list, &er->list_entry);
+	
 	//printf("sys led on\n");
 	if (sysled_cnt == 0)
 		sb_gpio28_set(true);
@@ -241,13 +294,25 @@ void sys_alarm_sysled_on(void *event)
 
 void sys_alarm_sysled_off(void *event)
 {
-	if (sysled_cnt > 0)
-		sysled_cnt--;
-	if (sysled_cnt == 0)
-		sb_gpio28_set(false);
+	struct list *n, *nt;
+	struct event_record *er;
+	sys_event_t *ev = (sys_event_t*)event;
+	
+	list_iterate_safe(n, nt, &sysled_list) {
+		er = list_struct_base(n, struct event_record, list_entry);
+		if (strcmp(er->param, ev->param) == 0) {
+			list_del(&er->list_entry);
+			free(er);
+	
+			if (sysled_cnt > 0)
+				sysled_cnt--;
+			if (sysled_cnt == 0)
+				sb_gpio28_set(false);
 #ifdef _DEBUG
-	printf("sysled_cnt: %d\n", sysled_cnt);
+			printf("sysled_cnt: %d\n", sysled_cnt);
 #endif
+		}
+	}
 }
 
 struct _handler_map {
@@ -267,7 +332,7 @@ struct _handler_map _map[] = {
 	{"sys-led-on", sys_alarm_sysled_on},
 	{"sys-led-off", sys_alarm_sysled_off},
 	{"notify-tmpfs", sys_alarm_notify_tmpfs},
-	{'\0', NULL}
+	{"\0", NULL}
 };
 
 void sys_alarm_set_handler(sys_alarm_t *alarm, const char *handler_name)

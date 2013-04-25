@@ -247,3 +247,32 @@ int disk_get_raid_info(const char *dev, struct disk_md_info *mi)
 
 	return 0;
 }
+
+#define DISK_FAIL_FLAG		"624938716_FAIL_364996698"
+void disk_set_fail(const char *dev)
+{
+	FILE *fp;
+	
+	fp = fopen(dev, "w");
+	if (!fp)
+		return;
+
+	fwrite(DISK_FAIL_FLAG, strlen(DISK_FAIL_FLAG), 1, fp);
+	fclose(fp);
+}
+
+int disk_get_fail(const char *dev)
+{
+	char buf[strlen(DISK_FAIL_FLAG)+1] = { '\0' };
+	FILE *fp;
+
+	fp = fopen(dev, "r");
+	if (!fp)
+		return 0;
+
+	fread(buf, strlen(DISK_FAIL_FLAG), 1, fp);
+	fclose(fp);
+
+	return !strcmp(buf, DISK_FAIL_FLAG);
+}
+

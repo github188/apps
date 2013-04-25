@@ -52,10 +52,6 @@ def get_disk_info(disk_dev):
 def __md_event_log(event, content):
 	LogInsert('VG', 'Auto', event, content)
 
-# 蜂鸣器告警
-def __buzzer_alarm():
-	os.popen('set-buzzer.sh on')
-
 # 从指定卷组删除掉盘的磁盘
 def __remove_disk_from_md(mddev, diskdev):
 	cmd = 'mdadm --set-faulty %s %s 2>&1' % (mddev, diskdev)
@@ -98,6 +94,24 @@ def __find_md_by_disk_mduuid(disk_mduuid):
 
 # 磁盘上线事件处理
 def __handle_disk_add(diskinfo):
+	msg = '磁盘 %s 上线' % diskinfo.slot
+	__md_event_log('Info', msg)
+
+	if diskinfo.slot == None:
+		return
+	ret,text = commands.getstatusoutput('disk --list --slot-id %s' % diskinfo.slot)
+	if ret != 0:
+		return
+	disk_info = json.loads(text)
+	if disk_info['state'] == 'Fail':
+		msg = '磁盘 %s 故障' % diskinfo.slot
+		__md_event_log('Error', msg)
+		sysmon_event('disk', 'led_blink1s4', 'disks=%s' % diskinfo.slot, '')
+		sysmon_event('disk', 'buzzer_on', '%s' % diskinfo.slot, '')
+		return
+	elif disk_info['state'] != 'Invalid':
+		return
+
 	mdinfo = __find_md_by_disk_mduuid(diskinfo.md_uuid)
 	if mdinfo == None:
 		return
@@ -107,28 +121,41 @@ def __handle_disk_add(diskinfo):
 	
 	if __add_disk_to_md(mdinfo['dev'], diskinfo.dev) == 0:
 		__md_event_log('Warning', '卷组 %s 所属磁盘 %s 重新加入卷组操作成功' % (mdinfo['name'], diskinfo.slot))
-		disk_slot_update(diskinfo.slot)
+		mdinfo = __find_md_by_disk_mduuid(diskinfo.md_uuid)
+		if mdinfo['raid_state'] == 'normal':
+			sysmon_event('vg', 'normal', mdinfo['name'], '卷组 %s 状态正常' % mdinfo['name'])
 	else:
 		__md_event_log('Error', '卷组 %s 所属磁盘 %s 重新加入卷组操作失败' % (mdinfo['name'], diskinfo.slot))
 
 # 磁盘掉线和被踢事件处理
 def __handle_disk_remove_kicked(diskinfo, event):
+	# 被踢磁盘按故障盘处理
+	if event == 'rdkicked':
+		msg = '磁盘 %s 故障' % diskinfo.slot
+		sysmon_event('disk', 'led_blink1s4', 'disks=%s' % diskinfo.slot, '')
+		sysmon_event('disk', 'buzzer_on', '%s' % diskinfo.slot, '')
+	elif event == 'remove':
+		msg = '磁盘 %s 掉线' % diskinfo.slot
+		sysmon_event('disk', 'led_off', 'disks=%s' % diskinfo.slot, '')
+		sysmon_event('disk', 'buzzer_off', '%s' % diskinfo.slot, '')
+	else:
+		return
+
+	__md_event_log('Error', msg)
 	mdinfo = __find_md_by_disk_dev(diskinfo.dev)
 	if mdinfo == None:
 		return
 
 	if __remove_disk_from_md(mdinfo['dev'], diskinfo.dev) != 0:
 		__md_event_log('Warning', '从卷组 %s 删除磁盘 %s 失败' % (mdinfo['name'], diskinfo.slot))
-	# 更新被踢掉的磁盘状态
-	if diskinfo.slot != '':
-		disk_slot_update(diskinfo.slot)
 
 	mdinfo = mddev_get_attr(mdinfo['dev'])	# 因为删除磁盘, 重新获取状态
 	_state = mdinfo['raid_state']
 	if _state == 'degrade':
 		msg = '卷组 %s 降级' % mdinfo['name']
 		__md_event_log('Warning', msg)
-		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), msg)
+		sysmon_event('vg', 'degrade', mdinfo['name'], msg)
+		sysmon_event('disk', 'led_off', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '')
 		
 		# 掉盘后等待5分钟, 如果磁盘重新上线可快速重建RAID, 不需要使用热备盘重建
 		# 等待后重新获取状态, 如果不再是degrade状态, 则不需要处理
@@ -143,12 +170,10 @@ def __handle_disk_remove_kicked(diskinfo, event):
 	elif _state == 'fail':
 		msg = '卷组 %s 失效' % mdinfo['name']
 		__md_event_log('Error', msg)
-		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(mdinfo['disk_list']), msg)
-		__buzzer_alarm()
-
-	else:
-		__md_event_log('Error', '卷组 %s 状态出错, 当前状态 %s' % (mdinfo['name'], _state))
-		__buzzer_alarm()
+		sysmon_event('vg', 'fail',  mdinfo['name'], msg)
+		sysmon_event('disk', 'led_off', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '')
+	
+	# 热替换后, 源盘被踢出raid, 如果没有其他盘出错, raid状态正常
 
 	return
 
@@ -164,48 +189,33 @@ def __handle_md_rebuild(mdinfo):
 		disk = get_free_disk()
 	if disk == {}:
 		__md_event_log('Error', '未找到热备盘和空闲盘重建卷组 %s' % mdinfo['name'])
-		#__buzzer_alarm()
 		unlock_file(f_lock)
 		return
 
 	slot = disk_serial2slot(disk['serial'])
 	name = disk_name(slot)
 	if __add_disk_to_md(mdinfo['dev'], name) == 0:
-		__md_event_log('Info', '使用 %s %s 重建卷组 %s 成功' % (slot, disk['type']), mdinfo['name'])
+		__md_event_log('Info', '使用 %s %s 重建卷组 %s 成功' % (disk['type'], slot, mdinfo['name']))
 		disk_clean_hotrep(slot)
 		disk_slot_update(slot)
-
 	else:
-		__md_event_log('Error', '使用 %s %s 重建卷组 %s 失败' % (slot, disk['type']), mdinfo['name'])
+		__md_event_log('Error', '使用 %s %s 重建卷组 %s 失败' % (disk['type'], slot, mdinfo['name']))
 	unlock_file(f_lock)
 
-# 主函数
+# args [0]  - self
+#      [1]  - dev eg. /dev/sdb
+#      [2]  - action 'add', 'remove' ...
 def main():
 
-	# 参数检查
-	if len(sys.argv) < 2:
-		# 记录日志, 返回
+	if len(sys.argv) != 3:
 		return
 
 	diskinfo = get_disk_info(sys.argv[1])  # argv[1] - disk_dev
 	event = sys.argv[2]
 	if event == 'add':
-		msg = '磁盘 %s 上线' % diskinfo.slot if diskinfo.slot != '' else '磁盘上线'
-		__md_event_log('Info', msg)
-		sysmon_event('disk', 'online', 'disk=%s' % diskinfo.slot, msg)
 		__handle_disk_add(diskinfo)
-
-	elif event == 'remove':
-		msg = '磁盘 %s 掉线' % diskinfo.slot if diskinfo.slot != '' else '磁盘掉线'
-		__md_event_log('Info', msg)
-		sysmon_event('disk', 'offline', 'disk=%s' % diskinfo.slot, msg)
-		__handle_disk_remove_kicked(diskinfo, 'remove')
-
-	elif event == 'kicked':
-		msg = '磁盘 %s 故障' % diskinfo.slot if diskinfo.slot != '' else '磁盘故障'
-		__md_event_log('Info', msg)
-		sysmon_event('disk', 'fail', 'disk=%s' % diskinfo.slot, msg)
-		__handle_disk_remove_kicked(diskinfo, 'kicked')
+	else:
+		__handle_disk_remove_kicked(diskinfo, event)
 
 if __name__ == "__main__":
 	main()

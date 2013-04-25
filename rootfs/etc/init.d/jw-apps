@@ -36,16 +36,16 @@ __start_daemon()
 
 do_apps_start()
 {
-	__start_daemon $US_PID $US_DAEMON
 	__start_daemon $LOG_PID $LOG_DAEMON
 	__start_daemon $SYS_PID $SYS_DAEMON
+	__start_daemon $US_PID $US_DAEMON
 }
 
 do_apps_stop()
 {
 	killproc -p $US_PID $(basename $US_DAEMON)
-	killproc -p $LOG_PID $(basename $LOG_DAEMON)
 	killproc -p $SYS_PID $(basename $SYS_DAEMON)
+	killproc -p $LOG_PID $(basename $LOG_DAEMON)
 }
 
 do_apps_status()

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdbool.h>
+#include <string.h>
 #include "debug.h"
 
 #ifndef _SYS_LOG_H

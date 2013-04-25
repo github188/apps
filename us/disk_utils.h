@@ -40,6 +40,8 @@ struct disk_md_info {
 void disk_get_smart_info(const char *dev, struct disk_info *info);
 int disk_get_info(const char *dev, struct disk_info *info);
 int disk_get_raid_info(const char *dev, struct disk_md_info *i);
+void disk_set_fail(const char *dev);
+int disk_get_fail(const char *dev);
 
 static inline const char *disk_get_smart_status(const struct disk_info *info)
 {
@@ -62,8 +64,8 @@ static inline const char *disk_get_md_state(const struct disk_md_info *mi)
 		stat = "Invalid";
 	else if (mi->is_fault)
 		stat = "Fault";
-	else if (mi->is_spare)
-		stat = "SpecialSpare";
+	//else if (mi->is_spare)
+	//	stat = "SpecialSpare";
 	else
 		stat = "RAID";
 

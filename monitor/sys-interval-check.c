@@ -1,11 +1,12 @@
 #include <signal.h>
+#include "../common/log.h"
+#include "sys-mon.h"
 #include "sys-global.h"
 #include "sys-interval-check.h"
-#include "../common/log.h"
 
 struct list _g_capture;
 
-static MOD_NAME(const char *mod)
+static const char *MOD_NAME(const char *mod)
 {
 	int i;
 	static char _not_found[2] = "";

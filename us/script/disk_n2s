@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+from libdisk import *
+
+if __name__ == '__main__':
+	if len(sys.argv) < 2:
+		print 'input disk, e.g. /dev/sdb'
+		exit()
+
+	print disk_slot(sys.argv[1])

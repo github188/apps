@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
@@ -102,7 +105,7 @@ const char *tmpfs_msg_insert(const char *level, const char *msg)
 // 删除指定告警级别目录下创建时间最旧的一个文件，并且返回删除的全路径文件名称
 const char *tmpfs_msg_remove_oldest(const char *level)
 {
-	time_t oldest; bool o_set = false;
+	time_t oldest = 0; bool o_set = false;
 	char msg_dir[PATH_MAX];
 	static char oldest_file[PATH_MAX] = {0};
 

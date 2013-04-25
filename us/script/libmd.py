@@ -239,13 +239,9 @@ def tmpfs_add_md_info(mddev):
 
 	# check vg state, notify to sysmon
 	if attr.raid_state == 'degrade':
-		sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
+		sysmon_event('vg', 'degrade', attr.name, '卷组 %s 降级' % attr.name)
 	elif attr.raid_state == 'fail':
-		sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
-	elif attr.raid_state == 'normal':
-		sysmon_event('vg', 'good', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
-	elif attr.raid_state == 'rebuild':
-		sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
+		sysmon_event('vg', 'fail', attr.name, '卷组 %s 失效' % attr.name)
 
 	if attr.raid_level == '5' or attr.raid_level == '6':
 		return
@@ -346,12 +342,6 @@ def __md_create(mdname, level, chunk, slots):
 			cmd += " -z " + size
 
 	sts,out = commands.getstatusoutput(cmd)
-	# 更新热备盘配置
-	for slot in slots.split():
-		disk_state = disk_get_state(slot)
-		if disk_state == 'Special' or disk_state == 'Global':
-			disk_clean_hotrep(slot)
-	disk_slot_update(slots)
 	if sts != 0 :
 		# try to remove mddev
 		os.popen('mdadm -S %s 2>&1 >/dev/null' % mddev)
@@ -399,12 +389,12 @@ def __md_del(mdname):
 	mddev = md_get_mddev(mdname)
 	if (mddev == None):
 		return False, "卷组 %s 不存在" % mdname
-	if __md_used(mdname):
-		return False, '卷组 %s 存在未删除的用户数据卷, 请先删除' % mdname
 
 	try:
 		mdinfo = md_info(mdname)['rows'][0]
 		md_uuid = mdinfo['raid_uuid']
+		if mdinfo['raid_state'] != 'fail' and __md_used(mdname):
+			return False, '卷组 %s 存在未删除的用户数据卷, 请先删除' % mdname
 	except:
 		md_uuid = ''
 	disks = mddev_get_disks(mddev)
@@ -419,7 +409,8 @@ def __md_del(mdname):
 	if res != "":
 		return False,"清除磁盘信息失败, 请手动清除"
 
-	sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 %s 删除成功' % mdinfo['name'])
+	sysmon_event('vg', 'remove', mdinfo['name'], '卷组 %s 删除成功' % mdinfo['name'])
+	sysmon_event('disk', 'led_off', 'disks=%s' % _disk_slot_list_str(disks), '')
 	return True,"删除卷组成功"
 
 def md_info_mddevs(mddevs=None):
@@ -557,7 +548,7 @@ def _manually_rebuild(slot, disk_type, mdname):
 # 设置磁盘管理类型：
 #	* Global   - 全局热备盘
 #	* Special  - 专用热备盘
-#       * Free     - 空闲盘
+#	* Free     - 空闲盘
 def disk_set_type(slot, disk_type, mdname=''):
 
 	if slot == '':
@@ -585,7 +576,8 @@ def disk_set_type(slot, disk_type, mdname=''):
 		set_disk_free(disk_name(slot))
 		disk_slot_update(slot)
 		# 通知监控进程
-		sysmon_event('disk', 'free', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为空闲盘' % slot)
+		sysmon_event('disk', 'led_off', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为空闲盘' % slot)
+		sysmon_event('disk', 'buzzer_off', slot, '')
 		return True, '设置槽位号为 %s 的磁盘为空闲盘成功' % slot
 	elif disk_type != 'Global':
 		return False, '参数不正确:请指定需要设置的磁盘类型'
@@ -640,7 +632,8 @@ def disk_set_type(slot, disk_type, mdname=''):
 	LogInsert('VG', 'Auto', 'Info', _content)
 
 	# 通知监控进程
-	sysmon_event('disk', 'spare', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为热备盘' % slot)
+	sysmon_event('disk', 'led_on', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为热备盘' % slot)
+	sysmon_event('disk', 'buzzer_off', slot, '')
 
 	# 尝试手动重建
 	_manually_rebuild(slot, disk_type, mdname)
@@ -743,7 +736,7 @@ if __name__ == "__main__":
 	#sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 删除成功')
 	#sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
 	#sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
-	sysmon_event('vg', 'good', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
+	sysmon_event('vg', 'normal', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
 	#sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
 	sys.exit(0)
 

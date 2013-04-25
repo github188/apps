@@ -10,26 +10,20 @@
 
 	<modules>
 		<disk>
-			<event name="online" level="info" action="disk_online"/>
-			<event name="offline" level="warning" action="disk_offline"/>
-			<event name="fail" level="error" action="disk_fail"/>
-			<event name="spare" level="info" action="disk_spare"/>
-			<event name="free" level="info" action="disk_free"/>
-			<event name="smart-health" level="warning" action="disk_smart_health"/>
+			<event name="led_off" level="info" action="disk_led_off"/>
+			<event name="led_on" level="info" action="disk_led_on"/>
+			<event name="led_blink2s1" level="info" action="disk_led_blink2s1"/>
+			<event name="led_blink1s1" level="info" action="disk_led_blink1s1"/>
+			<event name="led_blink1s4" level="info" action="disk_led_blink1s4"/>
+			<event name="buzzer_on" level="info" action="disk_buzzer_on"/>
+			<event name="buzzer_off" level="info" action="disk_buzzer_off"/>
 		</disk>
 
 		<vg>
-			<!-- add,remove,normal 属于正常状态 -->
-			<event name="add" level="info" action="vg_normal"/>
-			<event name="remove" level="info" action="vg_normal"/>
 			<event name="normal" level="info" action="vg_normal"/>
-
-			<!-- degrade,fail 属于异常状态 -->
-			<event name="degrade" level="error" action="vg_exception"/>
-			<event name="fail" level="error" action="vg_exception"/>
-
-			<!-- initial,rebuild 属于重建状态 -->
-			<event name="initial" level="info" action="vg_rebuild"/>
+			<event name="remove" level="info" action="vg_remove"/>
+			<event name="degrade" level="warning" action="vg_degrade"/>
+			<event name="fail" level="error" action="vg_fail"/>
 			<event name="rebuild" level="info" action="vg_rebuild"/>
 		</vg>
 
@@ -58,56 +52,71 @@
 	<!-- 执行的动作，每个标签名字对应event的action属性 -->
 	<actions>
 		<!-- 每个动作下面的alarm标签对应内置的函数 -->
-
-		<!-- 磁盘在线，工作灯常亮，故障灯熄灭 -->
-		<disk_online>
+		
+		<!-- 磁盘故障灯熄灭 -->
+		<disk_led_off>
 			<alarm name="disk-led-off"/>
-		</disk_online>
-
-		<!-- 磁盘掉线，工作灯和故障灯都熄灭 -->
-		<disk_offline>
-			<alarm name="disk-led-off"/>
-		</disk_offline>
-
-		<!-- 磁盘故障，故障灯快速闪烁，每秒闪4下，输出磁盘故障声音 -->
-		<disk_fail>
-			<alarm name="disk-led-blink1s4"/>
-		</disk_fail>
-
-		<!-- 热备盘，故障灯需要常亮 -->
-		<disk_spare>
+		</disk_led_off>
+	
+		<!-- 磁盘故障灯常亮 -->
+		<disk_led_on>
 			<alarm name="disk-led-on"/>
-		</disk_spare>
+		</disk_led_on>
+		
+		<!-- 磁盘故障灯正常闪烁，1秒闪1下 -->
+		<disk_led_blink1s1>
+			<alarm name="disk-led-blink1s1"/>
+		</disk_led_blink1s1>
 
-		<!-- 空闲盘，故障灯需要熄灭 -->
-		<disk_free>
-			<alarm name="disk-led-off"/>
-		</disk_free>
-
-		<!-- 磁盘SMART健康度低，故障灯慢速闪烁 每2秒闪1下 -->
-		<disk_smart_health>
+		<!-- 磁盘故障灯慢速闪烁，2秒闪1下 -->
+		<disk_led_blink2s1>
 			<alarm name="disk-led-blink2s1"/>
-		</disk_smart_health>
+		</disk_led_blink2s1>
+		
+		<!-- 磁盘故障灯快速闪烁，1秒闪4下 -->
+		<disk_led_blink1s4>
+			<alarm name="disk-led-blink1s4"/>
+		</disk_led_blink1s4>
+		
+		<!-- 磁盘故障报警音开启 -->
+		<disk_buzzer_on>
+			<alarm name="buzzer-on"/>
+		</disk_buzzer_on>
+		
+		<!-- 磁盘故障报警音关闭 -->
+		<disk_buzzer_off>
+			<alarm name="buzzer-off"/>
+		</disk_buzzer_off>
 
-		<!-- RAID正常状态，把手故障灯关闭，在线的RAID磁盘告警灯关闭，关闭蜂鸣器 -->
+		<!-- RAID恢复正常，把手故障灯关闭，蜂鸣器关闭 -->
 		<vg_normal>
 			<alarm name="sys-led-off"/>
-			<alarm name="disk-led-off"/>
 			<alarm name="buzzer-off"/>
 		</vg_normal>
-
-		<!-- RAID异常，把手故障灯为红色，磁盘告警灯停止闪烁，蜂鸣器告警 -->
-		<vg_exception>
+		
+		<!-- RAID删除，把手故障灯关闭，蜂鸣器关闭 -->
+		<vg_remove>
+			<alarm name="sys-led-off"/>
+			<alarm name="buzzer-off"/>
+		</vg_remove>
+		
+		<!-- RAID降级，把手故障灯常亮，蜂鸣器开启 -->
+		<vg_degrade>
 			<alarm name="sys-led-on"/>
-			<alarm name="disk-led-off"/>
 			<alarm name="buzzer-on"/>
-		</vg_exception>
-
-		<!-- RAID重建状态，故障灯正常闪烁，每1秒闪1下，关闭蜂鸣器告警 -->
+		</vg_degrade>
+		
+		<!-- RAID重建，把手故障灯关闭，蜂鸣器关闭 -->
 		<vg_rebuild>
-			<alarm name="disk-led-blink1s1"/>
+			<alarm name="sys-led-off"/>
 			<alarm name="buzzer-off"/>
 		</vg_rebuild>
+		
+		<!-- RAID失效，把手故障灯常亮，蜂鸣器开启 -->
+		<vg_fail>
+			<alarm name="sys-led-on"/>
+			<alarm name="buzzer-on"/>
+		</vg_fail>
 
 		<!-- 电源故障，把手告警灯为红色，特殊的告警声音 -->
 		<!--

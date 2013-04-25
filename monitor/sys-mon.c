@@ -8,6 +8,7 @@
 #include "sys-event.h"
 #include "sys-action.h"
 #include "sys-interval-check.h"
+#include "sys-module.h"
 
 struct mon_io {
 	ev_io io;

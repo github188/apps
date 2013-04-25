@@ -7,9 +7,9 @@
 #define MA_REMOVE			"remove"
 #define MA_CHANGE			"change"
 #define MA_ONLINE			"online"
-#define MA_SYNC				"sync"
-#define MA_SYNCDONE			"syncdone"
-#define MA_KICKED			"kicked"
+#define MA_MDSYNC			"mdsync"
+#define MA_MDSYNCDONE		"mdsyncdone"
+#define MA_RDKICKED			"rdkicked"
 
 enum {
 	MA_HANDLED	= 0,

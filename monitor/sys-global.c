@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "sys-global.h"
 
 sys_global_t gconf;

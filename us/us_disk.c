@@ -22,12 +22,13 @@
 struct us_disk {
 	int		ref;
 	int		slot;
-	int             is_exist :1;
-	int             is_raid : 1;
+	int		is_exist : 1;
+	int		is_fail : 1;
+	int		is_raid : 1;
 	int		is_special : 1;	// 专用热备盘
 	int		is_global : 1;	// 全局热备盘
-	int             is_removed : 1;	// 供磁盘掉线后查询磁盘槽位号信息使用
-	char            dev_node[64];
+	int		is_removed : 1;	// 供磁盘掉线后查询磁盘槽位号信息使用
+	char	dev_node[64];
 	struct disk_info di;
 	struct disk_md_info ri;
 };
@@ -259,6 +260,8 @@ static void do_update_disk(struct us_disk *disk, int op)
 	if (!disk->is_exist)
 		return;
 
+	disk->is_fail = disk_get_fail(dev);
+
 	if (op & DISK_UPDATE_SMART) {
 		if (disk_get_info(dev, &disk->di) < 0) {
 			clog(LOG_ERR,
@@ -376,13 +379,10 @@ static void remove_disk(struct us_disk_pool *dp, const char *dev)
 
 static int us_disk_on_event(const char *path, const char *dev, const char *act)
 {
-	/*
-	 * 目前仅在重组时处理md的add,remove事件
-	 * 创建和删除操作产生的事件通过md_create()和md_del()函数处理
-	 */
+	char cmd[128];
+	printf("%s: %s\n", dev, act);
 	if (is_md(path)) {
 		if (strcmp(act, MA_CHANGE) != 0 && strcmp(act, MA_ADD) != 0) {
-			char cmd[128];
 			sprintf(cmd, "%s %s %s", MD_SCRIPT, dev, act);
 			safe_system(cmd);
 		}
@@ -393,21 +393,25 @@ static int us_disk_on_event(const char *path, const char *dev, const char *act)
 	if (!is_sata_sas(path))
 		return MA_NONE;
 
-	// 调用磁盘上下线处理脚本
-	if (strcmp(act, MA_CHANGE) != 0) {
-		char cmd[128];
-		sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, act);
-		safe_system(cmd);
-	}
-
-	printf("%s: %s\n", dev, act);
-
-	if (strcmp(act, MA_ADD) == 0)
+	if (strcmp(act, MA_ADD) == 0) {
 		add_disk(&us_dp, dev, path);
-	else if (strcmp(act, MA_REMOVE) == 0)
+
+		sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, MA_ADD);
+		safe_system(cmd);
+	} else if (strcmp(act, MA_REMOVE) == 0) {
+		sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, MA_REMOVE);
+		safe_system(cmd);
+
 		remove_disk(&us_dp, dev);
-	else
+	} else if (strcmp(act, MA_CHANGE) != 0) {
+		if (strcmp(act, MA_RDKICKED) == 0) {
+			sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, act);
+			safe_system(cmd);
+			disk_set_fail(dev);
+		}
+
 		update_disk(&us_dp, dev);
+	}
 
 	return MA_HANDLED;
 }
@@ -466,6 +470,8 @@ const char *disk_get_state(const struct us_disk *disk)
 		return "Special";
 	else if (disk->is_global)
 		return "Global";
+	else if (disk->is_fail)
+		return "Fail";
 	return disk_get_md_state(&(disk->ri));
 }
 

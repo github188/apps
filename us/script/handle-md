@@ -27,7 +27,8 @@ def handle_md_sync(mddev):
 	os.system(cmd)
 
 	LogInsert('VG', 'Auto', 'Info', msg)
-	sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(mdinfo['disk_list']), msg)
+	sysmon_event('vg', 'rebuild', mdinfo['name'], msg)
+	sysmon_event('disk', 'led_blink1s1', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '')
 	tmpfs_add_disk_to_md(mdinfo, diskinfo)
 	return
 
@@ -50,21 +51,31 @@ def handle_md_syncdone(mddev):
 	else:
 		return None
 	
-	if mdinfo['raid_state'] == 'normal':
-		msg += ' 完成'
+	# 如果raid6坏2块盘, 第一块盘重建完后, 第二快盘开始重建, 
+	# 如果没有启动第二块盘重建, 则认为重建失败
+	if mdinfo['raid_level'] == '6':
+		if mdinfo['raid_state'] == 'normal':
+			msg += ' 完成'
+		elif mdinfo['raid_state'] == 'rebuild':
+			msg += ' 中止'
+		else:
+			msg += ' 失败'
 	else:
-		msg += ' 失败'
+		if mdinfo['raid_state'] == 'normal':
+			msg += ' 完成'
+		else:
+			msg += ' 失败'
 	
 	LogInsert('VG', 'Auto', 'Info', msg)
-	sysmon_event('vg', 'normal', 'disks=%s' % disk_list_str(mdinfo['disk_list']), msg)
+	sysmon_event('vg', 'normal', mdinfo['name'], msg)
+	sysmon_event('disk', 'led_off', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '')
 	return
 
 # args [0]  - self
 #      [1]  - dev eg. /dev/md1
-#      [2]  - action 'add', 'remove', 'change'
-
+#      [2]  - action 'add', 'remove' ...
 def main():
-	if len(sys.argv) < 3:
+	if len(sys.argv) != 3:
 		return
 
 	log = initlog()
@@ -77,14 +88,10 @@ def main():
 		tmpfs_add_md_info(mddev)
 	elif 'remove' == action:
 		tmpfs_remove_md_info(mddev)
-	elif 'sync' == action:
+	elif 'mdsync' == action:
 		handle_md_sync(mddev)
-	elif 'syncdone'== action:
+	elif 'mdsyncdone'== action:
 		handle_md_syncdone(mddev)
 
 if __name__ == "__main__":
-	#  此程序调试通过, 暂时不使用, 因为在创建md时候, 
-	#  会首先收到add事件, 但是此时取不到md信息
-	#  已经将响应创建md事件加入到了md_create()函数最后
-	# 将响应删除md事件加入到了md_del()函数最后
 	main()

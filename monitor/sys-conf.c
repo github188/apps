@@ -191,7 +191,6 @@ void sys_mon_load_conf()
 	printf("conf loaded!\n");
 #endif
 
-_conf_clean:
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 }
