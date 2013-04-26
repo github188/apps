@@ -8,10 +8,16 @@ conf_backup()
 	rm -rf conf_bak
 	mkdir conf_bak
 	cp /opt/* conf_bak/ -a
+
+	mv /root/.ssh conf_bak
+	mv -f /boot/grub/.grub.bak* conf_bak
 }
 
 conf_restore()
 {
+	mv -f conf_bak/.ssh /root
+	mv -f conf_bak/.grub.bak* /boot/grub
+
 	cp conf_bak/* /opt/ -a
 	rm -rf conf_bak
 }

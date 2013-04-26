@@ -24,7 +24,6 @@ _usage()
 start_md()
 {
 	/usr/local/bin/md-assume.sh
-	#sys-manager vg --misc --restore
 }
 
 start_scst()

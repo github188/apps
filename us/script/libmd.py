@@ -430,11 +430,6 @@ def md_info(mdname=None):
 		mddevs = [md_get_mddev(mdname)];
 	return md_info_mddevs(mddevs);
 
-def md_restore():
-	for mddev in md_list_mddevs():
-		tmpfs_add_md_info(mddev)
-	return
-
 # -----------------------------------------------------------------------------
 # 供磁盘自动重建使用
 # -----------------------------------------------------------------------------

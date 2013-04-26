@@ -57,7 +57,7 @@ tar_pkg()
 
 
 target="/tmp/.pkg"
-rm -fr $_target
+rm -fr $target
 
 sync_apps "$target"
 [ "$1" = "--with-rootfs" ] && sync_rootfs "$target"
