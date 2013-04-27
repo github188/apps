@@ -71,12 +71,12 @@ void _capture(sys_capture_t *cap)
 
 	if (cap->_preset)
 	{
-		if (cap->_capture(msg) == VAL_INVALID)
-			_cur_error = true;
+		_cur_error = _value_check_error(cap->_capture(NULL), cap, msg);
 	}
 	else
 	{
-		_cur_error = _value_check_error(cap->_capture(NULL), cap, msg);
+		if (cap->_capture(msg) == VAL_INVALID)
+			_cur_error = true;
 	}
 
 	char log_msg[256];

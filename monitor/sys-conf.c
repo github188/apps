@@ -120,14 +120,12 @@ void _xml_self_run_parse(xmlNodePtr node)
 				if (!strcmp(tmp, "true"))
 				{
 					cap->_preset = true;
-				}
-				else
-				{
 					if ((tmp=_XML_STR_VAL(node, "min_threshold")) != NULL)
 						cap->min_thr = atoi(tmp);
 					if ((tmp=_XML_STR_VAL(node, "max_threshold")) != NULL)
 						cap->max_thr = atoi(_XML_STR_VAL(node, "max_threshold"));
 				}
+
 				sys_capture_set_handler(cap);
 				sys_capture_add(cap);
 			}

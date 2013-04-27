@@ -182,9 +182,9 @@ int capture_power(char *msg)
 
 	if ((fail_cnt > 0) && (gconf.power_cnt > 1))
 		strcat(msg, "缺少电源模块!");
-
-	if (msg[0] == '\0')
+	else
 		return VAL_IGNORE;
+
 	return VAL_INVALID;
 }
 
