@@ -109,6 +109,8 @@ def __handle_disk_add(diskinfo):
 		sysmon_event('disk', 'led_blink1s4', 'disks=%s' % diskinfo.slot, '')
 		sysmon_event('disk', 'buzzer_on', '%s' % diskinfo.slot, '')
 		return
+	elif disk_info['state'] == 'Global' or disk_info['state'] == 'Special':
+		sysmon_event('disk', 'led_on', 'disks=%s' % diskinfo.slot, '')
 	elif disk_info['state'] != 'Invalid':
 		return
 
