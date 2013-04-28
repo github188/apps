@@ -86,9 +86,19 @@ pkg_opt()
 
 pkg_local()
 {
+	set -x
 	echo "local.tgz package start ..."
 	cd /usr/local
+
+	cat << EOF > ./bin/set_network_default
+#!/bin/sh
+network --default
+EOF
+	chmod +x ./bin/set_network_default
+	cat ./bin/set_network_default
+
 	tar zcf $PKG_STORE_DIR/local.tgz ./
+	rm -f ./bin/set_network_default
 	cd -
 	echo "local.tgz packaged OK!"
 }

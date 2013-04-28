@@ -86,6 +86,12 @@ start)
 	process_options
 
 	log_action_begin_msg "Configuring network interfaces"
+
+	CMD=/usr/local/bin/set_network_default
+	if [ -x $CMD ]; then
+		$CMD
+		rm -f $CMD
+	fi
 	if ifup -a; then
 	    bond_up
 	    advanceroute auto
