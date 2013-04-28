@@ -27,23 +27,14 @@ int _value_check_error(int value, sys_capture_t *cap, char *msg)
 	printf(" value: %d, min: %d, max: %d\n", value, cap->min_thr, cap->max_thr);
 #endif
 
-	if (value == VAL_NORMAL)
+	if ( value < cap->min_thr )
 	{
-		return VAL_NORMAL;
-	}
-	else if (value == VAL_ERROR)
-	{
-		strcpy(msg, "设备不存在");
-		return VAL_ERROR;
-	}
-	else if ( value < cap->min_thr )
-	{
-		sprintf(msg, "当前取值 %d 已经超过最低告警值 %d !", value, cap->min_thr);
+		sprintf(msg, "当前取值 %d, 未达到最低值 %d", value, cap->min_thr);
 		return VAL_ERROR;
 	}
 	else if ( value > cap->max_thr )
 	{
-		sprintf(msg, "当前取值 %d 已经超过最高告警值 %d !", value, cap->max_thr);
+		sprintf(msg, "当前取值 %d, 已超过最高值 %d", value, cap->max_thr);
 		return VAL_ERROR;
 	}
 
@@ -66,8 +57,8 @@ void _capture(sys_capture_t *cap)
 
 	if (!cap->_capture)
 	{
-		syslog(LOG_NOTICE, "the capture %s function is invalid! "
-				"no more value can be captured!", cap->name);
+		syslog(LOG_NOTICE, "the capture %s function is invalid, "
+				"no more value can be captured.", cap->name);
 		return;
 	}
 
