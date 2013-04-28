@@ -51,7 +51,7 @@ static inline const char *disk_get_smart_status(const struct disk_info *info)
 		return "LowHealth";
 	//if (info->si.pending_sectors || info->si.uncorrectable_sectors)
 	//	return "BAD Sectors";
-	return "GOOD";
+	return "Good";
 }
 
 static inline const char *disk_get_md_state(const struct disk_md_info *mi)
