@@ -167,7 +167,7 @@ int capture_power(char *msg)
 	struct pmu_info info;
 
 	if (!msg)
-		return VAL_IGNORE;
+		return VAL_ERROR;
 
 	msg[0] = '\0';
 	if (!pmu_get_info(PMU_DEV1, &info))
@@ -180,12 +180,16 @@ int capture_power(char *msg)
 	else
 		fail_cnt++;
 
-	if ((fail_cnt > 0) && (gconf.power_cnt > 1))
-		strcat(msg, "缺少电源模块!");
-	else
-		return VAL_IGNORE;
+	if (fail_cnt > 0)
+		/* 配置双电源, 缺一个即为错误; 配置单电源, 缺一个仅警告 */
+		if (2 == gconf.power_cnt)
+		{
+			strcat(msg, "缺少电源模块!");
+			return VAL_ERROR;
+		} else
+			return VAL_WARNING;
 
-	return VAL_INVALID;
+	return VAL_NORMAL;
 }
 
 capture_func capture_get(const char *mod)
@@ -236,11 +240,11 @@ sys_capture_t *sys_capture_alloc()
 	if (tmp)
 	{
 		tmp->name[0] = '\0';
-		tmp->check_intval = VAL_INVALID;
-		tmp->min_thr = tmp->max_thr = VAL_INVALID;
+		tmp->check_intval = 0;
+		tmp->min_thr = tmp->max_thr = 0;
 		tmp->_last_update = time(NULL);
 		tmp->_capture = NULL;
-		tmp->_error = false;
+		tmp->_error = VAL_NORMAL;
 		tmp->_preset = false;
 	}
 

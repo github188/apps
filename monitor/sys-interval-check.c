@@ -21,39 +21,40 @@ static const char *MOD_NAME(const char *mod)
 }
 
 
-bool _value_check_error(int value, sys_capture_t *cap, char *msg)
+int _value_check_error(int value, sys_capture_t *cap, char *msg)
 {
 #ifdef _DEBUG
 	printf(" value: %d, min: %d, max: %d\n", value, cap->min_thr, cap->max_thr);
 #endif
 
-	if (value == VAL_IGNORE)
+	if (value == VAL_NORMAL)
 	{
-		return false;
+		return VAL_NORMAL;
 	}
-	if (value == VAL_INVALID)
+	else if (value == VAL_ERROR)
 	{
 		strcpy(msg, "设备不存在");
-		return true;
+		return VAL_ERROR;
 	}
 	else if ( value < cap->min_thr )
 	{
 		sprintf(msg, "当前取值 %d 已经超过最低告警值 %d !", value, cap->min_thr);
-		return true;
+		return VAL_ERROR;
 	}
 	else if ( value > cap->max_thr )
 	{
 		sprintf(msg, "当前取值 %d 已经超过最高告警值 %d !", value, cap->max_thr);
-		return true;
+		return VAL_ERROR;
 	}
 
-	return false;
+	return VAL_NORMAL;
 }
 
 void _capture(sys_capture_t *cap)
 {
 	char msg[128] = {0};
-	bool _cur_error = false;
+	char log_msg[256] = {0};
+	int _cur_error = VAL_ERROR;
 
 #ifndef _DEBUG
 	if (!isExpried(cap))
@@ -65,7 +66,8 @@ void _capture(sys_capture_t *cap)
 
 	if (!cap->_capture)
 	{
-		syslog(LOG_NOTICE, "the capture %s function is invalid! no more value can be captured!", cap->name);
+		syslog(LOG_NOTICE, "the capture %s function is invalid! "
+				"no more value can be captured!", cap->name);
 		return;
 	}
 
@@ -75,24 +77,35 @@ void _capture(sys_capture_t *cap)
 	}
 	else
 	{
-		if (cap->_capture(msg) == VAL_INVALID)
-			_cur_error = true;
+		_cur_error = cap->_capture(msg);
 	}
-
-	char log_msg[256];
 
 	/* 出错的值仅处理一次 */
-	if (_cur_error && !cap->_error)
+	if (VAL_WARNING == _cur_error)
 	{
-		sysmon_event("self_run", "env_exception_raise", cap->name, msg);
-		cap->_error = true;
-		sprintf(log_msg, "监控模块%s告警: %s", MOD_NAME(cap->name), msg);
-		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		if (VAL_NORMAL == cap->_error)
+		{
+			cap->_error = VAL_WARNING;
+			sprintf(log_msg, "监控模块%s告警: %s", MOD_NAME(cap->name), msg);
+			LogInsert(NULL, "SysMon", "Auto", "Warning", log_msg);
+		}
 	}
-	else if (!_cur_error && cap->_error)
+	else if (VAL_ERROR == _cur_error)
 	{
-		sysmon_event("self_run", "env_exception_backout", cap->name, "good");
-		cap->_error = false;
+		if (cap->_error != VAL_ERROR)
+		{
+			cap->_error = VAL_ERROR;
+			sysmon_event("self_run", "env_exception_raise", cap->name, msg);
+			sprintf(log_msg, "监控模块%s告警: %s", MOD_NAME(cap->name), msg);
+			LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		}
+	}
+	else if (cap->_error != VAL_NORMAL)
+	{
+		if (VAL_ERROR == cap->_error)
+			sysmon_event("self_run", "env_exception_backout", cap->name, "good");
+		
+		cap->_error = VAL_NORMAL;
 		sprintf(log_msg, "监控模块%s告警解除", MOD_NAME(cap->name));
 		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
 	}

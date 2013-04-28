@@ -4,12 +4,11 @@
 #ifndef _SYS_INTERVAL_CHECK_
 #define _SYS_INTERVAL_CHECK_
 
-#define VAL_IGNORE -1
-#define VAL_INVALID 0
-#define isValid(val) ( ((val)!=VAL_IGNORE) && ((val)!=VAL_INVALID) )
+#define VAL_NORMAL		0
+#define VAL_WARNING		1
+#define VAL_ERROR		2
 
 #define isExecutable(item) (item->_capture)
-//#define isExpried(item) ((int)difftime(time(NULL), item->_last_update) >= item->check_intval)
 #define isExpried(item) (time(NULL) - item->_last_update >= item->check_intval)
 #define update(item) item->_last_update = time(NULL)
 #define execute(item) item->_capture()
@@ -28,9 +27,9 @@ struct _sys_capture_conf {
 	char name[64];
 	int check_intval;
 	int min_thr, max_thr;
-	time_t _last_update;		// 最后更新时间
-	capture_func _capture;		// 获取系统信息的函数
-	bool _error;			// true - 获取的值出错, false - 出错事件解除
+	time_t _last_update;	// 最后更新时间
+	capture_func _capture;	// 获取系统信息的函数
+	int _error;				// 0 - 无错误; 1 - 警告; 2 - 错误
 	bool _preset;			// 是否使用预先设置的值检查
 };
 
