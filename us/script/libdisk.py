@@ -63,12 +63,12 @@ def md_get_mddev(mdname):
 			return md
 
 		# 尝试从tmpfs获取信息
-		_dir = '%s/%s' % (TMP_RAID_INFO, dev_trim(md))
+		_dir = '%s/%s' % (TMP_RAID_INFO, basename(md))
 		if AttrRead(_dir, 'name') == mdname:
 			return md
 	return None
 
-def set_disk_free(diskname):
+def cleanup_disk_mdinfo(diskname):
 	cmd = "mdadm --zero-superblock %s 2>&1" % diskname
 	sts,out = commands.getstatusoutput(cmd)
 
@@ -82,47 +82,10 @@ def set_disk_free(diskname):
 	else:
 		return False
 
-def set_spare(mdname, slots):
-	disks,failed = disks_from_slot(slots)
-	if (len(disks) == 0):
-		return False, "未找到磁盘"
-	if len(failed) != 0:
-		return False, "未找到磁盘'%s'" % " ".join(failed)
-	mddev = md_get_mddev(mdname)
-	if mddev == None:
-		return False, "未找到卷组'%s'" % mdname
-
-	cmd = "mdadm -a %s" % (mddev)
-	for i in disks:
-		cmd += " " + i
-	cmd += " 2>/dev/null"
-	sts,out = commands.getstatusoutput(cmd)
-	if sts != 0:
-		return False,"设置'%s'为热备盘失败" % slots;
-	return True, "设置'%s'为热备盘成功" % slots
-
-def set_slots_free(slots):
-	if len(slots) == 0:
-		return False,"请输入设置空闲盘的磁盘槽位号"
-
-	failed = []
-	for slot in slots:
-		disk = disk_name(slot)
-		if disk == None:
-			failed.append(slot)
-			continue
-		ret = set_disk_free(disk)
-		if ret == False:
-			failed.append(slot)
-
-	if len(failed) != 0:
-		return False,"设置'%s'为空闲盘失败" % " ".join(failed)
-	return True,"设置'%s'为空闲盘成功" % slots
-
-def set_disks_free(disks):
+def cleanup_disks_mdinfo(disks):
 	res = ""
 	for dev in disks:
-		err = set_disk_free(dev)
+		err = cleanup_disk_mdinfo(dev)
 		if err == False:
 			res += " " + dev
 	disk_name_update(disks)

@@ -56,11 +56,17 @@ def diskDetailProc(arg = diskArgs()):
 def diskSetProc(arg = diskArgs()):
 	if not arg.set_mode:
 		return
+	f_lock = lock_file(RAID_REBUILD_LOCK)
+	if None == f_lock:
+		diskExit(False, '系统异常: 文件 %s 加锁失败' % RAID_REBUILD_LOCK)
+
 	for slot in arg.slot_list:
 		ret,msg = disk_set_type(slot, arg.type_set, arg.vg_name)
 		if ret != True:
+			unlock_file(f_lock)
 			diskExit(ret, msg)
 
+	unlock_file(f_lock)
 	diskExit(True, '设置磁盘 %s 为%s成功' % (str(arg.slot_list), DISK_TYPE_MAP[arg.type_set]))
 
 def diskUsage():

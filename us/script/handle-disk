@@ -59,12 +59,16 @@ def __remove_disk_from_md(mddev, diskdev):
 	
 	cmd = 'mdadm --remove %s %s 2>&1' % (mddev, diskdev)
 	ret,msg = commands.getstatusoutput(cmd)
+	
+	tmpfs_remove_disk_from_md(mddev, disk_slot(diskdev))
 	return ret
 
 # 将磁盘加入指定卷组
 def __add_disk_to_md(mddev, diskdev):
 	cmd = 'mdadm --add %s %s 2>&1' % (mddev, diskdev)
 	ret,msg = commands.getstatusoutput(cmd)
+	
+	tmpfs_add_disk_to_md(mddev, disk_slot(diskdev))
 	return ret
 
 # 使用磁盘dev节点名称查找所在的卷组信息
@@ -76,7 +80,7 @@ def __find_md_by_disk_dev(disk_dev):
 			mddev = re.match('^md\d*', x)
 			if mddev is None:
 				continue
-			if dev_trim(disk_dev) in re.findall('sd\w+', x):
+			if basename(disk_dev) in re.findall('sd\w+', x):
 				mdinfo = mddev_get_attr('/dev/%s' % mddev.group())
 				break
 		f.close()
@@ -181,14 +185,16 @@ def __handle_disk_remove_kicked(diskinfo, event):
 
 def __handle_md_rebuild(mdinfo):
 	# 使用文件锁同步多个raid重建, 防止争抢全局热备盘和空闲盘
-	f_lock = lock_file('/tmp/.raid_rebuild_lock')
+	f_lock = lock_file(RAID_REBUILD_LOCK)
 	if None == f_lock:
-		__md_event_log('Error', '系统异常: 打开文件/tmp/.raid_rebuild_lock失败')
+		__md_event_log('Error', '系统异常: 文件 %s 加锁失败' % RAID_REBUILD_LOCK)
 		return
 
+	disk_type = 'Hot'
 	disk = md_get_hotrep(mdinfo['raid_uuid'])
 	if disk == {}:
 		disk = get_free_disk()
+		disk_type = 'Free'
 	if disk == {}:
 		__md_event_log('Error', '未找到热备盘和空闲盘重建卷组 %s' % mdinfo['name'])
 		unlock_file(f_lock)
@@ -197,11 +203,12 @@ def __handle_md_rebuild(mdinfo):
 	slot = disk_serial2slot(disk['serial'])
 	name = disk_name(slot)
 	if __add_disk_to_md(mdinfo['dev'], name) == 0:
-		__md_event_log('Info', '使用 %s %s 重建卷组 %s 成功' % (disk['type'], slot, mdinfo['name']))
-		disk_clean_hotrep(slot)
+		__md_event_log('Info', '%s %s 加入卷组 %s 成功' % (disk['type'], slot, mdinfo['name']))
+		if disk_type != 'Free':
+			disk_clean_hotrep(slot)
 		disk_slot_update(slot)
 	else:
-		__md_event_log('Error', '使用 %s %s 重建卷组 %s 失败' % (disk['type'], slot, mdinfo['name']))
+		__md_event_log('Error', '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdinfo['name']))
 	unlock_file(f_lock)
 
 # args [0]  - self

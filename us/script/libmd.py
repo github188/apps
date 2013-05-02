@@ -143,7 +143,8 @@ def __raid1_state(dspecs, dcnt):
 
 # 不同RAID级别在磁盘完全掉线后会导致部分信息缺失需要记录在tmpfs供查询使用
 def __md_fill_tmpfs_attr(attr = raid_attr()):
-	_dir = '%s/%s' % (TMP_RAID_INFO, dev_trim(attr.dev))
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(attr.dev)))
+	_dir = '%s/%s' % (TMP_RAID_INFO, basename(attr.dev))
 
 	# 以下是raid级别0,1,5,6,JBOD需要获取的信息
 	if attr.name == 'Unknown' or attr.name == '':
@@ -157,9 +158,11 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 				attr.raid_state = 'degrade'
 			else:
 				attr.raid_state = 'rebuild'
+		unlock_file(f_lock)
 		return attr.__dict__
 
 	if attr.raid_level == '5':
+		unlock_file(f_lock)
 		return attr.__dict__
 
 	# 特殊处理: raid1,jbod没有strip属性
@@ -176,6 +179,7 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 	#elif attr.raid_level == '1':
 	#	attr.raid_state = __raid1_state(attr.disk_specs, attr.disk_cnt)
 
+	unlock_file(f_lock)
 	return attr.__dict__
 
 def __md_fill_mdadm_attr(mddev):
@@ -217,23 +221,29 @@ def mddev_get_attr(mddev):
 		return None
 	return __md_fill_tmpfs_attr(attr)
 
-def tmpfs_remove_disk_from_md(mdinfo, diskinfo):
-	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']), diskinfo.slot)
-	return os.unlink(_file) if os.path.isfile(_file) else False
+def tmpfs_remove_disk_from_md(mddev, slot):
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, basename(mddev), slot)
+	if os.path.isfile(_file):
+		os.unlink(_file)
+	unlock_file(f_lock)
 
-def tmpfs_add_disk_to_md(mdinfo, diskinfo):
-	_dir = '%s/%s/disk-list' % (TMP_RAID_INFO, dev_trim(mdinfo['dev']))
-	return AttrWrite(_dir, diskinfo.slot, diskinfo.slot)
+def tmpfs_add_disk_to_md(mddev, slot):
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	_dir = '%s/%s/disk-list' % (TMP_RAID_INFO, basename(mddev))
+	AttrWrite(_dir, slot, slot)
+	unlock_file(f_lock)
 
 # mddev - /dev/md<x>
 def tmpfs_add_md_info(mddev):
-
 	attr = __md_fill_mdadm_attr(mddev)
 	if None == attr:
 		return
-	_dir = '%s/%s' % (TMP_RAID_INFO, dev_trim(mddev))
+
+	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mddev))
 	if not os.path.exists(_dir):
 		os.makedirs(_dir)
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
 	AttrWrite(_dir, 'name', attr.name)
 	AttrWrite(_dir, 'raid-uuid', attr.raid_uuid)
 
@@ -244,6 +254,7 @@ def tmpfs_add_md_info(mddev):
 		sysmon_event('vg', 'fail', attr.name, '卷组 %s 失效' % attr.name)
 
 	if attr.raid_level == '5' or attr.raid_level == '6':
+		unlock_file(f_lock)
 		return
 
 	_list_dir = '%s/disk-list' % _dir
@@ -251,12 +262,14 @@ def tmpfs_add_md_info(mddev):
 		os.makedirs(_list_dir)
 	for x in attr.disk_list:
 		AttrWrite(_list_dir, x, x)
+	unlock_file(f_lock)
 	return
 
 # mddev - /dev/md<x>
 def tmpfs_remove_md_info(mddev):
-	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, dev_trim(mddev)))
-
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, basename(mddev)))
+	unlock_file(f_lock)
 
 def md_list_mddevs():
 	#return list_files("/dev", "md[0-9]+")
@@ -333,8 +346,9 @@ def __md_create(mdname, level, chunk, slots):
 		disk_bad_sect_redirection(d)
 
 	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, __raid_level(level), chunk, len(devs), dev_list, mdname)
-	if level in ('3', '4', '5', '6', '10', '50', '60'):
+	if level in ('5', '6'):
 		cmd += " --bitmap=internal"
+	if level in ('1', '5', '6'):
 		sts,size = commands.getstatusoutput('cat /tmp/disk_use_size')
 		if sts != 0:
 			size = 0
@@ -342,7 +356,7 @@ def __md_create(mdname, level, chunk, slots):
 			cmd += " -z " + size
 
 	sts,out = commands.getstatusoutput(cmd)
-	if sts != 0 :
+	if sts != 0:
 		# try to remove mddev
 		os.popen('mdadm -S %s 2>&1 >/dev/null' % mddev)
 		os.popen('rm -f %s 2>&1 >/dev/null' % mddev)
@@ -403,11 +417,13 @@ def __md_del(mdname):
 		return False,"停止%s失败%s" % (mdname, msg)
 
 	# 专用热备盘设置为空闲盘
-	for slot in md_get_special(md_uuid):
-		disk_set_type(slot, 'Free')
-	res = set_disks_free(disks)
-	if res != "":
-		return False,"清除磁盘信息失败, 请手动清除"
+	f_lock = lock_file(RAID_REBUILD_LOCK)
+	if f_lock != None:
+		for slot in md_get_special(md_uuid):
+			disk_set_type(slot, 'Free')
+		unlock_file(f_lock)
+		
+	cleanup_disks_mdinfo(disks)
 
 	sysmon_event('vg', 'remove', mdinfo['name'], '卷组 %s 删除成功' % mdinfo['name'])
 	sysmon_event('disk', 'led_off', 'disks=%s' % _disk_slot_list_str(disks), '')
@@ -568,7 +584,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 			return False, '卷组 %s 不存在, 请检查参数' % mdname
 	elif disk_type == 'Free':
 		disk_clean_hotrep(slot)
-		set_disk_free(disk_name(slot))
+		cleanup_disk_mdinfo(disk_name(slot))
 		disk_slot_update(slot)
 		# 通知监控进程
 		sysmon_event('disk', 'led_off', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为空闲盘' % slot)
@@ -618,7 +634,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 	f.close()
 
 	# 清除磁盘上的superblock信息
-	set_disk_free(disk_name(slot))
+	cleanup_disk_mdinfo(disk_name(slot))
 
 	# 通知disk监控进程
 	disk_slot_update(slot)
@@ -641,7 +657,7 @@ def __xml_load(fname):
 		doc = minidom.parse(fname)
 	except:
 		return None
-	return doc.documentElement
+	return doc
 
 # 获取指定RAID所有专用热备盘
 def md_get_special(md_uuid=''):
@@ -650,7 +666,10 @@ def md_get_special(md_uuid=''):
 	if md_uuid == '':
 		return spec_list
 
-	doc_root = __xml_load(DISK_HOTREP_CONF)
+	doc = __xml_load(DISK_HOTREP_CONF)
+	if doc == None:
+		return spec_list
+	doc_root = doc.documentElement
 	try:
 		for item in __get_xmlnode(doc_root, 'disk'):
 			if __get_attrvalue(item, 'md_uuid') == md_uuid and __get_attrvalue(item, 'type') == 'Special':
@@ -664,11 +683,22 @@ def md_get_special(md_uuid=''):
 def md_get_hotrep(md_uuid=''):
 	disk_info = {}
 	tmp_info = {}
-	doc_root = __xml_load(DISK_HOTREP_CONF)
+	update_conf = False
+	
+	doc = __xml_load(DISK_HOTREP_CONF)
+	if doc == None:
+		return disk_info
+	doc_root = doc.documentElement
 	try:
 		for item in __get_xmlnode(doc_root, 'disk'):
 			tmp_info['serial'] = __get_attrvalue(item, 'serial')
 			tmp_info['type'] = __get_attrvalue(item, 'type')
+			
+			slot = disk_serial2slot(tmp_info['serial'])
+			if slot == None:
+				doc_root.removeChild(item)
+				update_conf = True
+				continue
 
 			# 专用热备盘
 			if md_uuid == __get_attrvalue(item, 'md_uuid'):
@@ -678,37 +708,39 @@ def md_get_hotrep(md_uuid=''):
 			# 全局热备盘
 			if tmp_info['type'] == 'Global':
 				disk_info = tmp_info
+				disk_info['type'] = '全局热备盘'
+				break
 	except:
 		pass
+	
+	if update_conf:
+		f = open(DISK_HOTREP_CONF, 'w')
+		doc.writexml(f, encoding='utf-8')
+		f.close()
+
 	return disk_info
 
 # 设置热备盘被使用
 def disk_clean_hotrep(slot):
-	__check_disk_hotrep_conf()
-	try:
-		doc = minidom.parse(DISK_HOTREP_CONF)
-	except IOError,e:
-		return False, '读取配置分区出错 %s' % e
-	except xml.parsers.expat.ExpatError, e:
-		return False, '磁盘配置文件格式出错 %s' % e
-	except e:
-		return False, '无法解析磁盘配置文件 %s' % e
+	doc = __xml_load(DISK_HOTREP_CONF)
+	if doc == None:
+		return disk_info
+	doc_root = doc.documentElement
 
 	disk_serial = disk_slot2serial(slot)
-	is_set = False
-	root = doc.documentElement
-	for item in __get_xmlnode(root, 'disk'):
+	update_conf = False
+	for item in __get_xmlnode(doc_root, 'disk'):
 		if disk_serial == __get_attrvalue(item, 'serial'):
-			root.removeChild(item)
-			is_set = True
+			doc_root.removeChild(item)
+			update_conf = True
 
-	if is_set:
+	if update_conf:
 		f = open(DISK_HOTREP_CONF, 'w')
 		doc.writexml(f, encoding='utf-8')
 		f.close()
-		return True, '移除磁盘 %s 的热备盘配置成功' % slot
+		return True
 
-	return False, '移除磁盘 %s 的热备盘失败, 配置不存在' % slot
+	return False
 
 # -----------------------------------------------------------------------------
 

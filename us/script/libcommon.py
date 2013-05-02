@@ -4,7 +4,6 @@
 import os, re, json, sys, fcntl
 
 TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
-TMP_RAID_LOCK = '/tmp/.raid-info/create-lock'
 
 def list_files(path, reg):
     if not path.endswith("/"):
@@ -66,9 +65,8 @@ def getDirList(file_path):
 	finally:
 		return dir_list
 
-def dev_trim(dev):
-	return dev.split('/')[-1]
-
+def basename(dev):
+	return os.path.basename(dev)
 
 def initlog():
 	import logging
@@ -85,6 +83,7 @@ def initlog():
 	logger.setLevel(logging.INFO)
 	return logger
 
+RAID_REBUILD_LOCK = '/tmp/.raid_rebuild_lock'
 def lock_file(filepath):
 	try:
 		f = open(filepath, 'w')
@@ -95,6 +94,8 @@ def lock_file(filepath):
 	return f
 	
 def unlock_file(f):
+	if f == None:
+		return
 	fcntl.flock(f, fcntl.LOCK_UN)  
 	f.close() 
 
