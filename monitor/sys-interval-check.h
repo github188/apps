@@ -4,9 +4,13 @@
 #ifndef _SYS_INTERVAL_CHECK_
 #define _SYS_INTERVAL_CHECK_
 
-#define VAL_NORMAL		0
-#define VAL_WARNING		1
-#define VAL_ERROR		2
+enum CAPTURE_RESULT {
+	VAL_NORMAL,
+	VAL_WARNING,
+	VAL_ERROR,
+	VAL_CRIT,
+	VAL_EMERG,
+};
 
 #define isExecutable(item) (item->_capture)
 #define isExpried(item) (time(NULL) - item->_last_update >= item->check_intval)

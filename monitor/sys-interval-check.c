@@ -11,8 +11,7 @@ static const char *MOD_NAME(const char *mod)
 	int i;
 	static char _not_found[2] = "";
 
-	for (i=0;mod_cap_list[i];i++)
-	{
+	for (i=0;mod_cap_list[i];i++) {
 		if (!strcmp(mod_cap_list[i], mod))
 			return mod_ch_name[i];
 	}
@@ -20,21 +19,31 @@ static const char *MOD_NAME(const char *mod)
 	return _not_found;
 }
 
-
-int _value_check_error(int value, sys_capture_t *cap, char *msg)
+#define CPU_TEMP_REBOOT		85
+#define CPU_TEMP_POWEROFF	90
+int _value_check_error(sys_capture_t *cap, char *msg)
 {
+	int value = cap->_capture(msg);
+
 #ifdef _DEBUG
 	printf(" value: %d, min: %d, max: %d\n", value, cap->min_thr, cap->max_thr);
 #endif
 
-	if ( value < cap->min_thr )
-	{
-		sprintf(msg, "当前取值 %d, 未达到最低值 %d", value, cap->min_thr);
-		return VAL_ERROR;
+	if (strcmp(cap->name, "cpu-temp") == 0)	{
+		if (value > CPU_TEMP_REBOOT) {
+			sprintf(msg, "当前值 %d", value);
+			if (value > CPU_TEMP_POWEROFF)
+				return VAL_EMERG;
+			else
+				return VAL_CRIT;
+		}
 	}
-	else if ( value > cap->max_thr )
-	{
-		sprintf(msg, "当前取值 %d, 已超过最高值 %d", value, cap->max_thr);
+
+	if (value < cap->min_thr) {
+		sprintf(msg, "当前值 %d, 未达到最低值 %d", value, cap->min_thr);
+		return VAL_ERROR;
+	} else if (value > cap->max_thr) {
+		sprintf(msg, "当前值 %d, 已超过最高值 %d", value, cap->max_thr);
 		return VAL_ERROR;
 	}
 
@@ -55,50 +64,58 @@ void _capture(sys_capture_t *cap)
 	printf(" handler: %.8x", cap->_capture);
 #endif/*_DEBUG*/
 
-	if (!cap->_capture)
-	{
+	if (!cap->_capture)	{
 		syslog(LOG_NOTICE, "the capture %s function is invalid, "
 				"no more value can be captured.", cap->name);
 		return;
 	}
 
-	if (cap->_preset)
-	{
-		_cur_error = _value_check_error(cap->_capture(NULL), cap, msg);
-	}
-	else
-	{
+	if (cap->_preset) {
+		_cur_error = _value_check_error(cap, msg);
+	} else {
 		_cur_error = cap->_capture(msg);
 	}
 
 	/* 出错的值仅处理一次 */
-	if (VAL_WARNING == _cur_error)
-	{
-		if (VAL_NORMAL == cap->_error)
-		{
+	switch(_cur_error) {
+	case VAL_EMERG:
+		sprintf(log_msg, "监控模块%s告警: %s, 自动关闭系统",
+				MOD_NAME(cap->name), msg);
+		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		system("poweroff&");
+		break;
+	case VAL_CRIT:
+		sprintf(log_msg, "监控模块%s告警: %s, 自动重启系统",
+				MOD_NAME(cap->name), msg);
+		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		system("reboot&");
+		break;
+	case VAL_WARNING:
+		if (VAL_NORMAL == cap->_error) {
 			cap->_error = VAL_WARNING;
 			sprintf(log_msg, "监控模块%s告警: %s", MOD_NAME(cap->name), msg);
 			LogInsert(NULL, "SysMon", "Auto", "Warning", log_msg);
 		}
-	}
-	else if (VAL_ERROR == _cur_error)
-	{
-		if (cap->_error != VAL_ERROR)
-		{
+		break;
+	case VAL_ERROR:
+		if (cap->_error != VAL_ERROR) {
 			cap->_error = VAL_ERROR;
 			sysmon_event("self_run", "env_exception_raise", cap->name, msg);
 			sprintf(log_msg, "监控模块%s告警: %s", MOD_NAME(cap->name), msg);
 			LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
 		}
-	}
-	else if (cap->_error != VAL_NORMAL)
-	{
-		if (VAL_ERROR == cap->_error)
-			sysmon_event("self_run", "env_exception_backout", cap->name, "good");
-		
-		cap->_error = VAL_NORMAL;
-		sprintf(log_msg, "监控模块%s告警解除", MOD_NAME(cap->name));
-		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		break;
+	case VAL_NORMAL:
+		if (cap->_error != VAL_NORMAL) {
+			if (VAL_ERROR == cap->_error)
+				sysmon_event("self_run", "env_exception_backout", cap->name, "good");
+			
+			cap->_error = VAL_NORMAL;
+			sprintf(log_msg, "监控模块%s告警解除", MOD_NAME(cap->name));
+			LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		}
+	default:
+		break;
 	}
 }
 
@@ -111,8 +128,7 @@ void _check_interval()
 	printf("enter _check_interval()\n");
 #endif
 
-	list_iterate_safe(n, nt, &_g_capture)
-	{
+	list_iterate_safe(n, nt, &_g_capture) {
 		cap = list_struct_base(n, sys_capture_t, list);
 #ifdef _DEBUG
 		printf("capture: %s", cap->name);
@@ -123,8 +139,7 @@ void _check_interval()
 
 void do_interval_check(int sig)
 {
-	if (sig == SIGALRM)
-	{
+	if (sig == SIGALRM)	{
 		signal(SIGALRM, SIG_IGN);
 		_check_interval();
 		signal(SIGALRM, do_interval_check);
@@ -138,8 +153,7 @@ void dump_self_run()
 	sys_capture_t *cap;
 
 	puts("------------------- dump capture -------------------");
-	list_iterate_safe(n, nt, &_g_capture)
-	{
+	list_iterate_safe(n, nt, &_g_capture) {
 		cap = list_struct_base(n, sys_capture_t, list);
 		printf("capture: %.8x %s\n", cap, cap->name);
 		printf("\tcheck interval: %d\n", cap->check_intval);
