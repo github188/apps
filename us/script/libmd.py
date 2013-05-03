@@ -236,14 +236,17 @@ def tmpfs_add_disk_to_md(mddev, slot):
 
 # mddev - /dev/md<x>
 def tmpfs_add_md_info(mddev):
-	attr = __md_fill_mdadm_attr(mddev)
-	if None == attr:
-		return
-
 	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mddev))
 	if not os.path.exists(_dir):
 		os.makedirs(_dir)
+
 	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+
+	attr = __md_fill_mdadm_attr(mddev)
+	if None == attr:
+		unlock_file(f_lock)
+		return
+
 	AttrWrite(_dir, 'name', attr.name)
 	AttrWrite(_dir, 'raid-uuid', attr.raid_uuid)
 
