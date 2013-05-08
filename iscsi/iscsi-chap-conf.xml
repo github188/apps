@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<iscsi>
-	<target name="iqn.123">
-		<chap switch="enable">
-			<incoming user="abc" pass="111222333444" switch="enable"/>
-		</chap>
-	</target>
-</iscsi>
