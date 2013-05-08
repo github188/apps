@@ -12,8 +12,7 @@ libpic.a: $(call to-progs,$(lib-objs))
 	$(QUIET_AR)
 
 test:
-	@echo "  MAKE    test"
-	@$(CROSS_COMPILE)$(CC) -o pic_test pic_test.c -L../ -lpic
+	$(CROSS_COMPILE)$(CC) -o dled_test dled_test.c -L../ -lpic
 
 $(OBJS) : %.o : %.c
 	$(QUIET_CC)
@@ -21,6 +20,5 @@ $(OBJS) : %.o : %.c
 .PHONY: clean test
 
 clean::
-	@echo "  CLEAN   test"
-	@rm -fr pic_test
+	rm -fr dled_test
 	$(call QUIET_RM,*.o *.a *.so)
