@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assume.sh us/md-auto-resume/mdscan/mdinfo'
+DISK_BIN='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assume.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test'
 UDV_LIB='udv/libudv.a'
 UDV_BIN='udv/libpyext_udv.py'
 WEBIFACE_BIN='web-iface/sys-manager'
