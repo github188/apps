@@ -24,7 +24,6 @@ class iSCSICHAPIncoming:
 class iSCSICHAP:
 	def __init__(self):
 		self.target_name = ''
-		self.active = ''
 		self.incoming = []
 
 # ----------------------------------------
@@ -111,7 +110,6 @@ def _chap_conf_user_add(tgt, user, pwd):
 	if target is None:
 		target = doc.createElement('target')
 		__set_attrvalue(target, 'name', tgt)
-		__set_attrvalue(target, 'chap', 'enable')
 		root.appendChild(target)
 	
 
@@ -205,7 +203,6 @@ def _chap_conf_user_enable(tgt, user, set_all = False):
 					continue
 			incoming_found = True
 			__set_attrvalue(incoming, 'active', 'enable')
-			__set_attrvalue(target, 'chap', 'enable')
 	
 	if not target_found:
 		return False, '打开CHAP用户%s配置失败，Target % 不存在!' % (user, tgt)
@@ -233,8 +230,7 @@ def _chap_conf_user_disable(tgt, user, set_all = False):
 		if __get_attrvalue(target, 'name') != tgt:
 			continue
 		target_found = True
-		if set_all:
-			__set_attrvalue(target, 'chap', 'disable')
+
 		for incoming in __get_xmlnode(target, 'incoming'):
 			if not set_all:
 				if __get_attrvalue(incoming, 'user') != user:
@@ -270,69 +266,35 @@ def iSCSIChapUserExist(tgt, user):
 def iSCSIChapList(tgt = ''):
 	chap_list = []
 
-	# get all target conf
-	for x in iSCSIGetTargetList(tgt):
-		chap = iSCSICHAP()
-		chap.target_name = x.name
-
-		_dir = '%s/%s' % (SCST.TARGET_DIR, x.name)
-		for y in os.listdir(_dir):
-			if re.match('^IncomingUser*', y) is None:
-				continue
-			z = iSCSICHAPIncoming()
-			tmp = AttrRead(_dir, y)
-			z.user = tmp.split()[0]
-			z.password = tmp.split()[1]
-			z.active = 'enable'
-			chap.incoming.append(z.__dict__)
-		chap_list.append(chap)
-	
-	# chap active
-	for x in chap_list:
-		if len(x.incoming) > 0:
-			x.active = 'enable'
-		else:
-			x.active = 'disable'
-
 	ret,doc = __load_xml(ISCSI_CHAP_CONF)
 	if not ret:
 		return []
 	root = doc.documentElement
 
 	for x in __get_xmlnode(root, 'target'):
-		chap = None
-		for y in chap_list:
-			if y.target_name == __get_attrvalue(x, 'name'):
-				chap = y
-				break
-		if chap is None:
-			chap = iSCSICHAP()
-			chap.target_name = __get_attrvalue(x, 'name')
-			chap.active = 'disable'
-			chap_list.append(chap)
+		finish = False
+		if finish == True:
+			break
+
+		chap = iSCSICHAP()
+		name = __get_attrvalue(x, 'name')
+		if tgt != '':
+			if tgt == name:
+				finish = True
+			else:
+				continue
+		
+		chap.target_name = name
+	
 		for y in __get_xmlnode(x, 'incoming'):
-
-			if chap.active == 'disable':
-				incoming = iSCSICHAPIncoming()
-				incoming.user = __get_attrvalue(y, 'user')
-				incoming.password = __get_attrvalue(y, 'password')
-				incoming.active = __get_attrvalue(y, 'active')
-				chap.incoming.append(incoming.__dict__)
-				continue
-
-			if __get_attrvalue(y, 'active') != 'disable':
-				continue
 			incoming = iSCSICHAPIncoming()
 			incoming.user = __get_attrvalue(y, 'user')
-			incoming.password = __get_attrvalue(y, 'passwrod')
-			incoming.active = 'disable'
+			incoming.password = __get_attrvalue(y, 'password')
+			incoming.active = __get_attrvalue(y, 'active')
 			chap.incoming.append(incoming.__dict__)
-	final_list = []
-	for x in chap_list:
-		if tgt != '' and x.target_name != tgt:
-			continue
-		final_list.append(x)
-	return final_list
+
+		chap_list.append(chap)
+	return chap_list
 
 def iSCSIChapAddUser(tgt, user, pwd):
 	if iSCSIChapUserExist(tgt, user):
@@ -344,6 +306,7 @@ def iSCSIChapAddUser(tgt, user, pwd):
 		return ret,msg
 	ret,msg = _chap_conf_user_add(tgt, user, pwd)
 	if not ret:
+		_chap_sysfs_user_remove(tgt, user, pwd)
 		return ret,msg
 	ret,msg = iSCSIUpdateCFG()
 	if not ret:

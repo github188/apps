@@ -10,6 +10,12 @@ from libsysparam import *
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+def json_dump(obj):
+	if os.environ.get('SUDO_USER') == 'www-data' or os.environ.get('LOGNAME') == 'www-data':
+		print json.dumps(obj, ensure_ascii=False, sort_keys=True)
+	else:
+		print json.dumps(obj, ensure_ascii=False, sort_keys=True, indent=4)
+
 def __alarm_email_conf_todict(email):
 	_email_dict = {}
 	_email_dict['alarm'] = 'email'
@@ -122,10 +128,12 @@ def system_main():
 
 	# mode check
 	if _mode == '--get-info':
-		print json.dumps(sys_global(get_sys_info(_sys_item)))
+		#print json.dumps(sys_global(get_sys_info(_sys_item)))
+		json_dump(sys_global(get_sys_info(_sys_item)))
 		sys.exit(0)
 	elif _mode == '--get-status':
-		print json.dumps(sys_global(get_sys_stat(_sys_item)))
+		#print json.dumps(sys_global(get_sys_stat(_sys_item)))
+		json_dump(sys_global(get_sys_stat(_sys_item)))
 		sys.exit(0)
 	elif _mode == '--alarm':
 		if _email_arg:

@@ -9,7 +9,7 @@ import commands
 from libsyscommon import *
 
 ERROR_VALUE = 'error-occurs'
-VER_SEP = '.'
+VER_SEP = ':'
 NCT_ROOT = '/sys/devices/platform/nct6106.656'
 
 def __get_cpu_info(mod):
@@ -146,7 +146,7 @@ def __get_lastrun(mod):
 
 # 主板硬件版本
 def __mab_ver():
-	return 'Rev1.0'
+	return '1.0'
 
 # 背板硬件版本
 def __bkp_ver():
@@ -159,11 +159,16 @@ def __mcu_ver():
 		return msg
 	except:
 		pass
-	return '[MCU:NoVersionFound!]'
+	return 'pic'
 
 # 内核版本
 def __kernel_ver():
-	return '3.04'
+	try:
+		ret,msg = commands.getstatusoutput('uname -rm | tr  \' \' \'.\'')
+		return msg
+	except:
+		pass
+	return 'kernel'
 
 # rootfs版本
 def __rootfs_ver():
@@ -171,7 +176,12 @@ def __rootfs_ver():
 
 # 存储软件版本
 def __apps_ver():
-	return '0.91'
+	try:
+		ret,msg = commands.getstatusoutput('cat /etc/issue')
+		return msg.split()[2]
+	except:
+		pass
+	return 'main'
 
 # web版本
 def __web_ver():
@@ -183,7 +193,7 @@ def __attch_ver():
 
 # 编译日期
 def __build_date():
-	return get_sys_file('/usr/local/bin/.build-date')
+	return get_sys_file('/usr/local/bin/.build-date')[0:-1]
 
 def __get_sys_version():
 	return __mab_ver() + VER_SEP + __bkp_ver() + VER_SEP + __mcu_ver() + VER_SEP + __kernel_ver() + VER_SEP + __rootfs_ver() + VER_SEP + __apps_ver() + VER_SEP + __web_ver() + VER_SEP + __attch_ver() + '  ' + __build_date()

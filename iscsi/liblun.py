@@ -163,7 +163,11 @@ def iSCSILunModify(tgt, lun_id, cur_initor, fre_initor):
 		return ret,msg
 
 	# 增加新映射
-	return iSCSILunMap(tgt, _volume_name, 'auto', _read_only, fre_initor)
+	ret, msg = iSCSILunMap(tgt, _volume_name, 'auto', _read_only, fre_initor)
+	if not ret:
+		return ret,msg
+	else:
+		return True, '修改LUN映射成功'
 
 def __get_vdisk_by_lun(lun_dir):
 	volume = ''

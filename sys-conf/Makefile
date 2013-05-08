@@ -1,4 +1,4 @@
-d=$(shell date)
+d=$(shell date "+%Y-%m-%d %H:%M:%S")
 
 all:
 	echo "Build Date: "$d > .build-date

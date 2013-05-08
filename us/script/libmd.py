@@ -109,16 +109,15 @@ class raid_attr:
 		self.name = ''		# raid1需要特殊处理
 		self.dev = ''
 		self.raid_level = ''
-		self.raid_state = ''	# raid1需要根据disk_cnt与disk_specs关系计算
+		self.raid_state = ''	# raid1需要根据disk_cnt与disk_total关系计算
 		self.raid_strip = ''	# raid1需要特殊处理
 		self.raid_rebuild = ''
 		self.capacity = 0
 		self.remain = 0
-		self.disk_cnt = 0	# 当前磁盘个数, raid1需要计算实际的disk_list
+		self.disk_cnt = 0	# 当前磁盘个数, 对应mdadm -D的'Total Devices'字段, raid1需要计算实际的disk_list
 		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
 		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
-		#self.disk_working = 0	# 考虑使用disk_cnt替代
-		self.disk_specs = 0	# raid应该包含的磁盘个数, 对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
+		self.disk_total = 0	# raid应该包含的磁盘个数, 对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
 
 def __listdir_files(_dir):
 	if not os.path.isdir(_dir):
@@ -154,7 +153,7 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 	
 	if attr.raid_level == '6':
 		if attr.raid_state == 'degrade' or attr.raid_state == 'rebuild':
-			if attr.disk_cnt < attr.disk_specs:
+			if attr.disk_cnt < attr.disk_total:
 				attr.raid_state = 'degrade'
 			else:
 				attr.raid_state = 'rebuild'
@@ -175,9 +174,9 @@ def __md_fill_tmpfs_attr(attr = raid_attr()):
 
 	# raid 0,1,jbod的状态在掉盘后需要手动判断
 	if attr.raid_level == '0' or attr.raid_level == 'JBOD':
-		attr.raid_state = __raid0_jobd_state(attr.disk_specs, attr.disk_cnt)
+		attr.raid_state = __raid0_jobd_state(attr.disk_total, attr.disk_cnt)
 	#elif attr.raid_level == '1':
-	#	attr.raid_state = __raid1_state(attr.disk_specs, attr.disk_cnt)
+	#	attr.raid_state = __raid1_state(attr.disk_total, attr.disk_cnt)
 
 	unlock_file(f_lock)
 	return attr.__dict__
@@ -210,7 +209,7 @@ def __md_fill_mdadm_attr(mddev):
 	attr.disk_list = __find_attr(output, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
 	attr.disk_cnt = len(attr.disk_list)
 	attr.raid_uuid = __find_attr(output, "UUID : (.*)")
-	attr.disk_specs = int(__find_attr(output, "Raid Devices : ([0-9]+)"))
+	attr.disk_total = int(__find_attr(output, "Raid Devices : ([0-9]+)"))
 
 	return attr
 

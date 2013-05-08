@@ -29,7 +29,6 @@ def handle_md_sync(mddev):
 	LogInsert('VG', 'Auto', 'Info', msg)
 	sysmon_event('vg', 'rebuild', mdinfo['name'], msg)
 	sysmon_event('disk', 'led_blink1s1', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '')
-	tmpfs_add_disk_to_md(mdinfo, diskinfo)
 	return
 
 def handle_md_syncdone(mddev):

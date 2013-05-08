@@ -15,10 +15,10 @@ int main()
 	if (!pic_get_version(&version))
 	{
 		struct pic_ver *p = (struct pic_ver*)&version;
-		printf("[MCU: %d.%d]", p->major, p->minor);
+		printf("%d.%d", p->major, p->minor);
 		return 0;
 	}
 
-	printf("[MCU:NoVersionFound!]");
+	printf("pic");
 	return -1;
 }

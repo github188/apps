@@ -54,7 +54,7 @@ def __md_event_log(event, content):
 
 # 从指定卷组删除掉盘的磁盘
 def __remove_disk_from_md(mddev, diskdev):
-	cmd = 'mdadm --set-faulty %s %s 2>&1' % (mddev, diskdev)
+	cmd = 'mdadm --set-faulty %s %s 2>&1' % (mddev, basename(diskdev))
 	ret,msg = commands.getstatusoutput(cmd)
 	
 	cmd = 'mdadm --remove %s %s 2>&1' % (mddev, diskdev)

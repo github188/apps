@@ -15,7 +15,10 @@ def list_files(path, reg):
     return f
 
 def json_dump(obj):
-    print json.dumps(obj, ensure_ascii=False, sort_keys=True, indent = 4)
+	if os.environ.get('SUDO_USER') == 'www-data' or os.environ.get('LOGNAME') == 'www-data':
+		print json.dumps(obj, ensure_ascii=False, sort_keys=True)
+	else:
+		print json.dumps(obj, ensure_ascii=False, sort_keys=True, indent=4)
 
 def debug_status(res):
     if res:

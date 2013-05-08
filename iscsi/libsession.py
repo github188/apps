@@ -75,7 +75,7 @@ def iSCSIGetSessionList(spec_tgt=None):
 def iSCSIDeleteSession(sid):
 	for sess in iSCSIGetSessionList():
 		if sess.sid == sid:
-			cmd = 'echo "1" > %s/sessions/%s/force_close' % (sess.target_name, sess.initiator_name)
+			cmd = 'echo "1" > %s/%s/sessions/%s/force_close' % (SCST.TARGET_DIR, sess.target_name, sess.initiator_name)
 			ret,txt = commands.getstatusoutput(cmd)
 			if ret == 0:
 				return True,'删除iSCSI Session %s 成功!' % sid

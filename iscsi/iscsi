@@ -89,8 +89,11 @@ class UniOutput:
 		self.rows = dump(row_list)
 		self.total = len(self.rows)
 
-		#print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
-		print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
+		if os.environ.get('SUDO_USER') == 'www-data' or os.environ.get('LOGNAME') == 'www-data':
+			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
+		else:
+			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
+		
 		sys.exit(0)
 
 # 处理Target相关参数
@@ -132,13 +135,9 @@ def iscsiAddVolume(args = iSCSIArgs()):
 		read_only = 'disable'
 		if len(args.read_only_str):
 			read_only = args.read_only_str
-
-		nv_cache = 'enable'
-		if len(args.nv_cache_str):
-			nv_cache = args.nv_cache_str
 	except:
 		pass
-	return iSCSIVolumeAdd(args.udv_str, blocksize, read_only, nv_cache, args.wrth_str)
+	return iSCSIVolumeAdd(args.udv_str, blocksize, read_only, args.wrth_str)
 
 # 处理数据卷相关参数
 def iscsiVolumeProc(args = iSCSIArgs()):
@@ -169,7 +168,16 @@ def iscsiLunProc(args = iSCSIArgs()):
 			iscsiExit(False, '暂不支持获取指定LUN ID信息！')
 		UniOutput(iSCSILunGetList(args.target_name_str), DictDump)
 	elif args.map_set:
-		# check if add volume first
+		if not len(args.target_name_str):
+			iscsiExit(False, '请输入Target名称!')
+		elif not args.add_set and not len(args.volume_name_str):
+			iscsiExit(False, '请输入iSCSI数据卷名称!')
+		elif not len(args.lun_id_str):
+			iscsiExit(False, '请输入LUN ID!')
+		elif not len(args.lun_read_only_str):
+			iscsiExit(False, '请输入读写属性!')
+
+		# check if add volume
 		if args.add_set:
 			ret,msg = iscsiAddVolume(args) 
 			if not ret:
@@ -178,18 +186,12 @@ def iscsiLunProc(args = iSCSIArgs()):
 			if not volume_name:
 				iscsiExit(False, '无法获取iSCSI数据卷名称!')
 			args.volume_name_str = volume_name
-		if not len(args.target_name_str):
-			iscsiExit(False, '请输入Target名称!')
-		elif not len(args.volume_name_str):
-			iscsiExit(False, '请输入iSCSI数据卷名称!')
-		elif not len(args.lun_id_str):
-			iscsiExit(False, '请输入LUN ID!')
-		elif not len(args.lun_read_only_str):
-			iscsiExit(False, '请输入读写属性!')
-		else:
-			ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
-					args.lun_id_str, args.lun_read_only_str, args.initor)
-			iscsiExit(ret, msg)
+		
+		ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
+				args.lun_id_str, args.lun_read_only_str, args.initor)
+		if ret == False and args.add_set:
+			iSCSIVolumeRemove(volume_name)
+		iscsiExit(ret, msg)
 	elif args.modify_set:
 		ret,msg = iSCSILunModify(args.target_name_str, args.lun_id_str, args.cur_initor, args.fre_initor)
 		iscsiExit(ret, msg)
@@ -208,7 +210,7 @@ def iscsiLunProc(args = iSCSIArgs()):
 			iscsiExit(False, '请输入需要查询的用户数据卷名称！')
 		priv = iSCSILunGetPrivilage(args.udv_str)
 		if priv != {}:
-			print json.dumps(priv, indent = 4)
+			print json.dumps(priv)
 			sys.exit(0)
 		else:
 			iscsiExit(False, '用户数据卷 %s 不存在！' % args.udv_str)
@@ -296,12 +298,12 @@ iscsi --target --list [--target-name <name>]
       --target --remove <name>
 
       --volume --list [--volume-name <name>]
-      --volume --add --udv <name> [--blocksize <size> --read-only <enable|disable> --nv-cache <enable|disable>] --wr-method <wb|wt>
+      --volume --add --udv <name> [--blocksize <size> --read-only <enable|disable> --wr-method <wb|wt>]
       --volume --remove <volume_name>
 
       --lun --list [--target-name <name> [--lun-id <id>]]
       --lun --map --target-name <name> --volume-name <name> --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
-      --lun --map --target-name <name> --add --udv <name> [--block-size <size> --nv-cache <enable|disable>] --lun-id <id|auto> --lun-read-only <enable|disable|auto> --wr-method <wb|wt> [--initiator <name>]
+      --lun --map --target-name <name> --add --udv <name> [--block-size <size> --wr-method <wb|wt>] --lun-id <id|auto> --lun-read-only <enable|disable|auto> [--initiator <name>]
       --lun --modify --target-name <name> --current-initiator <name> --lun-id <id> --fresh-initiator <name>
       --lun --unmap --target-name <target_name> --lun-id <id> [--initiator <name>]
       --lun --get-privilage --udv <name>
@@ -388,9 +390,6 @@ def iscsi_main():
 			iscsiArgs.read_only_str = arg
 		elif opt == '--wr-method':
 			iscsiArgs.wrth_str = arg
-		elif opt == '--nv-cache':
-			iscsiArgs.nv_cache_set = True
-			iscsiArgs.nv_cache_str = arg
 		elif opt == '--lun-id':
 			iscsiArgs.lun_id_set = True
 			iscsiArgs.lun_id_str = arg

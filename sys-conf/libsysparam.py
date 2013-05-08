@@ -10,7 +10,7 @@ def __set_hostname(value):
 			f = open('/etc/hostname', 'w')
 			f.write(value)
 			f.close()
-			return True, '设置主机名称为 %s 操作成功!' % value
+			return True, '设置主机名称为 %s 操作成功' % value
 	except:
 		pass
 	return False, '设置主机名称操作失败!'
@@ -22,12 +22,12 @@ def __set_http_port(value):
 	return False, '暂时不支持设置http端口操作'
 
 def __set_buzzer(value):
-	if value == 'mute':
+	if value != 'on':
 		value = 'off'
-	ret,msg = commands.getstatusoutput('/usr/local/bin/set-buzzer.sh %s' % value)
+	ret = os.system('/usr/local/bin/set-buzzer.sh %s' % value)
 	if ret == 0:
-		return True, '关闭蜂鸣器成功!'
-	return False, '关闭蜂鸣器失败!'
+		return True, '设置蜂鸣器成功'
+	return False, '设置蜂鸣器失败'
 
 _param_list = {'hostname': __set_hostname,
 		'fan-speed': __set_fan_speed,

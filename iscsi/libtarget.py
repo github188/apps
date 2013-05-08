@@ -19,7 +19,7 @@ class TargetAttr:
 	"""
 	def __init__(self):
 		self.NopInInterval = 30
-		self.NopInTimeOut = 30
+		self.NopInTimeout = 30
 		self.RspTimeout = 90
 		self.MaxSessions = 1
 
@@ -63,7 +63,7 @@ def getTargetAttr(tgt_name):
 	tgt_attr = TargetAttr()
 	tgt_attr.NopInInterval = int(AttrRead(tgt_full_path, 'NopInInterval'))
 	tgt_attr.NopInTimeout = int(AttrRead(tgt_full_path, 'NopInTimeout'))
-	tgt_attr.RspTimeOut = int(AttrRead(tgt_full_path, 'RspTimeout'))
+	tgt_attr.RspTimeout = int(AttrRead(tgt_full_path, 'RspTimeout'))
 	tgt_attr.MaxSessions = int(AttrRead(tgt_full_path, 'MaxSessions'))
 	return tgt_attr
 
