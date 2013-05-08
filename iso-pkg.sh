@@ -22,15 +22,28 @@ conf_restore()
 	rm -rf conf_bak
 }
 
+service_stop()
+{
+	/etc/init.d/lighttpd stop
+	/etc/init.d/jw-assemble stop
+	/etc/init.d/jw-apps stop
+}
+
+service_start()
+{
+	/etc/init.d/jw-apps start
+	/etc/init.d/jw-assemble start
+	/etc/init.d/lighttpd start
+}
+
 make_default_conf()
 {
 	# nfs
 	cat /dev/null > /etc/exports
 
 	# jw
-	mkdir -pv $JW_CONF_DIR/{disk,iscsi,nas,system}
-	cat /dev/null > "$JW_CONF_DIR"/nas/self-load.sh
-	chmod +x "$JW_CONF_DIR"/nas/self-load.sh
+	rm -rf $JW_CONF_DIR
+	cp ${JW_CONF_DIR}.bak $JW_CONF_DIR -a
 
 	# net
 	network --default
@@ -105,9 +118,11 @@ EOF
 
 cd $PKG_STORE_DIR
 rm -rf root.tgz local.tgz opt.tgz
+service_stop
 conf_backup
 make_default_conf
 pkg_root
 pkg_local
 pkg_opt
 conf_restore
+service_start

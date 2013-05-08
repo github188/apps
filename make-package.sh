@@ -18,8 +18,6 @@ LIB_LIST="$UDV_LIB"
 sync_apps()
 {
 	local _target="$1"
-	local _rootfs="$2"
-	mkdir -pv $_target
 	mkdir -pv $_target/usr/local/{bin,lib}
 	chmod +x $BIN_LIST
 	cp -fRav $BIN_LIST  "$_target"/usr/local/bin/
@@ -30,9 +28,6 @@ sync_apps()
 sync_rootfs()
 {
 	local _target="$1"
-	mkdir -pv $_target/etc/{init.d,rc0.d,rc1.d,rc2.d,rc6.d,dhcp}
-	mkdir -pv $_target/lib/modules/3.4.13/extra
-	mkdir -pv $_target/usr/local/lib
 	cp -fRav rootfs/* "$_target"/
 
 	chown -fvR root:root $_target/*
@@ -53,13 +48,15 @@ tar_pkg()
 	cd "$_target"
 	tar jcf $_f ./*
 	[ $? -eq 0 ] && echo "Package $_f created!"
+	rm -rf $_target
 }
 
 
 target="/tmp/.pkg"
 rm -fr $target
+mkdir $target
 
 sync_apps "$target"
-[ "$1" = "--with-rootfs" ] && sync_rootfs "$target"
+sync_rootfs "$target"
 sync_conf "$target"
 tar_pkg "$target"

@@ -26,6 +26,11 @@ start_md()
 	/usr/local/bin/md-assume.sh
 }
 
+stop_md()
+{
+	:
+}
+
 start_scst()
 {
 	modprobe scst
@@ -37,9 +42,29 @@ start_scst()
 	fi
 }
 
+stop_scst()
+{
+	while true
+	do
+		killall iscsi-scstd 2>/dev/null
+		if [ $? -ne 0 ]; then
+			break;
+		fi
+		sleep 1
+	done
+	rmmod scst_vdisk
+	rmmod iscsi-scst
+	rmmod scst
+}
+
 start_nas()
 {
 	sys-manager nas --misc --restore-cfg | awk -F':' '{ print $NF }' | sed 's/^ //' | tr -d '}"!'
+}
+
+stop_nas()
+{
+	:
 }
 
 case "${1:-}" in
@@ -49,7 +74,9 @@ case "${1:-}" in
 		start_nas
 	;;
 	stop)
-		echo ""
+		stop_nas
+		stop_scst
+		stop_md	
 	;;
 	*)
 		_usage
