@@ -99,11 +99,10 @@ int capture_cpu_fan(char *msg)
 	return __read_int_value(NCT_ROOT"/fan2_input");
 }
 
-void _power_check(int module_no, struct pmu_info *info, char *msg)
+int _power_check(int module_no, struct pmu_info *info, char *msg)
 {
-	char _tmp[128];
-
 #if 0
+	char _tmp[128];
 	_tmp[0] = '\0';
 	// input 200 ~ 240
 	if (info->vin < 200)
@@ -140,25 +139,24 @@ void _power_check(int module_no, struct pmu_info *info, char *msg)
 	if (_tmp[0] != '\0')
 		strcat(msg, _tmp);
 #endif
-	_tmp[0] = '\0';
+
 	if (info->is_vin_fault)
-		sprintf(_tmp, "电源模块%d输入电压异常!", module_no);
-	strcat(msg, _tmp);
+		sprintf(msg, "%s电源模块%d输入电压异常!", msg, module_no);
 
-	_tmp[0] = '\0';
 	if (info->is_vout_fault)
-		sprintf(_tmp, "电源模块%d输出电压异常!", module_no);
-	strcat(msg, _tmp);
+		sprintf(msg, "%s电源模块%d输出电压异常!", msg, module_no);
 
-	_tmp[0] = '\0';
 	if (info->is_temp_fault)
-		sprintf(_tmp, "电源模块%d温度异常!", module_no);
-	strcat(msg, _tmp);
+		sprintf(msg, "%s电源模块%d温度异常!", msg, module_no);
 
-	_tmp[0] = '\0';
 	if (info->is_fan_fault)
-		sprintf(_tmp, "电源模块%d风扇异常!", module_no);
-	strcat(msg, _tmp);
+		sprintf(msg, "%s电源模块%d风扇异常!", msg, module_no);
+
+	if (info->is_vin_fault || info->is_vout_fault ||
+		info->is_temp_fault || info->is_fan_fault)
+		return -1;
+	else
+		return 0;
 }
 
 int capture_power(char *msg)
@@ -170,24 +168,26 @@ int capture_power(char *msg)
 		return VAL_ERROR;
 
 	msg[0] = '\0';
-	if (!pmu_get_info(PMU_DEV1, &info))
-		_power_check(1, &info, msg);
-	else
+	if (!pmu_get_info(PMU_DEV1, &info)) {
+		if (_power_check(1, &info, msg) != 0)
+			fail_cnt++;
+	} else
 		fail_cnt++;
 
-	if (!pmu_get_info(PMU_DEV2, &info))
-		_power_check(2, &info, msg);
-	else
+	if (!pmu_get_info(PMU_DEV2, &info)) {
+		if (_power_check(2, &info, msg) != 0)
+			fail_cnt++;
+	} else
 		fail_cnt++;
 
-	if (fail_cnt > 0)
+	if (fail_cnt > 0) {
 		/* 配置双电源, 缺一个即为错误; 配置单电源, 缺一个仅警告 */
-		if (2 == gconf.power_cnt)
-		{
+		if (2 == gconf.power_cnt) {
 			strcat(msg, "缺少电源模块!");
 			return VAL_ERROR;
 		} else
 			return VAL_WARNING;
+	}
 
 	return VAL_NORMAL;
 }

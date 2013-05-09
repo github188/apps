@@ -99,7 +99,6 @@ pkg_opt()
 
 pkg_local()
 {
-	set -x
 	echo "local.tgz package start ..."
 	cd /usr/local
 
