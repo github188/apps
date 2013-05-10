@@ -63,7 +63,7 @@ check_network_swap() {
 }
 
 bond_up() {
-    modprobe bonding
+    modprobe bonding max_bonds=0
     /opt/etc/network/bond_conf.sh
 }
 
