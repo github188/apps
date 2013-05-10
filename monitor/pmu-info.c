@@ -67,6 +67,19 @@ int pmu_get_info(const char *dev, struct pmu_info *info1)
 	info1->fan_speed = pmu_linear_to_real(fan);
 	info1->temp = pmu_linear_to_real(temp);
 
+	/* 因拔掉电源线后再重新拔插电源模块导致取到的sts状态不对，
+	 * 所以补充判断输入电压的数值
+	 */
+	if (info1->vin < 100.0)
+		info1->is_vin_fault = 1;
+
+#ifdef _DEBUG
+	printf("sts: 0x%x, vin: %f(0x%x), vout: %f(0x%x), "
+			"fan_speed: %f(0x%x), temp: %f(0x%x)\n",
+			sts, info1->vin, vin, info1->vout, vout,
+			info1->fan_speed, fan, info1->temp, temp);
+#endif
+
 	fclose(fp);
 	return 0;
 }

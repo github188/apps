@@ -140,22 +140,15 @@ int _power_check(int module_no, struct pmu_info *info, char *msg)
 		strcat(msg, _tmp);
 #endif
 
-	if (info->is_vin_fault)
-		sprintf(msg, "%s电源模块%d输入电压异常!", msg, module_no);
-
-	if (info->is_vout_fault)
-		sprintf(msg, "%s电源模块%d输出电压异常!", msg, module_no);
-
-	if (info->is_temp_fault)
-		sprintf(msg, "%s电源模块%d温度异常!", msg, module_no);
-
-	if (info->is_fan_fault)
-		sprintf(msg, "%s电源模块%d风扇异常!", msg, module_no);
-
 	if (info->is_vin_fault || info->is_vout_fault ||
-		info->is_temp_fault || info->is_fan_fault)
+		info->is_temp_fault || info->is_fan_fault) {
+		sprintf(msg, "%s电源模块%d%s%s%s%s异常!", msg, module_no,
+				info->is_vin_fault ? " 输入电压" : "",
+				info->is_vout_fault ? " 输出电压" : "",
+				info->is_fan_fault ? " 风扇" : "",
+				info->is_temp_fault ? " 温度" : "");
 		return -1;
-	else
+	} else
 		return 0;
 }
 
@@ -168,12 +161,14 @@ int capture_power(char *msg)
 		return VAL_ERROR;
 
 	msg[0] = '\0';
+	memset(&info, 0x0, sizeof(info));
 	if (!pmu_get_info(PMU_DEV1, &info)) {
 		if (_power_check(1, &info, msg) != 0)
 			fail_cnt++;
 	} else
 		fail_cnt++;
 
+	memset(&info, 0x0, sizeof(info));
 	if (!pmu_get_info(PMU_DEV2, &info)) {
 		if (_power_check(2, &info, msg) != 0)
 			fail_cnt++;
