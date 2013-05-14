@@ -209,7 +209,11 @@ def __iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 			if not __delInitiatorConf(tgt, initor):
 				return False, '解除LUN %d 映射失败!无法删除Initiator %s 配置!' % (lun_id, initor)
 		if not isLunExported(volume) and remove_volume:
-			vol_info = getVolumeInfo(volume)
+			udv_list = []
+			ext_cmd = 'sys-manager udv --list'
+			result = commands.getoutput(ext_cmd)
+			udv_list = json.loads(result)
+			vol_info = getVolumeInfo(volume, udv_list)
 			if iSCSIVolumeRemove(volume):
 				if iscsiExtRemoveUdv(vol_info.udv_name):
 					return (True, '解除LUN %d 映射成功！' % lun_id)
@@ -233,7 +237,12 @@ def iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 
 def iSCSILunGetList(tgt = ''):
 	tgt_lun_list = []
+	udv_list = []
 	try:
+		ext_cmd = 'sys-manager udv --list'
+		result = commands.getoutput(ext_cmd)
+		udv_list = json.loads(result)
+
 		for t in iSCSIGetTargetList(tgt):
 
 			# get target luns
@@ -241,7 +250,7 @@ def iSCSILunGetList(tgt = ''):
 			for l in getDirList(tgt_luns_dir):
 				volume_path = tgt_luns_dir + os.sep + l + '/device'
 				volume_name = os.path.basename(os.readlink(volume_path))
-				vol = getVolumeInfo(volume_name)
+				vol = getVolumeInfo(volume_name, udv_list)
 				lun = vol.__dict__
 				lun['lun_id'] = int(l)
 				lun['target_name'] = t.name
@@ -263,7 +272,7 @@ def iSCSILunGetList(tgt = ''):
 				for k in getDirList(luns_dir):
 					volume_path = '%s/%s/device' % (luns_dir, k)
 					volume_name = os.path.basename(os.readlink(volume_path))
-					vol = getVolumeInfo(volume_name)
+					vol = getVolumeInfo(volume_name, udv_list)
 					lun = vol.__dict__
 					lun['lun_id'] = int(k)
 					lun['target_name'] = t.name
