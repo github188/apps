@@ -152,22 +152,15 @@ def iscsiExtRemoveUdv(udv):
 		pass
 	return False
 
-def getVolumeInfo(volume_name, udv_list):
+def getVolumeInfo(volume_name):
 	if not isVolumeExist(volume_name):
 		return None
 	vol_full_path = SCST.VDISK_DIR + os.sep + volume_name
 	vol = iSCSIVolume()
 	vol.volume_name = volume_name
 	vol.udv_dev = AttrRead(vol_full_path, 'filename')
-	cnt = udv_list['total'];
-	for i in range(0, cnt):
-		udev = udv_list['rows'][i]
-		if vol.udv_dev == udev['dev']:
-			vol.udv_name = udev['name']
-			vol.vg_name = udev['vg']
-			break
-	#vol.udv_name = __get_udv_name_bydev(vol.udv_dev)
-	#vol.vg_name = __get_vgname_by_udvname(vol.udv_name)
+	vol.udv_name = __get_udv_name_bydev(vol.udv_dev)
+	vol.vg_name = __get_vgname_by_udvname(vol.udv_name)
 	vol.capacity = int(AttrRead(vol_full_path, 'size_mb')) * 1024 * 1024
 	vol.blocksize = int(AttrRead(vol_full_path, 'blocksize'))
 	vol.read_only = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'read_only')]
@@ -178,18 +171,14 @@ def getVolumeInfo(volume_name, udv_list):
 
 def iSCSIVolumeGetList(volume_name = ''):
 	vol_list = []
-	udv_list = []
-	ext_cmd = 'sys-manager udv --list'
-	result = commands.getoutput(ext_cmd)
-	udv_list = json.loads(result)
 
 	if volume_name != '':
-		vol_info = getVolumeInfo(volume_name, udv_list)
+		vol_info = getVolumeInfo(volume_name)
 		if vol_info:
 			vol_list.append(vol_info)
 	else:
 		for vol in getDirList(SCST.VDISK_DIR):
-			vol_info = getVolumeInfo(vol, udv_list)
+			vol_info = getVolumeInfo(vol)
 			if vol_info:
 				vol_list.append(vol_info)
 	return vol_list
