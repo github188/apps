@@ -40,9 +40,9 @@
 	</modules>
 
 	<self_run>
-		<item name="cpu-temp" interval="5" preset="true" min_threshold="10" max_threshold="55"/>
+		<item name="cpu-temp" interval="5" preset="true" min_threshold="10" max_threshold="75"/>
 		<item name="env-temp" interval="5" preset="true" min_threshold="10" max_threshold="55"/>
-		<item name="case-temp" interval="5" preset="true" min_threshold="10" max_threshold="55"/>
+		<item name="case-temp" interval="5" preset="true" min_threshold="10" max_threshold="65"/>
 		<item name="case-fan1" interval="5" preset="true" min_threshold="500" max_threshold="6000"/>
 		<item name="case-fan2" interval="5" preset="true" min_threshold="500" max_threshold="6000"/>
 		<item name="power" interval="5" preset="false"/>

@@ -351,10 +351,12 @@ def __md_create(mdname, level, chunk, slots):
 	if level in ('5', '6'):
 		cmd += " --bitmap=internal"
 	if level in ('1', '5', '6'):
-		sts,size = commands.getstatusoutput('cat /tmp/disk_use_size')
+		sts,size = commands.getstatusoutput('head -n 1 /tmp/disk_use_size')
 		if sts != 0:
 			size = 0
-		if size >= 1000000:
+		if size == 'clean':
+			cmd += " --assume-clean"
+		elif size.isdigit() and int(size) >= 1000000:
 			cmd += " -z " + size
 
 	sts,out = commands.getstatusoutput(cmd)
@@ -641,17 +643,21 @@ def disk_set_type(slot, disk_type, mdname=''):
 	# 通知disk监控进程
 	disk_slot_update(slot)
 
-	_content = '设置槽位号为 %s 的磁盘为热备盘成功' % slot
-	LogInsert('VG', 'Auto', 'Info', _content)
+	msg = '设置磁盘 %s 为' % slot
+	if disk_type == 'Special':
+		msg += '卷组 %s 的专用热备盘成功' % mdname
+	else:
+		msg += '全局热备盘'
+	LogInsert('VG', 'Auto', 'Info', msg)
 
 	# 通知监控进程
-	sysmon_event('disk', 'led_on', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为热备盘' % slot)
+	sysmon_event('disk', 'led_on', 'disks=%s' % slot, msg)
 	sysmon_event('disk', 'buzzer_off', slot, '')
 
 	# 尝试手动重建
 	_manually_rebuild(slot, disk_type, mdname)
 
-	return True, _content
+	return True, msg
 
 def __xml_load(fname):
 	__check_disk_hotrep_conf()
@@ -686,6 +692,7 @@ def md_get_hotrep(md_uuid=''):
 	disk_info = {}
 	tmp_info = {}
 	update_conf = False
+	global_exist = 0
 	
 	doc = __xml_load(DISK_HOTREP_CONF)
 	if doc == None:
@@ -708,10 +715,10 @@ def md_get_hotrep(md_uuid=''):
 				disk_info['type'] = '专用热备盘'
 				break
 			# 全局热备盘
-			if tmp_info['type'] == 'Global':
+			if global_exist == 0 and tmp_info['type'] == 'Global':
 				disk_info = tmp_info
 				disk_info['type'] = '全局热备盘'
-				break
+				global_exist = 1
 	except:
 		pass
 	

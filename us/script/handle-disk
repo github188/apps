@@ -57,7 +57,7 @@ def __remove_disk_from_md(mddev, diskdev):
 	cmd = 'mdadm --set-faulty %s %s 2>&1' % (mddev, basename(diskdev))
 	ret,msg = commands.getstatusoutput(cmd)
 	
-	cmd = 'mdadm --remove %s %s 2>&1' % (mddev, diskdev)
+	cmd = 'mdadm --remove %s %s 2>&1' % (mddev, basename(diskdev))
 	ret,msg = commands.getstatusoutput(cmd)
 	
 	tmpfs_remove_disk_from_md(mddev, disk_slot(diskdev))
@@ -206,7 +206,7 @@ def __handle_md_rebuild(mdinfo):
 		__md_event_log('Info', '%s %s 加入卷组 %s 成功' % (disk['type'], slot, mdinfo['name']))
 		if disk_type != 'Free':
 			disk_clean_hotrep(slot)
-		disk_slot_update(slot)
+			disk_slot_update(slot)
 	else:
 		__md_event_log('Error', '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdinfo['name']))
 	unlock_file(f_lock)

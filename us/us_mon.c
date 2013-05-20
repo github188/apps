@@ -53,7 +53,8 @@ static void udev_io_cb(EV_P_ ev_io *w, int r)
 	path = udev_device_get_devpath(dev);
 	dev_node = udev_device_get_devnode(dev);
 	action = udev_device_get_action(dev);
-	printf("*** Get %s, event: %s\n", dev_node, action);
+	printf("*** Get path: %s, devnode: %s, event: %s\n",
+			path, dev_node, action);
 
 	if (path == NULL || dev_node == NULL || action == NULL)
 		goto out;
