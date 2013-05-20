@@ -3,147 +3,140 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <time.h>
+#include <getopt.h>
+
 #include "../monitor/sys-utils.h"
 #include "../pic_ctl/pic_ctl.h"
 
-int expried = 0;
+struct option longopts[] = {
+	{"sysled",		1, NULL, 's'},
+	{"diskled",		1, NULL, 'd'},
+	{"freq",		1, NULL, 'f'},
+	{"expire",		1, NULL, 'e'},
+	{0,0,0,0}};
 
-void _usage(const char *msg)
+int sysled = 0;
+int diskled = 0;
+int expired = 0;
+int sysled_op = PIC_LED_OFF;
+int diskled_op = PIC_LED_OFF;
+int diskled_blink_freq = PIC_LED_FREQ_NORMAL;
+
+void usage()
 {
-	fprintf(stderr, "%s\n\n", msg);
-	fprintf(stderr, "led-test <--sysled|--diskled> <on|off|blink> [--exprie <seconds>]\n\n");
+	fprintf(stderr, "tools_test_led [--sysled|-s on|off]\n"
+		"\t[--diskled|-d on|off|[blink --freq fast|normal|slow]]\n"
+		"\t[--expire <seconds>]\n\n"
+		"tools_test_led --help\n");
 	exit(-1);
 }
 
-void sysled_off()
+int parser(int argc, char *argv[])
 {
-	printf("sysled off\n");
-	sb_gpio28_set(false);
-}
-
-void sysled_on()
-{
-	printf("sysled on\n");
-	sb_gpio28_set(true);
-	if (expried)
-	{
-		sleep(expried);
-		sysled_off();
+	int c, freq = 0;
+	while((c=getopt_long(argc, argv, "s:d:f:e:h", longopts, NULL))!=-1) {
+		switch (c) {
+		case 's':
+		sysled = 1;
+		if (optarg) {
+			if (strcmp(optarg, "on") == 0)
+				sysled_op = PIC_LED_ON;
+			else if (strcmp(optarg, "off") == 0)
+				sysled_op = PIC_LED_OFF;
+			else {
+				fprintf(stderr, "invalid param %s\n", optarg);
+				return -1;
+			}
+		}
+		break;
+		case 'd':
+		diskled = 1;
+		if (optarg) {
+			if (strcmp(optarg, "on") == 0)
+				diskled_op = PIC_LED_ON;
+			else if (strcmp(optarg, "off") == 0)
+				diskled_op = PIC_LED_OFF;
+			else if (strcmp(optarg, "blink") == 0)
+				diskled_op = PIC_LED_BLINK;
+			else {
+				fprintf(stderr, "invalid param %s\n", optarg);
+				return -1;
+			}
+		}
+		break;
+		case 'f':
+		freq = 1;
+		if (optarg) {
+			if (strcmp(optarg, "slow") == 0)
+				diskled_blink_freq = PIC_LED_FREQ_SLOW;
+			else if (strcmp(optarg, "normal") == 0)
+				diskled_blink_freq = PIC_LED_FREQ_NORMAL;
+			else if (strcmp(optarg, "fast") == 0)
+				diskled_blink_freq = PIC_LED_FREQ_FAST;
+			else {
+				fprintf(stderr, "invalid param %s\n", optarg);
+				return -1;
+			}
+		}
+		break;
+		case 'e':
+		if (optarg)
+			expired = atoi(optarg);
+		break;
+		case 'h':
+		case -1:
+		case '?':
+			return -1;
+		}
 	}
-}
 
-void sig_alrm()
-{
-	sb_gpio28_set(false);
-}
-
-void sysled_blink()
-{
-	struct timespec sl;
-
-	printf("not support!\n");
-	return;
-
-	sl.tv_sec = 0;
-	sl.tv_nsec = 3000;
-
-	if (expried)
-	{
-		signal(SIGALRM, sig_alrm);
-		alarm(expried);
+	if (PIC_LED_BLINK == diskled_op && 0 == freq) {
+		fprintf(stderr, "miss --freq option when test disk led blink\n");
+		return -1;
 	}
-
-	do {
-		sb_gpio28_set(true);
-		nanosleep(&sl, NULL);
-		sb_gpio28_set(false);
-		nanosleep(&sl, NULL);
-	} while(expried);
-}
-
-void diskled_off()
-{
-	int i;
-
-	printf("disk led off\n");
-
-	for (i=0;i<16;i++)
-		pic_set_led(i, PIC_LED_OFF, 0);
-}
-
-void diskled_on()
-{
-	int i;
-
-	printf("disk led on\n");
-
-	for (i=0;i<16;i++)
-		pic_set_led(i, PIC_LED_ON, 0);
-
-	if (expried)
-	{
-		sleep(expried);
-		diskled_off();
-	}
-}
-
-void diskled_blink()
-{
-	int i;
-
-	printf("disk led blink\n");
-
-	for (i=0;i<16;i++)
-		pic_set_led(i, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
-
-	if (expried)
-	{
-		sleep(expried);
-		diskled_off();
-	}
+	
+	return 0;
 }
 
 int main(int argc, char *argv[])
 {
-	bool sysled, diskled;
+	int i;
 
-	sysled = false;
-	diskled = false;
-
-	if (argc < 3)
-		_usage("args not enough!\n");
-
-	if ((argc >= 5) && (!strcmp(argv[3], "--exprie")))
-		expried = atoi(argv[4]);
-
-	if (!strcmp(argv[1], "--sysled"))
-		sysled = true;
-	else if (!strcmp(argv[1], "--diskled"))
-		diskled = true;
-	else
-		_usage("set --diskled or --sysled");
-
-	if (sysled)
-	{
-		if (!strcmp(argv[2], "on"))
-			sysled_on();
-		else if (!strcmp(argv[2], "off"))
-			sysled_off();
-		else if (!strcmp(argv[2], "blink"))
-			sysled_blink();
-		else
-			_usage("set on,off,blink!");
+	if (parser(argc, argv) < 0) {
+		usage();
+		return -1;
 	}
-	else if (diskled)
-	{
-		if (!strcmp(argv[2], "on"))
-			diskled_on();
-		else if (!strcmp(argv[2], "off"))
-			diskled_off();
-		else if (!strcmp(argv[2], "blink"))
-			diskled_blink();
+
+	if (sysled) {
+		printf("sysled %s\n", PIC_LED_ON == sysled_op ? "on" : "off");
+		sb_gpio28_set(PIC_LED_ON == sysled_op ? true : false);
+	}
+	
+	if (diskled) {
+		if (PIC_LED_BLINK == diskled_op)
+			printf("disk led blink %s\n", 
+				diskled_blink_freq == PIC_LED_FREQ_SLOW ? "slow" : 
+				diskled_blink_freq == PIC_LED_FREQ_FAST ? "fast" : "normal");
 		else
-			_usage("set on,off,blink!");
+			printf("disk led %s\n", PIC_LED_ON == diskled_op ? "on" : "off");
+
+		for (i=0;i<16;i++)
+			pic_set_led(i, diskled_op, diskled_blink_freq);
+	}
+
+	if (expired && (sysled || diskled)) {
+		sleep(expired);
+
+		if (diskled_op != PIC_LED_OFF) {
+			for (i=0;i<16;i++)
+				pic_set_led(i, PIC_LED_OFF, 0);
+			printf("disk led off\n");
+		}
+
+		if (sysled_op != PIC_LED_OFF) {
+			sb_gpio28_set(false);
+			printf("sys led off\n");
+		}
 	}
 
 	return 0;

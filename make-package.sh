@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assume.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test'
+DISK_BIN='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assume.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test test-utils/tools-test-led'
 UDV_LIB='udv/libudv.a'
 UDV_BIN='udv/libpyext_udv.py'
 WEBIFACE_BIN='web-iface/sys-manager'
@@ -21,6 +21,9 @@ sync_apps()
 	mkdir -pv $_target/usr/local/{bin,lib}
 	chmod +x $BIN_LIST
 	cp -fRav $BIN_LIST  "$_target"/usr/local/bin/
+#	rm -f "$_target"/usr/local/bin/Makefile
+#	rm -f "$_target"/usr/local/bin/*.c
+#	rm -f "$_target"/usr/local/bin/*.h
 	cp -fRav $LIB_LIST  "$_target"/usr/local/lib/
 	chown -fRv root:root $_target/*
 }

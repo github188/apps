@@ -1,5 +1,5 @@
 all:
-	gcc -o led-test led-test.c ../monitor/util-gpio.c -L../pic_ctl -lpic
+	gcc -o tools-test-led led-test.c ../monitor/util-gpio.c -L../pic_ctl -lpic
 
 clean:
-	rm -fr a.out led-test *.o core*
+	rm -fr a.out tools-test-led *.o core*
