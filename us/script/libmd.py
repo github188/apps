@@ -353,7 +353,7 @@ def __md_create(mdname, level, chunk, slots):
 	if level in ('1', '5', '6'):
 		sts,size = commands.getstatusoutput('head -n 1 /tmp/disk_use_size')
 		if sts != 0:
-			size = 0
+			size = '0'
 		if size == 'clean':
 			cmd += " --assume-clean"
 		elif size.isdigit() and int(size) >= 1000000:
