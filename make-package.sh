@@ -8,7 +8,7 @@ WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
 NAS_BIN='nas/nas nas/nasconf nas/tr-simple nas/*.py nas/*.sh nas/usermanage'
 SYSCONF_BIN='sys-conf/* sys-conf/.build-date'
-COMMON_BIN='common/loglist common/log-daemon'
+COMMON_BIN='common/loglist common/log-daemon common/libcommon.py'
 MON_BIN='monitor/sys-mon monitor/buzzer monitor/set-buzzer.sh monitor/libsysmon.py'
 
 # sync list

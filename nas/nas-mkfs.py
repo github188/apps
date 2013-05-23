@@ -11,7 +11,7 @@ import getopt
 import sys, os
 
 from libnas import *
-from libcommon import LogInsert
+from libcommon import log_insert
 
 MOUNT_ROOT = '/mnt/Share'
 
@@ -57,13 +57,13 @@ def nas_mkfs(dev, filesystem):
 			return True
 		elif ret is None:	# 程序正在运行
 			if progress > 90.0 and counter > 0:
-				LogInsert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 90% 已经接近完成，请耐心等待')
+				log_insert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 90% 已经接近完成，请耐心等待')
 				counter = counter - 1
 			elif progress >= 70.0 and counter > 0:
-				LogInsert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 70% 请耐心等待')
+				log_insert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 70% 请耐心等待')
 				counter = counter - 1
 			elif progress >= 30.0 and counter > 0:
-				LogInsert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 30% 请耐心等待')
+				log_insert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 30% 请耐心等待')
 				counter = counter - 1
 
 			if not conf_added and progress > 0.00:
@@ -103,10 +103,10 @@ def _remove_udv(mnt):
 def do_run(dev, mnt, filesystem):
 	try:
 		# 格式化
-		LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化开始!' % _name(mnt))
+		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化开始!' % _name(mnt))
 		if not nas_mkfs(dev, filesystem):
 			nas_tmpfs_set_value('state', 'format-error')
-			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 格式化失败!' % _name(mnt))
+			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 格式化失败!' % _name(mnt))
 			_remove_udv(mnt)
 			return
 
@@ -119,7 +119,7 @@ def do_run(dev, mnt, filesystem):
 		ret,msg = commands.getstatusoutput('mount %s %s' % (dev, mnt))
 		if ret != 0:
 			nas_tmpfs_set_value('state', 'mount-error')
-			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！' % _name(mnt))
+			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！' % _name(mnt))
 			_remove_udv(mnt)
 			return
 
@@ -128,7 +128,7 @@ def do_run(dev, mnt, filesystem):
 
 		# 操作成功，退出
 		nas_tmpfs_set_value('state', 'mounted')
-		LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % _name(mnt))
+		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % _name(mnt))
 
 		nasUpdateCFG()
 		sys.exit(0)

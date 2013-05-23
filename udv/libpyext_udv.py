@@ -3,21 +3,24 @@
 
 import os
 import sys
-from libmd import md_info
-from libdisk import md_get_mddev
+from libmd import get_mdattr_by_mddev
+from libmd import get_md_by_name
 
 # -----------------------------------------------------------------------------
-def getVGNameByDev(md_dev):
-	x = None
+def getVGNameByDev(mddev):
+	mdattr = None
 	try:
-		x = md_info(md_dev)['rows'][0]
+		mdattr = get_mdattr_by_mddev(mddev)
 	except:
 		return 'N/A'
-	return x['name']
+	return mdattr.name
 
 def getVGDevByName(vg_name):
-	mddev = md_get_mddev(vg_name)
-	return mddev if mddev != None else ''
+	md = get_md_by_name(vg_name)
+	if md != '':
+		return '/dev/' + md
+	else:
+		return ''
 
 # -----------------------------------------------------------------------------
 
@@ -81,10 +84,8 @@ def isISCSIVolume(udv_dev):
 	return False
 
 if __name__ == '__main__':
-	print isISCSIVolume(sys.argv[1])
-	sys.exit(0)
 	vg_dev = getVGDevByName(sys.argv[1])
-	print 'VG: slash-server, DEV: ', vg_dev
-
+	print 'VG: %s' % vg_dev
+	sys.exit(0)
 	print getVdiskList()
 	print isISCSIVolume(sys.argv[1])

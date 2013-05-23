@@ -6,7 +6,7 @@ import statvfs
 import json
 import commands
 import stat
-from libcommon import LogInsert
+from libcommon import log_insert
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -301,22 +301,22 @@ def nasUnmapping(volume_name):
 		umount_ret, umount_result = commands.getstatusoutput('2>&1 umount %s' % nas_volume_path)
 		if umount_ret == 0:
 			nas_conf_remove(volume_name)
-			LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 解除映射成功!' % volume_name)
+			log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 解除映射成功!' % volume_name)
 			return True,'解除NAS卷映射成功!'
 		elif umount_result.find('not found') >= 0:
-			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷不存在' % volume_name)
+			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷不存在' % volume_name)
 			return False,'NAS卷 %s 不存在!' % volume_name
 		elif umount_result.find('device is busy') >= 0:
-			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷正在被使用' % volume_name)
+			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷正在被使用' % volume_name)
 			return False,'NAS卷 %s 正在被使用，请检查是否有未关闭的文件!'
 		elif umount_result.find('not mounted') >= 0:
-			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷未挂载' % volume_name)
+			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败! NAS卷未挂载' % volume_name)
 			return False,'解除NAS卷 %s 映射失败，卷未被挂载!' % volume_name
 		else:
-			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败!未知原因' % volume_name)
+			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败!未知原因' % volume_name)
 			return False,'解除NAS卷 %s 映射失败，原因未知!' % volume_name
 	except:
-		LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败!程序异常退出' % volume_name)
+		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 解除映射失败!程序异常退出' % volume_name)
 		return False,'解除NAS卷 %s 映射失败，程序异常退出!' % volume_name
 
 # 检查是否为NAS卷
@@ -334,9 +334,9 @@ def nasUpdateCFG():
 		f.close()
 		os.rename(NAS_CONF_TEMP, NAS_CONF_FILE)
 	except:
-		LogInsert('NAS', 'Auto', 'Error', '更新NAS配置失败!')
+		log_insert('NAS', 'Auto', 'Error', '更新NAS配置失败!')
 		return False, '更新配置文件失败!'
-	LogInsert('NAS', 'Auto', 'Info', '更新NAS配置成功!')
+	log_insert('NAS', 'Auto', 'Info', '更新NAS配置成功!')
 	return True, '更新配置文件成功'
 
 """
@@ -346,7 +346,7 @@ def nasUpdateCFG():
 def _load_conf(conf):
 	udv_dev = __get_udv_dev_by_name(conf['volume_name'])
 	if udv_dev == '':
-		LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！用户数据卷不存在！' % conf['volume_name'])
+		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！用户数据卷不存在！' % conf['volume_name'])
 		return False
 	if conf['state'] == 'formatting':
 		cmd = '/usr/local/bin/nas-mkfs.py'
@@ -359,9 +359,9 @@ def _load_conf(conf):
 		cmd = 'mount %s %s' % (udv_dev, conf['path'])
 		ret,msg = commands.getstatusoutput(cmd)
 		if ret == 0:
-			LogInsert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % conf['volume_name'])
+			log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % conf['volume_name'])
 		else:
-			LogInsert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败!' % conf['volume_name'])
+			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败!' % conf['volume_name'])
 	return True
 
 def nasRestoreCFG():
