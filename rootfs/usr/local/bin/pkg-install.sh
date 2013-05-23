@@ -20,6 +20,7 @@ local_install()
 	else
 		echo "---------- package $_pkg install failed! ------------"
 	fi
+	rm /usr/local/bin/*.pyc
 	/etc/init.d/jw-apps start
 	rm -fr "$_pkg"
 }
@@ -53,10 +54,11 @@ while true; do
 	esac
 done
 
-echo "$package"
-echo "$target"
-
 [ "$package" = "" ] && usage
+if [ ! -f "$package" ]; then
+	echo "$package : No such file"
+	exit 1
+fi
 
 if [ "$target" == "" ]; then
 	local_install "$package"
