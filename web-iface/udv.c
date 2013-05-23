@@ -34,7 +34,8 @@ struct option udv_options[] = {
 void udv_usage()
 {
   printf(_T("\nsys-udv\n\n"));
-  printf(_T("Usage: --list [ [--raw | --iscsi | --nas] | --name <udv_name> ]\n"));
+  printf(_T("Usage: --list [[--raw | --iscsi | --nas] | --name <udv_name>] "
+  		"[--vg <vg_name>]\n"));
   printf(_T("       --create --vg <vg_name> --name <udv_name> --capacity <size>\n"));
   printf(_T("       --delete <udv_name>\n"));
   printf(_T("       --modify --old-name <udv_name> --new-name <udv_name>\n"));
