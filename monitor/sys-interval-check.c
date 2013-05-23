@@ -19,8 +19,8 @@ static const char *MOD_NAME(const char *mod)
 	return _not_found;
 }
 
-#define CPU_TEMP_REBOOT		85
-#define CPU_TEMP_POWEROFF	90
+#define CPU_TEMP_REBOOT		95
+#define CPU_TEMP_POWEROFF	100
 int _value_check_error(sys_capture_t *cap, char *msg)
 {
 	int value = cap->_capture(msg);
