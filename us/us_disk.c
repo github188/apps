@@ -141,10 +141,10 @@ static int map_slot(int slot)
 
 	/**
 	 * Marvell sata槽位号映射：(AHCI启动方式)
-	 * 4    8    12    16
-	 * 5    9    13    17
 	 * 6    10   14    18
-	 * 7    11   15    19
+	 * 7    11   15    18
+	 * 8    12   16    20
+	 * 9    13   17    21
 	 */
 
 	if (slot < _SLOT_START || slot >= _SLOT_END)
@@ -622,18 +622,22 @@ void us_disk_slot_to_name(int fd, char *slots)
 void us_disk_name_to_slot(int fd, char *name)
 {
 	int i;
+	int slot = -1;
+	char s[16];
 
 	for (i = 0; i < ARRAY_SIZE(us_dp.disks); i++) {
 		struct us_disk *disk = &us_dp.disks[i];
 
-		if ((disk->is_removed || disk->is_exist) &&
-		    strcmp(disk->dev_node, name) == 0) {
-			char s[16];
-
-			sprintf(s, "0:%u\n", disk->slot);
-			write(fd, s, strlen(s));
-			break;
+		if (strcmp(disk->dev_node, name) == 0) {
+			slot = disk->slot;
+			if (disk->is_exist)
+				break;
 		}
+	}
+	
+	if (slot != -1) {
+		sprintf(s, "0:%u\n", slot);
+		write(fd, s, strlen(s));
 	}
 }
 

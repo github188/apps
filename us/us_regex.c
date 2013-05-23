@@ -24,7 +24,7 @@
    S: disk/by-id/ata-SanDisk_SSD_P4_8GB_110338302186
    S: disk/by-id/scsi-SATA_SanDisk_SSD_P4_110338302186
 */
-#define REG_DOM_DISK	"host0/target0:0:0/.*/block/sd[a-z]+$"
+#define REG_DOM_DISK	"host[01]/target[01]:0:0/.*/block/sd[a-z]+$"
 
 
 regex_t udev_sd_regex;
