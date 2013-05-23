@@ -85,7 +85,7 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity);
 
 ssize_t udv_delete(const char *name);
 
-size_t udv_list(udv_info_t *list, size_t n);
+size_t udv_list(udv_info_t *list, size_t n, const char *vgname_input);
 
 ssize_t udv_rename(const char *name, const char *new_name);
 

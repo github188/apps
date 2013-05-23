@@ -133,7 +133,7 @@ static inline void __udv_set_state(char *udv_state_str, udv_state state)
 		strcpy(udv_state_str, "N/A");
 }
 
-void list_udv(list_type_t t)
+void list_udv(list_type_t t, const char * vg_name)
 {
 	udv_info_t list[MAX_UDV], *udv;
 	size_t udv_cnt = 0, i;
@@ -142,7 +142,7 @@ void list_udv(list_type_t t)
 	char udv_state[128];
 	bool print = false;
 
-	udv_cnt = udv_list(list, MAX_UDV);
+	udv_cnt = udv_list(list, MAX_UDV, vg_name);
 	if (udv_cnt<0)
 		return_json_msg(MSG_ERROR, "获取用户数据卷失败!");
 
@@ -181,13 +181,19 @@ void list_udv(list_type_t t)
 			__udv_set_state(udv_state, udv->state);
 
 			if (printed==0)
-				printf("\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"vg\":\"%s\", \"combin\":\"%s|%llu\", \"dev\":\"%s\"}",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state, udv->vg_name,
-						udv->name, (unsigned long long)udv->geom.capacity, udv->dev);
+				printf("\n\t\t"
+					"{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", "
+					"\"vg\":\"%s\", \"combin\":\"%s|%llu\", \"dev\":\"%s\"}",
+					udv->name, (unsigned long long)udv->geom.capacity,
+					udv_state, udv->vg_name, udv->name,
+					(unsigned long long)udv->geom.capacity, udv->dev);
 			else
-				printf(",\n\t\t{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", \"vg\":\"%s\", \"combin\":\"%s|%llu\", \"dev\":\"%s\"}",
-						udv->name, (unsigned long long)udv->geom.capacity, udv_state, udv->vg_name,
-						udv->name, (unsigned long long)udv->geom.capacity, udv->dev);
+				printf(",\n\t\t"
+					"{\"name\":\"%s\", \"capacity\":%llu, \"state\":\"%s\", "
+					"\"vg\":\"%s\", \"combin\":\"%s|%llu\", \"dev\":\"%s\"}",
+					udv->name, (unsigned long long)udv->geom.capacity,
+					udv_state, udv->vg_name, udv->name,
+					(unsigned long long)udv->geom.capacity, udv->dev);
 			printed++;
 		}
 		udv++;
@@ -250,7 +256,7 @@ int get_name_bydev(const char *udv_dev)
 	if (!udv_dev)
 		return_json_msg(MSG_ERROR, "用户数据卷设备名称无效!");
 
-	udv_cnt = udv_list(list, MAX_UDV);
+	udv_cnt = udv_list(list, MAX_UDV, vg_name);
 	if (udv_cnt<0)
 		return_json_msg(MSG_ERROR, "获取用户数据卷失败!");
 
@@ -281,7 +287,7 @@ int get_dev_byname(const char *udv_name)
 	if (!udv_name)
 		return_json_msg(MSG_ERROR, "用户数据卷名称无效!");
 
-	udv_cnt = udv_list(list, MAX_UDV);
+	udv_cnt = udv_list(list, MAX_UDV, vg_name);
 	if (udv_cnt<0)
 		return_json_msg(MSG_ERROR, "获取用户数据卷失败!");
 
@@ -310,7 +316,7 @@ int duplicate_check(const char *udv_name)
 	if (!udv_name)
 		return_json_msg(MSG_ERROR, "用户数据卷名称无效!");
 
-	udv_cnt = udv_list(list, MAX_UDV);
+	udv_cnt = udv_list(list, MAX_UDV, vg_name);
 	if (udv_cnt<0)
 		return_json_msg(MSG_ERROR, "获取用户数据卷失败!");
 
@@ -455,7 +461,7 @@ int udv_main(int argc, char *argv[])
 		// 三个参数都不设置，则显示所有类型的分区
 		if ( !t.raw && !t.iscsi && !t.nas )
 			t.raw = t.iscsi = t.nas = true;
-		list_udv(t);
+		list_udv(t, vg_name);
 	}
 
 	udv_usage();

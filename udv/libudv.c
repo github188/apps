@@ -506,7 +506,7 @@ error_eio:
 	return retcode;
 }
 
-size_t udv_list(udv_info_t *list, size_t n)
+size_t udv_list(udv_info_t *list, size_t n, const char *vgname_input)
 {
 	size_t udv_cnt = 0;
 
@@ -559,6 +559,11 @@ size_t udv_list(udv_info_t *list, size_t n)
 			strcpy(udv->vg_dev, dev->path);
 			if (!getVGNameByDev(udv->vg_dev, vg_name))
 				strcpy(udv->vg_name, vg_name);
+			if (vgname_input && vgname_input[0] != '\0')
+			{
+				if ((strcmp(vg_name, vgname_input) != 0))
+					continue;
+			}
 			udv->part_num = part->num;
 
 			udv->geom.start = part->geom.start * DFT_SECTOR_SIZE;
