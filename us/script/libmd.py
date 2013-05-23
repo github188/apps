@@ -34,7 +34,8 @@ class md_attr:
 		self.raid_strip = ''	# raid1需要特殊处理
 		self.raid_rebuild = ''
 		self.capacity = 0
-		self.remain = 0
+		self.remain = 0		# 剩余空间
+		self.max_single = 0	# 最大连续空间
 		self.disk_cnt = 0	# 当前磁盘个数, 对应mdadm -D的'Total Devices'字段, raid1需要计算实际的disk_list
 		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
 		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
@@ -108,9 +109,9 @@ def get_remain_capacity(raid_name):
 	try:
 		json_result = os.popen('sys-manager udv --remain-capacity --vg %s' % raid_name).readline()
 		udv_result = json.loads(json_result)
-		return str(udv_result['max_avaliable'])
+		return str(udv_result['max_avaliable']),str(udv_result['max_single'])
 	except:
-		return 0
+		return 0,0
 
 def raid_level(level):
 	if level.lower() == 'jbod':
@@ -140,7 +141,7 @@ def get_mdattr_by_mdadm(mddev):
 		mdattr.raid_rebuild = '0'
 
 	mdattr.capacity = get_capacity(mdattr.dev)
-	mdattr.remain = get_remain_capacity(mdattr.name)
+	mdattr.remain,mdattr.max_single = get_remain_capacity(mdattr.name)
 	mdattr.disk_list = __find_attr(output, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
 	mdattr.disk_cnt = len(mdattr.disk_list)
 	mdattr.raid_uuid = __find_attr(output, "UUID : (.*)")
