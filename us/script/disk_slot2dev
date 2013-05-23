@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+import sys, commands
+
+if __name__ == '__main__':
+	if len(sys.argv) < 2 or not sys.argv[1].isdigit():
+		print 'input slot, e.g. 1'
+		exit()
+	
+	print commands.getoutput('us_cmd disk name 0:' + sys.argv[1])

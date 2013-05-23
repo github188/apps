@@ -5,14 +5,14 @@ import sys
 from libmd import *
 
 def handle_md_sync(mddev):
-	mdinfo = mddev_get_attr(mddev)
-	mdname = mddev.split('/')[-1]
-	cmd = 'cat /sys/block/' + mdname + '/md/sync_action'
+	mdattr = get_mdattr_by_mddev(mddev)
+	md = basename(mddev)
+	cmd = 'cat /sys/block/' + md + '/md/sync_action'
 	sts,sync_action = commands.getstatusoutput(cmd)
 	if sts != 0:
 		return None
 
-	msg = '卷组 %s ' % mdinfo['name']
+	msg = '卷组 %s ' % mdattr.name
 	if sync_action == 'resync':
 		msg += '初始化 开始'
 	elif sync_action == 'recover':
@@ -20,29 +20,29 @@ def handle_md_sync(mddev):
 	else:
 		return None
 	
-	dir = TMP_RAID_INFO + '/' + mdname
+	dir = TMP_RAID_INFO + '/' + md
 	if not os.path.exists(dir):
 		os.makedirs(dir)
 	cmd = 'echo ' + sync_action + ' > ' + dir + '/sync_action'
 	os.system(cmd)
 
-	LogInsert('VG', 'Auto', 'Info', msg)
-	sysmon_event('vg', 'rebuild', mdinfo['name'], msg)
-	sysmon_event('disk', 'led_blink1s1', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '')
+	log_insert('VG', 'Auto', 'Info', msg)
+	sysmon_event('vg', 'rebuild', mdattr.name, msg)
+	sysmon_event('disk', 'led_blink1s1', 'disks=%s' % list2str(mdattr.disk_list, ','), '')
 	return
 
 def handle_md_syncdone(mddev):
-	mdinfo = mddev_get_attr(mddev)
-	mdname = mddev.split('/')[-1]
+	mdattr = get_mdattr_by_mddev(mddev)
+	md = basename(mddev)
 	
-	cmd = 'cat ' + TMP_RAID_INFO + '/' + mdname + '/sync_action'
+	cmd = 'cat ' + TMP_RAID_INFO + '/' + md + '/sync_action'
 	sts,sync_action = commands.getstatusoutput(cmd)
 	if sts != 0:
 		return None
 	
-	os.remove(TMP_RAID_INFO + '/' + mdname + '/sync_action')
+	os.remove(TMP_RAID_INFO + '/' + md + '/sync_action')
 
-	msg = '卷组 %s ' % mdinfo['name']
+	msg = '卷组 %s ' % mdattr.name
 	if sync_action == 'resync':
 		msg += '初始化' 
 	elif sync_action == 'recover':
@@ -52,22 +52,22 @@ def handle_md_syncdone(mddev):
 	
 	# 如果raid6坏2块盘, 第一块盘重建完后, 第二快盘开始重建, 
 	# 如果没有启动第二块盘重建, 则认为重建失败
-	if mdinfo['raid_level'] == '6':
-		if mdinfo['raid_state'] == 'normal':
+	if mdattr.raid_level == '6':
+		if mdattr.raid_state == 'normal':
 			msg += ' 完成'
-		elif mdinfo['raid_state'] == 'rebuild':
+		elif mdattr.raid_state == 'rebuild':
 			msg += ' 中止'
 		else:
 			msg += ' 失败'
 	else:
-		if mdinfo['raid_state'] == 'normal':
+		if mdattr.raid_state == 'normal':
 			msg += ' 完成'
 		else:
 			msg += ' 失败'
 	
-	LogInsert('VG', 'Auto', 'Info', msg)
-	sysmon_event('vg', 'normal', mdinfo['name'], msg)
-	sysmon_event('disk', 'led_off', 'disks=%s' % disk_list_str(mdinfo['disk_list']), '')
+	log_insert('VG', 'Auto', 'Info', msg)
+	sysmon_event('vg', 'normal', mdattr.name, msg)
+	sysmon_event('disk', 'led_off', 'disks=%s' % list2str(mdattr.disk_list, ','), '')
 	return
 
 # args [0]  - self
@@ -84,9 +84,9 @@ def main():
 
 	log.info('action: %s, mddev: %s' % (action, mddev))
 	if 'online' == action:
-		tmpfs_add_md_info(mddev)
+		tmpfs_add_md(mddev)
 	elif 'remove' == action:
-		tmpfs_remove_md_info(mddev)
+		tmpfs_remove_md(mddev)
 	elif 'mdsync' == action:
 		handle_md_sync(mddev)
 	elif 'mdsyncdone'== action:

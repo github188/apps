@@ -42,38 +42,38 @@ def do_create(argv):
 		return False,"未指定磁盘槽位"
 	return md_create(name, level, strip, disks.replace(',', ' '))
 
-def __get_mdname_list():
-	mdname_list = []
+def raid_name_list():
+	list = []
 	try:
-		mdinfo_devs = md_info()
-		for mdinfo in mdinfo_devs['rows']:
-			mdname_list.append(mdinfo['name'])
+		sts,output = commands.getstatusoutput('cat /sys/block/md*/array_name')
+		if sts == 0:
+			list = output.split()
 	except:
 		pass
-	return mdname_list
+	return list
 
 def do_generate_name(suffix):
 	if suffix == '':
 		return False, '请输入获取卷组名称的前缀'
-	md_list = __get_mdname_list()
+	rname_list = raid_name_list()
 	check_max = 10
 	while check_max > 0:
 		ustr = str(uuid.uuid4()).split('-')
 		tstr = suffix + ustr[2]
-		if tstr not in md_list:
+		if tstr not in rname_list:
 			return True, tstr
 		tstr = suffix + ustr[1]
-		if tstr not in md_list:
+		if tstr not in rname_list:
 			return True, tstr
 		check_max = check_max - 1
 	return False, '无法生成卷组名称'
 
-def do_duplicate_check(mdname):
-	if mdname == '':
+def do_duplicate_check(raid_name):
+	if raid_name == '':
 		return False, '请输入卷组名称'
-	if mdname in __get_mdname_list():
-		return True, '卷组 %s 已经存在' % mdname
-	return False, '卷组 %s 不存在' % mdname
+	if raid_name in raid_name_list():
+		return True, '卷组 %s 已经存在' % raid_name
+	return False, '卷组 %s 不存在' % raid_name
 
 def main(argv):
 	ret = ""
@@ -83,12 +83,17 @@ def main(argv):
 	cmd = argv[1]
 	res = ""
 	if cmd == "--list":
+		mdattr_output = []
 		if len(argv) >= 3:
-			mdname = argv[2]
+			raid_name = argv[2]
+			mdattr = get_mdattr_by_name(raid_name)
+			if mdattr != None:
+				mdattr_output.append(mdattr.__dict__)
 		else:
-			mdname = None
-		ret = md_info(mdname)
-		json_dump(ret)
+			for mdattr in get_mdattr_all():
+				mdattr_output.append(mdattr.__dict__)
+
+		json_dump({"total": len(mdattr_output), "rows": mdattr_output})
 		res = None
 	elif cmd == "--create":
 		res = do_create(argv[2:])
@@ -96,8 +101,8 @@ def main(argv):
 		if len(argv) < 3:
 			usage()
 		else:
-			mdname = argv[2]
-			res = md_del(mdname)
+			raid_name = argv[2]
+			res = md_del(raid_name)
 	elif cmd == "--generate-name":
 		res = do_generate_name(argv[2] if len(argv)==3 else '')
 	elif cmd == "--duplicate-check":

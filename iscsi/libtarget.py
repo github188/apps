@@ -8,7 +8,7 @@ import commands
 
 from libiscsicommon import *
 from uuid import uuid1
-from libmd import md_info_mddevs
+from libmd import get_mdattr_all
 
 JW_ISCSI = '/opt/jw-conf/iscsi'
 JW_ISCSI_DFT_TARGET = 'default-target'

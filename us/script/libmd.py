@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import commands, re, os
+import commands, re, os, time
 from libdisk import *
 from xml.dom import minidom
 from libsysmon import sysmon_event
@@ -17,11 +17,28 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 <hot_replace>
 </hot_replace>
 """
+
 DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
+TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
 
+# vg日志封装
+def vg_log(event, msg):
+	log_insert('VG', 'Auto', event, msg)
 
-def disk_list_str(dlist=[]):
-	return ','.join([str(x) for x in dlist])
+class md_attr:
+	def __init__(self):
+		self.name = ''		# raid1需要特殊处理
+		self.dev = ''
+		self.raid_level = ''
+		self.raid_state = ''	# raid1需要根据disk_cnt与disk_total关系计算
+		self.raid_strip = ''	# raid1需要特殊处理
+		self.raid_rebuild = ''
+		self.capacity = 0
+		self.remain = 0
+		self.disk_cnt = 0	# 当前磁盘个数, 对应mdadm -D的'Total Devices'字段, raid1需要计算实际的disk_list
+		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
+		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
+		self.disk_total = 0	# raid应该包含的磁盘个数, 对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
 
 def __def_post(p):
 	if len(p) == 0:
@@ -66,159 +83,155 @@ def __disk_post(p):
 	slots = []
 	for disk in p:
 		name = disk[1]
-		slots.append(disk_slot(name))
+		slots.append(disk_dev2slot(name))
 	return slots
 
 def __find_attr(output, reg, post=__def_post):
 	p = re.findall(reg, output)
 	return post(p)
 
-def __attr_read(path, attr):
-	content = ''
-	try:
-		attr_path = path + os.sep + attr
-		f = open(attr_path)
-		content = f.readline().strip()
-		f.close()
-	except:
-		pass
-	return content
-
-def __get_sys_attr(dev, attr):
-	if dev.find('/dev/md') >= 0:
-		dev_name = dev.split('/dev/')[-1]
-	else:
-		dev_name = dev
-	sys_path = '/sys/block/' + dev_name
-	return __attr_read(sys_path, attr)
-
-# 目前先调用外部程序, 以后考虑使用函数级调用的方式实现
-# sys-manager udv --remain-capacity --vg /dev/md1
-# 输出格式：
-# {"vg":"/dev/md1","max_avaliable":212860928,"max_single":212860928}
-def __get_remain_capacity(md_name):
-	try:
-		json_result = os.popen('sys-manager udv --remain-capacity --vg %s' % md_name).readline()
-		udv_result = json.loads(json_result)
-		return udv_result['max_avaliable']
-	except:
-		return 0
-
-class raid_attr:
-	def __init__(self):
-		self.name = ''		# raid1需要特殊处理
-		self.dev = ''
-		self.raid_level = ''
-		self.raid_state = ''	# raid1需要根据disk_cnt与disk_total关系计算
-		self.raid_strip = ''	# raid1需要特殊处理
-		self.raid_rebuild = ''
-		self.capacity = 0
-		self.remain = 0
-		self.disk_cnt = 0	# 当前磁盘个数, 对应mdadm -D的'Total Devices'字段, raid1需要计算实际的disk_list
-		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
-		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
-		self.disk_total = 0	# raid应该包含的磁盘个数, 对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
-
-def __listdir_files(_dir):
-	if not os.path.isdir(_dir):
-		return []
-	_list = []
-	for x in os.listdir(_dir):
-		if not os.path.isfile('%s/%s' % (_dir, x)):
-			continue
-		_list.append(x)
-	return _list
-
 def __raid0_jobd_state(dspecs, dcnt):
 	return 'normal' if dcnt == dspecs else 'fail'
 
-def __raid1_state(dspecs, dcnt):
-	if dcnt == 0:
-		return 'fail'
-	elif dcnt < dspecs:
-		return 'degrade'
-	return 'normal'
+def get_capacity(dev):
+	sectors = fs_attr_read('/sys/block/' + basename(dev) + '/size')
+	if sectors.isdigit():
+		return int(sectors) * 512
+	else:
+		return 0
 
+# 目前先调用外部程序, 以后考虑使用函数级调用的方式实现
+# sys-manager udv --remain-capacity --vg vg_name
+# 输出格式：
+# {"vg":"/dev/md1","max_avaliable":212860928,"max_single":212860928}
+def get_remain_capacity(raid_name):
+	try:
+		json_result = os.popen('sys-manager udv --remain-capacity --vg %s' % raid_name).readline()
+		udv_result = json.loads(json_result)
+		return str(udv_result['max_avaliable'])
+	except:
+		return 0
 
-# 不同RAID级别在磁盘完全掉线后会导致部分信息缺失需要记录在tmpfs供查询使用
-def __md_fill_tmpfs_attr(attr = raid_attr()):
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(attr.dev)))
-	_dir = '%s/%s' % (TMP_RAID_INFO, basename(attr.dev))
+def raid_level(level):
+	if level.lower() == 'jbod':
+		level = 'linear'
+	return level
 
-	# 以下是raid级别0,1,5,6,JBOD需要获取的信息
-	if attr.name == 'Unknown' or attr.name == '':
-		attr.name = AttrRead(_dir, 'name')
-	if attr.raid_uuid == '':
-		attr.raid_uuid = AttrRead(_dir, 'raid-uuid')
-	
-	if attr.raid_level == '6':
-		if attr.raid_state == 'degrade' or attr.raid_state == 'rebuild':
-			if attr.disk_cnt < attr.disk_total:
-				attr.raid_state = 'degrade'
-			else:
-				attr.raid_state = 'rebuild'
-		unlock_file(f_lock)
-		return attr.__dict__
-
-	if attr.raid_level == '5':
-		unlock_file(f_lock)
-		return attr.__dict__
-
-	# 特殊处理: raid1,jbod没有strip属性
-	if attr.raid_level == '1' or attr.raid_level == 'JBOD':
-		attr.raid_strip = 'N/A'
-
-	# raid 0,1,jobd的磁盘列表需要单独处理
-	attr.disk_list = __listdir_files('%s/disk-list' % _dir)
-	attr.disk_cnt = len(attr.disk_list)
-
-	# raid 0,1,jbod的状态在掉盘后需要手动判断
-	if attr.raid_level == '0' or attr.raid_level == 'JBOD':
-		attr.raid_state = __raid0_jobd_state(attr.disk_total, attr.disk_cnt)
-	#elif attr.raid_level == '1':
-	#	attr.raid_state = __raid1_state(attr.disk_total, attr.disk_cnt)
-
-	unlock_file(f_lock)
-	return attr.__dict__
-
-def __md_fill_mdadm_attr(mddev):
+def get_mdattr_by_mdadm(mddev):
+	mdattr = md_attr()
+	mdattr.dev = mddev
 	cmd = 'mdadm -D %s 2>/dev/null' % mddev
 	sts,output = commands.getstatusoutput(cmd)
-
 	if sts != 0:
-		return None
+		return mdattr
 
-	attr = raid_attr()
-	attr.name = __find_attr(output, "Name : (.*)", __name_post)
-	attr.dev = __find_attr(output, "^(.*):")
-	attr.raid_level = __find_attr(output, "Raid Level : (.*)", __level_post)
-	attr.raid_state = __find_attr(output, "State : (.*)", __state_post)
-	attr.raid_strip = __find_attr(output, "Chunk Size : ([0-9]+[KMG])", __chunk_post)
+	mdattr.name = __find_attr(output, "Name : (.*)", __name_post)
+	mdattr.raid_level = __find_attr(output, "Raid Level : (.*)", __level_post)
+	mdattr.raid_state = __find_attr(output, "State : (.*)", __state_post)
+	mdattr.raid_strip = __find_attr(output, "Chunk Size : ([0-9]+[KMG])", __chunk_post)
 	rebuild_per = __find_attr(output, "Rebuild Status : ([0-9]+)\%")
 	resync_per = __find_attr(output, "Resync Status : ([0-9]+)\%")
 
 	if rebuild_per:
-		attr.raid_rebuild = rebuild_per
+		mdattr.raid_rebuild = rebuild_per
 	elif resync_per:
-		attr.raid_rebuild = resync_per
+		mdattr.raid_rebuild = resync_per
 	else:
-		attr.raid_rebuild = '0'
+		mdattr.raid_rebuild = '0'
 
-	attr.capacity = int(__get_sys_attr(attr.dev, "size")) * 512
-	attr.remain = __get_remain_capacity(attr.name)
-	attr.disk_list = __find_attr(output, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
-	attr.disk_cnt = len(attr.disk_list)
-	attr.raid_uuid = __find_attr(output, "UUID : (.*)")
-	attr.disk_total = int(__find_attr(output, "Raid Devices : ([0-9]+)"))
+	mdattr.capacity = get_capacity(mdattr.dev)
+	mdattr.remain = get_remain_capacity(mdattr.name)
+	mdattr.disk_list = __find_attr(output, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
+	mdattr.disk_cnt = len(mdattr.disk_list)
+	mdattr.raid_uuid = __find_attr(output, "UUID : (.*)")
+	mdattr.disk_total = int(__find_attr(output, "Raid Devices : ([0-9]+)"))
 
-	return attr
+	return mdattr
 
+# 不同RAID级别在磁盘完全掉线后会导致部分信息缺失需要记录在tmpfs供查询使用
+def fill_mdattr_by_tmpfs(mdattr = md_attr()):
+	if mdattr.dev == '':
+		return mdattr
 
-def mddev_get_attr(mddev):
-	attr = __md_fill_mdadm_attr(mddev)
-	if None == attr:
-		return None
-	return __md_fill_tmpfs_attr(attr)
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mdattr.dev)))
+	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mdattr.dev))
+
+	# 以下是raid级别0,1,5,6,JBOD需要获取的信息
+	if mdattr.name == 'Unknown' or mdattr.name == '':
+		mdattr.name = fs_attr_read(_dir + '/name')
+	if mdattr.raid_uuid == '':
+		mdattr.raid_uuid = fs_attr_read(_dir + '/raid-uuid')
+	
+	if mdattr.raid_level == '6':
+		if mdattr.raid_state == 'degrade' or mdattr.raid_state == 'rebuild':
+			if mdattr.disk_cnt < mdattr.disk_total:
+				mdattr.raid_state = 'degrade'
+			else:
+				mdattr.raid_state = 'rebuild'
+		unlock_file(f_lock)
+		return mdattr
+
+	if mdattr.raid_level == '5':
+		unlock_file(f_lock)
+		return mdattr
+
+	# 特殊处理: raid1,jbod没有strip属性
+	if mdattr.raid_level == '1' or mdattr.raid_level == 'JBOD':
+		mdattr.raid_strip = 'N/A'
+
+	# raid 0,1,jobd的磁盘列表需要单独处理
+	mdattr.disk_list = list_file('%s/disk-list' % _dir)
+	mdattr.disk_cnt = len(mdattr.disk_list)
+
+	# raid 0,jbod的状态在掉盘后需要手动判断
+	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
+		mdattr.raid_state = __raid0_jobd_state(mdattr.disk_total, mdattr.disk_cnt)
+
+	unlock_file(f_lock)
+	return mdattr
+
+def tmpfs_add_md(mddev):
+	mdattr = get_mdattr_by_mdadm(mddev)
+	if None == mdattr:
+		unlock_file(f_lock)
+		return
+
+	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mddev))
+	if not os.path.exists(_dir):
+		os.makedirs(_dir)
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	
+	fs_attr_write(_dir + '/name', mdattr.name)
+	fs_attr_write(_dir + '/raid-uuid', mdattr.raid_uuid)
+
+	if mdattr.raid_level != '5' and mdattr.raid_level != '6':
+		_list_dir = '%s/disk-list' % _dir
+		if not os.path.exists(_list_dir):
+			os.makedirs(_list_dir)
+		for x in mdattr.disk_list:
+			fs_attr_write(_list_dir + os.sep + x, x)
+
+	unlock_file(f_lock)
+
+	# check vg state, notify to sysmon
+	if mdattr.raid_state == 'degrade':
+		msg = '卷组 %s 降级' % mdattr.name
+		sysmon_event('vg', 'degrade', mdattr.name, msg)
+		vg_log('Warning', msg)
+		
+		# 重建raid
+		md_rebuild(mdattr)
+	elif mdattr.raid_state == 'fail':
+		msg = '卷组 %s 失效' % mdattr.name
+		sysmon_event('vg', 'fail', mdattr.name, msg)
+		vg_log('Error', msg)
+	
+	return
+
+def tmpfs_remove_md(mddev):
+	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, basename(mddev)))
+	unlock_file(f_lock)
 
 def tmpfs_remove_disk_from_md(mddev, slot):
 	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
@@ -230,124 +243,87 @@ def tmpfs_remove_disk_from_md(mddev, slot):
 def tmpfs_add_disk_to_md(mddev, slot):
 	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
 	_dir = '%s/%s/disk-list' % (TMP_RAID_INFO, basename(mddev))
-	AttrWrite(_dir, slot, slot)
+	fs_attr_write(_dir + os.sep + slot, slot)
 	unlock_file(f_lock)
 
-# mddev - /dev/md<x>
-def tmpfs_add_md_info(mddev):
-	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mddev))
-	if not os.path.exists(_dir):
-		os.makedirs(_dir)
+def md_list():
+	cmd = 'ls /sys/block/ | grep md[0-9]'
+	sts,output = commands.getstatusoutput(cmd)
+	if sts != 0:
+		return []
+	return output.split()
 
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
-
-	attr = __md_fill_mdadm_attr(mddev)
-	if None == attr:
-		unlock_file(f_lock)
-		return
-
-	AttrWrite(_dir, 'name', attr.name)
-	AttrWrite(_dir, 'raid-uuid', attr.raid_uuid)
-
-	# check vg state, notify to sysmon
-	if attr.raid_state == 'degrade':
-		sysmon_event('vg', 'degrade', attr.name, '卷组 %s 降级' % attr.name)
-	elif attr.raid_state == 'fail':
-		sysmon_event('vg', 'fail', attr.name, '卷组 %s 失效' % attr.name)
-
-	if attr.raid_level == '5' or attr.raid_level == '6':
-		unlock_file(f_lock)
-		return
-
-	_list_dir = '%s/disk-list' % _dir
-	if not os.path.exists(_list_dir):
-		os.makedirs(_list_dir)
-	for x in attr.disk_list:
-		AttrWrite(_list_dir, x, x)
-	unlock_file(f_lock)
-	return
-
-# mddev - /dev/md<x>
-def tmpfs_remove_md_info(mddev):
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
-	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, basename(mddev)))
-	unlock_file(f_lock)
-
-def md_list_mddevs():
-	#return list_files("/dev", "md[0-9]+")
-	# 解决正则表达式匹配md1p1设备的问题
-	dev_list = []
-	try:
-		for dev in os.listdir('/dev'):
-			if (dev.find('md') == 0) and (len(dev.split('p')) == 1) and (len(dev)>2):
-				dev_list.append('/dev/' + dev)
-	except:
-		pass
-	finally:
-		return dev_list
-
-def md_find_free_mddev():
-	mddevs = md_list_mddevs()
+def get_free_md():
+	mds = md_list()
 	for i in xrange(1, 255):
-		md = "/dev/md%u" % i
-		if not (md in mddevs):
+		md = "md%u" % i
+		if not (md in mds):
 			return md
 	return None
 
-def mddev_get_disks(mddev):
-	reg = re.compile(r"(sd[a-z]+)\[[0-9]+\]")
-	cmd = "cat /proc/mdstat |grep %s 2>/dev/null" % (os.path.basename(mddev))
-	sts,out = commands.getstatusoutput(cmd)
+def get_disks_of_mddev(mddev):
+	cmd = "ls /sys/block/%s/slaves" % basename(mddev)
+	sts,disks = commands.getstatusoutput(cmd)
 	if sts != 0:
 		return []
-	disks = reg.findall(out)
-	rdisks = ["/dev/" + x for x in disks]
+	return ["/dev/" + disk for disk in disks.split()]
 
-	return rdisks
+def get_md_by_name(raid_name):
+	mds = md_list()
+	for md in mds:
+		if raid_name == fs_attr_read('/sys/block/' + md + '/md/array_name'):
+			return md
+	return ''
 
-def md_get_disks(mdname):
-	mddev = get_mddev(mdname)
-	if mddev == None:
-		return []
-	return mddev_get_disks(mddev)
+def get_mdattr_by_mddev(mddev):
+	mdattr = get_mdattr_by_mdadm(mddev)
+	return fill_mdattr_by_tmpfs(mdattr)
 
-def md_stop(mddev):
-	cmd = "mdadm -S %s 2>&1" % mddev
-	sts, out = commands.getstatusoutput(cmd)
-	if out.find('mdadm: stopped') < 0:
-		return -1,'设备正在被占用'
-	cmd = "rm -f %s >/dev/null 2>&1" % mddev
-	sts,out = commands.getstatusoutput(cmd)
-	if sts != 0:
-		return -1,'无法删除设备节点'
-	return sts,''
+def get_mdattr_by_md(md=''):
+	if (md == ''):
+		return None
 
-def __raid_level(_level):
-	return 'linear' if _level.lower() == 'jbod' else _level
+	return get_mdattr_by_mddev('/dev/' + md)
 
-def md_create(mdname, level, chunk, slots):
-	ret,msg = __md_create(mdname, level, chunk, slots)
+def get_mdattr_by_name(raid_name=''):
+	if (raid_name == ''):
+		return None
+
+	md = get_md_by_name(raid_name)
+	return get_mdattr_by_md(md)
+	
+def get_mdattr_all():
+	mdattr_list = []
+	mds = md_list()
+	for md in mds:
+		mdattr = get_mdattr_by_mddev('/dev/' + md)
+		mdattr_list.append(mdattr)
+	return mdattr_list
+
+def md_create(raid_name, level, chunk, slots):
+	ret,msg = __md_create(raid_name, level, chunk, slots)
 	if ret:
-		LogInsert('VG', 'Auto', 'Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功' % (slots, level, mdname))
+		vg_log('Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功' % (slots, level, raid_name))
 	else:
-		LogInsert('VG', 'Auto', 'Error', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败%s' % (slots, level, mdname, msg))
+		vg_log('Error', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 失败%s' % (slots, level, raid_name, msg))
 	return ret,msg
 
-def __md_create(mdname, level, chunk, slots):
+def __md_create(raid_name, level, chunk, slots):
 	#create raid
-	mddev = md_find_free_mddev()
-	if mddev == None:
-		return False,"没有空闲的RAID槽位"
-	devs,failed = disks_from_slot(slots)
-	if len(devs) == 0:
+	md = get_free_md()
+	if md == None:
+		return False,"RIAD数达到最大限制"
+	mddev = '/dev/' + md
+	dev_list = disks_slot2dev(slots.split())
+	if len(dev_list) == 0:
 		return False, "没有磁盘"
-	dev_list = " ".join(devs)
+	devs = " ".join(dev_list)
 
 	# enable all disk bad sect redirection
-	for d in dev_list.split():
-		disk_bad_sect_redirection(d)
+	for dev in dev_list:
+		disk_bad_sect_remap_enable(basename(dev))
 
-	cmd = " >/dev/null 2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, __raid_level(level), chunk, len(devs), dev_list, mdname)
+	cmd = "2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, raid_level(level), chunk, len(dev_list), devs, raid_name)
 	if level in ('5', '6'):
 		cmd += " --bitmap=internal"
 	if level in ('1', '5', '6'):
@@ -362,97 +338,78 @@ def __md_create(mdname, level, chunk, slots):
 	sts,out = commands.getstatusoutput(cmd)
 	if sts != 0:
 		# try to remove mddev
-		os.popen('mdadm -S %s 2>&1 >/dev/null' % mddev)
-		os.popen('rm -f %s 2>&1 >/dev/null' % mddev)
+		md_stop(mddev)
+		cleanup_disks_mdinfo(dev_list)
 		return False, "创建卷组失败"
 
 	msg = ''
 	try:
 		# 强制重写分区表
-		cmd = 'sys-manager udv --force-init-vg %s' % mdname
+		cmd = 'sys-manager udv --force-init-vg %s' % raid_name
 		sts,out = commands.getstatusoutput(cmd)
 		if sts != 0:
-			force = json.loads(out)
-			msg = force['msg']
+			time.sleep(1)
+			sts,out = commands.getstatusoutput(cmd)
+			if sts != 0:
+				force = json.loads(out)
+				msg = force['msg']
 	except:
 		msg = '初始化卷组未知错误'
 		pass
 	return True, '创建卷组成功%s' % msg
 
-def __md_remove_devnode(mddev):
+def md_is_used(raid_name):
 	try:
-		os.remove(mddev)
-	except:
-		pass
-	return
-
-def __md_used(mdname):
-	try:
-		d = json.loads(commands.getoutput('sys-manager udv --remain-capacity --vg %s' % mdname))
-		if d['max_avaliable'] == d['max_single']:
+		d = json.loads(commands.getoutput('sys-manager udv --list --vg %s' % raid_name))
+		if d['total'] == 0:
 			return False
 	except:
 		pass
 	return True
 
-def md_del(mdname):
-	ret,msg = __md_del(mdname)
+def md_stop(mddev):
+	cmd = "mdadm -S %s 2>&1" % mddev
+	sts,out = commands.getstatusoutput(cmd)
+	if out.find('mdadm: stopped') < 0:
+		return False
+	return True
+
+def md_del(raid_name):
+	ret,msg = __md_del(raid_name)
 	if ret:
-		LogInsert('VG', 'Auto', 'Info', '删除卷组 %s 成功' % mdname)
+		vg_log('Info', '删除卷组 %s 成功' % raid_name)
 	else:
-		LogInsert('VG', 'Auto', 'Error', '删除卷组 %s 失败%s' % (mdname, msg))
+		vg_log('Error', '删除卷组 %s 失败%s' % (raid_name, msg))
 	return ret,msg
 
-def __md_del(mdname):
-	mddev = md_get_mddev(mdname)
-	if (mddev == None):
-		return False, "卷组 %s 不存在" % mdname
-
+def __md_del(raid_name):
+	md = get_md_by_name(raid_name)
+	if (md == ''):
+		return False, "卷组 %s 不存在" % raid_name
+	mddev = '/dev/' + md
 	try:
-		mdinfo = md_info(mdname)['rows'][0]
-		md_uuid = mdinfo['raid_uuid']
-		if mdinfo['raid_state'] != 'fail' and __md_used(mdname):
-			return False, '卷组 %s 存在未删除的用户数据卷, 请先删除' % mdname
+		mdattr = get_mdattr_by_mddev(mddev)
+		md_uuid = mdattr.raid_uuid
+		if mdattr.raid_state != 'fail' and md_is_used(raid_name):
+			return False, '卷组 %s 存在未删除的用户数据卷, 请先删除' % raid_name
 	except:
 		md_uuid = ''
-	disks = mddev_get_disks(mddev)
-	sts,msg = md_stop(mddev)
-	if sts != 0:
-		return False,"停止%s失败%s" % (mdname, msg)
+	dev_list = get_disks_of_mddev(mddev)
+	if not md_stop(mddev):
+		return False,"停止%s失败, 设备正在使用中" % raid_name
 
 	# 专用热备盘设置为空闲盘
 	f_lock = lock_file(RAID_REBUILD_LOCK)
 	if f_lock != None:
-		for slot in md_get_special(md_uuid):
+		for slot in get_specials_by_mduuid(md_uuid):
 			disk_set_type(slot, 'Free')
 		unlock_file(f_lock)
-		
-	cleanup_disks_mdinfo(disks)
 
-	sysmon_event('vg', 'remove', mdinfo['name'], '卷组 %s 删除成功' % mdinfo['name'])
-	sysmon_event('disk', 'led_off', 'disks=%s' % _disk_slot_list_str(disks), '')
+	cleanup_disks_mdinfo(dev_list)
+
+	sysmon_event('vg', 'remove', mdattr.name, '卷组 %s 删除成功' % mdattr.name)
+	sysmon_event('disk', 'led_off', 'disks=%s' % list2str(disks_dev2slot(dev_list), ','), '')
 	return True,"删除卷组成功"
-
-def md_info_mddevs(mddevs=None):
-	if (mddevs == None):
-		mddevs = md_list_mddevs()
-	md_attrs = []
-	for mddev in mddevs:
-		attr = mddev_get_attr(mddev)
-		if (attr):
-			md_attrs.append(attr)
-	return {"total": len(md_attrs), "rows": md_attrs}
-
-def md_info(mdname=None):
-	if (mdname == None):
-		mddevs = None;
-	else:
-		mddevs = [md_get_mddev(mdname)];
-	return md_info_mddevs(mddevs);
-
-# -----------------------------------------------------------------------------
-# 供磁盘自动重建使用
-# -----------------------------------------------------------------------------
 
 def disk_serial2slot(serial):
 	try:
@@ -460,28 +417,20 @@ def disk_serial2slot(serial):
 		disk_list = json.loads(commands.getoutput(cmd))
 		for disk in disk_list['rows']:
 			if disk['serial'] == serial:
-				return disk['slot']
+				return str(disk['slot'])
 	except:
 		pass
 	return None
-
-def disk_serial2name(serial):
-	return disk_name(disk_serial2slot(serial))
-
-	return
 
 def disk_slot2serial(slot):
 	_disk_serial = None
 	try:
 		cmd = 'sys-manager disk --list --slot-id %s' % slot
 		_disk_info = json.loads(commands.getoutput(cmd))
-		_disk_serial = _disk_info['serial']
+		_disk_serial = str(_disk_info['serial'])
 	except:
 		pass
 	return _disk_serial
-
-def disk_name2serial(name):
-	return
 
 # 获取磁盘状态
 # 返回的状态:
@@ -502,7 +451,7 @@ def disk_get_state(slot):
 	return state
 
 # 检查磁盘热备盘配置, 如果不存在就创建默认配置
-def __check_disk_hotrep_conf():
+def check_disk_hotrep_conf():
 	if not os.path.isfile(DISK_HOTREP_CONF):
 		d,f = os.path.split(DISK_HOTREP_CONF)
 		os.makedirs(d) if not os.path.isdir(d) else None
@@ -523,48 +472,11 @@ def __set_attrvalue(node, attr, value):
 def __remove_attr(node, attr):
 	return node.removeAttribute(attr)
 
-def _rebuild_md(mdinfo, disk_slot, disk_type):
-	name = disk_name(disk_slot)
-	ret,msg = commands.getstatusoutput('mdadm --add %s %s 2>&1' % (mdinfo['dev'], name))
-	if ret == 0:
-		_event = 'Info'
-		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作成功' % (disk_slot, disk_type, mdinfo['name'])
-		disk_clean_hotrep(disk_slot)
-		disk_slot_update(disk_slot)
-	else:
-		_event = 'Error'
-		_content = '使用槽位号为 %s 的%s加入卷组 %s 重建操作失败' % (disk_slot, disk_type, mdinfo['name'])
-	LogInsert('VG', 'Auto', _event, _content)
-	return
-
-# 手动重建
-def _manually_rebuild(slot, disk_type, mdname):
-	# check special first
-	if 'Special' == disk_type:
-		if '' == mdname:
-			return
-		_tmp = md_info(mdname)['rows'];
-		if len(_tmp) <= 0:
-			return
-		mdinfo = _tmp[0]
-		if mdinfo['name'] != mdname:
-			return
-		if mdinfo['raid_state'] == 'degrade':
-			_rebuild_md(mdinfo, slot, '专用热备盘')
-		return
-	# for global spare
-	for mdinfo in md_info()['rows']:
-		if mdinfo['raid_state'] != 'degrade':
-			continue
-		_rebuild_md(mdinfo, slot, '全局热备盘')
-		break
-	return
-
 # 设置磁盘管理类型：
 #	* Global   - 全局热备盘
 #	* Special  - 专用热备盘
 #	* Free     - 空闲盘
-def disk_set_type(slot, disk_type, mdname=''):
+def disk_set_type(slot, disk_type, raid_name=''):
 
 	if slot == '':
 		return False, '请输入磁盘槽位号'
@@ -579,25 +491,25 @@ def disk_set_type(slot, disk_type, mdname=''):
 
 	md_uuid = ''
 	if disk_type == 'Special':
-		if mdname == '':
+		if raid_name == '':
 			return False, '参数不正确,设置专用热备盘必须指定卷组名称'
-		for mdinfo in md_info(mdname)['rows']:
-			if mdinfo['name'] == mdname:
-				md_uuid = mdinfo["raid_uuid"]
-		if md_uuid == '':
-			return False, '卷组 %s 不存在, 请检查参数' % mdname
+		mdattr = get_mdattr_by_name(raid_name)
+		if mdattr.name == raid_name:
+			md_uuid = mdattr.raid_uuid
+		else:
+			return False, '卷组 %s 不存在, 请检查参数' % raid_name
 	elif disk_type == 'Free':
-		disk_clean_hotrep(slot)
-		cleanup_disk_mdinfo(disk_name(slot))
-		disk_slot_update(slot)
+		remove_hotrep_by_slot(slot)
+		cleanup_disk_mdinfo(disk_slot2dev(slot))
 		# 通知监控进程
 		sysmon_event('disk', 'led_off', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为空闲盘' % slot)
 		sysmon_event('disk', 'buzzer_off', slot, '')
+		vg_log('Info', "设置磁盘 %s 为 空闲盘" % slot)
 		return True, '设置槽位号为 %s 的磁盘为空闲盘成功' % slot
 	elif disk_type != 'Global':
 		return False, '参数不正确:请指定需要设置的磁盘类型'
 
-	__check_disk_hotrep_conf()
+	check_disk_hotrep_conf()
 
 	try:
 		doc = minidom.parse(DISK_HOTREP_CONF)
@@ -617,7 +529,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 		if disk_serial == __get_attrvalue(item, 'serial'):
 			__set_attrvalue(item, 'type', disk_type)
 			__set_attrvalue(item, 'md_uuid', md_uuid)
-			__set_attrvalue(item, 'md_name', mdname);
+			__set_attrvalue(item, 'md_name', raid_name);
 			set_exist = True
 			break
 
@@ -629,7 +541,7 @@ def disk_set_type(slot, disk_type, mdname=''):
 		__set_attrvalue(disk_node, 'serial', disk_serial)
 		__set_attrvalue(disk_node, 'md_uuid', md_uuid)
 		__set_attrvalue(disk_node, 'type', disk_type)
-		__set_attrvalue(disk_node, 'md_name', mdname);
+		__set_attrvalue(disk_node, 'md_name', raid_name);
 		root.appendChild(disk_node)
 
 	# 更新xml配置文件
@@ -638,43 +550,50 @@ def disk_set_type(slot, disk_type, mdname=''):
 	f.close()
 
 	# 清除磁盘上的superblock信息
-	cleanup_disk_mdinfo(disk_name(slot))
-
-	# 通知disk监控进程
-	disk_slot_update(slot)
+	cleanup_disk_mdinfo(disk_slot2dev(slot))
 
 	msg = '设置磁盘 %s 为' % slot
 	if disk_type == 'Special':
-		msg += '卷组 %s 的专用热备盘成功' % mdname
+		msg += '卷组 %s 的专用热备盘' % raid_name
 	else:
-		msg += '全局热备盘'
-	LogInsert('VG', 'Auto', 'Info', msg)
+		msg += ' 全局热备盘'
+	vg_log('Info', msg)
 
 	# 通知监控进程
 	sysmon_event('disk', 'led_on', 'disks=%s' % slot, msg)
 	sysmon_event('disk', 'buzzer_off', slot, '')
 
-	# 尝试手动重建
-	_manually_rebuild(slot, disk_type, mdname)
+	# 尝试重建
+	if disk_type == 'Special':
+		mdattr = get_mdattr_by_name(raid_name)
+		if mdattr.raid_state == 'degrade':
+			md_rebuild(mdattr)
+	else: 
+		# global spare
+		for mdattr in get_mdattr_all():
+			if mdattr.raid_state != 'degrade':
+				continue
+			md_rebuild(mdattr)
+			break
 
 	return True, msg
 
-def __xml_load(fname):
-	__check_disk_hotrep_conf()
+def hotrep_conf_load():
+	check_disk_hotrep_conf()
 	try:
-		doc = minidom.parse(fname)
+		doc = minidom.parse(DISK_HOTREP_CONF)
 	except:
 		return None
 	return doc
 
 # 获取指定RAID所有专用热备盘
-def md_get_special(md_uuid=''):
+def get_specials_by_mduuid(md_uuid=''):
 	spec_list = []
 
 	if md_uuid == '':
 		return spec_list
 
-	doc = __xml_load(DISK_HOTREP_CONF)
+	doc = hotrep_conf_load()
 	if doc == None:
 		return spec_list
 	doc_root = doc.documentElement
@@ -688,13 +607,13 @@ def md_get_special(md_uuid=''):
 
 # 获取热备盘
 # 优先返回专用热备盘, 如果没有则返回全局热备盘, 如果没有则返回None
-def md_get_hotrep(md_uuid=''):
+def get_hotrep_by_mduud(md_uuid=''):
 	disk_info = {}
 	tmp_info = {}
 	update_conf = False
 	global_exist = 0
 	
-	doc = __xml_load(DISK_HOTREP_CONF)
+	doc = hotrep_conf_load()
 	if doc == None:
 		return disk_info
 	doc_root = doc.documentElement
@@ -729,19 +648,18 @@ def md_get_hotrep(md_uuid=''):
 
 	return disk_info
 
-# 设置热备盘被使用
-def disk_clean_hotrep(slot):
-	doc = __xml_load(DISK_HOTREP_CONF)
-	if doc == None:
-		return disk_info
-	doc_root = doc.documentElement
-
-	disk_serial = disk_slot2serial(slot)
+def remove_hotrep_by_serial(serial):
 	update_conf = False
+	doc = hotrep_conf_load()
+	if doc == None:
+		return False
+
+	doc_root = doc.documentElement
 	for item in __get_xmlnode(doc_root, 'disk'):
-		if disk_serial == __get_attrvalue(item, 'serial'):
+		if serial == __get_attrvalue(item, 'serial'):
 			doc_root.removeChild(item)
 			update_conf = True
+			break
 
 	if update_conf:
 		f = open(DISK_HOTREP_CONF, 'w')
@@ -751,73 +669,191 @@ def disk_clean_hotrep(slot):
 
 	return False
 
+def remove_hotrep_by_slot(slot):
+	disk_serial = disk_slot2serial(slot)
+	if disk_serial != None:
+		return remove_hotrep_by_serial(disk_serial)
+	else:
+		return False
+
+RAID_REBUILD_LOCK = '/tmp/.raid_rebuild_lock'
+def md_rebuild(mdattr):
+	# 使用文件锁同步多个raid重建, 防止争抢全局热备盘和空闲盘
+	f_lock = lock_file(RAID_REBUILD_LOCK)
+	if None == f_lock:
+		vg_log('Error', '系统异常: 文件 %s 加锁失败' % RAID_REBUILD_LOCK)
+		return
+
+	disk_type = 'Hot'
+	disk = get_hotrep_by_mduud(mdattr.raid_uuid)
+	if disk == {}:
+		disk = get_free_disk()
+		disk_type = 'Free'
+	if disk == {}:
+		vg_log('Error', '未找到热备盘和空闲盘重建卷组 %s' % mdattr.name)
+		unlock_file(f_lock)
+		return
+
+	slot = disk_serial2slot(disk['serial'])
+	diskdev = disk_slot2dev(slot)
+	if add_disk_to_md(mdattr.dev, diskdev) == 0:
+		vg_log('Info', '%s %s 加入卷组 %s 成功' % (disk['type'], slot, mdattr.name))
+		if disk_type != 'Free':
+			remove_hotrep_by_serial(disk['serial'])
+			disk_update_by_slots(slot)
+	else:
+		vg_log('Error', '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdattr.name))
+	unlock_file(f_lock)
+
+# -------- 磁盘信息定义 -----------
+class DiskInfo():
+	def __init__(self):
+		self.dev = ''		# e.g. /dev/sdb
+		self.slot = ''
+		self.uuid = ''
+		self.md_uuid = ''
+
+def get_disk_info(dev):
+	info = DiskInfo()
+	info.dev = dev
+	info.slot = disk_dev2slot(dev)
+	ret,txt = commands.getstatusoutput('mdadm -E %s' % dev)
+	if ret == 0:
+		for line in txt.split('\n'):
+			if line.find('Device UUID : ') >= 0:
+				info.uuid = line.split('Device UUID : ')[-1]
+			elif line.find('Array UUID : ') >= 0:
+				info.md_uuid = line.split('Array UUID : ')[-1]
+	return info
+
+def disk_slot2dev(slot):
+	cmd = "us_cmd disk name " + slot + " 2>/dev/null"
+	out = commands.getoutput(cmd).strip()
+	if (out.find("/dev/sd") == -1):
+		return None
+	return out
+
+def disks_slot2dev(slots):
+	list = [];
+	for slot in slots:
+		dev = disk_slot2dev(slot)
+		list.append(dev)
+
+	return list
+
+def disk_dev2slot(dev):
+	cmd = "us_cmd disk slot " + dev + " 2>/dev/null"
+	out = commands.getoutput(cmd)
+	if (out.find(":") == -1):
+		return None
+	return out
+
+def disks_dev2slot(devs):
+	list = [];
+	for dev in devs:
+		slot = disk_dev2slot(dev)
+		list.append(slot)
+
+	return list
+
+def disk_update_by_slots(slots):
+	if isinstance(slots, list):
+		slot_list = slots
+	else:
+		slot_list = slots.split()
+		
+	for slot in slot_list:
+		try:
+			cmd = 'us_cmd disk update %s' % slot
+			commands.getoutput(cmd)
+		except:
+			pass
+
+def disk_bad_sect_remap_enable(disk):
+	cmd = 'echo "enable" > /sys/block/%s/bad_sect_map/stat' % basename(disk)
+	ret,msg = commands.getstatusoutput(cmd)
+	return True if ret == 0 else False
+
+def cleanup_disk_mdinfo(dev):
+	cmd = "mdadm --zero-superblock %s 2>&1" % dev
+	sts,out = commands.getstatusoutput(cmd)
+	
+	disk_update_by_slots(disk_dev2slot(dev))
+
+def cleanup_disks_mdinfo(devs):
+	if isinstance(devs, str):
+		dev_list = devs.split()
+	else:
+		dev_list = devs
+
+	for dev in dev_list:
+		cleanup_disk_mdinfo(dev)
+
+def get_free_disk():
+	disk_info = {}
+	try:
+		_cmd = 'us_cmd disk --list'
+		ret,text = commands.getstatusoutput(_cmd)
+		if ret != 0:
+			return disk_info
+		disk_list = json.loads(text)
+		for x in disk_list['rows']:
+			if x['state'] == 'Free':
+				disk_info['type'] = '空闲盘'
+				disk_info['serial'] = x['serial']
+				break
+	except:
+		pass
+	return disk_info
+
+# 从指定卷组删除掉盘的磁盘
+def remove_disk_from_md(mddev, diskdev):
+	cmd = 'mdadm --set-faulty %s %s 2>&1' % (mddev, basename(diskdev))
+	ret,msg = commands.getstatusoutput(cmd)
+	
+	cmd = 'mdadm --remove %s %s 2>&1' % (mddev, basename(diskdev))
+	ret,msg = commands.getstatusoutput(cmd)
+	
+	tmpfs_remove_disk_from_md(mddev, disk_dev2slot(diskdev))
+	return ret
+
+# 将磁盘加入指定卷组
+def add_disk_to_md(mddev, diskdev):
+	cmd = 'mdadm --add %s %s 2>&1' % (mddev, diskdev)
+	ret,msg = commands.getstatusoutput(cmd)
+	
+	tmpfs_add_disk_to_md(mddev, disk_dev2slot(diskdev))
+	return ret
+
+# 使用磁盘dev节点名称查找所在的卷组信息
+def get_mdattr_by_disk(dev):
+	mdattr = None
+	try:
+		f = open('/proc/mdstat', 'r')
+		for x in f.readlines():
+			mddev = re.match('^md\d*', x)
+			if mddev is None:
+				continue
+			if basename(dev) in re.findall('sd\w+', x):
+				mdattr = get_mdattr_by_mddev('/dev/%s' % mddev.group())
+				break
+		f.close()
+	except:
+		pass
+	return mdattr
+
+# 使用mduuid查找所在卷组信息
+def get_mdattr_by_mduuid(mduuid):
+	for mdattr in get_mdattr_all():
+		if mduuid == mdattr.raid_uuid:
+			return mdattr
+	return None
+
 # -----------------------------------------------------------------------------
-
-def _disk_slot_list_str(dlist=[]):
-	return ','.join([disk_slot(x) for x in dlist])
-
 if __name__ == "__main__":
 	import sys
 
-	print md_info()
+	print get_mdattr_all()
+	print get_mdattr_by_name("abc")
 
 	sys.exit(0)
-
-	print disk_list_str(attr.disk_list)
-	disks = mddev_get_disks('/dev/md1')
-	print _disk_slot_list_str(disks)
-
-	mdinfo =  mddev_get_attr('/dev/md1')
-	print disk_list_str(mdinfo['disk_list'])
-	#sysmon_event('vg', 'remove', 'disks=%s' % _disk_slot_list_str(disks), '卷组 删除成功')
-	#sysmon_event('vg', 'degrade', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 降级' % attr.name)
-	#sysmon_event('vg', 'fail', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 失效' % attr.name)
-	sysmon_event('vg', 'normal', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
-	#sysmon_event('vg', 'rebuild', 'disks=%s' % disk_list_str(attr.disk_list), '卷组 %s 状态正常' % attr.name)
-	sys.exit(0)
-
-	md_restore()
-	sys.exit(0)
-
-	print md_info('slash')
-	sys.exit(0)
-
-	x = mddev_get_attr('/dev/md1')
-	print x
-	sys.exit(0)
-
-	print '------', md_get_hotrep('f11ee90f:548a70c7:bf5b57cf:91230c43')
-	sys.exit(0)
-	mdinfo = md_info('abc123')['rows'][0]
-	print mdinfo['raid_uuid']
-	sys.exit(0)
-
-	for slot in md_get_special('f11ee90f:548a70c7:bf5b57cf:91230c43'):
-		print 'slot = ', slot
-		disk_set_type(slot, 'Free')
-	sys.exit(0)
-	print disk_serial2name('S1D50WED')
-	print disk_serial2slot('S1D50WED')
-	ret,msg = disk_set_type('0:6', 'Global')
-	print msg
-
-	ret,msg = disk_set_type('0:6', 'Special', 'RD2012117135019')
-	print msg
-
-	ret,msg = disk_get_hotrep_by_md('RD2012117135019')
-	print msg
-
-	ret,msg = disk_set_hotrep_used('0:6')
-	print msg
-
-
-	#test
-	if len(sys.argv) >= 2:
-		md_name = sys.argv[1]
-	else:
-		md_name = "debianx"
-
-	print "Test none:"
-	print md_info(None)
-	print md_info("ddd")
-	print md_info(md_name)
