@@ -169,6 +169,13 @@ def iSCSILunModify(tgt, lun_id, cur_initor, fre_initor):
 	else:
 		return True, '修改LUN映射成功'
 
+def isLunUsedInSession(tgt, lun_id, initor):
+	if initor != '*':
+		sess_lun_dir = '%s/%s/sessions/%s/luns/%d' % (SCST.TARGET_DIR, tgt, initor, lun_id)
+		return True if os.path.isdir(sess_lun_dir) else False
+	else:
+		return False
+
 def __get_vdisk_by_lun(lun_dir):
 	volume = ''
 	try:
@@ -193,7 +200,9 @@ def __iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 	if not isLunIdExist(tgt, initor, lun_id):
 		return (False, '解除LUN %d 映射失败！LUN不存在！' % lun_id)
 	if initor != '*' and not __isInitiatorExists(tgt, initor):
-		return Flase, '解除 %s 映射失败！Initiator不存在！' % lun_id
+		return False, '解除 %s 映射失败！Initiator不存在！' % lun_id
+	if isLunUsedInSession(tgt, lun_id, initor):
+		return False, '解除 %s 映射失败! LUN正在被访问! ' % lun_id
 
 	lun_cmd = 'del %d' % lun_id
 	if initor != '*':
