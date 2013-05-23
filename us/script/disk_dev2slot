@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+import sys, commands
+
+if __name__ == '__main__':
+	if len(sys.argv) < 2:
+		print 'input dev, e.g. /dev/sdb'
+		exit()
+	
+	print commands.getoutput('us_cmd disk slot ' + sys.argv[1])
