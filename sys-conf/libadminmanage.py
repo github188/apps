@@ -60,7 +60,6 @@ adminmanage --list [ <--name <admin_name> --page <int> --coun <int> --search <us
 	   --del --name <admin_name>		##删除管理员
 	   --check --name <admin_name>		##管理员重名验证
 	   --login --name <admin_name> --pwd <password>		##管理员登录
-	   --check_pwd --name <admin_name> --pwd <password>		##验证操作密码
 	   --outsession [ --session <session> ]		##输入输出session
 """
 	sys.exit(-1)
