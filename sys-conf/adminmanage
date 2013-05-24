@@ -16,10 +16,8 @@ class IArgs:
 		self.list_set = False
 		self.add_set = False
 		self.edit_set = False
-		self.useredit_set = False
 		self.del_set = False
 		self.check_set = False
-		self.check_pwd_set = False
 		self.login_set = False
 		self.default_set = False
 		self.outsession_set = False
@@ -28,10 +26,6 @@ class IArgs:
 		self.pwd_state = False
 		self.new_pwd_set = ''
 		self.new_pwd_state = False
-		self.manage_pwd_set = ''
-		self.manage_pwd_state = False
-		self.new_manage_pwd_set = ''
-		self.new_manage_pwd_state = False
 		self.manage_type_set = ''
 		self.manage_type_state = False
 		self.note_set = ''
@@ -49,8 +43,8 @@ class IArgs:
 if os.path.exists(Admin_CONF_PATH) == False:
 	Admin_default()
 
-OP_MODE = ['--list', '--add', '--edit', '--useredit', '--del', '--check',  '--check_pwd', '--login', '--default', '--outsession']
-long_opt = ['list', 'add', 'edit', 'del', 'check', 'check_pwd', 'default',  'outsession', 'useredit', 'login', 'name=', 'page=', 'coun=', 'search=', 'pwd=', 'new_pwd=', 'manage_pwd=', 'new_manage_pwd=', 'manage_type=', 'note=', 'session=']
+OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--login', '--default', '--outsession']
+long_opt = ['list', 'add', 'edit', 'del', 'check', 'default',  'outsession', 'login', 'name=', 'page=', 'coun=', 'search=', 'pwd=', 'new_pwd=', 'manage_type=', 'note=', 'session=']
 
 def main():
 	try:
@@ -71,12 +65,8 @@ def main():
 			iArgs.list_set = True
 		elif opt == '--del':
 			iArgs.del_set = True
-		elif opt == '--useredit':
-			iArgs.useredit_set = True
 		elif opt == '--check':
 			iArgs.check_set = True
-		elif opt == '--check_pwd':
-			iArgs.check_pwd_set = True
 		elif opt == '--login':
 			iArgs.login_set = True
 		elif opt == '--outsession':
@@ -100,12 +90,6 @@ def main():
 		elif opt == '--new_pwd':
 			iArgs.new_pwd_set = arg
 			iArgs.new_pwd_state = True
-		elif opt == '--manage_pwd':
-			iArgs.manage_pwd_set = arg
-			iArgs.manage_pwd_state = True
-		elif opt == '--new_manage_pwd':
-			iArgs.new_manage_pwd_set = arg
-			iArgs.new_manage_pwd_state = True
 		elif opt == '--manage_type':
 			iArgs.manage_type_set = arg
 			iArgs.manage_type_state = True
@@ -129,12 +113,8 @@ def main():
 		Admin_del(iArgs)
 	elif iArgs.check_set == True:
 		Admin_check(iArgs)
-	elif iArgs.check_pwd_set == True:
-		Admin_check_pwd(iArgs)
 	elif iArgs.default_set == True:
 		Admin_default()
-	elif iArgs.useredit_set == True:
-		Admin_useredit(iArgs)
 	elif iArgs.login_set == True:
 		Admin_login(iArgs)
 	elif iArgs.outsession_set == True:

@@ -18,6 +18,7 @@ class IArgs:
 		self.edit_set = False
 		self.del_set = False
 		self.check_set = False
+		self.delcheck_set = False
 		self.default_set = False
 		self.basic_set = False
 		self.access_set = False
@@ -117,8 +118,8 @@ inherit permissions = yes
 if os.path.exists(SMB_CONF_PATH) == False:
 	get_default()
 
-OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default', '--sync', '--high']
-long_opt = ['list', 'add', 'edit', 'del', 'check', 'default','sync','high', 'nfs', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'guest=', 'privacy=', 'nfsallow', 'page=', 'coun=', 'search=']
+OP_MODE = ['--list', '--add', '--edit', '--del', '--check', '--default', '--sync', '--delcheck', '--high']
+long_opt = ['list', 'add', 'edit', 'del', 'check', 'delcheck', 'default','sync','high', 'nfs', 'level=', 'name=', 'path=', 'write=', 'read=', 'invalid=', 'browsable=', 'inherit=', 'comment=', 'basic', 'new=', 'access', 'nasallow', 'allow=', 'guest=', 'privacy=', 'nfsallow', 'page=', 'coun=', 'search=']
 
 def main():
 	try:
@@ -141,6 +142,8 @@ def main():
 			iArgs.del_set = True
 		elif opt == '--check':
 			iArgs.check_set = True
+		elif opt == '--delcheck':
+			iArgs.delcheck_set = True
 		elif opt == '--default':
 			iArgs.default_set = True
 		elif opt == '--basic':
@@ -202,6 +205,8 @@ def main():
 		edit(iArgs)
 	elif iArgs.del_set == True:
 		NASdel(iArgs)
+	elif iArgs.delcheck_set == True:
+		NASdelcheck(iArgs)
 	elif iArgs.check_set == True:
 		check(iArgs)
 	elif iArgs.default_set == True:

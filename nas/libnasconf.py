@@ -181,6 +181,7 @@ nasconf --list [ --name <nas_name> --page <int> --coun <int> --search <Share_nam
 	--check --new <New name> [--name <nas_name>]		##重名验证
 	--sync --path <volume path>		###删除NAS卷时同步删除NAS卷中的共享目录及配置
 	--high [--guest <yes|no> --privacy <yes|no>]			###高级配置，管理SAMBA的共享模式
+	--delcheck --name <nas_path>			###验证NAS卷是否有共享目录
 """
 	sys.exit(-1)
 
@@ -886,3 +887,18 @@ def __Check__Nas_path__(path):
 			State = True
 			break
 	return State
+
+#~ 验证NAS卷是否有共享目录
+def NASdelcheck(value):
+	out_list = config.sections()
+	path = value.name_set+'/'
+	out_list= [i for i in out_list if i!='global' and i!='系统设置']
+	State = False
+	for name in out_list:
+		if len(deviant(name, "path").split(path)) > 1:
+			State = True
+			break
+	if State:
+		Export(False, '该NAS卷有共享目录存在，请先删除共享')
+	else:
+		Export(True, '该NAS卷没有共享目录，可以删除')
