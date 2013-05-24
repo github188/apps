@@ -1,12 +1,12 @@
+#ifndef _SYS_LOG_H
+#define _SYS_LOG_H
+
 #include <unistd.h>
 #include <stdint.h>
 #include <time.h>
 #include <stdbool.h>
 #include <string.h>
 #include "debug.h"
-
-#ifndef _SYS_LOG_H
-#define _SYS_LOG_H
 
 #define LOG_INVALID_ARG -1
 #define LOG_FILE "/opt/log/jw-log.db"

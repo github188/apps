@@ -183,7 +183,7 @@ void _dump_alarm(sys_action_t *action)
 		list_iterate_safe(n, nt, &action->alarm_list)
 		{
 			alarm = list_struct_base(n, sys_alarm_t, alarm_list);
-			printf("\talarm: %s, handler: %.8p\n", alarm->name, alarm->handler);
+			printf("\talarm: %s, handler: %p\n", alarm->name, alarm->handler);
 		}
 	}
 }

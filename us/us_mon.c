@@ -15,8 +15,6 @@
 #include <fcntl.h>
 #include "../common/jw-unistd.h"
 
-#define MAX_SLOT	(128)
-
 struct us_mon {
 	struct udev		*udev;
 	struct udev_monitor	*mon;

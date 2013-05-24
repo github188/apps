@@ -130,7 +130,7 @@ void _dump_event(sys_module_t *module)
 	list_iterate_safe(n, nt, &module->event_list)
 	{
 		ec = list_struct_base(n, sys_event_conf_t, event_list);
-		printf("\tevent: %s , level: %s, count: %d, action: %.8p\n",
+		printf("\tevent: %s , level: %s, count: %d, action: %p\n",
 				ec->event, ec->level, ec->count, ec->action);
 	}
 }

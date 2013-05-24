@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <strings.h>
 #include "pmu-info.h"
 
 #define VOUT_EXP	(-9)
@@ -55,7 +56,7 @@ int pmu_get_info(const char *dev, struct pmu_info *info1)
 
 	fread(line, 24, 1, fp);
 	line[24] = '\0';
-	sscanf(line, "%x %x %x %x %x",
+	sscanf(line, "%lx %lx %lx %lx %lx",
 		&sts, &vin, &vout, &temp, &fan);
 	bzero(info1, sizeof(struct pmu_info));
 	CHECK_FAULT(sts, STS_TEMP_FAULT, info1->is_temp_fault);

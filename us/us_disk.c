@@ -19,24 +19,6 @@
 
 #define DISK_HOTREP_CONF "/opt/jw-conf/disk/hotreplace.xml"
 
-struct us_disk {
-	int		ref;
-	int		slot;
-	int		is_exist : 1;
-	int		is_fail : 1;
-	int		is_raid : 1;
-	int		is_special : 1;	// 专用热备盘
-	int		is_global : 1;	// 全局热备盘
-	int		is_removed : 1;	// 供磁盘掉线后查询磁盘槽位号信息使用
-	char	dev_node[64];
-	struct disk_info di;
-	struct disk_md_info ri;
-};
-
-struct us_disk_pool {
-	struct us_disk disks[MAX_SLOT];
-};
-
 extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
 extern regex_t udev_md_regex;
@@ -190,7 +172,7 @@ static int find_free_slot(struct us_disk_pool *dp)
 }
 #endif
 
-static int find_disk(struct us_disk_pool *dp, const char *dev)
+struct us_disk *find_disk(struct us_disk_pool *dp, const char *dev)
 {
 	int i;
 
@@ -200,10 +182,10 @@ static int find_disk(struct us_disk_pool *dp, const char *dev)
 		if (!disk->is_exist)
 			continue;
 		if (strcmp(disk->dev_node, dev) == 0)
-			return i;
+			return &dp->disks[i];
 	}
 
-	return -1;
+	return NULL;
 }
 
 const char* __disk_get_hotrep(const char *serial, char *raid_name)
@@ -294,15 +276,13 @@ static void do_update_disk(struct us_disk *disk, int op)
 
 static void update_disk(struct us_disk_pool *dp, const char *dev)
 {
-	int slot = find_disk(dp, dev);
-	struct us_disk *disk;
-
-	if (slot < 0) {
+	struct us_disk *disk = find_disk(dp, dev);
+	if (!disk) {
 		clog(LOG_WARNING, "%s: update %s doesn't exist\n",
 		     __func__, dev);
 		return;
 	}
-	disk = &dp->disks[slot];
+
 	do_update_disk(disk, DISK_UPDATE_RAID);
 }
 
@@ -360,16 +340,16 @@ static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 
 static void remove_disk(struct us_disk_pool *dp, const char *dev)
 {
-	int slot = find_disk(dp, dev);
-	struct us_disk *disk;
-
-	if (slot < 0) {
+	int slot;
+	struct us_disk *disk = find_disk(dp, dev);
+	if (!disk) {
 		clog(LOG_WARNING, "%s: remove %s doesn't exist\n",
 		     __func__, dev);
 		return;
 	}
-	disk = &dp->disks[slot];
+
 	disk->ref--;
+	slot = disk->slot;
 	memset(disk, 0, sizeof(*disk));
 	// 供磁盘掉线查询磁盘槽位号使用
 	disk->is_removed = 1;
@@ -510,7 +490,10 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 
 	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim, p_raid);
 
-	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
+	if (!strcmp(p_state, "Fail"))
+		pos += snprintf(pos, end - pos, "%s\"SMART\":\"Bad\"", delim);
+	else
+		pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
 	                disk_get_smart_status(di));
 
 	if (is_detail) {
@@ -526,6 +509,11 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
 		                delim);
+		disk_get_warning_info(disk->dev_node, &disk->di.wi);
+		pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
+		               	delim, di->wi.mapped_cnt);
+		pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"%u\"",
+		               	delim, di->wi.max_map_cnt);
 		pos += snprintf(pos, end - pos, "%s\"smart_attr\":{", delim);
 		pos += snprintf(pos, end - pos, "\"read_err\":%llu",
 		                (unsigned long long)di->si.read_error);

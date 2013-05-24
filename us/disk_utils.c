@@ -101,6 +101,9 @@ int disk_get_info(const char *dev, struct disk_info *info)
 	if ((ret = sk_disk_get_size(d, &info->size)) < 0)
 		goto out;
 
+	if (info->size > 0)
+		info->wi.max_map_cnt = info->size/1000000/512;
+
 	if (sk_disk_identify_parse(d, &ipd) >= 0) {
 		strncpy(info->serial, ipd->serial, sizeof(info->serial));
 		info->serial[sizeof(info->serial) - 1] = '\0';

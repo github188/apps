@@ -6,11 +6,14 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <arpa/inet.h>
+
+#include "clog.h"
 #include "us_ev.h"
-#include "us_prewarn.h"
+#include "disk_utils.h"
 #include "vsd_warning.h"
-#include "us_disk.h"
+#include "us_prewarn.h"
 #include "../common/log.h"
+
 
 extern struct ev_loop *us_main_loop;
 
@@ -96,10 +99,14 @@ static int nl_read(int fd, void *data, int len, int wait)
 	return res;
 }
 
+#include "disk_utils.h"
+struct us_disk_pool us_dp;
 static void nl_io_cb(EV_P_ ev_io *w, int r)
 {
 	struct vsd_warning_info warning_info;
-	char disk_slot[32], msg[128];
+	struct us_disk *disk;
+	struct disk_warning_info *dwi;
+	char dev[16], msg[128];
 
 	if (nl_read(w->fd, &warning_info, sizeof(warning_info), 1) < 0) {
 		if ( (EINTR!=errno) && (EAGAIN!=errno) )
@@ -109,16 +116,31 @@ static void nl_io_cb(EV_P_ ev_io *w, int r)
 		}
 	}
 
-	if (!disk_name2slot(warning_info.disk_name, disk_slot))
-	{
-		// TODO: log wrning
-		// LogInsert(NULL, "SysMon", "Auto", "Warning", msg);
-		sprintf(msg, "磁盘 %s 预警，检测到坏块！", disk_slot);
-		LogInsert(NULL, "DiskPreWarning", "Auto", "Error", msg);
+	sprintf(dev, "/dev/%s", warning_info.disk_name);
+	disk = find_disk(&us_dp, dev);
+	if (!disk) {
+		clog(CL_ERROR, "disk warning, cann't find %s slot!",
+			warning_info.disk_name);
+
+		sprintf(msg, "磁盘预警: %s 出现%s, 已修复扇区计数: %u",
+			warning_info.disk_name,
+			(warning_info.warning_area == (1<<WARNING_AREA_BAD_SECT)) ?
+			"新坏块" : "关键坏块", warning_info.mapped_cnt);
+		LogInsert(NULL, "DiskWarning", "Auto", "Error", msg);
 		return;
 	}
+	
+	dwi = &disk->di.wi;
+	dwi->warning_area = warning_info.warning_area;
+	dwi->mapped_cnt = warning_info.mapped_cnt;
+	/* 最大可修复扇区数不更新，磁盘上线时设置固定值 */
 
-	clog(CL_ERROR, "disk pre warning received, but convert disk slot error!");
+	sprintf(msg, "磁盘预警: 0:%d 出现%s, 已修复扇区计数: %u"
+			"最大可修复扇区数: %u",	disk->slot,
+			(dwi->warning_area == (1<<WARNING_AREA_BAD_SECT)) ?
+			"新坏块" : "关键坏块", dwi->mapped_cnt,
+			dwi->max_map_cnt);
+	LogInsert(NULL, "DiskWarning", "Auto", "Error", msg);
 }
 
 ev_io nl_readable;

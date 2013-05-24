@@ -155,7 +155,7 @@ void dump_self_run()
 	puts("------------------- dump capture -------------------");
 	list_iterate_safe(n, nt, &_g_capture) {
 		cap = list_struct_base(n, sys_capture_t, list);
-		printf("capture: %.8x %s\n", cap, cap->name);
+		printf("capture: %p %s\n", cap, cap->name);
 		printf("\tcheck interval: %d\n", cap->check_intval);
 		printf("\tmin: %d\n", cap->min_thr);
 		printf("\tmax: %d\n", cap->max_thr);
