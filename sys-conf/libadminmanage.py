@@ -23,12 +23,10 @@ config.read(Admin_CONF_PATH)
 
 Admin_CONF = """[admin]
 password = 21232F297A57A5A743894A0E4A801FC3
-manage_pwd = 21232F297A57A5A743894A0E4A801FC3
 manage_type = 1
 note = 超级管理员
 [root]
 password = 80BAEC203A63F45280DAADD5CF3598FE
-manage_pwd = 80BAEC203A63F45280DAADD5CF3598FE
 manage_type = 3
 note = 专用管理员
 """
@@ -56,9 +54,9 @@ def AUsage(err=""):
 		print '##命令参数不正确，请检查要执行的命令模式！'
 	print """
 adminmanage --list [ <--name <admin_name> --page <int> --coun <int> --search <user name> ]		##输出管理员列表
-	   --add --name <admin_name> --pwd <password> [--note <Remark>]		##增加用户
-	   --edit --name <admin_name> [--new_pwd <new_password> --new_manage_pwd <new_manage_pwd> --manage_type <manage_type> --note <Remark>]		##修改管理员密码或备注
-	   --useredit --name <admin_name> --manage_pwd <password> [--new_pwd <new_password> --new_manage_pwd <new_manage_pwd> --note <Remark>]		##管理员自己修改密码或备注
+	   --add --name <admin_name> --pwd <password> --manage_type <manage_type> [--note <Remark>]		##增加用户
+	   --edit --name <admin_name> [--new_pwd <new_password> --manage_type <manage_type> --note <Remark>]		##修改管理员密码或备注
+	   --useredit --name <admin_name>  [--new_pwd <new_password> --note <Remark>]		##管理员自己修改密码或备注
 	   --del --name <admin_name>		##删除管理员
 	   --check --name <admin_name>		##管理员重名验证
 	   --login --name <admin_name> --pwd <password>		##管理员登录
@@ -112,7 +110,7 @@ def Admin_list(value):
 			StartEnd =0
 			Start = 0
 		out_list = config.sections()
-		out_list= [i for i in out_list if i!='admin' and i!='root']
+		out_list= [i for i in out_list if i!='root']
 		out_list.sort() 
 		for fileLine in out_list:
 			if search_check > 0:
@@ -148,10 +146,11 @@ def Admin_add(value):
 		if value.note_state == False:
 			value.note_set = '管理员'
 		config.add_section(value.name_set)
+		if value.manage_type_state:
+			config.set(value.name_set, 'manage_type', value.manage_type_set)
 		config.set(value.name_set, 'password', pwd)
-		config.set(value.name_set, 'manage_pwd', pwd)
-		config.set(value.name_set, 'manage_type', 2)
-		config.set(value.name_set, 'note', value.note_set)
+		if value.note_state:
+			config.set(value.name_set, 'note', value.note_set)
 		config.write(open(Admin_CONF_PATH, 'w'))
 		Export(True, '管理员"'+value.name_set+'"增加成功！')
 	else:
@@ -162,8 +161,6 @@ def Admin_edit(value):
 	if config.has_section(value.name_set) and value.name_set != '':
 		if value.new_pwd_state:
 			config.set(value.name_set, 'password', hashlib.md5(value.new_pwd_set).hexdigest().upper())
-		if value.new_manage_pwd_state:
-			config.set(value.name_set, 'manage_pwd', hashlib.md5(value.new_manage_pwd_set).hexdigest().upper())
 		if value.manage_type_state:
 			config.set(value.name_set, 'manage_type', value.manage_type_set)
 		if value.note_state:
@@ -192,38 +189,12 @@ def Admin_check(value):
 	else:
 		Export(True, '管理员名称可以用！')		
 
-#~#### 管理员自己修改信息主程序
-def Admin_useredit(value):
-	if config.has_section(value.name_set) and value.name_set != '':
-		if deviant(value.name_set, 'manage_pwd').strip() == hashlib.md5(value.manage_pwd_set).hexdigest().upper():
-			if value.new_pwd_state:
-				config.set(value.name_set, 'password', hashlib.md5(value.new_pwd_set).hexdigest().upper())
-			if value.new_manage_pwd_state:
-				config.set(value.name_set, 'manage_pwd', hashlib.md5(value.new_manage_pwd_set).hexdigest().upper())
-			if value.manage_type_state:
-				config.set(value.name_set, 'manage_type', value.manage_type_set)
-			if value.note_state:
-				config.set(value.name_set, 'note', value.note_set)
-			config.write(open(Admin_CONF_PATH, 'w'))
-			Export(True, '管理员"'+value.name_set+'"修改成功！')
-		else:
-			Export(False, '输入的操作密码不正确！')		
-	else:
-		Export(False, '输入的管理员名称不可用！')	
-
 #~#### 管理员登录主程序
 def Admin_login(value):
 	if config.has_section(value.name_set) and value.name_set != '' and deviant(value.name_set, 'password').strip() == hashlib.md5(value.pwd_set).hexdigest().upper():
 		Export(True, deviant(value.name_set, 'manage_type'))
 	else:
 		Export(False, '登录失败！')
-
-#~#### 验证操作密码主程序
-def Admin_check_pwd(value):
-	if config.has_section(value.name_set) == False or (deviant(value.name_set, 'manage_pwd').strip() != hashlib.md5(value.pwd_set).hexdigest().upper()):
-		Export(False, '操作密码不正确！')
-	else:
-		Export(True, '登验证通过！')
 
 #~#### 恢复默认主程序
 def Admin_default():
