@@ -84,11 +84,19 @@ def main(argv):
 	res = ""
 	if cmd == "--list":
 		mdattr_output = []
-		if len(argv) >= 3:
-			raid_name = argv[2]
-			mdattr = get_mdattr_by_name(raid_name)
-			if mdattr != None:
-				mdattr_output.append(mdattr.__dict__)
+		if len(argv) == 4:
+			if argv[2] == '--vg':
+				raid_name = argv[3]
+				mdattr = get_mdattr_by_name(raid_name)
+				if mdattr != None:
+					mdattr_output.append(mdattr.__dict__)
+
+			elif argv[2] == '--level':
+				level_list = argv[3].upper().split(',')
+				for mdattr in get_mdattr_all():
+					if mdattr.raid_level in level_list:
+						mdattr_output.append(mdattr.__dict__)
+
 		else:
 			for mdattr in get_mdattr_all():
 				mdattr_output.append(mdattr.__dict__)
@@ -116,7 +124,7 @@ def usage():
 Usage:
 	--create --name <vg_name> --level <0|1|5|6> --strip <64|128|256|512|1024> --disk <slot1>[,<slot2>,<slot3>...]
 	--delete <vg_name>
-	--list [vg_name]
+	--list [--vg <vg_name> | --level <level1>[,<level2>,<level3>...]
 	--generate-name <suffix>
 	--duplicate-check <vg_name>
 """
