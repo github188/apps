@@ -3,8 +3,6 @@
 #include <parted/parted.h>
 #include "libudv.h"
 
-const static int DFT_SECTOR_SIZE = 512;
-
 /*
  * import from libpyext_udv.py
  */
@@ -200,7 +198,7 @@ PedDisk* _create_disk_label (PedDevice *dev, PedDiskType *type)
 	return disk;
 }
 
-#define _fix_4k(size) ((uint64_t)((size)/4096)) * 8
+#define _fix_4k(sector) ((uint64_t)((sector)/8*8))
 
 ssize_t udv_force_init_vg(const char *vg_name)
 {
@@ -213,8 +211,6 @@ ssize_t udv_force_init_vg(const char *vg_name)
 	// 参数检查
 	if (!vg_name)
 		return E_FMT_ERROR;
-
-	libudv_custom_init();
 
 	// 检查VG是否存在
 	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
@@ -251,7 +247,8 @@ error:
  * API
  */
 
-ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
+ssize_t udv_create(const char *vg_dev, const char *name, 
+					uint64_t start, uint64_t length)
 {
 	PedDevice *device = NULL;
 	PedDisk *disk = NULL;
@@ -259,33 +256,19 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 	PedConstraint *constraint;
 	PedDiskType *type = NULL;
 
-	struct list list, *n, *nt;
-	struct geom_stru *elem;
-
 	ssize_t ret_code = E_OK;
-	char vg_dev[PATH_MAX];
 
 	// 参数检查
 	if (!name)
 		return E_FMT_ERROR;
 
-	libudv_custom_init();
-
-	// 检查VG是否存在
-	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
-		return E_VG_NONEXIST;
-
 	// 检查用户数据卷是否存在
 	if (get_udv_by_name(name))
 		return E_UDV_EXIST;
 
-	// 检查空闲空间
-	if ( udv_get_free_list(vg_name, &list) <= 0 )
-		return E_NO_FREE_SPACE;
-
 	// 创建用户数据卷
-	if (!(device = ped_device_get(vg_dev)))
-	{
+	device = ped_device_get(vg_dev);
+	if (!device) {
 		//printf("load device error!\n");
 		return E_SYS_ERROR;
 	}
@@ -300,134 +283,118 @@ ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity)
 		return E_SYS_ERROR;
 #endif
 
-	if ( (type = ped_disk_probe(device)) && !strcmp(type->name, "gpt") )
-	{
+	if ( (type = ped_disk_probe(device)) && !strcmp(type->name, "gpt") ) {
 		disk = ped_disk_new(device);
-	}
-	else
-	{
+	} else {
 		//printf("old label!\n");
 		disk = _create_disk_label(device, ped_disk_type_get("gpt"));
 	}
 
-	if (!disk)
-	{
+	if (!disk) {
 		ret_code = E_SYS_ERROR;
 		//printf("get disk info error!\n");
 		goto error;
 	}
 
-	list_iterate_safe(n, nt, &list)
-	{
-		elem = list_struct_base(n, struct geom_stru, list);
-		if (elem->geom.capacity >= capacity)
-		{
-			uint64_t _start_sect, _end_sect;
+	if (start < 1024)
+		start = 1024;
+	else
+		start = _fix_4k(start);
 
-			_start_sect = _fix_4k(elem->geom.start);
-			_end_sect = _fix_4k(elem->geom.start + capacity) - 1;
+	length = _fix_4k(length);
 
-			//printf("ss: %llu, cap: %llu\n", elem->geom.start, capacity);
-			//printf("s: %llu, e: %llu\n", _start_sect, _end_sect);
+	ret_code = E_NO_FREE_SPACE;
+	for (part = ped_disk_next_partition(disk, NULL); part;
+		part = ped_disk_next_partition(disk, part)) {
 
-			part = ped_partition_new(disk, PED_PARTITION_NORMAL, NULL, _start_sect, _end_sect);
-			ped_partition_set_name(part, name);
-			ped_disk_add_partition(disk, part, constraint);
-			ped_disk_commit(disk);
-			ret_code = E_OK;
+		if (part->type & PED_PARTITION_METADATA)
+			continue;
+
+		if (!(part->type & PED_PARTITION_FREESPACE))
+			continue;
+
+		if (start >= part->geom.start) {
+			if (start <= part->geom.end && start+length-1 <= part->geom.end) {
+				part = ped_partition_new(disk, PED_PARTITION_NORMAL, NULL,
+								start, start+length-1);
+				ped_partition_set_name(part, name);
+				ped_disk_add_partition(disk, part, constraint);
+				ped_disk_commit(disk);
+				ret_code = E_OK;
+			}
+
 			break;
 		}
-		ret_code = E_NO_FREE_SPACE;
 	}
 
-	free_geom_list(&list);
 	ped_disk_destroy(disk);
+
 error:
 	ped_device_destroy(device);
 	return ret_code;
 }
 
-void free_geom_list(struct list *list)
+void free_udv_list(struct list *list)
 {
 	struct list *n, *nt;
-	struct geom_stru *elem;
+	udv_info_t *elem;
 
-	if (!list_empty(list))
-	{
-		list_iterate_safe(n, nt, list)
-		{
-			elem = list_struct_base(n, struct geom_stru, list);
+	if (!list_empty(list)) {
+		list_iterate_safe(n, nt, list) {
+			elem = list_struct_base(n, udv_info_t, list);
 			free(elem);
 		}
 	}
 }
 
-ssize_t udv_get_free_list(const char *vg_name, struct list *list)
+ssize_t udv_get_part_list(const char *vg_dev, struct list *list, int type)
 {
 	PedDevice *device = NULL;
 	PedDisk *disk = NULL;
 	PedPartition *part;
 
-	struct geom_stru *gs;
+	udv_info_t *udv_info;
 	ssize_t ret_code = E_FMT_ERROR;
-	char vg_dev[PATH_MAX];
 
-	if ( !(vg_name && list) )
+	if (!(vg_dev && list))
 		return ret_code;
 
-	libudv_custom_init();
-
-	// 检查VG是否存在
-	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
-		return E_VG_NONEXIST;
-
-	list_init(list);
-
-	if ( !(device = ped_device_get(vg_dev)) )
-	{
+	device = ped_device_get(vg_dev);
+	if (!device) {
 		ret_code = E_SYS_ERROR;
 		goto err_out;
 	}
 
-	if ( ped_disk_probe(device) && (disk=ped_disk_new(device)) )
-	{
-		if (!strcmp(disk->type->name, "gpt"))
-		{
-
-			uint64_t last_sect = ALIGN_BEGIN_SECT;
+	if (ped_disk_probe(device) && (disk=ped_disk_new(device))) {
+		if (!strcmp(disk->type->name, "gpt")) {
 			ret_code = 0;
-
 			for (part = ped_disk_next_partition(disk, NULL); part;
-					part = ped_disk_next_partition(disk, part) )
-			{
-				if (part->num < 0)
+				part = ped_disk_next_partition(disk, part)) {
+				if (part->type & PED_PARTITION_METADATA)
 					continue;
 
-				if (last_sect < part->geom.start)
-				{
-					gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
-					list_init(&gs->list);
-
-					gs->geom.start = (last_sect + 1) * device->sector_size;
-					gs->geom.end = part->geom.start * device->sector_size - 1;
-					gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
-
-					list_add(list, &gs->list);
-					ret_code++;
+				if (part->type & PED_PARTITION_FREESPACE) {
+					if (UDV_PARTITION_USED == type)
+						continue;
+				} else {
+					if (UDV_PARTITION_FREE == type)
+						continue;
 				}
-				last_sect = part->geom.end;
-			}
 
-			if (last_sect < device->length)
-			{
-				gs = (struct geom_stru*)malloc(sizeof(struct geom_stru));
-				list_init(&gs->list);
+				udv_info = (udv_info_t*)calloc(1, sizeof(udv_info_t));
+				list_init(&udv_info->list);
 
-				gs->geom.start = (last_sect + 1) * device->sector_size;
-				gs->geom.end = (device->length + 1) * device->sector_size - 1;
-				gs->geom.capacity = gs->geom.end - gs->geom.start + 1;
+				udv_info->part_used = !(part->type & PED_PARTITION_FREESPACE);
+				if (udv_info->part_used) {
+					strcpy(udv_info->name, ped_partition_get_name(part));
+					udv_info->part_num = part->num;
+					sprintf(udv_info->dev, "%sp%d", device->path, part->num);
+				}
+				udv_info->geom.start = part->geom.start;
+				udv_info->geom.end = part->geom.end;
+				udv_info->geom.length = part->geom.length;
 
-				list_add(list, &gs->list);
+				list_add(list, &udv_info->list);
 				ret_code++;
 			}
 		}
@@ -451,6 +418,7 @@ err_out:
 ssize_t udv_delete(const char *name)
 {
 	udv_info_t *udv;
+	char vg_dev[32];
 
 	PedDevice *device;
 	PedDisk *disk;
@@ -461,10 +429,9 @@ ssize_t udv_delete(const char *name)
 	if (!name)
 		return E_FMT_ERROR;
 
-	libudv_custom_init();
-
 	// 查找UDV
-	if (!(udv=get_udv_by_name(name)))
+	udv = get_udv_by_name(name);
+	if (!udv)
 		return E_UDV_NONEXIST;
 
 	// 检查是否已经映射
@@ -474,28 +441,24 @@ ssize_t udv_delete(const char *name)
 		return E_UDV_MOUNTED_NAS;
 
 	// 删除分区
-	device = ped_device_get(udv->vg_dev);
-	if (!device)
-	{
+	strcpy(vg_dev, udv->dev);
+	strtok(vg_dev, "p");
+	device = ped_device_get(vg_dev);
+	if (!device) {
 		retcode = E_DEVNODE_NOT_EXIST;
 		goto error_eio;
 	}
 
-	if (!(disk = ped_disk_new(device)))
-	{
+	disk = ped_disk_new(device);
+	if (!disk)
 		goto error;
-	}
 
-	if (!(part = ped_disk_get_partition(disk, udv->part_num)))
-	{
+	part = ped_disk_get_partition(disk, udv->part_num);
+	if (!part)
 		goto error;
-	}
 
-	if (! (ped_disk_delete_partition(disk, part) &&
-				ped_disk_commit(disk)) )
-	{
+	if (!(ped_disk_delete_partition(disk, part) && ped_disk_commit(disk)))
 		goto error;
-	}
 
 	// 删除设备节点
 	unlink(udv->dev);
@@ -504,85 +467,6 @@ error:
 	ped_device_destroy(device);
 error_eio:
 	return retcode;
-}
-
-size_t udv_list(udv_info_t *list, size_t n, const char *vgname_input)
-{
-	size_t udv_cnt = 0;
-
-	PedDevice *dev = NULL;
-	PedDisk *disk;
-	PedPartition *part;
-
-	const char *part_name;
-	udv_info_t *udv = list;
-	char vg_name[PATH_MAX];
-
-	libudv_custom_init();
-
-	ped_device_probe_all();
-
-	while((dev=ped_device_get_next(dev)))
-	{
-#ifndef _UDV_DEBUG
-		// 获取所有MD列表
-		if (dev->type != PED_DEVICE_MD)
-			continue;
-#else
-		if (!strcmp(dev->path, "/dev/sda"))
-			continue;
-#endif
-
-		// 获取当前MD分区信息
-		if ( !ped_disk_probe(dev) || !(disk=ped_disk_new(dev)) )
-		//if ( !ped_disk_probe(dev) || !(disk=_create_disk_label(dev, ped_disk_type_get("gpt"))) )
-			continue;
-
-		for (part=ped_disk_next_partition(disk, NULL); part;
-				part=ped_disk_next_partition(disk, part))
-		{
-			if (part->num < 0) continue;
-
-			part_name = ped_partition_get_name(part);
-			if (!part_name) continue;
-
-			if (udv_cnt >= n)
-				break;
-
-			strcpy(udv->name, part_name);
-
-			if (dev->type == PED_DEVICE_MD)
-				sprintf(udv->dev, "%sp%d", dev->path, part->num);
-			else
-				sprintf(udv->dev, "%s%d", dev->path, part->num);
-
-			strcpy(udv->vg_dev, dev->path);
-			if (!getVGNameByDev(udv->vg_dev, vg_name))
-				strcpy(udv->vg_name, vg_name);
-			if (vgname_input && vgname_input[0] != '\0')
-			{
-				if ((strcmp(vg_name, vgname_input) != 0))
-					continue;
-			}
-			udv->part_num = part->num;
-
-			udv->geom.start = part->geom.start * DFT_SECTOR_SIZE;
-			udv->geom.capacity = part->geom.length * DFT_SECTOR_SIZE;
-			udv->geom.end = udv->geom.start + udv->geom.capacity - 1;
-
-			if (isISCSIVolume(udv->dev))
-				udv->state = UDV_ISCSI;
-			else if (isNasVolume(udv->name))
-				udv->state = UDV_NAS;
-			else
-				udv->state = UDV_RAW;
-
-			udv_cnt++; udv++;
-		}
-		ped_disk_destroy(disk);
-	}
-
-	return udv_cnt;
 }
 
 // 检查UDV名称是否存在
@@ -598,14 +482,10 @@ udv_info_t* get_udv_by_name(const char *name)
 
 	const char *part_name;
 	static udv_info_t udv_info;
-	udv_info_t *udv = NULL;
-
-	libudv_custom_init();
 
 	ped_device_probe_all();
 
-	while((dev=ped_device_get_next(dev)))
-	{
+	while((dev=ped_device_get_next(dev))) {
 #ifndef _UDV_DEBUG
 		// 获取所有MD列表
 		if (dev->type != PED_DEVICE_MD)
@@ -624,35 +504,26 @@ udv_info_t* get_udv_by_name(const char *name)
 		if (!disk)
 			continue;
 
-		for (part=ped_disk_next_partition(disk, NULL); part;
-				part=ped_disk_next_partition(disk, part))
-		{
-			if (part->num < 0) continue;
+		for (part = ped_disk_next_partition(disk, NULL); part;
+			part = ped_disk_next_partition(disk, part)) {
+
+			if (part->type & PED_PARTITION_METADATA)
+				continue;
+
+			if (part->type & PED_PARTITION_FREESPACE)
+				continue;
 
 			part_name = ped_partition_get_name(part);
-			if ( part_name && !strcmp(part_name, name) )
-			{
-				udv = &udv_info;
-				strcpy(udv->name, part_name);
-				strcpy(udv->vg_dev, dev->path);
-				udv->part_num = part->num;
-
-				udv->geom.start = part->geom.start * DFT_SECTOR_SIZE;
-				udv->geom.capacity = part->geom.length * DFT_SECTOR_SIZE;
-				udv->geom.end = udv->geom.start + udv->geom.capacity - 1;
-
-				sprintf(udv->dev, "%sp%d", udv->vg_dev, udv->part_num);
-
-				if (isISCSIVolume(udv->dev))
-					udv->state = UDV_ISCSI;
-				else if (isNasVolume(udv->name))
-					udv->state = UDV_NAS;
-				else
-					udv->state = UDV_RAW;
+			if (part_name && !strcmp(part_name, name)) {
+				strcpy(udv_info.name, part_name);
+				udv_info.part_num = part->num;
+				udv_info.geom.start = part->geom.start;
+				udv_info.geom.end = part->geom.end;
+				udv_info.geom.length = part->geom.length;
+				sprintf(udv_info.dev, "%sp%d", dev->path, part->num);
 
 				ped_disk_destroy(disk);
-				return udv;
-
+				return &udv_info;
 			}
 		}
 		ped_disk_destroy(disk);
@@ -674,6 +545,7 @@ udv_info_t* get_udv_by_name(const char *name)
 ssize_t udv_rename(const char *name, const char *new_name)
 {
 	udv_info_t *udv;
+	char vg_dev[32];
 
 	PedDevice *device = NULL;
 	PedDisk *disk;
@@ -685,10 +557,9 @@ ssize_t udv_rename(const char *name, const char *new_name)
 	if (!(name && new_name))
 		return E_FMT_ERROR;
 
-	libudv_custom_init();
-
 	// 被修改的名称确保存在
-	if (!(udv=get_udv_by_name(name)))
+	udv = get_udv_by_name(name);
+	if (!udv)
 		return E_UDV_NONEXIST;
 
 	// 修改的新名称确保不存在
@@ -696,17 +567,21 @@ ssize_t udv_rename(const char *name, const char *new_name)
 		return E_UDV_EXIST;
 
 	// 修改名称
-	if (!(device = ped_device_get(udv->vg_dev)))
+	strcpy(vg_dev, udv->dev);
+	strtok(vg_dev, "p");
+	device = ped_device_get(vg_dev);
+	if (!device)
 		return E_SYS_ERROR;
 
-	if (!(disk = ped_disk_new(device)))
+	disk = ped_disk_new(device);
+	if (!disk)
 		goto error;
 
-	if (!(part = ped_disk_get_partition(disk, udv->part_num)))
+	part = ped_disk_get_partition(disk, udv->part_num);
+	if (!part)
 		goto error_part;
 
-	if (ped_partition_set_name(part, new_name) &&
-			ped_disk_commit(disk))
+	if (ped_partition_set_name(part, new_name) && ped_disk_commit(disk))
 		ret_code = E_OK;
 
 error_part:
@@ -719,8 +594,6 @@ error:
 /**
  * Utils
  */
-
-
 const char* vg_name2dev(const char *name)
 {
 	return NULL;

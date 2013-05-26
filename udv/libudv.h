@@ -52,52 +52,49 @@ enum _udv_state {
         UDV_NAS
 };
 
-// 用户数据卷容量信息
-typedef struct _udv_geom udv_geom;
-struct _udv_geom {
-        uint64_t start, end, capacity;
-};
+// 用户数据卷容量信息, 以扇区为单位
+typedef struct _udv_geom {
+        uint64_t start, end, length;
+} udv_geom_t;
 
-typedef struct _udv_info udv_info_t;
+typedef struct _udv_info {
+	struct list list;
+	char name[32];
+	char dev[32];
+	udv_state state;
 
-#define UDV_NAME_LEN 72
-struct _udv_info {
-        char name[UDV_NAME_LEN];
-	char dev[UDV_NAME_LEN];
-        char vg_dev[PATH_MAX];
-	char vg_name[PATH_MAX];
-        int part_num;
-        udv_geom geom;
-        uint32_t sector_size;   // not used currently
-        udv_state state;
-};
-
-struct geom_stru {
-        struct list list;
-        udv_geom geom;
-};
+	int part_num;
+	int part_used;
+	udv_geom_t geom;
+} udv_info_t;
 
 /**
  * API
  */
+void libudv_custom_init();
 
-ssize_t udv_create(const char *vg_name, const char *name, uint64_t capacity);
+ssize_t udv_create(const char *vg_dev, const char *name,
+				uint64_t start, uint64_t length);
 
 ssize_t udv_delete(const char *name);
-
-size_t udv_list(udv_info_t *list, size_t n, const char *vgname_input);
 
 ssize_t udv_rename(const char *name, const char *new_name);
 
 ssize_t udv_force_init_vg(const char *vg_name);
 
-size_t getVGDev_ByName(const char *vg_name, char *vg_dev);
+size_t getVGDevByName(const char *vg_name, char *vg_dev);
+
+size_t getVGNameByDev(const char *vg_dev, char *vg_name);
 
 int isISCSIVolume(const char *udv_dev);
 
 int isNasVolume(const char *volume_name);
 
-ssize_t udv_get_free_list(const char *vg_name, struct list *list);
+#define UDV_PARTITION_ALL	0
+#define UDV_PARTITION_FREE	1
+#define UDV_PARTITION_USED	2
+ssize_t udv_get_part_list(const char *vg_dev, struct list *list, int type);
+void free_udv_list(struct list *list);
 
 /**
  * Utils
