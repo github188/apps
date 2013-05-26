@@ -1,0 +1,80 @@
+#! /bin/sh -x
+#
+# load jw check illegal poweroff
+
+### BEGIN INIT INFO
+# Provides:          jw-checkpoweroff
+# Required-Start:    jw-apps
+# Required-Stop:     rsyslog
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: check system illegal poweroff
+# Description:       same with above.
+### END INIT INFO
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+FLAGFILE="/opt/jw-conf/system/system_illegal_poweroff.flag"
+PIDFILE="/var/run/checkpoweroff.pid"
+
+. /lib/lsb/init-functions
+
+do_start()
+{
+	while true
+	do
+		local logdaemon_status="`ps -ef | grep -v "grep" | grep "log-daemon"`"
+		if [ ! "$logdaemon_status" ];then
+			sleep 1
+		else
+			break	
+		fi
+
+	done
+	if [ -f "$FLAGFILE" ];then
+		sys-manager log --insert --module SysConf --category Auto --event Warning --content "上次关机为非法关机"
+	fi
+	sys-manager log --insert --module SysConf --category Auto --event Info --content "系统正常启动"
+	echo $?
+	if [ ! -f "$FLAGFILE" ];then
+		touch $FLAGFILE
+	fi
+}
+
+do_stop()
+{
+	if [ -f "$FLAGFILE" ];then
+		rm -f $FLAGFILE
+	fi
+}
+
+do_status()
+{
+	:
+}
+
+check_poweroff_usage()
+{
+	echo "Usage: $(basename "$0")  {start|stop|restart|status}"
+}
+
+case "${1:-}" in
+	start)
+		do_start &
+	;;
+	stop)
+		do_stop
+	;;
+	restart)
+		$0 stop
+		$0 start
+	;;
+	status)
+		do_status
+	;;
+	*)
+		check_poweroff_usage
+	;;
+esac
+
+exit 0
