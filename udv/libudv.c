@@ -314,16 +314,17 @@ ssize_t udv_create(const char *vg_dev, const char *name,
 			continue;
 
 		if (start >= part->geom.start) {
-			if (start <= part->geom.end && start+length-1 <= part->geom.end) {
-				part = ped_partition_new(disk, PED_PARTITION_NORMAL, NULL,
-								start, start+length-1);
-				ped_partition_set_name(part, name);
-				ped_disk_add_partition(disk, part, constraint);
-				ped_disk_commit(disk);
-				ret_code = E_OK;
+			if (start <= part->geom.end) {
+				if (start+length-1 <= part->geom.end) {
+					part = ped_partition_new(disk, PED_PARTITION_NORMAL, NULL,
+									start, start+length-1);
+					ped_partition_set_name(part, name);
+					ped_disk_add_partition(disk, part, constraint);
+					ped_disk_commit(disk);
+					ret_code = E_OK;
+				}
+				break;
 			}
-
-			break;
 		}
 	}
 
