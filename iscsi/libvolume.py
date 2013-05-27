@@ -180,8 +180,6 @@ def iSCSIVolumeGetList(volume_name = '', udv_name = ''):
 	vol_list = []
 	udv_list = []
 	ext_cmd = 'sys-manager udv --list'
-	if udv_name != '':
-		ext_cmd += ' --name %s' % udv_name
 	result = commands.getoutput(ext_cmd)
 	udv_list = json.loads(result)
 	if udv_name != '' and udv_list['total'] == 0:
@@ -195,7 +193,11 @@ def iSCSIVolumeGetList(volume_name = '', udv_name = ''):
 		for vol in getDirList(SCST.VDISK_DIR):
 			vol_info = getVolumeInfo(vol, udv_list)
 			if vol_info:
-				vol_list.append(vol_info)
+				if udv_name == '':
+					vol_list.append(vol_info)
+				elif udv_name == vol_info.udv_name:
+					vol_list.append(vol_info)
+					break
 	return vol_list
 
 def getVolumeByUdv(udv_name):

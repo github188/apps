@@ -213,7 +213,7 @@ def iscsiLunProc(args = iSCSIArgs()):
 			print json.dumps(priv)
 			sys.exit(0)
 		else:
-			iscsiExit(False, '用户数据卷 %s 不存在！' % args.udv_str)
+			iscsiExit(False, '用户数据卷 %s 不是iscsi卷！' % args.udv_str)
 	else:
 		iscsiExit(False, '缺少参数!')
 
