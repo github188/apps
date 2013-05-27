@@ -224,10 +224,7 @@ def __iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 			udv_list = json.loads(result)
 			vol_info = getVolumeInfo(volume, udv_list)
 			if iSCSIVolumeRemove(volume):
-				if iscsiExtRemoveUdv(vol_info.udv_name):
-					return (True, '解除LUN %d 映射成功！' % lun_id)
-				else:
-					return (False, '解除LUN %d映射成功！删除VDISK %s 成功！删除用户数据卷 % 失败！' % (lun_id, volume, vol_info.udv_name))
+				return (True, '解除LUN %d 映射成功！' % lun_id)
 			else:
 				return (False, '解除LUN %d 映射成功！删除VDISK %s失败！' % (lun_id, volume))
 		else:
