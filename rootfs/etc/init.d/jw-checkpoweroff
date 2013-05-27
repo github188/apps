@@ -1,4 +1,4 @@
-#! /bin/sh -x
+#! /bin/sh
 #
 # load jw check illegal poweroff
 
