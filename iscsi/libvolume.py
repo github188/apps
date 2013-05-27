@@ -176,12 +176,16 @@ def getVolumeInfo(volume_name, udv_list):
 	vol.wr_method = __wrth_str(AttrRead(vol_full_path, 'write_through'))
 	return vol
 
-def iSCSIVolumeGetList(volume_name = ''):
+def iSCSIVolumeGetList(volume_name = '', udv_name = ''):
 	vol_list = []
 	udv_list = []
 	ext_cmd = 'sys-manager udv --list'
+	if udv_name != '':
+		ext_cmd += ' --name %s' % udv_name
 	result = commands.getoutput(ext_cmd)
 	udv_list = json.loads(result)
+	if udv_name != '' and udv_list['total'] == 0:
+		return vol_list
 
 	if volume_name != '':
 		vol_info = getVolumeInfo(volume_name, udv_list)

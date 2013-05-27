@@ -145,7 +145,7 @@ def iscsiVolumeProc(args = iSCSIArgs()):
 		return
 
 	if args.list_set:
-		UniOutput(iSCSIVolumeGetList(args.volume_name_str))
+		UniOutput(iSCSIVolumeGetList(args.volume_name_str, args.udv_str))
 	elif args.add_set:
 		ret,msg = iscsiAddVolume(args) 
 		iscsiExit(ret, msg)
@@ -297,7 +297,7 @@ iscsi --target --list [--target-name <name>]
       --target --add --name <name>
       --target --remove <name>
 
-      --volume --list [--volume-name <name>]
+      --volume --list [--volume-name <name> | --udv <name>]
       --volume --add --udv <name> [--blocksize <size> --read-only <enable|disable> --wr-method <wb|wt>]
       --volume --remove <volume_name>
 
