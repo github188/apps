@@ -164,19 +164,20 @@ void probe_all_vg()
 	all_vg_dev[i][0] = '\0';
 }
 
-void list_udv(list_type_t t, const char *vg_name_input)
+void list_udv(list_type_t t)
 {
 	struct list list, *n, *nt;
 	udv_info_t *udv_info;
 	
 	ssize_t udv_cnt;
 	char vg_dev[32];
-	char vg_name[32];
 	char udv_state[16];
-	int i = 0, first_print = 1, rows = 0;
+	int i = 0, rows = 0; 
+	int first_print = 1, finished = 0;
 
-	if (vg_name_input && vg_name_input[0] != '\0') {
-		if (PYEXT_RET_OK != getVGDevByName(vg_name_input, vg_dev))		
+	// 输入udv_name时, 忽略vg_name
+	if (vg_name[0] != '\0' && udv_name[0] == '\0') {
+		if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))		
 			return_json_msg(MSG_ERROR, "卷组不存在");
 		strcpy(all_vg_dev[0], vg_dev);
 		all_vg_dev[1][0] = '\0';
@@ -188,7 +189,7 @@ void list_udv(list_type_t t, const char *vg_name_input)
 	printf("\t\"rows\":\n");
 	printf("\t[\n");
 
-	for (; all_vg_dev[i][0] != '\0'; i++) {
+	for (; !finished && all_vg_dev[i][0] != '\0'; i++) {
 		list_init(&list);
 
 		// 获取已使用的分区
@@ -200,7 +201,13 @@ void list_udv(list_type_t t, const char *vg_name_input)
 		list_iterate_safe(n, nt, &list)	{
 			udv_info = list_struct_base(n, udv_info_t, list);
 
-			if (isISCSIVolume(udv_info->dev)) {
+			if (udv_name[0] != '\0') {
+				if (!strcmp(udv_name, udv_info->name))
+					finished = 1;
+				else
+					continue;
+
+			} else if (isISCSIVolume(udv_info->dev)) {
 				if (!t.iscsi)
 					continue;
 
@@ -232,6 +239,9 @@ void list_udv(list_type_t t, const char *vg_name_input)
 				(unsigned long long)udv_info->geom.length*512, udv_info->dev);
 
 			++rows;
+
+			if (finished)
+				break;
 		}
 
 		free_udv_list(&list);
@@ -605,7 +615,7 @@ int udv_main(int argc, char *argv[])
 		// 三个参数都不设置，则显示所有类型的分区
 		if ( !t.raw && !t.iscsi && !t.nas )
 			t.raw = t.iscsi = t.nas = true;
-		list_udv(t, vg_name);
+		list_udv(t);
 	}
 	else if (UDV_MODE_PART_LIST == mode)
 	{
