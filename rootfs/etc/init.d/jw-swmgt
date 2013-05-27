@@ -1,0 +1,149 @@
+#! /bin/sh
+#
+# load jw software management services
+### BEGIN INIT INFO
+# Provides:          jw-swmgt
+# Required-Start:    $all
+# Required-Stop:     
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: check system services
+# Description:       same with above.
+### END INIT INFO
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+UDEVD="/sbin/udevd"
+LIGHTTPD="/etc/init.d/lighttpd"
+PORTMAP="/etc/init.d/portmap"
+SMB="/etc/init.d/samba"
+NFSCOMMON="/etc/init.d/nfs-common"
+NFSKSERVER="/etc/init.d/nfs-kernel-server"
+SCSTD="/etc/init.d/scst"
+CRON="/etc/init.d/cron"
+
+. /lib/lsb/init-functions
+
+help()
+{
+	local program=`basename "$0"`
+	cat <<EOF
+$program usage:
+	$program start
+	$program stop
+	$program status
+	$program restart
+EOF
+}
+
+service_checkudevd()
+{
+	local udevdstatus="`ps -ef | grep -v "grep" | grep "udevd"`"
+	if [ ! "$udevdstatus" ];then
+		$UDEVD --daemon 1>/dev/null 2>&1 &
+	fi
+}
+
+service_checksmb()
+{
+	[ "`$SMB status | grep failed`" ] && $SMB restart; 1>/dev/null 2>&1 &
+}
+
+service_checknfscommon()
+{
+	[ "`$NFSCOMMON status | grep failed`" ] && $NFSCOMMON restart; 1>/dev/null 2>&1 &
+}
+
+service_checknfskserver()
+{
+	[ "`$NFSKSERVER status | grep failed`" ] && $NFSKSERVER restart; 1>/dev/null 2>&1 &
+}
+
+service_checkiscsiscstd()
+{
+	local iscsiscstdstatus="`ps -ef | grep -v "grep" | grep "iscsi-scstd"`"
+	if [ ! "$iscsiscstdstatus" ];then
+		$SCSTD restart 1>/dev/null 2>&1 &
+	fi
+}
+
+service_checklighttpd()
+{
+	[ "`$LIGHTTPD status | grep failed`" ] && $LIGHTTPD restart; 1>/dev/null 2>&1 &
+}
+
+service_checkportmap()
+{
+	[ "`$PORTMAP status | grep failed`" ] && $PORTMAP restart; 1>/dev/null 2>&1 &
+}
+
+service_checkcron()
+{
+	[ "`$CRON status | grep failed`" ] && $CRON restart; 1>/dev/null 2>&1 &
+}
+
+do_start()
+{
+	while true
+	do
+		service_checkudevd
+		service_checklighttpd
+		service_checkportmap
+		service_checksmb
+		service_checknfscommon
+		service_checknfskserver
+		service_checkiscsiscstd
+		service_checkcron
+		sleep 60
+	done
+}
+
+do_stop()
+{
+	killall jw-swmgt 2>/dev/null
+}
+
+do_status()
+{
+	prog=`basename $0`
+	local status="`ps -ef | grep -v "grep" | grep -v "jw-swmgt status" | grep -v "startpar" | grep "$prog"`"
+	if [ "$status" ]; then
+		echo "$prog is running."
+	else
+		echo "$prog is stopped."
+	fi
+
+}
+
+action="$1"
+
+if [ "$#" != "1"  ];then
+        help
+	exit -1
+fi
+
+case "$action" in
+    start)
+	do_start &
+        exit $?
+    ;;
+    stop)
+	do_stop
+	exit $?
+    ;;
+    status)
+	do_status
+	exit $?
+    ;;
+    restart)
+	$0 stop
+	$0 start
+	exit $?
+    ;;
+    *)
+        help
+        exit -1
+    ;;
+esac
+
+exit 0
