@@ -294,7 +294,7 @@ void list_part(const char *vg_name)
 
 	printf("\n\t],\n");
 	printf("\t\"total\":%d,\n", rows);
-	printf("\t\"capacity\":%llu\n", capacity*512);
+	printf("\t\"capacity\":%llu\n", capacity);
 	printf("}\n");
 
 	free_udv_list(&list);
