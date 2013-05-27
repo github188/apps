@@ -188,7 +188,7 @@ void list_udv(list_type_t t, const char *vg_name_input)
 	printf("\t\"rows\":\n");
 	printf("\t[\n");
 
-	while (all_vg_dev[i][0] != '\0') {
+	for (; all_vg_dev[i][0] != '\0'; i++) {
 		list_init(&list);
 
 		// 获取已使用的分区
@@ -235,7 +235,6 @@ void list_udv(list_type_t t, const char *vg_name_input)
 		}
 
 		free_udv_list(&list);
-		++i;
 	}
 
 	printf("\n\t],\n");
@@ -294,7 +293,7 @@ void list_part(const char *vg_name)
 
 	printf("\n\t],\n");
 	printf("\t\"total\":%d,\n", rows);
-	printf("\t\"capacity\":%llu\n", capacity*512);
+	printf("\t\"capacity\":%llu\n", capacity);
 	printf("}\n");
 
 	free_udv_list(&list);
@@ -396,7 +395,7 @@ int get_dev_byname(const char *udv_name)
 		return_json_msg(MSG_ERROR, "用户数据卷名称无效!");
 
 	probe_all_vg();
-	while (!find && all_vg_dev[i][0] != '\0') {
+	for (; !find && all_vg_dev[i][0] != '\0'; i++) {
 		list_init(&list);
 
 		// 获取已使用的分区
@@ -417,7 +416,6 @@ int get_dev_byname(const char *udv_name)
 		}
 
 		free_udv_list(&list);
-		++i;
 	}
 
 	if (find)
@@ -440,7 +438,7 @@ int duplicate_check(const char *udv_name)
 		return_json_msg(MSG_ERROR, "用户数据卷名称无效!");
 
 	probe_all_vg();
-	while (!find && all_vg_dev[i][0] != '\0') {
+	for (; !find && all_vg_dev[i][0] != '\0'; i++) {
 		list_init(&list);
 
 		// 获取已使用的分区
@@ -458,7 +456,6 @@ int duplicate_check(const char *udv_name)
 		}
 
 		free_udv_list(&list);
-		++i;
 	}
 
 	if (find)
