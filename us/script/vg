@@ -75,11 +75,14 @@ def do_duplicate_check(raid_name):
 		return True, '卷组 %s 已经存在' % raid_name
 	return False, '卷组 %s 不存在' % raid_name
 
+SYNC_PRIO_CONF = CONF_ROOT_DIR + '/disk/sync_prio'
 def do_set_sync_prio(prio = ''):
 	prio_dict = {'high':'20000', 'middle':'10000', 'low':'1000'}
 	if not prio_dict.has_key(prio):
 		return False, '参数输入错误'
-	
+
+	fs_attr_write(SYNC_PRIO_CONF, prio_dict[prio])
+
 	if fs_attr_write('/proc/sys/dev/raid/speed_limit_min', prio_dict[prio]):
 		return True, '设置卷组初始化/重建优先级为 %s 成功' % prio
 	else:
@@ -99,6 +102,16 @@ def do_get_sync_prio():
 		prio = 'low'
 	
 	return True, prio
+
+def do_load_sync_prio():
+	val = fs_attr_read(SYNC_PRIO_CONF)
+	if not val.isdigit():
+		return False,'读取初始化/重建优先级配置失败, 使用系统默认值'
+
+	if fs_attr_write('/proc/sys/dev/raid/speed_limit_min', val):
+		return True, '载入卷组初始化/重建优先级配置成功'
+	else:
+		return False, '载入卷组初始化/重建优先级配置失败'
 
 def main(argv):
 	ret = ""
@@ -144,6 +157,8 @@ def main(argv):
 		res = do_set_sync_prio(argv[2] if len(argv)==3 else '')
 	elif cmd == "--get-sync-prio":
 		res = do_get_sync_prio()
+	elif cmd == "--load-sync-prio":
+		res = do_load_sync_prio()
 	else:
 		usage()
 	return res;
@@ -158,6 +173,7 @@ Usage:
 	--duplicate-check <vg_name>
 	--set-sync-prio low|middle|high
 	--get-sync-prio
+	--load-sync-prio
 """
 	#return False,help_str
 	print help_str

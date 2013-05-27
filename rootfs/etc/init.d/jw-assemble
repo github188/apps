@@ -23,6 +23,7 @@ _usage()
 
 start_md()
 {
+	sys-manager vg --load-sync-prio >/dev/null
 	/usr/local/bin/md-assume.sh
 }
 

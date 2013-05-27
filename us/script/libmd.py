@@ -12,7 +12,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-DISK_HOTREP_CONF='/opt/jw-conf/disk/hotreplace.xml'
+DISK_HOTREP_CONF = CONF_ROOT_DIR + '/disk/hotreplace.xml'
 DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 <hot_replace>
 </hot_replace>

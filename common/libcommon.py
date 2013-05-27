@@ -4,6 +4,7 @@
 import os, re, json, sys, fcntl
 
 TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
+CONF_ROOT_DIR = '/opt/jw-conf'
 
 def list2str(list=[], sep=','):
 	return sep.join([str(x) for x in list])
