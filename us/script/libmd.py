@@ -3,10 +3,11 @@
 
 import sys
 import commands, re, os, time
-from libdisk import *
 from xml.dom import minidom
 from libsysmon import sysmon_event
 import xml
+
+from libcommon import *
 
 import sys
 reload(sys)

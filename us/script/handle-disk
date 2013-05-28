@@ -16,7 +16,6 @@
 import sys,os
 import time
 from libmd import *
-from libdisk import *
 
 reload(sys)
 sys.setdefaultencoding('utf8')

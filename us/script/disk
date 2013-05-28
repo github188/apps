@@ -4,7 +4,6 @@
 import sys, commands
 import getopt
 
-from libdisk import *
 from libmd import *
 
 disk_long_opt = ['list', 'slot-id=', 'get-detail=',
