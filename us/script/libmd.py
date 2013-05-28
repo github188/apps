@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import commands, re, os, time
+import commands, re, os, time, copy
 from xml.dom import minidom
 from libsysmon import sysmon_event
 import xml
@@ -637,7 +637,7 @@ def get_hotrep_by_mduud(md_uuid=''):
 				break
 			# 全局热备盘
 			if global_exist == 0 and tmp_info['type'] == 'Global':
-				disk_info = tmp_info
+				disk_info = copy.deepcopy(tmp_info)
 				disk_info['type'] = '全局热备盘'
 				global_exist = 1
 	except:
