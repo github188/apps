@@ -113,6 +113,10 @@ def unlock_file(f):
 	fcntl.flock(f, fcntl.LOCK_UN)  
 	f.close() 
 
+def drop_cache():
+	os.system('sync')
+	fs_attr_write('/proc/sys/vm/drop_caches', '3')
+
 if __name__ == '__main__':
 	log = initlog()
 	log.info('测试')

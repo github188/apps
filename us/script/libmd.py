@@ -379,7 +379,8 @@ def md_stop(mddev):
 def md_del(raid_name):
 	ret,msg = __md_del(raid_name)
 	if ret:
-		vg_log('Info', '删除卷组 %s 成功' % raid_name)
+		msg = '删除卷组 %s 成功' % raid_name
+		vg_log('Info', msg)
 	else:
 		vg_log('Error', '删除卷组 %s 失败%s' % (raid_name, msg))
 	return ret,msg
