@@ -219,9 +219,11 @@ def __Out__(value):
 	except:
 		logwrite.close()
 	cu.close()
+	tardate = time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))
+	tarfile = 'log'+tardate+'.tgz'
 	SYSTEM_OUT('cd /var; tar cfz /var/www/log/var.tgz log')
-	SYSTEM_OUT('cd /var/www/log; tar cfz log.tgz var.tgz log.txt')
-	Export(True, '导出成功！')
+	SYSTEM_OUT('cd /var/www/log; tar cfz '+tarfile+' var.tgz log.txt')
+	Export(True, tarfile)
 
 if __name__ == '__main__':
 	main()
