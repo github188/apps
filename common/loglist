@@ -3,24 +3,48 @@
 
 import sys
 import os
+import os.path
 import commands
 import getopt
 import json
 import sqlite3
 import time
+import statvfs
+import stat
+import shutil
+import codecs
+import subprocess
 
 from os.path import join, getsize
 reload(sys)
 sys.setdefaultencoding('utf8')
 
 os.chdir(os.path.dirname(sys.argv[0]))
+Out_Log_PATH = "/var/www/log"
+Out_Log_FILE = Out_Log_PATH+"/log.txt"
 LOG_FILE = "/opt/log/jw-log.db"
 LOG_PATH = os.path.dirname(LOG_FILE)
 if os.path.exists(LOG_PATH) == False:
 	os.mkdir(LOG_PATH) 
+
+def Export(ret = True, msg = ''):
+	ret_msg = {'status':True, 'msg':''}
+	ret_msg['status'] = ret
+	ret_msg['msg'] = msg
+	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	sys.exit(-1)
+
+#~ 执行系统命令并输出结果
+def SYSTEM_OUT(com):
+	p = subprocess.Popen(com, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	s = p.stdout.readline()
+	s = s.replace('\n','')
+	return s
+
 class IArgs:
 	def __init__(self):
 		self.list_set = False
+		self.out_set = False
 		self.id_set = ''
 		self.id_state = False
 		self.module_set = ''
@@ -39,11 +63,28 @@ def AUsage(err=""):
 	else:
 		print '##命令参数不正确，请检查要执行的命令模式！'
 	print """
-loglist --list [ < --id <log_id> > | < --module <module> --category <category> --event <event> --page <int> --coun <int> --user <user_name>  --search <content> --start <timeStart> --end <timeEnd> >]		##输出查询列表
+	--list [ < --id <log_id> > | < --module <module> --category <category> --event <event> --page <int> --coun <int> --user <user_name>  --search <content> --start <timeStart> --end <timeEnd> >]		##输出查询列表
+	--out		##导出日志
 """
 	sys.exit(-1)
 
-long_opt = ['list', 'id=', 'user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=']
+long_opt = ['list', 'out',  'id=', 'user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=']
+
+def CleanDir( Dir ):
+	if os.path.isdir( Dir ):
+		paths = os.listdir( Dir )
+		for path in paths:
+			filePath = os.path.join( Dir, path )
+			if os.path.isfile( filePath ):
+				try:
+					os.remove( filePath )
+				except os.error:
+					autoRun.exception( "remove %s error." %filePath )
+			elif os.path.isdir( filePath ):
+				if filePath[-4:].lower() == ".svn".lower():
+					continue
+			shutil.rmtree(filePath,True)
+	return True
 
 def main():
 	try:
@@ -55,6 +96,8 @@ def main():
 	for opt,arg in opts:
 		if opt == '--list':
 			iArgs.list_set = True
+		elif opt == '--out':
+			iArgs.out_set = True
 		elif opt == '--id':
 			iArgs.id_set = arg
 			iArgs.id_state = True
@@ -79,6 +122,8 @@ def main():
 
 	if iArgs.list_set == True:
 		__List__(iArgs)
+	elif iArgs.out_set == True:
+		__Out__(iArgs)
 	else:
 		AUsage()
 
@@ -151,7 +196,35 @@ def __List__(value):
 		json_info['rows'] = list
 	cu.close()
 	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
-	
+
+def __Out__(value):
+	cx = sqlite3.connect(LOG_FILE)
+	cu = cx.cursor()
+	cu.execute('select * from jwlog') 
+	res = cu.fetchall()
+	if os.path.exists(Out_Log_PATH) == False:
+		try:
+			os.makedirs(Out_Log_PATH)
+		except:
+			pass
+	else:
+		CleanDir( Out_Log_PATH )
+
+	logwrite = open(Out_Log_FILE, 'w')
+	try:
+		for line in res:
+			out = 'id:[%s], date:[%s], user:[%s], module:[%s], category:[%s], event:[%s], content:[%s]\n'%(line[0],line[1],line[2],line[3],line[4],line[5],line[6])
+			logwrite.write(out)
+		logwrite.close()
+	except:
+		logwrite.close()
+	cu.close()
+	tardate = time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))
+	tarfile = 'log'+tardate+'.tgz'
+	SYSTEM_OUT('cd /var; tar cfz /var/www/log/var.tgz log')
+	SYSTEM_OUT('cd /var/www/log; tar cfz '+tarfile+' var.tgz log.txt')
+	Export(True, tarfile)
+
 if __name__ == '__main__':
 	main()
 	

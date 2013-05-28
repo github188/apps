@@ -265,6 +265,7 @@ def get_dir_size(dir):
 class list_info():
 	def __init__(self):
 		self.Folder_name = ''
+		self.Udvpath = ''
 		self.Remain = 0
 		self.Occupancy = 0
 		self.Catalog = 0
@@ -358,6 +359,7 @@ def __Share_List_out__(name):
 		if int(SYSTEM_OUT('cat '+NFS_CONF_PATH+'|grep "^'+Path+' "|wc -l')) > 0:
 			nfs_stat = 'yes'
 		out.Occupancy = get_dir_size(Path)
+		out.Udvpath = os.path.dirname(deviant(name, "path"))
 		out.Remain = get_nas_remain(deviant(name, "path"))
 		out.Catalog = SYSTEM_OUT('find '+Path+' -type d|wc -l')
 		out.State = 'yes'
