@@ -44,8 +44,8 @@ def nasExit(ret = True, msg = ''):
 
 def nasUsage():
 	print """
-nas --list [--volume <name>]
-    --map --udv <name> [--filesystem <ext3|ext4>]
+nas --list [--volume <name> | --state formatting|mounted|all]
+    --map --udv <name> [--filesystem xfs|ext3|ext4]
     --unmap --volume <name>
     --misc --update-cfg
     --misc --restore-cfg
@@ -53,7 +53,7 @@ nas --list [--volume <name>]
 	sys.exit(-1)
 
 OP_MODE = ['--list', '--map', '--unmap', '--misc']
-nas_long_opt = ['list', 'volume=', 'map', 'udv=', 'unmap', 'filesystem=', 'misc', 'update-cfg', 'restore-cfg']
+nas_long_opt = ['list', 'volume=', 'state=','map', 'udv=', 'unmap', 'filesystem=', 'misc', 'update-cfg', 'restore-cfg']
 
 def nas_main():
 	try:
@@ -63,6 +63,7 @@ def nas_main():
 
 	arg_op_mode = ''
 	arg_volume = ''
+	arg_state = 'all'
 	arg_udv = ''
 	arg_fs = 'ext4'
 	arg_update = False
@@ -73,6 +74,8 @@ def nas_main():
 			continue
 		if opt == '--volume':
 			arg_volume = arg
+		elif opt == '--state':
+			arg_state = arg
 		elif opt == '--udv':
 			arg_udv = arg
 		elif opt == '--filesystem':
@@ -83,7 +86,7 @@ def nas_main():
 			arg_restore = True
 
 	if arg_op_mode == '--list':
-		UniOutput(nasGetList(arg))
+		UniOutput(nasGetList(arg_volume, arg_state))
 	elif arg_op_mode == '--map':
 		ret,msg = nasMapping(arg_udv, arg_fs)
 		nasExit(ret, msg)

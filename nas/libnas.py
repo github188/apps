@@ -252,11 +252,19 @@ def _check_remove_duplicate(fmt_list, volume):
 	return
 
 # 获取指定或者所有NAS卷列表
-def nasGetList(volume_name = ''):
+def nasGetList(volume_name = '', state = 'all'):
 	# 仅查看已经加载的nas卷列表
 	if volume_name == '':
-		_mnt_list = nas_mount_get_list()
-		_fmt_list = nas_fmt_get_list()
+		_mnt_list = []
+		_fmt_list = []
+		if state == 'mounted':
+			_mnt_list = nas_mount_get_list()
+		elif state == 'formatting':
+			_fmt_list = nas_fmt_get_list()
+		else:
+			_mnt_list = nas_mount_get_list()
+			_fmt_list = nas_fmt_get_list()
+			
 		# 避免在nas-mkfs.py挂载后更新列表出现重复条目
 		for m in _mnt_list:
 			_check_remove_duplicate(_fmt_list, m.volume_name)
@@ -280,6 +288,11 @@ def nasMapping(udv_name, filesystem = 'ext4'):
 	# 检查udv是否存在
 	if udv_name == '':
 		return False, '请设置需要映射的用户数据卷名称!'
+
+	# 检查文件系统
+	fs_list = ['ext3', 'ext4', 'xfs']
+	if filesystem not in fs_list:
+		return False, '不支持文件系统%s' % filesystem
 
 	# 检查是否已经映射
 	if isNasVolume(udv_name):
