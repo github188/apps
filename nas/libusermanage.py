@@ -744,7 +744,7 @@ def __Check_System_Internal_User__(File, name):
 		try:
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
-				if fileLine.split(':')[0] == name:
+				if fileLine.split(':')[0].lower() == name.lower():
 					if int(fileLine.split(':')[2]) < 1000 or int(fileLine.split(':')[2]) > 29999:
 						Status = False
 					break
@@ -761,7 +761,7 @@ def __System_User_Check__(name):
 		try:
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
-				if fileLine.split(':')[0] == name:
+				if fileLine.split(':')[0].lower() == name.lower():
 					Status = False
 					break
 			open_conf.close()
@@ -777,7 +777,7 @@ def __Samba_User_Check__(name):
 		try:
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
-				if fileLine.split(':')[0] == name:
+				if fileLine.split(':')[0].lower() == name.lower():
 					Status = False
 					break
 			open_conf.close()
@@ -841,7 +841,7 @@ def __System_Group_Check__(name):
 		try:
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
-				if fileLine.split(':')[0] == name:
+				if fileLine.split(':')[0].lower() == name.lower():
 					Status = False
 					break
 			open_conf.close()
