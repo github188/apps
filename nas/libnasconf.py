@@ -828,6 +828,7 @@ def get_sync(value):
 		except:
 			operating.close()
 	SYSTEM_OUT(RESTART_SMB)
+	Export(True, '删除卷的所有共享成功！')
 
 #~ NAS高级设置
 def get_high(value):
