@@ -145,8 +145,7 @@ def Admin_add(value):
 		if value.note_state == False:
 			value.note_set = '管理员'
 		config.add_section(value.name_set)
-		if value.manage_type_state:
-			config.set(value.name_set, 'manage_type', value.manage_type_set)
+		config.set(value.name_set, 'manage_type', value.manage_type_set)
 		config.set(value.name_set, 'password', pwd)
 		if value.note_state:
 			config.set(value.name_set, 'note', value.note_set)

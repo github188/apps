@@ -26,7 +26,7 @@ class IArgs:
 		self.pwd_state = False
 		self.new_pwd_set = ''
 		self.new_pwd_state = False
-		self.manage_type_set = ''
+		self.manage_type_set = '2'
 		self.manage_type_state = False
 		self.note_set = ''
 		self.note_state = False
