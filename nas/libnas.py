@@ -253,7 +253,7 @@ def _check_remove_duplicate(fmt_list, volume):
 	return
 
 # 获取指定或者所有NAS卷列表
-def nasGetList(volume_name = '', state = 'all'):
+def nasGetList(volume_name = '', state = 'all', not_fail = False):
 	# 仅查看已经加载的nas卷列表
 	if volume_name == '':
 		_mnt_list = []
@@ -269,16 +269,21 @@ def nasGetList(volume_name = '', state = 'all'):
 		# 避免在nas-mkfs.py挂载后更新列表出现重复条目
 		for m in _mnt_list:
 			_check_remove_duplicate(_fmt_list, m.volume_name)
-		all_list = _mnt_list + _fmt_list
+		all_list = []
 		ext_cmd = 'sys-manager udv --list'
 		result = commands.getoutput(ext_cmd)
 		udv_list = json.loads(result)['rows']
-		if len(udv_list) > 0:
-			for nas_volume in all_list:
-				for udv in udv_list:
-					if nas_volume.volume_name == udv['name']:
-						nas_volume.vg_name = udv['vg']
-						break
+		for nas_volume in _mnt_list + _fmt_list:
+			added = False
+			for udv in udv_list:
+				if nas_volume.volume_name == udv['name']:
+					nas_volume.vg_name = udv['vg']
+					all_list.append(nas_volume)
+					added = True
+					break
+			if not not_fail and not added:
+				all_list.append(nas_volume)
+
 		return all_list
 
 	_nas_list = []
@@ -287,6 +292,8 @@ def nasGetList(volume_name = '', state = 'all'):
 	udv_list = json.loads(result)['rows']
 	if len(udv_list) > 0:
 		vg_name = udv_list[0]['vg']
+	else:
+		vg_name = ''
 
 	for x in nas_mount_get_list():
 		if x.volume_name == volume_name:

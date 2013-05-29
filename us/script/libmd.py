@@ -809,6 +809,7 @@ def remove_disk_from_md(mddev, diskdev):
 
 # 将磁盘加入指定卷组
 def add_disk_to_md(mddev, diskdev):
+	disk_bad_sect_remap_enable(diskdev)
 	cmd = 'mdadm --add %s %s 2>&1' % (mddev, diskdev)
 	ret,msg = commands.getstatusoutput(cmd)
 	
