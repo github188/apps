@@ -503,6 +503,8 @@ int udv_main(int argc, char *argv[])
 
 	t.raw = t.iscsi = t.nas = false;
 
+	libudv_custom_init();
+
 	//opterr = 0;  // 关闭错误提示
 	while( (c=getopt_long(argc, argv, "", udv_options, NULL)) != -1 )
 	{
@@ -573,8 +575,6 @@ int udv_main(int argc, char *argv[])
 				break;
 		}
 	}
-
-	libudv_custom_init();
 
 	if (UDV_MODE_CREATE == mode)
 	{

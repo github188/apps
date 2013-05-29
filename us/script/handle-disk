@@ -31,11 +31,16 @@ def handle_disk_add(diskinfo):
 	if ret != 0:
 		return
 	disk_info = json.loads(text)
-	if disk_info['state'] == 'Fail':
+	if disk_info['SMART'] == 'Fail':
 		msg = '磁盘 %s 故障' % diskinfo.slot
 		vg_log('Error', msg)
 		sysmon_event('disk', 'led_blink1s4', 'disks=%s' % diskinfo.slot, '')
 		sysmon_event('disk', 'buzzer_on', '%s' % diskinfo.slot, '')
+		return
+	elif disk_info['SMART'] == 'LowHealth':
+		msg = '磁盘 %s 健康度低' % diskinfo.slot
+		vg_log('Error', msg)
+		sysmon_event('disk', 'led_blink2s1', 'disks=%s' % diskinfo.slot, '')
 		return
 	elif disk_info['state'] == 'Global' or disk_info['state'] == 'Special':
 		sysmon_event('disk', 'led_on', 'disks=%s' % diskinfo.slot, '')
