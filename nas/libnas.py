@@ -126,6 +126,7 @@ class NasVolumeAttr:
 	def __init__(self):
 		self.path = ''		# 被挂载的路径 eg. /mnt/Share/udv1
 		self.volume_name = ''	# 卷名称，实际为udv名称
+		self.vg_name = ''
 		self.state = ''		# NAS卷状态: formatting,mounted,formatted
 		self.fmt_percent = 0	# 格式化进度，取值 0 ~ 100
 		self.capacity = 0	# 容量，单位：字节
@@ -268,17 +269,35 @@ def nasGetList(volume_name = '', state = 'all'):
 		# 避免在nas-mkfs.py挂载后更新列表出现重复条目
 		for m in _mnt_list:
 			_check_remove_duplicate(_fmt_list, m.volume_name)
-		return _mnt_list + _fmt_list
+		all_list = _mnt_list + _fmt_list
+		ext_cmd = 'sys-manager udv --list'
+		result = commands.getoutput(ext_cmd)
+		udv_list = json.loads(result)['rows']
+		if len(udv_list) > 0:
+			for nas_volume in all_list:
+				for udv in udv_list:
+					if nas_volume.volume_name == udv['name']:
+						nas_volume.vg_name = udv['vg']
+						break
+		return all_list
 
 	_nas_list = []
+	ext_cmd = 'sys-manager udv --list --name %s' % volume_name
+	result = commands.getoutput(ext_cmd)
+	udv_list = json.loads(result)['rows']
+	if len(udv_list) > 0:
+		vg_name = udv_list[0]['vg']
+
 	for x in nas_mount_get_list():
 		if x.volume_name == volume_name:
+			x.vg_name = vg_name
 			_nas_list.append(x)
 			break
 	if len(_nas_list) > 0:
 		return _nas_list
 	for x in nas_fmt_get_list():
 		if x.volume_name == volume_name:
+			x.vg_name = vg_name
 			_nas_list.append(x)
 			break
 	return _nas_list
