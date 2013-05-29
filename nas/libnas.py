@@ -338,6 +338,7 @@ def nasUnmapping(volume_name):
 	nas_volume_path = '/mnt/Share/%s' % volume_name
 	try:
 		umount_ret, umount_result = commands.getstatusoutput('2>&1 umount %s' % nas_volume_path)
+		os.rmdir(nas_volume_path)
 		if umount_ret == 0:
 			nas_conf_remove(volume_name)
 			log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 解除映射成功!' % volume_name)
@@ -385,6 +386,8 @@ def nasUpdateCFG():
 def _load_conf(conf):
 	udv_dev = __get_udv_dev_by_name(conf['volume_name'])
 	if udv_dev == '':
+		os.rmdir(conf['path'])
+		nas_conf_remove(conf['volume_name'])
 		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！用户数据卷不存在！' % conf['volume_name'])
 		return False
 	if conf['state'] == 'formatting':
