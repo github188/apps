@@ -213,7 +213,7 @@ def __Out__(value):
 	logwrite = open(Out_Log_FILE, 'w')
 	try:
 		for line in res:
-			out = 'id:[%s], date:[%s], user:[%s], module:[%s], category:[%s], event:[%s], content:[%s]\n'%(line[0],line[1],line[2],line[3],line[4],line[5],line[6])
+			out = 'id:[%s], date:[%s], user:[%s], module:[%s], category:[%s], event:[%s], content:[%s]\r\n'%(line[0],line[1],line[2],line[3],line[4],line[5],line[6])
 			logwrite.write(out)
 		logwrite.close()
 	except:
