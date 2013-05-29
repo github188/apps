@@ -7,6 +7,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <libgen.h>
+#include <stdlib.h>
 
 struct disk_smart_info {
 	int		health_good;	/* 0: bad, 1: good */
@@ -104,8 +106,10 @@ disk_get_warning_info(const char *dev, struct disk_warning_info *wi)
 {
 	FILE *fp;
 	char path[128], buf[16];
-
-	sprintf(path, "/sys/block/%s/bad_sect_map/mapped_cnt", basename(dev));
+	char dev_copy[32];
+	
+	strcpy(dev_copy, dev);
+	sprintf(path, "/sys/block/%s/bad_sect_map/mapped_cnt", basename(dev_copy));
 	fp = fopen(path, "r");
 	if (!fp)
 		return;

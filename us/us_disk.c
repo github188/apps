@@ -135,7 +135,7 @@ static int map_slot(int slot)
 	return (slot+1);
 }
 
-static int find_slot(struct us_disk_pool *dp, const char *dev, const char *path)
+static int find_slot(const char *path)
 {
 	int slot;
 	int cook_slot = -1;
@@ -316,12 +316,12 @@ ssize_t disk_name2slot(const char *name, char *slot)
 
 static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 {
-	int slot;
+	int slot, i;
 	struct us_disk *disk;
 	size_t n;
 	extern int disk_get_size(const char *dev, uint64_t *sz);
 
-	slot = find_slot(dp, dev, path);
+	slot = find_slot(path);
 	if (slot < 0) {
 		clog(LOG_ERR, "%s: can't find slot for %s\n", __func__, path);
 		return;
@@ -335,6 +335,15 @@ static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 	disk->slot = slot;
 	disk->is_exist = 1;
 	disk->ref = 1;
+
+	for (i=0; i<ARRAY_SIZE(dp->disks); ++i) {
+		if (!strcmp(disk->dev_node, dp->disks[i].dev_node) &&
+			i != disk->slot) {
+			dp->disks[i].dev_node[0] = '\0';
+			break;
+		}
+	}
+
 	do_update_disk(disk, DISK_UPDATE_RAID | DISK_UPDATE_SMART | DISK_UPDATE_STATE);
 }
 
@@ -509,7 +518,8 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
 		                delim);
-		disk_get_warning_info(disk->dev_node, &disk->di.wi);
+		disk_get_warning_info(disk->dev_node, 
+						(struct disk_warning_info *)&disk->di.wi);
 		pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
 		               	delim, di->wi.mapped_cnt);
 		pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"%u\"",
