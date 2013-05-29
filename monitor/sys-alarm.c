@@ -90,7 +90,8 @@ void sys_alarm_buzzer_on(void *event)
 	strcpy(er->param, ev->param);
 	list_add(&buzzer_list, &er->list_entry);
 
-	if (buzzer_cnt == 0)
+	// aways open buzzer
+	if (1 || buzzer_cnt == 0)
 		_safe_system(BUZZER_ON_CMD);
 	buzzer_cnt++;
 #ifdef _DEBUG

@@ -5,6 +5,9 @@ BUZZER_BIN="/usr/local/bin/buzzer"
 
 case "$1" in
 	"on")
+		if [ -f "$ALARM_DIR"/buzzer ]; then
+			exit 0
+		fi
 		$BUZZER_BIN &
 		mkdir -p "$ALARM_DIR" >/dev/null 2>&1
 		touch "$ALARM_DIR"/buzzer >/dev/null 2>&1
