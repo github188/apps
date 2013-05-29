@@ -135,7 +135,12 @@ def main(argv):
 						mdattr_output.append(mdattr.__dict__)
 
 		else:
+			not_fail = False
+			if len(argv) == 3 and argv[2] == '--not-fail':
+				not_fail = True
 			for mdattr in get_mdattr_all():
+				if not_fail and mdattr.raid_state == 'fail':
+					continue
 				mdattr_output.append(mdattr.__dict__)
 
 		json_dump({"total": len(mdattr_output), "rows": mdattr_output})
@@ -167,7 +172,7 @@ def usage():
 Usage:
 	--create --name <vg_name> --level <0|1|5|6> --strip <64|128|256|512|1024> --disk <slot1>[,<slot2>,<slot3>...]
 	--delete <vg_name>
-	--list [--vg <vg_name> | --level <level1>[,<level2>,<level3>...]
+	--list [--vg <vg_name> | --level <level1>[,<level2>,<level3>... | --not-fail]
 	--generate-name <suffix>
 	--duplicate-check <vg_name>
 	--set-sync-prio low|middle|high
