@@ -66,6 +66,13 @@ def diskSetProc(arg = diskArgs()):
 			diskExit(ret, msg)
 
 	unlock_file(f_lock)
+	
+	# 尝试重建
+	for mdattr in get_mdattr_all():
+		if mdattr.raid_state != 'degrade':
+			continue
+		md_rebuild(mdattr)
+
 	diskExit(True, '设置磁盘 %s 为%s成功' % (str(arg.slot_list), DISK_TYPE_MAP[arg.type_set]))
 
 def diskUsage():

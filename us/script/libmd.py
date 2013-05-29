@@ -566,19 +566,6 @@ def disk_set_type(slot, disk_type, raid_name=''):
 	sysmon_event('disk', 'led_on', 'disks=%s' % slot, msg)
 	sysmon_event('disk', 'buzzer_off', slot, '')
 
-	# 尝试重建
-	if disk_type == 'Special':
-		mdattr = get_mdattr_by_name(raid_name)
-		if mdattr.raid_state == 'degrade':
-			md_rebuild(mdattr)
-	else: 
-		# global spare
-		for mdattr in get_mdattr_all():
-			if mdattr.raid_state != 'degrade':
-				continue
-			md_rebuild(mdattr)
-			break
-
 	return True, msg
 
 def hotrep_conf_load():
