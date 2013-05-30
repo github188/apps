@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+# {"status": true, "msg": "删除卷组 VG_4c71 成功"}
+output_json()
+{
+	echo {\"status\": $1, \"msg\": \"$2\"}
+}
+
+import()
+{
+	local filepath=$1
+	
+	if [ -z "$filepath" ]; then
+		msg="请输入文件路径"
+		return
+	elif [ ! -f $filepath ]; then
+		msg="输入的文件 $filepath 不存在"
+		return 
+	fi
+	
+	mv $filepath /boot/lic.bin
+	import_license -f /boot/lic.bin
+	if [ $? -eq 0 ]; then
+		status="true"
+		msg="导入license文件成功"
+	else
+		msg="导入license文件失败"
+	fi
+}
+
+verify()
+{
+	modprobe raid456 2>/dev/null
+	if lsmod | grep -q "raid456"; then
+		status="true"
+		msg="license verify ok"
+		return
+	else
+		status="false"
+		msg=`generate_uuid`
+	fi
+}
+
+usage()
+{
+	echo ""
+	echo "license --import <filepath>"
+	echo "        --verify"
+	echo ""
+}
+
+############################# main 主程序开始 ##########################
+status="false"
+msg=""
+
+case "$1" in
+	--import)
+	import $2
+	;;
+	--verify)
+	verify
+	;;
+	*)
+	usage
+	exit 1
+	;;
+esac
+
+output_json "$status" "$msg"
