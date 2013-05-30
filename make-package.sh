@@ -10,9 +10,10 @@ NAS_BIN='nas/nas nas/nasconf nas/tr-simple nas/*.py nas/*.sh nas/usermanage'
 SYSCONF_BIN='sys-conf/* sys-conf/.build-date'
 COMMON_BIN='common/loglist common/log-daemon common/libcommon.py'
 MON_BIN='monitor/sys-mon monitor/buzzer monitor/set-buzzer.sh monitor/libsysmon.py'
+WEB_BIN='web/*'
 
 # sync list
-BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN"
+BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN $WEB_BIN"
 LIB_LIST="$UDV_LIB"
 
 sync_apps()
@@ -41,7 +42,9 @@ sync_conf()
 {
 	local _target="$1"
 	mkdir -pv $_target/opt/jw-conf/system/
+	mkdir -pv $_target/opt/jw-conf.bak/system/
 	cp -fav monitor/conf-example.xml "$_target"/opt/jw-conf/system/sysmon-conf.xml
+	cp -fav monitor/conf-example.xml "$_target"/opt/jw-conf.bak/system/sysmon-conf.xml
 }
 
 tar_pkg()
