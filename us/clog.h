@@ -15,8 +15,8 @@
 #define clog	syslog
 
 #define die(fmt, ...) do {			\
-	clog(LOG_EMERG, "%s-%s: " fmt, 		\
-	     __func__, __FILE__, 		\
+	clog(LOG_EMERG, "%s %s: " fmt, 		\
+	     __FILE__, __func__, 		\
 	     ##__VA_ARGS__); 			\
 	exit(1);				\
 	} while (0)

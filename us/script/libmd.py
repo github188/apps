@@ -65,14 +65,15 @@ def __state_post(p):
 	if len(p) == 0:
 		return "Unknown"
 	state = p[0]
-	if state.find("degraded") != -1 :
-		if state.find("recovering") != -1:
-			return "rebuild"
+	
+	if state.find("recovering") != -1:
+		return "rebuild"
+	elif state.find("resyncing") != -1:
+		return "initial"
+	elif state.find("degraded") != -1 :
 		return "degrade"
 	elif state.find("FAILED") != -1:
 		return "fail"
-	elif state.find("resyncing") != -1:
-		return "initial"
 	else:
 		return "normal"
 
@@ -155,7 +156,7 @@ def fill_mdattr_by_tmpfs(mdattr = md_attr()):
 	if mdattr.dev == '':
 		return mdattr
 
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mdattr.dev)))
+	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mdattr.dev)))
 	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mdattr.dev))
 
 	# 以下是raid级别0,1,5,6,JBOD需要获取的信息
@@ -163,17 +164,8 @@ def fill_mdattr_by_tmpfs(mdattr = md_attr()):
 		mdattr.name = fs_attr_read(_dir + '/name')
 	if mdattr.raid_uuid == '':
 		mdattr.raid_uuid = fs_attr_read(_dir + '/raid-uuid')
-	
-	if mdattr.raid_level == '6':
-		if mdattr.raid_state == 'degrade' or mdattr.raid_state == 'rebuild':
-			if mdattr.disk_cnt < mdattr.disk_total:
-				mdattr.raid_state = 'degrade'
-			else:
-				mdattr.raid_state = 'rebuild'
-		unlock_file(f_lock)
-		return mdattr
 
-	if mdattr.raid_level == '5':
+	if mdattr.raid_level == '5' or mdattr.raid_level == '6':
 		unlock_file(f_lock)
 		return mdattr
 
@@ -181,7 +173,7 @@ def fill_mdattr_by_tmpfs(mdattr = md_attr()):
 	if mdattr.raid_level == '1' or mdattr.raid_level == 'JBOD':
 		mdattr.raid_strip = 'N/A'
 
-	# raid 0,1,jobd的磁盘列表需要单独处理
+	# raid 0,jobd的磁盘列表需要单独处理
 	mdattr.disk_list = list_file('%s/disk-list' % _dir)
 	mdattr.disk_cnt = len(mdattr.disk_list)
 
@@ -193,6 +185,7 @@ def fill_mdattr_by_tmpfs(mdattr = md_attr()):
 	return mdattr
 
 def tmpfs_add_md(mddev):
+	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
 	mdattr = get_mdattr_by_mdadm(mddev)
 	if None == mdattr:
 		unlock_file(f_lock)
@@ -201,7 +194,6 @@ def tmpfs_add_md(mddev):
 	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mddev))
 	if not os.path.exists(_dir):
 		os.makedirs(_dir)
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
 	
 	fs_attr_write(_dir + '/name', mdattr.name)
 	fs_attr_write(_dir + '/raid-uuid', mdattr.raid_uuid)
@@ -231,19 +223,19 @@ def tmpfs_add_md(mddev):
 	return
 
 def tmpfs_remove_md(mddev):
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
 	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, basename(mddev)))
 	unlock_file(f_lock)
 
 def tmpfs_remove_disk_from_md(mddev, slot):
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
 	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, basename(mddev), slot)
 	if os.path.isfile(_file):
 		os.unlink(_file)
 	unlock_file(f_lock)
 
 def tmpfs_add_disk_to_md(mddev, slot):
-	f_lock = lock_file('%s/.lock_%s' % (TMP_RAID_INFO, basename(mddev)))
+	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
 	_dir = '%s/%s/disk-list' % (TMP_RAID_INFO, basename(mddev))
 	fs_attr_write(_dir + os.sep + slot, slot)
 	unlock_file(f_lock)
@@ -690,7 +682,9 @@ def md_rebuild(mdattr):
 		vg_log('Info', '%s %s 加入卷组 %s 成功' % (disk['type'], slot, mdattr.name))
 		if disk_type != 'Free':
 			remove_hotrep_by_serial(disk['serial'])
-			disk_update_by_slots(slot)
+		
+		# 空闲盘也要及时更新状态, 防止状态未更新又被用来重建其他raid
+		disk_update_by_slots(slot)
 	else:
 		vg_log('Error', '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdattr.name))
 	unlock_file(f_lock)
@@ -796,11 +790,12 @@ def get_free_disk():
 		pass
 	return disk_info
 
-# 从指定卷组删除掉盘的磁盘
-def remove_disk_from_md(mddev, diskdev):
+def faulty_disk_in_md(mddev, diskdev):
 	cmd = 'mdadm --set-faulty %s %s 2>&1' % (mddev, basename(diskdev))
-	ret,msg = commands.getstatusoutput(cmd)
-	
+	os.system(cmd)
+
+# 从指定卷组删除磁盘
+def remove_disk_from_md(mddev, diskdev):
 	cmd = 'mdadm --remove %s %s 2>&1' % (mddev, basename(diskdev))
 	ret,msg = commands.getstatusoutput(cmd)
 	

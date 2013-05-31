@@ -76,17 +76,22 @@ def handle_disk_remove_kicked(diskinfo, event):
 	else:
 		return
 
-	vg_log('Error', msg)
 	mdattr = get_mdattr_by_disk(diskinfo.dev)
 	if mdattr == None:
+		vg_log('Error', msg)
 		return
+	
+	msg += ', 所属卷组 %s' % mdattr.name
+	vg_log('Error', msg)
 
-	if remove_disk_from_md(mdattr.dev, diskinfo.dev) != 0:
-		vg_log('Warning', '从卷组 %s 删除磁盘 %s 失败' % (mdattr.name, diskinfo.slot))
+	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
+		tmpfs_remove_disk_from_md(mdattr.dev, disk_dev2slot(diskinfo.dev))
+		mdattr = get_mdattr_by_mddev(mdattr.dev)	# 重新获取状态, raid0 jbod需要根据磁盘数判断状态
+	elif event == 'remove':
+		faulty_disk_in_md(mdattr.dev, diskinfo.dev)
+		mdattr = get_mdattr_by_mddev(mdattr.dev)	# 重新获取状态, 磁盘掉线后, raid如果没有读写, 不会马上发现
 
-	mdattr = get_mdattr_by_mddev(mdattr.dev)	# 因为删除磁盘, 重新获取状态
-	_state = mdattr.raid_state
-	if _state == 'degrade':
+	if mdattr.raid_state == 'degrade':
 		msg = '卷组 %s 降级' % mdattr.name
 		vg_log('Warning', msg)
 		sysmon_event('vg', 'degrade', mdattr.name, msg)
@@ -105,18 +110,22 @@ def handle_disk_remove_kicked(diskinfo, event):
 			time.sleep(seconds)
 			mdattr = get_mdattr_by_mddev(mdattr.dev)
 			if mdattr.raid_state != 'degrade':
-				return				
+				remove_disk_from_md(mdattr.dev, diskinfo.dev)
+				return
 
 		md_rebuild(mdattr)
 		
-	elif _state == 'fail':
+	elif mdattr.raid_state == 'fail':
+		drop_cache()
 		msg = '卷组 %s 失效' % mdattr.name
 		vg_log('Error', msg)
 		sysmon_event('vg', 'fail',  mdattr.name, msg)
 		sysmon_event('disk', 'led_off', 'disks=%s' % list2str(mdattr.disk_list, ','), '')
-		drop_cache()
 
 	# 热替换后, 源盘被踢出raid, 如果没有其他盘出错, raid状态正常
+
+	if mdattr.raid_level != '0' or mdattr.raid_level != 'JBOD':
+		remove_disk_from_md(mdattr.dev, diskinfo.dev)
 
 	return
 
