@@ -82,7 +82,8 @@ def handle_md_syncdone(mddev):
 			msg += ' 失败'
 	
 	vg_log(log_level, msg)
-	sysmon_event('vg', 'normal', mdattr.name, msg)
+	if mdattr.raid_state == 'normal':
+		sysmon_event('vg', 'normal', mdattr.name, msg)
 	sysmon_event('disk', 'led_off', 'disks=%s' % list2str(mdattr.disk_list, ','), '')
 	
 	# 降级 且 没有事件触发重建 时, 执行重建
