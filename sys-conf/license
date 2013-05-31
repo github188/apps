@@ -19,7 +19,7 @@ import()
 	fi
 	
 	mv $filepath /boot/lic.bin
-	import_license -f /boot/lic.bin
+	import_license -f /boot/lic.bin >/dev/null 2>&1
 	if [ $? -eq 0 ]; then
 		status="true"
 		msg="导入license文件成功"
