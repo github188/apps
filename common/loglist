@@ -16,6 +16,7 @@ import codecs
 import subprocess
 
 from os.path import join, getsize
+
 reload(sys)
 sys.setdefaultencoding('utf8')
 
