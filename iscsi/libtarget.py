@@ -184,9 +184,9 @@ def iSCSI_SCST_cfg_convert():
 		mddev_list = re.findall('\/dev\/md\d+', xx)
 		if len(mddev_list) == 0:
 			return
-		for mdinfo in md_info_mddevs()['rows']:
-			if mdinfo['dev'] in mddev_list:
-				xx = xx.replace(mdinfo['dev'], mdinfo['raid_uuid'])
+		for mdattr in get_mdattr_all():
+			if mdattr.dev in mddev_list:
+				xx = xx.replace(mdattr.dev, mdattr.raid_uuid)
 		f = open(SCST.CFG, 'w')
 		f.write(xx)
 		f.close()
@@ -208,9 +208,9 @@ def iSCSI_SCST_cfg_restore():
 		uuid_list = re.findall('\w{8}:\w{8}:\w{8}:\w{8}', xx)
 		if len(uuid_list) == 0:
 			return
-		for mdinfo in md_info_mddevs()['rows']:
-			if mdinfo['raid_uuid'] in uuid_list:
-				xx = xx.replace(mdinfo['raid_uuid'], mdinfo['dev'])
+		for mdattr in get_mdattr_all():
+			if mdattr.raid_uuid in uuid_list:
+				xx = xx.replace(mdattr.raid_uuid, mdattr.dev)
 
 		f = open(tmp_file, 'w')
 		f.write(xx)
