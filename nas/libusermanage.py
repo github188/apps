@@ -54,6 +54,7 @@ sshd:x:101:65534::/var/run/sshd:/usr/sbin/nologin
 statd:x:102:65534::/var/lib/nfs:/bin/false
 messagebus:x:103:104::/var/run/dbus:/bin/false
 guest:x:998:100::/home/guest:/bin/sh
+user:x:999:100::/home/user:/bin/sh
 """
 GROUP_CONF = """root:x:0:
 daemon:x:1:
@@ -148,8 +149,9 @@ ssh:!::
 fuse:!::
 sambashare:!::
 messagebus:!::
+user:!::
 """
-shadow_CONF = """root:$6$K1sTDEfM$8luDVbR/89X05XqDsLrBpHHzsqcvch6UEgHOOTPdhYAK3bVX3g012cWqsybk5EDmeVZmlH.VLc/r9wvjPPSKk0:15845:0:99999:7:::
+shadow_CONF = """root:$6$EsZto4RK$zZOxowR61cSE2hRHg5IHLnN28GkMZ091VqSyj8XjD/HefZJaerUh0/fCJje8ZsC4vm91pWJr/BYecn2Nejoay.:15859:0:99999:7:::
 daemon:*:15692:0:99999:7:::
 bin:*:15692:0:99999:7:::
 sys:*:15692:0:99999:7:::
@@ -169,7 +171,7 @@ gnats:*:15692:0:99999:7:::
 nobody:*:15692:0:99999:7:::
 libuuid:!:15692:0:99999:7:::
 sshd:*:15692:0:99999:7:::
-user1:$6$DmeFnLgA$pbG8PNnLj8O1coE5SvhuvIz5I1LXzF4SGqiLOJkYmDAFP7FyA9t490GA.7WdnNU1F6UdDd6Cv741c2ddn78kE/:15692:0:99999:7:::
+user:$6$DmeFnLgA$pbG8PNnLj8O1coE5SvhuvIz5I1LXzF4SGqiLOJkYmDAFP7FyA9t490GA.7WdnNU1F6UdDd6Cv741c2ddn78kE/:15692:0:99999:7:::
 statd:*:15692:0:99999:7:::
 messagebus:*:15692:0:99999:7:::
 guest:!:15685:0:99999:7:::
@@ -189,7 +191,6 @@ dns proxy = no
 dos charset = UTF_8
 display charset = UTF_8
 unix charset = UTF-8
-socket options = TCP_NODELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192
 directory mask = 0777
 create mask = 0777
 oplocks = yes
