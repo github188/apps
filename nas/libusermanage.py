@@ -150,7 +150,7 @@ fuse:!::
 sambashare:!::
 messagebus:!::
 """
-shadow_CONF = """root:$6$eWqmWvKp$LhsgufET1jtfW3Fl2ZWkvw75OpCwBBKTqXFHZVQEzzaSgHdQEw9YPxbMemn2Uc9nM9zZJngDPz0YqTV4z7E.p/:15692:0:99999:7:::
+shadow_CONF = """root:$6$K1sTDEfM$8luDVbR/89X05XqDsLrBpHHzsqcvch6UEgHOOTPdhYAK3bVX3g012cWqsybk5EDmeVZmlH.VLc/r9wvjPPSKk0:15845:0:99999:7:::
 daemon:*:15692:0:99999:7:::
 bin:*:15692:0:99999:7:::
 sys:*:15692:0:99999:7:::
