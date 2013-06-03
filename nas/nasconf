@@ -112,7 +112,6 @@ inherit permissions = yes
 	except:
 		conf_file.close()
 	SYSTEM_OUT(RESTART_SMB)
-	print '##恢复出厂设置成功,需要重启生效。\n'
 
 
 if os.path.exists(SMB_CONF_PATH) == False:
