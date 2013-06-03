@@ -310,4 +310,6 @@ def remove_web_service(site_name):
 
 # restore the default configuration of website
 def restore_web_service():
+	if os.path.exists(PROG_CONF_PATH):
+		os.remove(PROG_CONF_PATH)
 	set_defalt()
