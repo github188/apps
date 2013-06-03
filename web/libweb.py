@@ -10,16 +10,16 @@ import json
 import ConfigParser
 import subprocess
 import codecs
-import pdb
 
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-LIG_PATH='/etc/lighttpd/'
+LIG_PATH='/opt/etc/lighttpd/'
 PROG_FILE = 'lig.conf'
 LIG_FILE = 'lighttpd.conf'
 LIG_CONF_PATH = LIG_PATH + LIG_FILE
 PROG_CONF_PATH = LIG_PATH + PROG_FILE
+REAL_LIG_CONF_PATH = '/etc/lighttpd/' + LIG_FILE
 
 DEFAULT_LIST = ['defaults']
 DEFAULT_NAME = 'defaults'
@@ -105,7 +105,6 @@ def update_conf():
 	default_str = ''
 	oem_str = ''
 
-	#pdb.set_trace()
 	config = ConfigParser.ConfigParser()  
 	config.read(PROG_CONF_PATH) 
 	olist = config.sections()
@@ -139,7 +138,9 @@ def update_conf():
 		lig_file.close()
 
 #~#### 恢复默认值
-def set_defalt(iface=""):
+def set_defalt():
+	if os.path.exists(LIG_PATH) == False:
+		os.makedirs(LIG_PATH)
 	p = open(LIG_CONF_PATH, 'w')
 	try:
 		p.write('')
@@ -156,6 +157,16 @@ def set_defalt(iface=""):
 		config.set(name, OPT_PORT, '%s' % DEFAULT_PORT)
 		config.set(name, OPT_IDX, '%s' % DEFAULT_INDEX)
 	config.write(open(PROG_CONF_PATH, 'w'))
+	try:
+		if os.path.exists(REAL_LIG_CONF_PATH) == False:
+			os.symlink(LIG_CONF_PATH, REAL_LIG_CONF_PATH)
+		else:
+			if os.path.islink(REAL_LIG_CONF_PATH) == False:
+				os.remove(REAL_LIG_CONF_PATH)
+				os.symlink(LIG_CONF_PATH, REAL_LIG_CONF_PATH)
+	except:
+		pass
+
 	try:
 		if os.path.exists(LIG_CONF_PATH):
 			os.remove(LIG_CONF_PATH)
@@ -288,4 +299,17 @@ def remove_web_service(site_name):
 		else:
 			return False, "删除站点%s失败!" % (site_name)
 
+	try:
+		site_path = "%s/%s" % (WEB_SITES_HOME, site_name)
+		if os.path.exists(site_path):
+			os.rmdir(site_path)
+	except:
+		pass
+
 	return True, "删除站点%s成功." % (site_name)
+
+# restore the default configuration of website
+def restore_web_service():
+	set_defalt()
+
+	return True, "恢复默认站点成功."
