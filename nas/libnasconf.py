@@ -65,7 +65,6 @@ dns proxy = no
 dos charset = UTF_8
 display charset = UTF_8
 unix charset = UTF-8
-socket options = TCP_NODELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192
 directory mask = 0777
 create mask = 0777
 oplocks = yes
@@ -106,7 +105,6 @@ dns proxy = no
 dos charset = UTF_8
 display charset = UTF_8
 unix charset = UTF-8
-socket options = TCP_NODELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192
 directory mask = 0777
 create mask = 0777
 oplocks = yes
