@@ -151,7 +151,7 @@ sambashare:!::
 messagebus:!::
 user:!::
 """
-shadow_CONF = """root:$6$EsZto4RK$zZOxowR61cSE2hRHg5IHLnN28GkMZ091VqSyj8XjD/HefZJaerUh0/fCJje8ZsC4vm91pWJr/BYecn2Nejoay.:15859:0:99999:7:::
+shadow_CONF = """root:$6$uyI/HbVM$UdsXIqBbn24.DwpSvQRa.MTlDKj82RW.jiDvXK331fcpw.8YifgBys4lRs56O7lFbZoo8QaeWyyBC5739V.wb/:15859:0:99999:7:::
 daemon:*:15692:0:99999:7:::
 bin:*:15692:0:99999:7:::
 sys:*:15692:0:99999:7:::
