@@ -45,6 +45,7 @@ class IArgs:
 	def __init__(self):
 		self.list_set = False
 		self.out_set = False
+		self.del_set = False
 		self.id_set = ''
 		self.id_state = False
 		self.module_set = ''
@@ -64,11 +65,12 @@ def AUsage(err=""):
 		print '##命令参数不正确，请检查要执行的命令模式！'
 	print """
 	--list [ < --id <log_id> > | < --module <module> --category <category> --event <event> --page <int> --coun <int> --user <user_name>  --search <content> --start <timeStart> --end <timeEnd> >]		##输出查询列表
+	--del		##导出日志
 	--out		##导出日志
 """
 	sys.exit(-1)
 
-long_opt = ['list', 'out',  'id=', 'user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=']
+long_opt = ['list', 'del', 'out',  'id=', 'user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=']
 
 def CleanDir( Dir ):
 	if os.path.isdir( Dir ):
@@ -96,6 +98,8 @@ def main():
 	for opt,arg in opts:
 		if opt == '--list':
 			iArgs.list_set = True
+		elif opt == '--del':
+			iArgs.del_set = True
 		elif opt == '--out':
 			iArgs.out_set = True
 		elif opt == '--id':
@@ -122,6 +126,8 @@ def main():
 
 	if iArgs.list_set == True:
 		__List__(iArgs)
+	elif iArgs.del_set == True:
+		__Del__(iArgs)
 	elif iArgs.out_set == True:
 		__Out__(iArgs)
 	else:
@@ -196,6 +202,14 @@ def __List__(value):
 		json_info['rows'] = list
 	cu.close()
 	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+
+def __Del__(value):
+	cx = sqlite3.connect(LOG_FILE)
+	cu = cx.cursor()
+	cu.execute('delete from jwlog') 
+	cx.commit() 
+	cu.close()
+	Export(True, "清除日志成功！")
 
 def __Out__(value):
 	cx = sqlite3.connect(LOG_FILE)
