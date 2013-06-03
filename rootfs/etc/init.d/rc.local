@@ -14,7 +14,32 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 . /lib/init/vars.sh
 . /lib/lsb/init-functions
 
+echo_nic_ip()
+{
+	eths=`ls /sys/class/net | grep "eth[0-9]"`
+	bonds=`ls /sys/class/net | grep "bond[0-9]"`
+	
+	nics="$eths $bonds"
+	for nic in $nics
+	do
+		
+		ipconf=`ifconfig $nic | grep "inet addr:"`
+		if [ -z "$ipconf" ]; then
+			continue
+		fi
+		echo "$nic $ipconf"
+	done
+}
+
 do_start() {
+	CMD=/usr/local/bin/set_misc_default
+	if [ -x $CMD ]; then
+		$CMD
+		rm -f $CMD
+	fi
+
+	echo_nic_ip
+
 	[ -x /opt/run.sh ] && /opt/run.sh >/dev/null 2>&1 &
 	if [ -x /etc/rc.local ]; then
 	        [ "$VERBOSE" != no ] && log_begin_msg "Running local boot scripts (/etc/rc.local)"

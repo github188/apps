@@ -45,9 +45,6 @@ make_default_conf()
 	rm -rf $JW_CONF_DIR
 	cp ${JW_CONF_DIR}.bak $JW_CONF_DIR -a
 
-	# net
-	network --default
-
 	# clear log
 	find /var/log/ -type f -exec rm -f {} \;
 	mkdir -pv /opt/log
@@ -108,6 +105,16 @@ network --default
 EOF
 	chmod +x ./bin/set_network_default
 	cat ./bin/set_network_default
+
+	cat << EOF > ./bin/set_misc_default
+#!/bin/sh
+PATH=/usr/local/bin:$PATH
+usermanage --default
+nasconf --default
+web --default
+EOF
+	chmod +x ./bin/set_misc_default
+	cat ./bin/set_misc_default
 
 	tar zcf $PKG_STORE_DIR/local.tgz ./
 	rm -f ./bin/set_network_default
