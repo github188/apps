@@ -236,7 +236,7 @@ def iSCSIRestoreCFG():
 		_cmd = 'scstadmin -config %s' % iSCSI_SCST_cfg_restore()
 		ret,msg = commands.getstatusoutput(_cmd)
 		if ret == 0:
-			return True, '加载iSCSI配置成功'
+			return True, 'Load iSCSI Conf OK!'
 		# 设置默认配置，保证target能启动
 		iSCSISetDefaultTarget(force = True)
 		_cmd = 'scstadmin -config %s' % SCST.CFG
