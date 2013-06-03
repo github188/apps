@@ -274,6 +274,26 @@ def DEFAULT():
 		conf_file.close()
 	finally:
 		conf_file.close()
+	try:
+		os.remove(SYNC_PATH+'group')
+	except:
+		pass
+	try:
+		os.remove(SYNC_PATH+'gshadow')
+	except:
+		pass
+	try:
+		os.remove(SYNC_PATH+'passwd')
+	except:
+		pass
+	try:
+		os.remove(SYNC_PATH+'shadow')
+	except:
+		pass
+	try:
+		os.remove(SYNC_PATH+'smbpasswd')
+	except:
+		pass
 		
 	#~ 初始化SMBPASSWD文件
 	#~ root初始密码为qwertgfdsa
