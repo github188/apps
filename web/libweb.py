@@ -311,5 +311,3 @@ def remove_web_service(site_name):
 # restore the default configuration of website
 def restore_web_service():
 	set_defalt()
-
-	return True, "恢复默认站点成功."

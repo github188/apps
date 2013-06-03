@@ -42,13 +42,13 @@ def web_service_usage():
 web --create --site-name <name>
     --modify --site-name <name> --set-doc <document_root> --set-idx <index_file> --set-port <port number>
     --remove --site-name <name>
-    --restore
+    --default
     --list [--site-name <name>]
 """
 	sys.exit(-1)
 
-OP_MODE = ['--create', '--modify', '--remove', '--list', '--remove', '--restore']
-web_service_long_opt = ['create', 'site-name=', 'modify', 'set-doc=', 'set-idx=', 'set-port=', 'list', 'remove', 'restore']
+OP_MODE = ['--create', '--modify', '--remove', '--list', '--remove', '--default']
+web_service_long_opt = ['create', 'site-name=', 'modify', 'set-doc=', 'set-idx=', 'set-port=','list', 'remove', 'default']
 
 def web_service_main():
 	try:
@@ -105,14 +105,10 @@ def web_service_main():
 		if ret:
 			web_service_exit(ret, msg)
 		web_service_exit(True, "删除站点%s成功." % (site_name))
-	elif arg_op_mode == '--restore':
-		ret,msg = restore_web_service()
-		if not ret:
-			web_service_exit(ret, msg)
-		ret, msg = restart_lig_service()
-		if ret:
-			web_service_exit(ret, msg)
-		web_service_exit(True, "恢复默认站点成功.")
+	elif arg_op_mode == '--default':
+		restore_web_service()
+		restart_lig_service()
+		sys.exit(0)
 
 	web_service_usage()
 	
