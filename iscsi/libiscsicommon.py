@@ -17,7 +17,7 @@ class SCST_CONFIG(object):
 		self.ROOT_DIR = '/sys/kernel/scst_tgt'
 		self.TARGET_DIR = '%s/targets/iscsi' % self.ROOT_DIR
 		self.VDISK_DIR = '%s/handlers/vdisk_blockio' % self.ROOT_DIR
-		self.CFG = '/opt/etc/scst.conf'
+		self.CFG = '/opt/jw-conf/iscsi/scst.conf'
 
 class iSCSI_Protocol:
 	"""
