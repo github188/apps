@@ -13,7 +13,6 @@ import subprocess
 import shutil
 
 from os.path import join, getsize
-
 reload(sys)
 sys.setdefaultencoding('utf8')
 
