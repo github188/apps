@@ -119,6 +119,7 @@ EOF
 
 	tar zcf $PKG_STORE_DIR/local.tgz ./
 	rm -f ./bin/set_network_default
+	rm -f ./bin/set_misc_default
 	cd -
 	echo "local.tgz packaged OK!"
 }
