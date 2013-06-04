@@ -111,7 +111,7 @@ EOF
 PATH=/usr/local/bin:$PATH
 usermanage --default
 nasconf --default
-web --restore
+web --default
 EOF
 	chmod +x ./bin/set_misc_default
 	cat ./bin/set_misc_default
