@@ -173,6 +173,10 @@ def fill_mdattr_by_tmpfs(mdattr = md_attr()):
 	if mdattr.raid_level == '1' or mdattr.raid_level == 'JBOD':
 		mdattr.raid_strip = 'N/A'
 
+	if mdattr.raid_level == '1':
+		unlock_file(f_lock)
+		return mdattr
+
 	# raid 0,jobd的磁盘列表需要单独处理
 	mdattr.disk_list = list_file('%s/disk-list' % _dir)
 	mdattr.disk_cnt = len(mdattr.disk_list)
@@ -198,7 +202,7 @@ def tmpfs_add_md(mddev):
 	fs_attr_write(_dir + '/name', mdattr.name)
 	fs_attr_write(_dir + '/raid-uuid', mdattr.raid_uuid)
 
-	if mdattr.raid_level != '5' and mdattr.raid_level != '6':
+	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
 		_list_dir = '%s/disk-list' % _dir
 		if not os.path.exists(_list_dir):
 			os.makedirs(_list_dir)
@@ -334,6 +338,7 @@ def __md_create(raid_name, level, chunk, slots):
 		# try to remove mddev
 		md_stop(mddev)
 		cleanup_disks_mdinfo(dev_list)
+		disk_update_by_slots(disks_dev2slot(dev_list))
 		return False, "创建卷组失败"
 
 	msg = ''
@@ -389,7 +394,7 @@ def __md_del(raid_name):
 			return False, '卷组 %s 存在未删除的用户数据卷, 请先删除' % raid_name
 	except:
 		md_uuid = ''
-	dev_list = get_disks_of_mddev(mddev)
+	dev_list = disks_slot2dev(mdattr.disk_list)
 	if not md_stop(mddev):
 		return False,"停止%s失败, 设备正在使用中" % raid_name
 
@@ -401,6 +406,7 @@ def __md_del(raid_name):
 		unlock_file(f_lock)
 
 	cleanup_disks_mdinfo(dev_list)
+	disk_update_by_slots(mdattr.disk_list)
 
 	sysmon_event('vg', 'remove', mdattr.name, '卷组 %s 删除成功' % mdattr.name)
 	sysmon_event('disk', 'led_off', 'disks=%s' % list2str(disks_dev2slot(dev_list), ','), '')
@@ -496,6 +502,7 @@ def disk_set_type(slot, disk_type, raid_name=''):
 	elif disk_type == 'Free':
 		remove_hotrep_by_slot(slot)
 		cleanup_disk_mdinfo(disk_slot2dev(slot))
+		disk_update_by_slots(slot)
 		# 通知监控进程
 		sysmon_event('disk', 'led_off', 'disks=%s' % slot, '设置槽位号为 %s 的磁盘为空闲盘' % slot)
 		sysmon_event('disk', 'buzzer_off', slot, '')
@@ -546,6 +553,7 @@ def disk_set_type(slot, disk_type, raid_name=''):
 
 	# 清除磁盘上的superblock信息
 	cleanup_disk_mdinfo(disk_slot2dev(slot))
+	disk_update_by_slots(slot)
 
 	msg = '设置磁盘 %s 为' % slot
 	if disk_type == 'Special':
@@ -761,8 +769,6 @@ def disk_bad_sect_remap_enable(disk):
 def cleanup_disk_mdinfo(dev):
 	cmd = "mdadm --zero-superblock %s 2>&1" % dev
 	sts,out = commands.getstatusoutput(cmd)
-	
-	disk_update_by_slots(disk_dev2slot(dev))
 
 def cleanup_disks_mdinfo(devs):
 	if isinstance(devs, str):
