@@ -31,6 +31,7 @@ service_stop()
 
 service_start()
 {
+	/etc/init.d/rsyslog restart
 	/etc/init.d/jw-apps start
 	/etc/init.d/jw-assemble start
 	/etc/init.d/lighttpd start
