@@ -84,14 +84,26 @@ def handle_disk_remove_kicked(diskinfo, event):
 	msg += ', 所属卷组 %s' % mdattr.name
 	vg_log('Error', msg)
 
+	handle_degrade_file = TMP_RAID_INFO + '/' + basename(mdattr.dev) + '/handling_degrade'
 	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
 		tmpfs_remove_disk_from_md(mdattr.dev, disk_dev2slot(diskinfo.dev))
 		mdattr = get_mdattr_by_mddev(mdattr.dev)	# 重新获取状态, raid0 jbod需要根据磁盘数判断状态
-	elif event == 'remove':
-		faulty_disk_in_md(mdattr.dev, diskinfo.dev)
-		mdattr = get_mdattr_by_mddev(mdattr.dev)	# 重新获取状态, 磁盘掉线后, raid如果没有读写, 不会马上发现
+	else:
+		if event == 'remove':
+			faulty_disk_in_md(mdattr.dev, diskinfo.dev)
+			mdattr = get_mdattr_by_mddev(mdattr.dev)	# 重新获取状态, 磁盘掉线后, raid如果没有读写, 不会马上发现
 
 	if mdattr.raid_state == 'degrade':
+		# tmpfs下标示正在处理raid降级, 然后从md删除磁盘
+		rebuilder_cn = inc_md_rebuilder_cnt(basename(mdattr.dev))
+		remove_disk_from_md(mdattr.dev, diskinfo.dev)
+		
+		# 针对raid6已经有事件处理降级, 则不再处理
+		if rebuilder_cn > 1:
+			dec_md_rebuilder_cnt(basename(mdattr.dev))
+			return
+
+		mdattr.disk_list.remove(diskinfo.slot)	# 从磁盘列表删除坏盘
 		msg = '卷组 %s 降级' % mdattr.name
 		vg_log('Warning', msg)
 		sysmon_event('vg', 'degrade', mdattr.name, msg)
@@ -109,12 +121,14 @@ def handle_disk_remove_kicked(diskinfo, event):
 				seconds = 300
 			time.sleep(seconds)
 			mdattr = get_mdattr_by_mddev(mdattr.dev)
-			if mdattr.raid_state != 'degrade':
-				remove_disk_from_md(mdattr.dev, diskinfo.dev)
-				return
+			if mdattr.raid_state == 'degrade':
+				md_rebuild(mdattr)
+		else:
+			md_rebuild(mdattr)
 
-		md_rebuild(mdattr)
-		
+		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		return
+
 	elif mdattr.raid_state == 'fail':
 		drop_cache()
 		msg = '卷组 %s 失效' % mdattr.name

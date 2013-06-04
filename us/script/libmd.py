@@ -81,9 +81,10 @@ def __name_post(p):
 	return p[0].split(":")[0] if len(p) > 0 else 'Unknown'
 
 def __disk_post(p):
-	if len(p) == 0:
-		return ();
 	slots = []
+	if len(p) == 0:
+		return slots
+
 	for disk in p:
 		name = disk[1]
 		slots.append(disk_dev2slot(name))
@@ -696,6 +697,43 @@ def md_rebuild(mdattr):
 	else:
 		vg_log('Error', '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdattr.name))
 	unlock_file(f_lock)
+
+def inc_md_rebuilder_cnt(md):
+	filepath = '%s/.%s_rebuilder_cnt' % (TMP_RAID_INFO, md)
+	cnt = 1
+	f_lock = lock_file('%s/.lock_%s_rebuilder' % (TMP_RAID_INFO, md))
+	if os.path.isfile(filepath):
+		val = fs_attr_read(filepath)
+		if val.isdigit():
+			cnt = int(val) + 1
+	
+	fs_attr_write(filepath, str(cnt))
+	unlock_file(f_lock)
+	return cnt
+
+def dec_md_rebuilder_cnt(md):
+	filepath = '%s/.%s_rebuilder_cnt' % (TMP_RAID_INFO, md)
+	cnt = 0
+	f_lock = lock_file('%s/.lock_%s_rebuilder' % (TMP_RAID_INFO, md))
+	if os.path.isfile(filepath):
+		val = fs_attr_read(filepath)
+		if val.isdigit():
+			cnt = int(val) - 1
+	
+	fs_attr_write(filepath, str(cnt))
+	unlock_file(f_lock)
+
+def get_md_rebuilder_cnt(md):
+	filepath = '%s/.%s_rebuilder_cnt' % (TMP_RAID_INFO, md)
+	cnt = 0
+	f_lock = lock_file('%s/.lock_%s_rebuilder' % (TMP_RAID_INFO, md))
+	if os.path.isfile(filepath):
+		val = fs_attr_read(filepath)
+		if val.isdigit():
+			cnt = int(val)
+
+	unlock_file(f_lock)
+	return cnt
 
 # -------- 磁盘信息定义 -----------
 class DiskInfo():
