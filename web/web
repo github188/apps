@@ -5,7 +5,6 @@ import sys
 import os
 import getopt
 import json
-import pdb
 os.chdir(os.path.dirname(sys.argv[0]))
 
 from libweb import *
@@ -107,7 +106,6 @@ def web_service_main():
 			web_service_exit(ret, msg)
 		web_service_exit(True, "删除站点%s成功." % (site_name))
 	elif arg_op_mode == '--default':
-		pdb.set_trace()
 		restore_web_service()
 		restart_lig_service()
 		sys.exit(0)
