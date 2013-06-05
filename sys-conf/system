@@ -56,6 +56,7 @@ def __system_usage():
 	print '       --alarm --email --set <enable|disable> [--receiver <email_list> --smtp-host <ip|domain> --smtp-port <xx> --with-ssl <enable|disable> --with-auth <enable|disable> [--auth-user <xx> --auth-password <xx>]]'
 	print '       --alarm --email --get'
 	print '       --alarm --email --test'
+	print '       --alarm --email --send --subject <email subject> --content <email content>'
 	print '       --alarm --set <module> --switch <enable|disable> [--category <buzzer|sys-led|email>]'
 	print '            module: %s' % get_alarm_module()
 	print '            category: %s' % get_alarm_category()
@@ -63,7 +64,9 @@ def __system_usage():
 	sys.exit(-1)
 
 OP_MODE = ['--get-info', '--get-status', '--alarm']
-system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email', 'receiver=', 'smtp-host=', 'smtp-port=', 'with-ssl=', 'with-auth=', 'auth-user=', 'auth-password=', 'get', 'test', 'module=', 'category=', 'switch=']
+system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email',
+'receiver=', 'smtp-host=', 'smtp-port=', 'with-ssl=', 'with-auth=', 'auth-user=', 'auth-password=',
+'get', 'test', 'module=', 'category=', 'switch=', 'send', 'subject=', 'content=']
 
 
 def system_main():
@@ -75,9 +78,12 @@ def system_main():
 	_get_arg = None
 	_email_arg = None
 	_test_arg = None
+	_send_arg = None
 	_module = None
 	_category = None
 	_switch = None
+	_subject = None
+	_content = None
 	_email = email_conf()
 
 	try:
@@ -99,6 +105,8 @@ def system_main():
 			_get_arg = True
 		elif opt == '--test':
 			_test_arg = True
+		elif opt == '--send':
+			_send_arg = True
 		elif opt == '--email':
 			# 加载旧配置
 			ret,conf = alarm_email_get()
@@ -123,8 +131,10 @@ def system_main():
 			_module = arg
 		elif opt == '--category':
 			_category = arg
-		elif opt == '--switch':
-			_switch = arg
+		elif opt == '--subject':
+			_subject = arg
+		elif opt == '--content':
+			_content = arg
 
 	# mode check
 	if _mode == '--get-info':
@@ -149,6 +159,13 @@ def system_main():
 			elif _test_arg:
 				_ret,_msg = alarm_email_test()
 				__systemExit(_ret, _msg)
+			elif _send_arg:
+				if _subject == None:
+					_systemExit(False, '邮件主题不能为空!')
+				if _content == None:
+					_systemExit(False, '邮件内容不能为空!')
+
+				_ret,_msg = alarm_email_send(_subject, _content)
 			else:
 				__systemExit(False, '请输入email的配置项')
 		elif _get_arg:

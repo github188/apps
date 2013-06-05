@@ -22,9 +22,9 @@ sync_apps()
 	mkdir -pv $_target/usr/local/{bin,lib}
 	chmod +x $BIN_LIST
 	cp -fRav $BIN_LIST  "$_target"/usr/local/bin/
-#	rm -f "$_target"/usr/local/bin/Makefile
-#	rm -f "$_target"/usr/local/bin/*.c
-#	rm -f "$_target"/usr/local/bin/*.h
+	rm -f "$_target"/usr/local/bin/Makefile
+	rm -f "$_target"/usr/local/bin/*.c
+	rm -f "$_target"/usr/local/bin/*.h
 	cp -fRav $LIB_LIST  "$_target"/usr/local/lib/
 	chown -fRv root:root $_target/*
 }

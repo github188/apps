@@ -70,7 +70,10 @@ def diskSetProc(arg = diskArgs()):
 	# 尝试重建
 	for mdattr in get_mdattr_all():
 		# 降级 且 没有事件触发重建 时, 执行重建
-		if mdattr.raid_state != 'degrade' and mdattr.disk_cnt < mdattr.disk_total:
+		if mdattr.raid_state == 'degrade' and mdattr.disk_cnt < mdattr.disk_total:
+			if get_md_rebuilder_cnt(basename(mdattr.dev)) > 0:
+				return
+			
 			md_rebuild(mdattr)
 
 	diskExit(True, '设置磁盘 %s 为%s成功' % (str(arg.slot_list), DISK_TYPE_MAP[arg.type_set]))
