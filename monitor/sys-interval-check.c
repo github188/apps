@@ -52,7 +52,7 @@ int _value_check_error(sys_capture_t *cap, char *msg)
 
 void _capture(sys_capture_t *cap)
 {
-	char msg[128] = {0};
+	char msg[256] = {0};
 	char log_msg[256] = {0};
 	int _cur_error = VAL_ERROR;
 
