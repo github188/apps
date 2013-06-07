@@ -4,6 +4,16 @@
 import json
 import xml
 import os
+import random
+import smtplib
+import mimetypes
+
+from email import Encoders
+from email.MIMEBase import MIMEBase
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.MIMEImage import MIMEImage
+
 from xml.dom import minidom
 
 ALARM_CONF_FILE = '/opt/jw-conf/system/alarm-conf.xml'
@@ -213,8 +223,68 @@ def alarm_email_set(email=email_conf()):
 		return False, '设置电子邮件参数出错,写入配置文件失败!'
 	return True,'设置电子邮件参数成功'
 
+#send mail with smtplib
+def alarm_email_send(subject, content):
+	setting = email_conf()
+	ret, setting = alarm_email_get()
+	if not ret:
+		return False, "获取邮件配置失败!"
+	
+	host = setting.smtp_host.encode("utf8")
+	port = setting.smtp_port.encode("utf8")
+	user = ''
+	smtp = smtplib.SMTP()
+	ret, msg = smtp.connect(host, port)
+	if ret > 400:
+		smtp.quit()
+		return False, "连接SMTP服务器%s失败!" % smtp
+	ret, msg = smtp.docmd("EHLO server")
+	if ret != 250:
+		smtp.quit()
+		return False, "发送EHLO命令到SMTP服务器%s失败!" % smtp
+
+	if msg.find("STARTTLS") >= 0:
+		smtp.starttls()
+		smtp.ehlo()
+		smtp.esmtp_features['auth'] = 'LOGIN DIGEST-MD5 PLAIN'
+	if setting.auth_user:
+		user = setting.auth_user.encode('utf8')
+		password = setting.auth_password.encode('utf8')
+		ret, msg = smtp.login(user, password)
+		if ret != 235:
+			smtp.quit()
+			return False, "登陆SMTP服务器%s失败! 返回消息%s" % (smtp, msg)
+
+	receiver = setting.receiver.encode("utf8")
+	to = receiver.split(';')
+	body = MIMEMultipart('related')
+	body['Subject'] = subject
+	body['From'] = user
+	body['To'] = receiver
+	body.preamble = 'This is a multi-part message in MIME format.'
+	content = MIMEText(content, 'html', 'utf-8')
+	alternative = MIMEMultipart('alternative')
+	body.attach(alternative)
+	alternative.attach(content)
+	msg = body.as_string()
+	ret, msg = smtp.sendmail(user, to, msg)
+	if ret > 300:
+		smtp.quit()
+		return False, "发送邮件到%s失败!" % receiver
+	smtp.quit()
+
+# send test mail
 def alarm_email_test():
-	return True,'电子邮件配置测试成功'
+	rd = random.randint(1, 100000)
+	title = "随机测试邮件%d" % rd
+	content = "随机发送测试邮件%d." % rd
+	#title = "bbb test mail"
+	#content = "bbb send test mail."
+	ret,msg = alarm_email_send(title, content)
+	if not ret:
+		return False, msg
+
+	return True, "电子邮件配置测试成功."
 
 # ---------------------------------------
 # 设置不同模块告警开关
