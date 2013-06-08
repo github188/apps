@@ -20,7 +20,13 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 """
 
 DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
-TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
+
+RAID_DIR = '/tmp/.raid-info'
+RAID_DIR_LOCK = RAID_DIR + '/lock'
+RAID_DIR_BYMD = RAID_DIR + '/by-md'
+RAID_DIR_BYNAME = RAID_DIR + '/by-name'
+RAID_DIR_BYUUID = RAID_DIR + '/by-uuid'
+RAID_DIR_BYDISK = RAID_DIR + '/by-disk'
 
 # vg日志封装
 def vg_log(event, msg):
@@ -28,222 +34,104 @@ def vg_log(event, msg):
 
 class md_attr:
 	def __init__(self):
-		self.name = ''		# raid1需要特殊处理
+		self.name = ''
 		self.dev = ''
 		self.raid_level = ''
-		self.raid_state = ''	# raid1需要根据disk_cnt与disk_total关系计算
+		self.raid_state = ''	# raid0需要根据disk_cnt与disk_total关系计算
 		self.raid_strip = ''	# raid1需要特殊处理
 		self.raid_rebuild = ''
 		self.capacity = 0
 		self.remain = 0		# 剩余空间
 		self.max_single = 0	# 最大连续空间
-		self.disk_cnt = 0	# 当前磁盘个数, 对应mdadm -D的'Total Devices'字段, raid1需要计算实际的disk_list
+		self.disk_cnt = 0	# 当前磁盘个数
 		self.disk_list = []	# 当前磁盘列表, raid1需要特殊处理
-		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用, raid1需要特殊处理
-		self.disk_total = 0	# raid应该包含的磁盘个数, 对应mdadm -D的'Raid Devices'字段, raid1需要特殊处理
+		self.raid_uuid = ''	# 供磁盘上下线检测对应RAID使用
+		self.disk_total = 0	# raid应该包含的磁盘个数
 
-def __def_post(p):
-	if len(p) == 0:
-		return ""
-	return p[0]
-
-def __level_post(p):
-	if len(p) == 0:
-		return "None"
-	level = p[0].lower().replace("raid", "")
-	if level == "linear":
-		level = "JBOD"
-	return level
-
-def __chunk_post(p):
-	if len(p) == 0:
-		return ""
-	chunk = p[0].lower().replace("k", "")
-	return chunk
-
-def __state_post(p):
-	if len(p) == 0:
-		return "Unknown"
-	state = p[0]
-	
-	if state.find("recovering") != -1:
-		return "rebuild"
-	elif state.find("resyncing") != -1:
-		return "initial"
-	elif state.find("degraded") != -1 :
-		return "degrade"
-	elif state.find("FAILED") != -1:
-		return "fail"
-	else:
-		return "normal"
-
-def __name_post(p):
-	return p[0].split(":")[0] if len(p) > 0 else 'Unknown'
-
-def __disk_post(p):
-	slots = []
-	if len(p) == 0:
-		return slots
-
-	for disk in p:
-		name = disk[1]
-		slots.append(disk_dev2slot(name))
-	return slots
-
-def __find_attr(output, reg, post=__def_post):
-	p = re.findall(reg, output)
-	return post(p)
-
-def __raid0_jobd_state(dspecs, dcnt):
-	return 'normal' if dcnt == dspecs else 'fail'
-
-def get_capacity(dev):
-	sectors = fs_attr_read('/sys/block/' + basename(dev) + '/size')
-	if sectors.isdigit():
-		return int(sectors) * 512
-	else:
-		return 0
-
-# 目前先调用外部程序, 以后考虑使用函数级调用的方式实现
-# sys-manager udv --remain-capacity --vg vg_name
-# 输出格式：
-# {"vg":"/dev/md1","max_avaliable":212860928,"max_single":212860928}
-def get_remain_capacity(raid_name):
-	try:
-		json_result = os.popen('sys-manager udv --remain-capacity --vg %s' % raid_name).readline()
-		udv_result = json.loads(json_result)
-		return str(udv_result['max_avaliable']),str(udv_result['max_single'])
-	except:
-		return 0,0
-
-def raid_level(level):
-	if level.lower() == 'jbod':
-		level = 'linear'
-	return level
-
-def get_mdattr_by_mdadm(mddev):
+def get_mdattr_by_mddev(mddev):
 	mdattr = md_attr()
 	mdattr.dev = mddev
-	cmd = 'mdadm -D %s 2>/dev/null' % mddev
-	sts,output = commands.getstatusoutput(cmd)
-	if sts != 0:
+	if '' == mddev or os.system('[ -b %s ]' % mddev) != 0:
 		return mdattr
 
-	mdattr.name = __find_attr(output, "Name : (.*)", __name_post)
-	mdattr.raid_level = __find_attr(output, "Raid Level : (.*)", __level_post)
-	mdattr.raid_state = __find_attr(output, "State : (.*)", __state_post)
-	mdattr.raid_strip = __find_attr(output, "Chunk Size : ([0-9]+[KMG])", __chunk_post)
-	rebuild_per = __find_attr(output, "Rebuild Status : ([0-9]+)\%")
-	resync_per = __find_attr(output, "Resync Status : ([0-9]+)\%")
+	md = basename(mddev)
+	sysdir='/sys/block/' + md
+	
+	mdattr.name = fs_attr_read(sysdir + '/md/array_name')
+	mdattr.raid_uuid = fs_attr_read(sysdir + '/md/array_uuid')
+	mdattr.raid_level = fs_attr_read(sysdir + '/md/array_level')
+	
+	val = fs_attr_read(sysdir + '/md/array_level')
+	if val.isdigit():
+		mdattr.disk_total = int(val)
 
-	if rebuild_per:
-		mdattr.raid_rebuild = rebuild_per
-	elif resync_per:
-		mdattr.raid_rebuild = resync_per
-	else:
-		mdattr.raid_rebuild = '0'
-
-	mdattr.capacity = get_capacity(mdattr.dev)
-	mdattr.remain,mdattr.max_single = get_remain_capacity(mdattr.name)
-	mdattr.disk_list = __find_attr(output, "([0-9]+\s*){4}.*(/dev/.+)", __disk_post)
-	mdattr.disk_cnt = len(mdattr.disk_list)
-	mdattr.raid_uuid = __find_attr(output, "UUID : (.*)")
-	mdattr.disk_total = int(__find_attr(output, "Raid Devices : ([0-9]+)"))
-
-	return mdattr
-
-# 不同RAID级别在磁盘完全掉线后会导致部分信息缺失需要记录在tmpfs供查询使用
-def fill_mdattr_by_tmpfs(mdattr = md_attr()):
-	if mdattr.dev == '':
-		return mdattr
-
-	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mdattr.dev)))
-	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mdattr.dev))
-
-	# 以下是raid级别0,1,5,6,JBOD需要获取的信息
-	if mdattr.name == 'Unknown' or mdattr.name == '':
-		mdattr.name = fs_attr_read(_dir + '/name')
-	if mdattr.raid_uuid == '':
-		mdattr.raid_uuid = fs_attr_read(_dir + '/raid-uuid')
-
-	if mdattr.raid_level == '5' or mdattr.raid_level == '6':
-		unlock_file(f_lock)
-		return mdattr
-
-	# 特殊处理: raid1,jbod没有strip属性
-	if mdattr.raid_level == '1' or mdattr.raid_level == 'JBOD':
+	val = fs_attr_read(sysdir + '/md/chunk_size')
+	if '0' == val:
 		mdattr.raid_strip = 'N/A'
-
-	if mdattr.raid_level == '1':
-		unlock_file(f_lock)
-		return mdattr
-
-	# raid 0,jobd的磁盘列表需要单独处理
-	mdattr.disk_list = list_file('%s/disk-list' % _dir)
-	mdattr.disk_cnt = len(mdattr.disk_list)
-
-	# raid 0,jbod的状态在掉盘后需要手动判断
-	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
-		mdattr.raid_state = __raid0_jobd_state(mdattr.disk_total, mdattr.disk_cnt)
-
-	unlock_file(f_lock)
-	return mdattr
-
-def tmpfs_add_md(mddev):
-	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
-	mdattr = get_mdattr_by_mdadm(mddev)
-	if None == mdattr:
-		unlock_file(f_lock)
-		return
-
-	_dir = '%s/%s' % (TMP_RAID_INFO, basename(mddev))
-	if not os.path.exists(_dir):
-		os.makedirs(_dir)
+	elif val.isdigit():
+		mdattr.raid_strip = str(int(val)/1024)
+	else:
+		mdattr.raid_strip = 'N/A'
 	
-	fs_attr_write(_dir + '/name', mdattr.name)
-	fs_attr_write(_dir + '/raid-uuid', mdattr.raid_uuid)
-
-	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
-		_list_dir = '%s/disk-list' % _dir
-		if not os.path.exists(_list_dir):
-			os.makedirs(_list_dir)
-		for x in mdattr.disk_list:
-			fs_attr_write(_list_dir + os.sep + x, x)
-
-	unlock_file(f_lock)
-
-	# check vg state, notify to sysmon
-	if mdattr.raid_state == 'degrade':
-		msg = '卷组 %s 降级' % mdattr.name
-		sysmon_event('vg', 'degrade', mdattr.name, msg)
-		vg_log('Warning', msg)
+	val = fs_attr_read(sysdir + '/size')
+	if val.isdigit():
+		mdattr.capacity = int(val)*512
 		
-		# 重建raid
-		md_rebuild(mdattr)
-	elif mdattr.raid_state == 'fail':
-		msg = '卷组 %s 失效' % mdattr.name
-		sysmon_event('vg', 'fail', mdattr.name, msg)
-		vg_log('Error', msg)
-	
-	return
+	mdattr.remain = mdattr.capacity
+	sts,output = commands.getstatusoutput('cat /sys/block/%s/%sp*/size' % (md, md))
+	if 0 == sts:
+		for val in output.split():
+			mdattr.remain -= int(val)*512
+	if mdattr.remain < 100*1024*1024:
+		mdattr.remain = 0
 
-def tmpfs_remove_md(mddev):
-	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
-	os.popen('rm -fr %s/%s' % (TMP_RAID_INFO, basename(mddev)))
-	unlock_file(f_lock)
+	if mdattr.raid_level in ('1', '5', '6'):
+		val = fs_attr_read(sysdir + '/md/sync_action')
+		if 'recover' == val:
+			mdattr.raid_state = 'rebuild'
+		elif 'resync' == val:
+			mdattr.raid_state = 'initial'
+		else:
+			if '5' == mdattr.raid_level:
+				max_degraded = 1
+			elif '6' == mdattr.raid_level:
+				max_degraded = 2
+			else:	# raid1
+				max_degraded = mdattr.disk_total
 
-def tmpfs_remove_disk_from_md(mddev, slot):
-	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
-	_file = '%s/%s/disk-list/%s' % (TMP_RAID_INFO, basename(mddev), slot)
-	if os.path.isfile(_file):
-		os.unlink(_file)
-	unlock_file(f_lock)
+			val = fs_attr_read(sysdir + '/md/degraded')
+			degraded = int(val)
+			if 0 == degraded:
+				mdattr.raid_state = 'normal'
+			elif degraded <= max_degraded:
+				mdattr.raid_state = 'degrade'
+			else:
+				mdattr.raid_state = 'fail'
+		
+		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state:
+			val = fs_attr_read(sysdir + '/md/sync_completed')
+			if 'none' == val:
+				mdattr.raid_rebuild = '100.0'
+			else:
+				list_tmp = val.split('/')
+				resync = float(list_tmp[0])
+				max_sectors = float(list_tmp[1])
+				mdattr.raid_rebuild = '%.1f' % (resync*100/max_sectors)
+		
+		val = list_dir(sysdir + '/slaves')
+		mdattr.disk_list = [disk_dev2slot('/dev/'+x) for x in val]
+		mdattr.disk_cnt = len(mdattr.disk_list)
+	else:	# raid0, jbod
+		f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, basename(mdattr.dev)))
+		mdattr.disk_list = list_file('%s/%s/disk-list' % (RAID_DIR_BYMD, md))
+		mdattr.disk_cnt = len(mdattr.disk_list)
+		if mdattr.disk_cnt < mdattr.disk_total:
+			mdattr.raid_state = 'fail'
+		else:
+			mdattr.raid_state = 'normal'
+		unlock_file(f_lock)
 
-def tmpfs_add_disk_to_md(mddev, slot):
-	f_lock = lock_file('%s/.lock_%s_tmpfs' % (TMP_RAID_INFO, basename(mddev)))
-	_dir = '%s/%s/disk-list' % (TMP_RAID_INFO, basename(mddev))
-	fs_attr_write(_dir + os.sep + slot, slot)
-	unlock_file(f_lock)
+	return mdattr
 
 def md_list():
 	cmd = 'ls /sys/block/ | grep md[0-9]'
@@ -260,36 +148,31 @@ def get_free_md():
 			return md
 	return None
 
-def get_disks_of_mddev(mddev):
-	cmd = "ls /sys/block/%s/slaves" % basename(mddev)
-	sts,disks = commands.getstatusoutput(cmd)
-	if sts != 0:
-		return []
-	return ["/dev/" + disk for disk in disks.split()]
-
 def get_md_by_name(raid_name):
-	mds = md_list()
-	for md in mds:
-		if raid_name == fs_attr_read('/sys/block/' + md + '/md/array_name'):
-			return md
-	return ''
+	return fs_attr_read(RAID_DIR_BYNAME + os.sep + raid_name)
 
-def get_mdattr_by_mddev(mddev):
-	mdattr = get_mdattr_by_mdadm(mddev)
-	return fill_mdattr_by_tmpfs(mdattr)
-
-def get_mdattr_by_md(md=''):
-	if (md == ''):
+def get_mdattr_by_name(raid_name):
+	md = get_md_by_name(raid_name)
+	if '' == md:
 		return None
-
 	return get_mdattr_by_mddev('/dev/' + md)
 
-def get_mdattr_by_name(raid_name=''):
-	if (raid_name == ''):
+# 使用磁盘dev节点名称查找所在的卷组信息
+def get_mdattr_by_disk(dev):
+	slot = disk_dev2slot(dev)
+	if None == slot:
 		return None
+	md = fs_attr_read(RAID_DIR_BYDISK + os.sep + slot)
+	if '' == md:
+		return None
+	return get_mdattr_by_mddev('/dev/' + md)
 
-	md = get_md_by_name(raid_name)
-	return get_mdattr_by_md(md)
+# 使用mduuid查找所在卷组信息
+def get_mdattr_by_mduuid(mduuid):
+	md = fs_attr_read(RAID_DIR_BYUUID + os.sep + mduuid)
+	if '' == md:
+		return None
+	return get_mdattr_by_mddev('/dev/' + md)
 	
 def get_mdattr_all():
 	mdattr_list = []
@@ -298,6 +181,118 @@ def get_mdattr_all():
 		mdattr = get_mdattr_by_mddev('/dev/' + md)
 		mdattr_list.append(mdattr)
 	return mdattr_list
+
+def tmpfs_add_md(mddev):
+	if '' == mddev or os.system('[ -b %s ]' % mddev) != 0:
+		return
+
+	md = basename(mddev)
+	f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, md))
+
+	sysdir = '/sys/block/%s/md' % md
+	raid_name = fs_attr_read(sysdir + '/array_name')
+	raid_uuid = fs_attr_read(sysdir + '/array_uuid')
+	raid_level = fs_attr_read(sysdir + '/array_level')
+
+	# raid md dir
+	raid_dir_bymd = RAID_DIR_BYMD + os.sep + md
+	if not os.path.exists(raid_dir_bymd):
+		os.makedirs(raid_dir_bymd)
+	
+	fs_attr_write(raid_dir_bymd + '/name', raid_name)
+	fs_attr_write(raid_dir_bymd + '/uuid', raid_uuid)
+	
+	val = list_dir('/sys/block/%s/slaves' % md)
+	disk_list = [disk_dev2slot('/dev/'+x) for x in val]
+
+	if raid_level == '0' or raid_level == 'JBOD':
+		disks_list_dir = raid_dir_bymd + '/disk-list'
+		if not os.path.exists(disks_list_dir):
+			os.makedirs(disks_list_dir)
+
+		for disk in disk_list:
+			fs_attr_write(disks_list_dir + os.sep + disk, disk)
+	
+	# raid name dir
+	fs_attr_write(RAID_DIR_BYNAME + os.sep + raid_name, md)
+
+	# raid uuid dir
+	fs_attr_write(RAID_DIR_BYUUID + os.sep + raid_uuid, md)
+	
+	# raid disk dir
+	for disk in disk_list:
+		fs_attr_write(RAID_DIR_BYDISK + os.sep + disk, md)
+	
+	unlock_file(f_lock)
+
+	# check vg state, notify to sysmon
+	mdattr = get_mdattr_by_mddev(mddev)
+	if mdattr.raid_state == 'degrade':
+		msg = '卷组 %s 降级' % mdattr.name
+		sysmon_event('vg', 'degrade', mdattr.name, msg)
+		vg_log('Warning', msg)
+		
+		# 重建raid
+		md_rebuild(mdattr)
+	elif mdattr.raid_state == 'fail':
+		msg = '卷组 %s 失效' % mdattr.name
+		sysmon_event('vg', 'fail', mdattr.name, msg)
+		vg_log('Error', msg)
+	
+	return
+
+def tmpfs_remove_md(mddev):
+	md = basename(mddev)
+	f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, md))
+
+	raid_dir_bymd = RAID_DIR_BYMD + os.sep + md
+	raid_name = fs_attr_read(raid_dir_bymd + '/name')
+	raid_uuid = fs_attr_read(raid_dir_bymd + '/uuid')
+	disk_list = list_file(raid_dir_bymd + '/disk-list')
+
+	# raid md dir
+	os.popen('rm -fr ' + raid_dir_bymd)
+
+	# raid name dir
+	_file = RAID_DIR_BYNAME + os.sep + raid_name
+	if os.path.isfile(_file):
+		os.unlink(_file)
+
+	# raid uuid dir
+	_file = RAID_DIR_BYUUID + os.sep + raid_uuid
+	if os.path.isfile(_file):
+		os.unlink(_file)
+	
+	# raid disk dir
+	for disk in disk_list:
+		_file = RAID_DIR_BYDISK + os.sep + disk
+		if os.path.isfile(_file):
+			os.unlink(_file)
+
+	unlock_file(f_lock)
+
+def tmpfs_remove_disk_from_md(mddev, slot):
+	f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, basename(mddev)))
+	# raid md dir
+	_file = '%s/%s/disk-list/%s' % (RAID_DIR_BYMD, basename(mddev), slot)
+	if os.path.isfile(_file):
+		os.unlink(_file)
+	
+	# raid disk dir
+	_file = RAID_DIR_BYDISK + os.sep + slot
+	if os.path.isfile(_file):
+		os.unlink(_file)
+	unlock_file(f_lock)
+
+def tmpfs_add_disk_to_md(mddev, slot):
+	md = basename(mddev)
+	f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, md))
+	# raid md dir
+	fs_attr_write('%s/%s/disk-list/%s' % (RAID_DIR_BYMD, md, slot), slot)
+	
+	# raid disk dir
+	fs_attr_write('%s/%s' % (RAID_DIR_BYDISK, slot), md)
+	unlock_file(f_lock)
 
 def md_create(raid_name, level, chunk, slots):
 	ret,msg = __md_create(raid_name, level, chunk, slots)
@@ -322,7 +317,12 @@ def __md_create(raid_name, level, chunk, slots):
 	for dev in dev_list:
 		disk_bad_sect_remap_enable(basename(dev))
 
-	cmd = "2>&1 mdadm -CR %s -l %s -c %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, raid_level(level), chunk, len(dev_list), devs, raid_name)
+	if level.lower() == 'jbod':
+		level = 'linear'
+
+	cmd = "2>&1 mdadm -CR %s -l %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, len(dev_list), devs, raid_name)
+	if level != 'JBOD':
+		cmd += ' -c %s' % chunk
 	if level in ('5', '6'):
 		cmd += " --bitmap=internal"
 	if level in ('1', '5', '6'):
@@ -496,7 +496,7 @@ def disk_set_type(slot, disk_type, raid_name=''):
 		if raid_name == '':
 			return False, '参数不正确,设置专用热备盘必须指定卷组名称'
 		mdattr = get_mdattr_by_name(raid_name)
-		if mdattr.name == raid_name:
+		if mdattr != None:
 			md_uuid = mdattr.raid_uuid
 		else:
 			return False, '卷组 %s 不存在, 请检查参数' % raid_name
@@ -667,7 +667,7 @@ def remove_hotrep_by_slot(slot):
 	else:
 		return False
 
-RAID_REBUILD_LOCK = '/tmp/.raid_rebuild_lock'
+RAID_REBUILD_LOCK = RAID_DIR_LOCK + '/raid_rebuild'
 def md_rebuild(mdattr):
 	# 使用文件锁同步多个raid重建, 防止争抢全局热备盘和空闲盘
 	f_lock = lock_file(RAID_REBUILD_LOCK)
@@ -699,9 +699,9 @@ def md_rebuild(mdattr):
 	unlock_file(f_lock)
 
 def inc_md_rebuilder_cnt(md):
-	filepath = '%s/.%s_rebuilder_cnt' % (TMP_RAID_INFO, md)
+	filepath = '%s/.%s_rebuilder_cnt' % (RAID_DIR_BYMD, md)
 	cnt = 1
-	f_lock = lock_file('%s/.lock_%s_rebuilder' % (TMP_RAID_INFO, md))
+	f_lock = lock_file('%s/%s_rebuilder' % (RAID_DIR_LOCK, md))
 	if os.path.isfile(filepath):
 		val = fs_attr_read(filepath)
 		if val.isdigit():
@@ -712,9 +712,9 @@ def inc_md_rebuilder_cnt(md):
 	return cnt
 
 def dec_md_rebuilder_cnt(md):
-	filepath = '%s/.%s_rebuilder_cnt' % (TMP_RAID_INFO, md)
+	filepath = '%s/.%s_rebuilder_cnt' % (RAID_DIR_BYMD, md)
 	cnt = 0
-	f_lock = lock_file('%s/.lock_%s_rebuilder' % (TMP_RAID_INFO, md))
+	f_lock = lock_file('%s/%s_rebuilder' % (RAID_DIR_LOCK, md))
 	if os.path.isfile(filepath):
 		val = fs_attr_read(filepath)
 		if val.isdigit():
@@ -724,9 +724,9 @@ def dec_md_rebuilder_cnt(md):
 	unlock_file(f_lock)
 
 def get_md_rebuilder_cnt(md):
-	filepath = '%s/.%s_rebuilder_cnt' % (TMP_RAID_INFO, md)
+	filepath = '%s/.%s_rebuilder_cnt' % (RAID_DIR_BYMD, md)
 	cnt = 0
-	f_lock = lock_file('%s/.lock_%s_rebuilder' % (TMP_RAID_INFO, md))
+	f_lock = lock_file('%s/%s_rebuilder' % (RAID_DIR_LOCK, md))
 	if os.path.isfile(filepath):
 		val = fs_attr_read(filepath)
 		if val.isdigit():
@@ -854,30 +854,6 @@ def add_disk_to_md(mddev, diskdev):
 	
 	tmpfs_add_disk_to_md(mddev, disk_dev2slot(diskdev))
 	return ret
-
-# 使用磁盘dev节点名称查找所在的卷组信息
-def get_mdattr_by_disk(dev):
-	mdattr = None
-	try:
-		f = open('/proc/mdstat', 'r')
-		for x in f.readlines():
-			mddev = re.match('^md\d*', x)
-			if mddev is None:
-				continue
-			if basename(dev) in re.findall('sd\w+', x):
-				mdattr = get_mdattr_by_mddev('/dev/%s' % mddev.group())
-				break
-		f.close()
-	except:
-		pass
-	return mdattr
-
-# 使用mduuid查找所在卷组信息
-def get_mdattr_by_mduuid(mduuid):
-	for mdattr in get_mdattr_all():
-		if mduuid == mdattr.raid_uuid:
-			return mdattr
-	return None
 
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":

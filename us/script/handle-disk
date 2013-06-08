@@ -56,7 +56,7 @@ def handle_disk_add(diskinfo):
 	
 	if add_disk_to_md(mdattr.dev, diskinfo.dev) == 0:
 		vg_log('Warning', '卷组 %s 所属磁盘 %s 重新加入卷组操作成功' % (mdattr.name, diskinfo.slot))
-		mdattr = get_mdattr_by_mduuid(diskinfo.md_uuid)
+		mdattr = get_mdattr_by_mddev(mdattr.dev)
 		if mdattr.raid_state == 'normal':
 			sysmon_event('vg', 'normal', mdattr.name, '卷组 %s 状态正常' % mdattr.name)
 	else:
@@ -84,7 +84,6 @@ def handle_disk_remove_kicked(diskinfo, event):
 	msg += ', 所属卷组 %s' % mdattr.name
 	vg_log('Error', msg)
 
-	handle_degrade_file = TMP_RAID_INFO + '/' + basename(mdattr.dev) + '/handling_degrade'
 	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
 		tmpfs_remove_disk_from_md(mdattr.dev, disk_dev2slot(diskinfo.dev))
 		mdattr = get_mdattr_by_mddev(mdattr.dev)	# 重新获取状态, raid0 jbod需要根据磁盘数判断状态

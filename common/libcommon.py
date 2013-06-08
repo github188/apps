@@ -3,7 +3,6 @@
 
 import os, re, json, sys, fcntl
 
-TMP_RAID_INFO = '/tmp/.raid-info/by-dev'
 CONF_ROOT_DIR = '/opt/jw-conf'
 
 def list2str(list=[], sep=','):
@@ -80,6 +79,16 @@ def list_file(path):
 
 	return list
 
+def list_dir(path):
+	list = []
+	try:
+		for entry in os.listdir(path):
+			list.append(entry)
+	except:
+		pass
+
+	return list
+
 def basename(dev):
 	return os.path.basename(str(dev))
 
@@ -116,6 +125,27 @@ def unlock_file(f):
 def drop_cache():
 	os.system('sync')
 	fs_attr_write('/proc/sys/vm/drop_caches', '3')
+
+def default_dump(row_list):
+	rows = []
+	for row in row_list:
+		rows.append(row.__dict__)
+	return rows
+
+class CommOutput:
+	def __init__(self, row_list, dump = default_dump):
+		self.total = 0
+		self.rows = []
+
+		self.rows = dump(row_list)
+		self.total = len(self.rows)
+
+		if os.environ.get('SUDO_USER') == 'www-data' or os.environ.get('LOGNAME') == 'www-data':
+			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
+		else:
+			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
+		
+		sys.exit(0)
 
 if __name__ == '__main__':
 	log = initlog()

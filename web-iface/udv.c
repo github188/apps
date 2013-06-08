@@ -293,8 +293,8 @@ void list_part(const char *vg_name)
 
 		printf("\t\t{\"start\": %llu, \"end\": %llu, \"len\": %llu, "
 			"\"name\":\"%s\", \"stat\":\"%s\"}",
-			udv_info->geom.start*512, udv_info->geom.end*512,
-			udv_info->geom.length*512, udv_info->name,
+			udv_info->geom.start<1024 ? 1024*512 : udv_info->geom.start*512,
+			udv_info->geom.end*512, udv_info->geom.length*512, udv_info->name,
 			udv_info->part_used ? "used" : "free");
 
 		++rows;
@@ -553,11 +553,14 @@ int udv_main(int argc, char *argv[])
 				mode = UDV_MODE_REMAIN;
 				break;
 			case 'a':
-				return get_dev_byname(optarg);
+				//return get_dev_byname(optarg);
+				return python_cmd_main(argc, argv);
 			case 'e':
-				return get_name_bydev(optarg);
+				//return get_name_bydev(optarg);
+				return python_cmd_main(argc, argv);
 			case 'D':	// --duplicate-chcek <udv_name>
-				return duplicate_check(optarg);
+				//return duplicate_check(optarg);
+				return python_cmd_main(argc, argv);
 			case 'I':	// --iscsi
 				t.iscsi = true;
 				continue;
@@ -613,9 +616,12 @@ int udv_main(int argc, char *argv[])
 	else if (UDV_MODE_LIST == mode)
 	{
 		// 三个参数都不设置，则显示所有类型的分区
+		/*
 		if ( !t.raw && !t.iscsi && !t.nas )
 			t.raw = t.iscsi = t.nas = true;
 		list_udv(t);
+		*/
+		return python_cmd_main(argc, argv);
 	}
 	else if (UDV_MODE_PART_LIST == mode)
 	{
