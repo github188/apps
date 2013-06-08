@@ -6,7 +6,7 @@ from libmd import *
 
 def handle_md_sync(mddev):
 	md = basename(mddev)
-	f_lock = lock_file('%s/.lock_%s_sync' % (TMP_RAID_INFO, md))
+	f_lock = lock_file('%s/%s_sync' % (RAID_DIR_LOCK, md))
 
 	mdattr = get_mdattr_by_mddev(mddev)
 
@@ -19,7 +19,7 @@ def handle_md_sync(mddev):
 		unlock_file(f_lock)
 		return None
 	
-	dir = TMP_RAID_INFO + '/' + md
+	dir = RAID_DIR_BYMD + '/' + md
 	if not os.path.exists(dir):
 		os.makedirs(dir)
 	# raid6 初始化/重建时掉盘内核会重启resync线程, 此时忽略事件
@@ -45,14 +45,14 @@ def handle_md_syncdone(mddev):
 
 	log_level = 'Info'
 	md = basename(mddev)
-	f_lock = lock_file('%s/.lock_%s_sync' % (TMP_RAID_INFO, md))
+	f_lock = lock_file('%s/%s_sync' % (RAID_DIR_LOCK, md))
 
-	cmd = 'cat ' + TMP_RAID_INFO + '/' + md + '/sync_action'
+	cmd = 'cat ' + RAID_DIR_BYMD + '/' + md + '/sync_action'
 	sts,sync_action = commands.getstatusoutput(cmd)
 	if sts != 0:
 		sync_action = ''
 	else:
-		os.remove(TMP_RAID_INFO + '/' + md + '/sync_action')
+		os.remove(RAID_DIR_BYMD + '/' + md + '/sync_action')
 	unlock_file(f_lock)
 
 	msg = '卷组 %s ' % mdattr.name

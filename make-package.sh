@@ -3,7 +3,7 @@
 # individual modules
 DISK_BIN='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assume.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test test-utils/tools-test-led'
 UDV_LIB='udv/libudv.a'
-UDV_BIN='udv/libpyext_udv.py'
+UDV_BIN='udv/libpyext_udv.py udv/udv'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
 NAS_BIN='nas/nas nas/nasconf nas/tr-simple nas/*.py nas/*.sh nas/usermanage'
