@@ -363,9 +363,10 @@ int udv_main(int argc, char *argv[])
 		
 		// 检查VG是否存在
 		ret = get_vgdev_byname(vg_name, vg_dev);
-		if (ret != E_OK)
+		if (ret != E_OK) {
 			build_err_msg(ret, err_msg);
 			exit_json_msg(ret==E_OK ? MSG_OK : MSG_ERROR, err_msg);
+		}
 
 		if (0 == start)
 			exit_json_msg(MSG_ERROR, "输入的起始位置错误!");
