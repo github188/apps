@@ -13,7 +13,7 @@ void error_out(const char *fmt, ...)
 	exit(-1);
 }
 
-void return_json_msg(const int type, const char *msg)
+void exit_json_msg(const int type, const char *msg)
 {
 	if (MSG_OK == type)
 	{

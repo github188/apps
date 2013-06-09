@@ -91,7 +91,7 @@ def udv_list(udvargs):
 
 	CommOutput(udvinfo_list)
 	
-def __get_dev_byname(part_name):
+def __get_dev_byudvname(udv_name):
 	part_dev = ''
 	for md in md_list():
 		sysdir_md = '/sys/block/' + md
@@ -100,7 +100,7 @@ def __get_dev_byname(part_name):
 				continue
 			
 			sysdir_part = sysdir_md + os.sep + entry
-			if fs_attr_read(sysdir_part + '/volname') == part_name:
+			if fs_attr_read(sysdir_part + '/volname') == udv_name:
 				part_dev = '/dev/' + entry
 				find = True
 				break
@@ -110,21 +110,24 @@ def __get_dev_byname(part_name):
 	return part_dev
 
 def get_dev_byname(udvargs):
-	part_dev = __get_dev_byname(udvargs.get_dev_byname_str)
+	part_dev = __get_dev_byudvname(udvargs.get_dev_byname_str)
 	if '' == part_dev:
 		udv_exit(False, '用户数据卷不存在')
 	
 	print '{"status":true,"udv_name":"%s","udv_dev":"%s"}' % (part_name, part_dev)
 	sys.exit(0)
-	
+
+def __get_udvname_bydev(part_dev):
+	part = basename(part_dev)
+	md = part[:part.index('p')]
+	return fs_attr_read('/sys/block/' + md + os.sep + part + '/volname')
+
 def get_name_bydev(udvargs):
 	part_dev = udvargs.get_name_bydev_str
 	if '' == part_dev or os.system('[ -b %s ]' % part_dev) != 0:
 		udv_exit(False, part_dev + '不是分区设备文件')
 	
-	part = basename(part_dev)
-	md = part[:part.index('p')]
-	part_name = fs_attr_read('/sys/block/' + md + os.sep + part + '/volname')
+	part_name = __get_udvname_bydev(part_dev)
 	print '{"status":true,"udv_name":"%s","udv_dev":"%s"}' % (part_name, part_dev)
 	sys.exit(0)
 

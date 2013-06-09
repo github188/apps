@@ -1,173 +1,7 @@
-#include <Python.h>
 #include <syslog.h>
+#include <unistd.h>
 #include <parted/parted.h>
 #include "libudv.h"
-
-/*
- * import from libpyext_udv.py
- */
-size_t getVGDevByName(const char *vg_name, char *vg_dev)
-{
-	PyObject *pModule, *pFunc, *pArg, *pRetVal;
-
-	if (!(vg_name && vg_dev))
-		return PYEXT_ERR_INPUT_ARG;
-	vg_dev[0] = '\0';
-
-	Py_Initialize();
-	if (!Py_IsInitialized())
-		return PYEXT_ERR_INIT;
-
-	pModule = pFunc = pArg = pRetVal = NULL;
-
-	PyRun_SimpleString("import sys");
-	PyRun_SimpleString("sys.path.append('./')");
-	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
-
-	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
-		return PYEXT_ERR_LOAD_MODULE;
-
-	pFunc = PyObject_GetAttrString(pModule, "getVGDevByName");
-	if(!PyCallable_Check(pFunc))
-		return PYEXT_ERR_LOAD_FUNC;
-
-	if (!(pArg = Py_BuildValue("(s)", vg_name)))
-		return PYEXT_ERR_SET_ARG;
-
-	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
-		return PYEXT_ERR_RUN;
-
-	strcpy(vg_dev, PyString_AsString(pRetVal));
-
-	return PYEXT_RET_OK;
-}
-
-size_t getVGNameByDev(const char *vg_dev, char *vg_name)
-{
-	PyObject *pModule, *pFunc, *pArg, *pRetVal;
-
-	if (!(vg_name && vg_dev))
-		return PYEXT_ERR_INPUT_ARG;
-	vg_name[0] = '\0';
-
-	Py_Initialize();
-	if (!Py_IsInitialized())
-		return PYEXT_ERR_INIT;
-
-	pModule = pFunc = pArg = pRetVal = NULL;
-
-	PyRun_SimpleString("import sys");
-	PyRun_SimpleString("sys.path.append('./')");
-	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
-
-	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
-		return PYEXT_ERR_LOAD_MODULE;
-
-	pFunc = PyObject_GetAttrString(pModule, "getVGNameByDev");
-	if(!PyCallable_Check(pFunc))
-		return PYEXT_ERR_LOAD_FUNC;
-
-	if (!(pArg = Py_BuildValue("(s)", vg_dev)))
-		return PYEXT_ERR_SET_ARG;
-
-	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
-		return PYEXT_ERR_RUN;
-
-	strcpy(vg_name, PyString_AsString(pRetVal));
-
-	return PYEXT_RET_OK;
-}
-
-// python 函数返回值: True - 1, False - 0
-/*
- * import from libpyext_udv.py
- */
-int isISCSIVolume(const char *udv_dev)
-{
-	int ret = 1;
-	PyObject *pModule, *pFunc, *pArg, *pRetVal;
-
-	if (!udv_dev)
-		return PYEXT_ERR_INPUT_ARG;
-
-	Py_Initialize();
-	if (!Py_IsInitialized())
-		return PYEXT_ERR_INIT;
-
-	pModule = pFunc = pArg = pRetVal = NULL;
-
-	PyRun_SimpleString("import sys");
-	PyRun_SimpleString("sys.path.append('./')");
-	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
-
-	if (!(pModule = PyImport_ImportModule("libpyext_udv")))
-		return PYEXT_ERR_LOAD_MODULE;
-
-	pFunc = PyObject_GetAttrString(pModule, "isISCSIVolume");
-	if(!PyCallable_Check(pFunc))
-		return PYEXT_ERR_LOAD_FUNC;
-
-	if (!(pArg = Py_BuildValue("(s)", udv_dev)))
-		return PYEXT_ERR_SET_ARG;
-
-	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
-		return PYEXT_ERR_RUN;
-
-	ret = PyInt_AsLong(pRetVal);
-
-	// Clean up
-	Py_DECREF(pModule);
-	Py_DECREF(pFunc);
-
-	Py_Finalize();
-
-	return ret;
-}
-
-/*
- *  import from libnas.py
- */
-int isNasVolume(const char *volume_name)
-{
-	int ret = 1;
-	PyObject *pModule, *pFunc, *pArg, *pRetVal;
-
-	if (!volume_name)
-		return PYEXT_ERR_INPUT_ARG;
-
-	Py_Initialize();
-	if (!Py_IsInitialized())
-		return PYEXT_ERR_INIT;
-
-	pModule = pFunc = pArg = pRetVal = NULL;
-
-	PyRun_SimpleString("import sys");
-	PyRun_SimpleString("sys.path.append('./')");
-	PyRun_SimpleString("sys.path.append('/usr/local/bin')");
-
-	if (!(pModule = PyImport_ImportModule("libnas")))
-		return PYEXT_ERR_LOAD_MODULE;
-
-	pFunc = PyObject_GetAttrString(pModule, "isNasVolume");
-	if(!PyCallable_Check(pFunc))
-		return PYEXT_ERR_LOAD_FUNC;
-
-	if (!(pArg = Py_BuildValue("(s)", volume_name)))
-		return PYEXT_ERR_SET_ARG;
-
-	if(!(pRetVal = PyObject_CallObject(pFunc, pArg)))
-		return PYEXT_ERR_RUN;
-
-	ret = PyInt_AsLong(pRetVal);
-
-	// Clean up
-	Py_DECREF(pModule);
-	Py_DECREF(pFunc);
-
-	Py_Finalize();
-
-	return ret;
-}
 
 static PedExceptionOption libudv_exception_handler(PedException *e)
 {
@@ -200,21 +34,75 @@ PedDisk* _create_disk_label (PedDevice *dev, PedDiskType *type)
 
 #define _fix_4k(sector) ((uint64_t)((sector)/8*8))
 
-ssize_t udv_force_init_vg(const char *vg_name)
+udv_info_t* get_udv_by_name(const char *name)
+{
+	PedDevice *dev = NULL;
+	PedDisk *disk;
+	PedPartition *part;
+	PedDiskType *type = NULL;
+
+	const char *part_name;
+	static udv_info_t udv_info;
+
+	ped_device_probe_all();
+
+	while((dev=ped_device_get_next(dev))) {
+#ifndef _UDV_DEBUG
+		// 获取所有MD列表
+		if (dev->type != PED_DEVICE_MD)
+			continue;
+#else
+		if (!strcmp(dev->path, "/dev/sda"))
+			continue;
+#endif
+
+		// 获取当前MD分区信息
+		if ( (type = ped_disk_probe(dev)) && !strcmp(type->name, "gpt") )
+			disk = ped_disk_new(dev);
+		else
+			disk = _create_disk_label(dev, ped_disk_type_get("gpt"));
+
+		if (!disk)
+			continue;
+
+		for (part = ped_disk_next_partition(disk, NULL); part;
+			part = ped_disk_next_partition(disk, part)) {
+
+			if (part->type & PED_PARTITION_METADATA)
+				continue;
+
+			if (part->type & PED_PARTITION_FREESPACE)
+				continue;
+
+			part_name = ped_partition_get_name(part);
+			if (part_name && !strcmp(part_name, name)) {
+				strcpy(udv_info.name, part_name);
+				udv_info.part_num = part->num;
+				udv_info.geom.start = part->geom.start;
+				udv_info.geom.end = part->geom.end;
+				udv_info.geom.length = part->geom.length;
+				sprintf(udv_info.dev, "%sp%d", dev->path, part->num);
+
+				ped_disk_destroy(disk);
+				return &udv_info;
+			}
+		}
+		ped_disk_destroy(disk);
+	}
+
+	return NULL;
+}
+
+int udv_force_init_vg(const char *vg_dev)
 {
 	PedDevice *device = NULL;
 	PedDisk *disk = NULL;
 	PedConstraint *constraint;
 	ssize_t ret_code = E_OK;
-	char vg_dev[PATH_MAX];
 
 	// 参数检查
-	if (!vg_name)
+	if (!vg_dev)
 		return E_FMT_ERROR;
-
-	// 检查VG是否存在
-	if (PYEXT_RET_OK != getVGDevByName(vg_name, vg_dev))
-		return E_VG_NONEXIST;
 
 	if (!(device = ped_device_get(vg_dev)))
 		return E_SYS_ERROR;
@@ -243,11 +131,7 @@ error:
 	return ret_code;
 }
 
-/**
- * API
- */
-
-ssize_t udv_create(const char *vg_dev, const char *name, 
+int udv_create(const char *vg_dev, const char *name, 
 					uint64_t start, uint64_t length)
 {
 	PedDevice *device = NULL;
@@ -348,7 +232,7 @@ void free_udv_list(struct list *list)
 	}
 }
 
-ssize_t udv_get_part_list(const char *vg_dev, struct list *list, int type)
+int udv_get_part_list(const char *vg_dev, struct list *list, int type)
 {
 	PedDevice *device = NULL;
 	PedDisk *disk = NULL;
@@ -408,15 +292,7 @@ err_out:
 	return ret_code;
 }
 
-/**
- * @breif 删除指定名称的用户数据卷
- * @param name - 被删除用户数据卷名称
- * @return EINVAL - 参数错误
- *         ENODEV - 用户数据卷不存在
- *         EIO - 设置失败
- *         0 - 成功
- */
-ssize_t udv_delete(const char *name)
+int udv_delete(const char *name)
 {
 	udv_info_t *udv;
 	char vg_dev[32];
@@ -434,12 +310,6 @@ ssize_t udv_delete(const char *name)
 	udv = get_udv_by_name(name);
 	if (!udv)
 		return E_UDV_NONEXIST;
-
-	// 检查是否已经映射
-	if (isISCSIVolume(udv->dev))
-		return E_UDV_MOUNTED_ISCSI;
-	if (isNasVolume(udv->name))
-		return E_UDV_MOUNTED_NAS;
 
 	// 删除分区
 	strcpy(vg_dev, udv->dev);
@@ -470,80 +340,7 @@ error_eio:
 	return retcode;
 }
 
-// 检查UDV名称是否存在
-// 返回值：
-//    udv_info_t* 存在，并且返回udv节点信息
-//    NULL udb不存在
-udv_info_t* get_udv_by_name(const char *name)
-{
-	PedDevice *dev = NULL;
-	PedDisk *disk;
-	PedPartition *part;
-	PedDiskType *type = NULL;
-
-	const char *part_name;
-	static udv_info_t udv_info;
-
-	ped_device_probe_all();
-
-	while((dev=ped_device_get_next(dev))) {
-#ifndef _UDV_DEBUG
-		// 获取所有MD列表
-		if (dev->type != PED_DEVICE_MD)
-			continue;
-#else
-		if (!strcmp(dev->path, "/dev/sda"))
-			continue;
-#endif
-
-		// 获取当前MD分区信息
-		if ( (type = ped_disk_probe(dev)) && !strcmp(type->name, "gpt") )
-			disk = ped_disk_new(dev);
-		else
-			disk = _create_disk_label(dev, ped_disk_type_get("gpt"));
-
-		if (!disk)
-			continue;
-
-		for (part = ped_disk_next_partition(disk, NULL); part;
-			part = ped_disk_next_partition(disk, part)) {
-
-			if (part->type & PED_PARTITION_METADATA)
-				continue;
-
-			if (part->type & PED_PARTITION_FREESPACE)
-				continue;
-
-			part_name = ped_partition_get_name(part);
-			if (part_name && !strcmp(part_name, name)) {
-				strcpy(udv_info.name, part_name);
-				udv_info.part_num = part->num;
-				udv_info.geom.start = part->geom.start;
-				udv_info.geom.end = part->geom.end;
-				udv_info.geom.length = part->geom.length;
-				sprintf(udv_info.dev, "%sp%d", dev->path, part->num);
-
-				ped_disk_destroy(disk);
-				return &udv_info;
-			}
-		}
-		ped_disk_destroy(disk);
-	}
-
-	return NULL;
-}
-
-/**
- * @param name - 被修改用户数据卷名称 
- * @param new_name - 用户数据卷新名称
- * @return
- *      EINVAL - 参数错误
- *      ENODEV - 用户数据卷不存在
- *      EEXIST - 用户数据卷新名称存在
- *      EIO    - 设置失败
- *      0 - 成功
- */
-ssize_t udv_rename(const char *name, const char *new_name)
+int udv_rename(const char *name, const char *new_name)
 {
 	udv_info_t *udv;
 	char vg_dev[32];
@@ -592,25 +389,3 @@ error:
 	return ret_code;
 }
 
-/**
- * Utils
- */
-const char* vg_name2dev(const char *name)
-{
-	return NULL;
-}
-
-const char* vg_dev2name(const char *dev)
-{
-	return NULL;
-}
-
-const char* udv_name2dev(const char *name)
-{
-	return NULL;
-}
-
-const char* dev_dev2name(const char *dev)
-{
-	return NULL;
-}

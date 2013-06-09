@@ -10,7 +10,6 @@ aptitude install libjson0
 
 # for complie use
 aptitude install libatasmart-dev
-aptitude install python-dev
 aptitude install libsqlite3-dev
 aptitude install libudev-dev
 aptitude install libxml2-dev

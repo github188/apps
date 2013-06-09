@@ -27,17 +27,11 @@ struct cmd_map {
   web_cmd cmd;
 };
 
-static inline char *last_path_component(char *name)
-{
-  char *slash = strrchr(name, '/');
-  return (slash) ? slash + 1 : name;
-}
-
 int udv_main(int argc, char *argv[]);
 
 int external_main(int argc, char *argv[]);
 
-int python_cmd_main(int argc, char *argv[]);
+int exec_new_cmd(int argc, char *argv[]);
 
 int log_main(int argc, char *argv[]);
 
