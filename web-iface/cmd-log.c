@@ -82,12 +82,12 @@ int log_insert()
 			user = g_ins_user;
 		if (LogInsert(user, g_ins_module, g_ins_category, g_ins_event, g_ins_content))
 		{
-			return_json_msg(MSG_ERROR, "日志参数不正确!请检查!");
+			exit_json_msg(MSG_ERROR, "日志参数不正确!请检查!");
 			return -1;
 		}
 		return 0;
 	}
-	return_json_msg(MSG_ERROR, "参数不完整，请检查!");
+	exit_json_msg(MSG_ERROR, "参数不完整，请检查!");
 	return -1;
 }
 
@@ -96,7 +96,7 @@ int log_get_quantity()
 {
 	ssize_t q = LogGetQuantity();
 	if (q<0)
-		return_json_msg(MSG_ERROR, "获取日志数量失败!");
+		exit_json_msg(MSG_ERROR, "获取日志数量失败!");
 	fprintf(stdout, "{\"quantity\":%d}\n", (int)q);
 	return 0;
 }
@@ -134,19 +134,19 @@ int log_get()
 	log_info_s *info;
 
 	if ( !( (g_get_begin!=-1) && (g_get_end!=-1) ) )
-		return_json_msg(MSG_ERROR, "请输入获取日志的条目区间!");
+		exit_json_msg(MSG_ERROR, "请输入获取日志的条目区间!");
 
 	if (g_get_end >= g_get_begin)
-		return_json_msg(MSG_ERROR, "获取日志记录的区间不正确!");
+		exit_json_msg(MSG_ERROR, "获取日志记录的区间不正确!");
 
 	if (!(info=(log_info_s*)malloc(sizeof(log_info_s)*(g_get_end-g_get_begin))))
-		return_json_msg(MSG_ERROR, "可用内存不足!");
+		exit_json_msg(MSG_ERROR, "可用内存不足!");
 
 	q = LogGet(0, g_get_begin, g_get_end, 0, info);
 	if (q<0)
 	{
 		free(info);
-		return_json_msg(MSG_ERROR, "获取日志记录失败!");
+		exit_json_msg(MSG_ERROR, "获取日志记录失败!");
 	}
 
 	// 输出日志内容

@@ -17,6 +17,6 @@ enum {
 	MSG_ERROR
 };
 
-void return_json_msg(const int type, const char *msg);
+void exit_json_msg(const int type, const char *msg);
 
 #endif/*__WEB_IFACE_COMMON*/

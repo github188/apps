@@ -61,7 +61,7 @@ void _capture(sys_capture_t *cap)
 		return;
 	update(cap);
 #else
-	printf(" handler: %.8x\n", cap->_capture);
+	printf(" handler: %p\n", cap->_capture);
 #endif/*_DEBUG*/
 
 	if (!cap->_capture)	{
