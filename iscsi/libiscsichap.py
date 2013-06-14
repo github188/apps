@@ -8,10 +8,10 @@ import re
 from xml.dom import minidom
 import xml
 
-from libiscsicommon import *
-from libtarget import iSCSIUpdateCFG
-from libtarget import isTargetExist
-from libtarget import iSCSIGetTargetList
+from libiscsicomm import *
+from libiscsitarget import iSCSIUpdateCFG
+from libiscsitarget import isTargetExist
+from libiscsitarget import iSCSIGetTargetList
 
 ISCSI_CHAP_CONF = '/opt/jw-conf/iscsi/iscsi-chap-conf.xml'
 

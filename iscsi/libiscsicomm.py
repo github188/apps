@@ -19,6 +19,8 @@ class SCST_CONFIG(object):
 		self.VDISK_DIR = '%s/handlers/vdisk_blockio' % self.ROOT_DIR
 		self.CFG = '/opt/jw-conf/iscsi/scst.conf'
 
+SCST = SCST_CONFIG()
+
 class iSCSI_Protocol:
 	"""
 	iSCSI协议相关属性定义
@@ -49,8 +51,6 @@ class iSCSI_Protocol:
 		self.MaxXmitDataSegmentLength = 1024
 		self.IncomingChap = "disable"
 
-SCST = SCST_CONFIG()
-
 # 公用函数
 def AttrRead(dir_path, attr_name):
 	value = ''
@@ -75,17 +75,6 @@ def AttrWrite(dir_path, attr_name, value):
 		return False
 	else:
 		return True
-
-def getDirList(file_path):
-	dir_list = []
-	try:
-		for td in os.listdir(file_path):
-			if os.path.isdir(file_path + os.sep + td):
-				dir_list.append(td)
-	except IOError,e:
-		err_msg = e
-	finally:
-		return dir_list
 
 def _iscsi_find_incoming(tgt_path):
 	chap_switch = 'disable'
