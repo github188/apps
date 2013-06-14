@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
-from libiscsicommon import *
-from libtarget import iSCSIGetTargetList
+from libiscsicomm import *
+from libiscsitarget import iSCSIGetTargetList
 
 #TARGET_DIR
 

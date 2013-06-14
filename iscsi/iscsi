@@ -5,14 +5,12 @@ import sys
 import os
 import getopt
 import json
-#os.chdir(os.path.dirname(sys.argv[0]))
 
-from libtarget import *
-from libvolume import *
-from liblun import *
-from libsession import *
-from libchap import *
-
+from libiscsitarget import *
+from libiscsivolume import *
+from libiscsilun import *
+from libiscsisession import *
+from libiscsichap import *
 
 class iSCSIArgs:
 	def __init__(self):
@@ -73,36 +71,10 @@ class iSCSIArgs:
 def DictDump(row_list):
 	return row_list
 
-def DefaultDump(row_list):
-	rows = []
-	for row in row_list:
-		rows.append(row.__dict__)
-	return rows
-
-class UniOutput:
-	def __init__(self, row_list, dump = DefaultDump):
-		self.total = 0
-		self.rows = []
-		#for row in row_list:
-		#	self.rows.append(row.__dict__)
-		#self.total = len(self.rows)
-		self.rows = dump(row_list)
-		self.total = len(self.rows)
-
-		if os.environ.get('SUDO_USER') == 'www-data' or os.environ.get('LOGNAME') == 'www-data':
-			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
-		else:
-			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
-		
-		sys.exit(0)
-
 # 处理Target相关参数
 def iscsiTargetProc(args = iSCSIArgs()):
-	if args.mode != '--target':
-		return
-
 	if args.list_set:
-		UniOutput(iSCSIGetTargetList(args.target_name_str))
+		CommOutput(iSCSIGetTargetList(args.target_name_str))
 	elif args.modify_set:
 		if args.name_str == '':
 			iscsiExit(False, '请输入被操作的Target名称!')
@@ -137,15 +109,13 @@ def iscsiAddVolume(args = iSCSIArgs()):
 			read_only = args.read_only_str
 	except:
 		pass
+
 	return iSCSIVolumeAdd(args.udv_str, blocksize, read_only, args.wrth_str)
 
 # 处理数据卷相关参数
 def iscsiVolumeProc(args = iSCSIArgs()):
-	if args.mode != '--volume':
-		return
-
 	if args.list_set:
-		UniOutput(iSCSIVolumeGetList(args.volume_name_str, args.udv_str))
+		CommOutput(iSCSIVolumeGetList(args.volume_name_str, args.udv_str))
 	elif args.add_set:
 		ret,msg = iscsiAddVolume(args) 
 		iscsiExit(ret, msg)
@@ -160,13 +130,10 @@ def iscsiVolumeProc(args = iSCSIArgs()):
 
 # 处理LUN相关参数
 def iscsiLunProc(args = iSCSIArgs()):
-	if args.mode != '--lun':
-		return
-
 	if args.list_set:
 		if len(args.lun_id_str):
 			iscsiExit(False, '暂不支持获取指定LUN ID信息！')
-		UniOutput(iSCSILunGetList(args.target_name_str), DictDump)
+		CommOutput(iSCSILunGetList(args.target_name_str), DictDump)
 	elif args.map_set:
 		if not len(args.target_name_str):
 			iscsiExit(False, '请输入Target名称!')
@@ -219,14 +186,11 @@ def iscsiLunProc(args = iSCSIArgs()):
 
 # 处理Session相关参数
 def iscsiSessionProc(args = iSCSIArgs()):
-	if args.mode != '--session':
-		return
-
 	if args.list_set:
 		if args.target_name_set:
-			UniOutput(iSCSIGetSessionList(args.target_name_str))
+			CommOutput(iSCSIGetSessionList(args.target_name_str))
 		else:
-			UniOutput(iSCSIGetSessionList())
+			CommOutput(iSCSIGetSessionList())
 
 	if args.force_close_sid != None:
 		ret,msg = iSCSIDeleteSession(args.force_close_sid)
@@ -234,8 +198,6 @@ def iscsiSessionProc(args = iSCSIArgs()):
 	iscsiExit(False, '请输入正确的session操作!')
 
 def iscsiMiscProc(args = iSCSIArgs()):
-	if args.mode != '--misc':
-		return
 	if args.update_cfg:
 		ret,msg = iSCSIUpdateCFG()
 		iscsiExit(ret,msg)
@@ -247,8 +209,6 @@ def iscsiMiscProc(args = iSCSIArgs()):
 		iscsiExit(ret, '')
 
 def iscsiChapProc(args = iSCSIArgs()):
-	if args.mode != '--chap':
-		return
 	if not args.list_set and args.chap_type != 'incoming' and args.chap_type != 'outgoing':
 		iscsiExit(False, '请设置正确的CHAP认证方向(incoming 或者 outgoing)!')
 	# chap add user
@@ -286,7 +246,7 @@ def iscsiChapProc(args = iSCSIArgs()):
 		iscsiExit(ret, msg)
 	# chap list
 	if args.list_set:
-		UniOutput(iSCSIChapList(args.target_name_str))
+		CommOutput(iSCSIChapList(args.target_name_str))
 	iscsiExit(False, '请输入正确的CHAP操作参数!')
 	return
 
@@ -427,14 +387,20 @@ def iscsi_main():
 		elif opt == '--duplicate-check':
 			iscsiArgs.chap_dup = True
 
-	iscsiTargetProc(iscsiArgs)
-	iscsiVolumeProc(iscsiArgs)
-	iscsiLunProc(iscsiArgs)
-	iscsiSessionProc(iscsiArgs)
-	iscsiMiscProc(iscsiArgs)
-	iscsiChapProc(iscsiArgs)
-
-	iscsiUsage()
+	if iscsiArgs.mode == '--target':
+		iscsiTargetProc(iscsiArgs)
+	elif iscsiArgs.mode == '--volume':
+		iscsiVolumeProc(iscsiArgs)
+	elif iscsiArgs.mode == '--lun':
+		iscsiLunProc(iscsiArgs)
+	elif iscsiArgs.mode == '--session':
+		iscsiSessionProc(iscsiArgs)
+	elif iscsiArgs.mode == '--misc':
+		iscsiMiscProc(iscsiArgs)
+	elif iscsiArgs.mode == '--chap':
+		iscsiChapProc(iscsiArgs)
+	else:
+		iscsiUsage()
 
 if __name__ == "__main__":
 	iscsi_main()

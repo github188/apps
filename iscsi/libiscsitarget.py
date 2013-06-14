@@ -4,9 +4,9 @@
 import os
 import re
 import commands
-#os.chdir(os.path.dirname(__file__))
 
-from libiscsicommon import *
+from libcommon import *
+from libiscsicomm import *
 from uuid import uuid1
 from libmd import get_mdattr_all
 
@@ -86,8 +86,8 @@ def getTargetInfo(tgt_name):
 	tgt.name = tgt_name
 	tgt.tid = AttrRead(tgt_full_path, 'tid')
 	tgt.state = getTargetState(tgt_name)
-	tgt.luns = len(getDirList(tgt_full_path + os.sep + 'luns'))
-	tgt.sessions = len(getDirList(tgt_full_path + os.sep + 'sessions'))
+	tgt.luns = len(list_child_dir(tgt_full_path + os.sep + 'luns'))
+	tgt.sessions = len(list_child_dir(tgt_full_path + os.sep + 'sessions'))
 	tgt.attribute = getTargetAttr(tgt_name).__dict__
 	tgt.iscsi_protocol = getISCSIProto(tgt_name).__dict__
 	tgt.statistics = getTargetStat(tgt_name).__dict__
@@ -154,7 +154,7 @@ def iSCSISetDefaultTarget(force = False):
 def iSCSIGetTargetList(tgt = ''):
 	target_list = []
 	target_dir = SCST.ROOT_DIR + os.sep + 'targets/iscsi'
-	for t in getDirList(target_dir):
+	for t in list_child_dir(target_dir):
 		tgt_full_path = target_dir + os.sep + t
 		if len(tgt) and tgt != t:
 			continue

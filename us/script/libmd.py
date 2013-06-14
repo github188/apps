@@ -321,7 +321,7 @@ def __md_create(raid_name, level, chunk, slots):
 		level = 'linear'
 
 	cmd = "2>&1 mdadm -CR %s -l %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, len(dev_list), devs, raid_name)
-	if level != 'JBOD':
+	if level != 'linear':
 		cmd += ' -c %s' % chunk
 	if level in ('5', '6'):
 		cmd += " --bitmap=internal"
@@ -345,7 +345,7 @@ def __md_create(raid_name, level, chunk, slots):
 	msg = ''
 	try:
 		# 强制重写分区表
-		cmd = 'sys-manager udv --force-init-vg %s' % raid_name
+		cmd = 'sys-manager udv --force-init-vg %s' % mddev
 		sts,out = commands.getstatusoutput(cmd)
 		if sts != 0:
 			time.sleep(1)

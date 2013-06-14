@@ -4,9 +4,9 @@
 import os
 #os.chdir(os.path.dirname(__file__))
 
-from libiscsicommon import *
-from libtarget import *
-from libvolume import *
+from libiscsicomm import *
+from libiscsitarget import *
+from libiscsivolume import *
 
 LUN_MIN_ID = 0
 LUN_MAX_ID = 254
@@ -40,7 +40,7 @@ def isLunIdExist(tgt, initor, lun_id):
 	return os.path.isdir(_check_path)
 
 def __getFreeLunId(lun_dir):
-	luns = getDirList(lun_dir)
+	luns = list_child_dir(lun_dir)
 	if not len(luns) or not '0' in luns:
 		return 0
 	idx = 0
@@ -61,7 +61,7 @@ def __getFreeLunId(lun_dir):
 def isLunMappedRw(volume_name):
 	for tgt in iSCSIGetTargetList():
 		tgt_luns_dir = SCST.TARGET_DIR + os.sep + tgt.name + '/luns'
-		for lun in getDirList(tgt_luns_dir):
+		for lun in list_child_dir(tgt_luns_dir):
 			# 检查Volume是否一致
 			lun_path = tgt_luns_dir + os.sep + lun
 			lun_device = lun_path + '/device'
@@ -214,15 +214,11 @@ def __iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 
 	if AttrWrite(luns_dir, 'mgmt', lun_cmd):
 		# 检查initiator配置，如果是最后一个lun，删除initiator组配置
-		if initor != '*' and getDirList(luns_dir) == []:
+		if initor != '*' and list_child_dir(luns_dir) == []:
 			if not __delInitiatorConf(tgt, initor):
 				return False, '解除LUN %d 映射失败!无法删除Initiator %s 配置!' % (lun_id, initor)
 		if not isLunExported(volume) and remove_volume:
-			udv_list = []
-			ext_cmd = 'sys-manager udv --list'
-			result = commands.getoutput(ext_cmd)
-			udv_list = json.loads(result)
-			vol_info = getVolumeInfo(volume, udv_list)
+			vol_info = getVolumeInfo(volume)
 			if iSCSIVolumeRemove(volume):
 				return (True, '解除LUN %d 映射成功！' % lun_id)
 			else:
@@ -245,40 +241,38 @@ def iSCSILunGetList(tgt = ''):
 	tgt_lun_list = []
 	udv_list = []
 	try:
-		ext_cmd = 'sys-manager udv --list'
-		result = commands.getoutput(ext_cmd)
-		udv_list = json.loads(result)
-
 		for t in iSCSIGetTargetList(tgt):
 
 			# get target luns
 			tgt_luns_dir = SCST.TARGET_DIR + os.sep + t.name + '/luns'
-			for l in getDirList(tgt_luns_dir):
+			for l in list_child_dir(tgt_luns_dir):
 				volume_path = tgt_luns_dir + os.sep + l + '/device'
 				volume_name = os.path.basename(os.readlink(volume_path))
-				vol = getVolumeInfo(volume_name, udv_list)
+				vol = getVolumeInfo(volume_name)
 				lun = vol.__dict__
 				lun['lun_id'] = int(l)
 				lun['target_name'] = t.name
 				lun['initiator'] = '*'
 				if vol.read_only == 'enable':
 					lun['read_only'] = vol.read_only
+					lun['wr_method'] = 'N/A'
 				else:
 					if AttrRead(tgt_luns_dir + os.sep + l, 'read_only') == '0':
 						lun['read_only'] = 'disable'
 					else:
 						lun['read_only'] = 'enable'
-				#tgt_lun.lun_list.append(lun)
+						lun['wr_method'] = 'N/A'
+
 				tgt_lun_list.append(lun)
 
 			# get initiator luns
 			ini_grp_dir = '%s/%s/ini_groups' % (SCST.TARGET_DIR, t.name)
-			for l in getDirList(ini_grp_dir):
+			for l in list_child_dir(ini_grp_dir):
 				luns_dir = '%s/%s/luns' % (ini_grp_dir, l)
-				for k in getDirList(luns_dir):
+				for k in list_child_dir(luns_dir):
 					volume_path = '%s/%s/device' % (luns_dir, k)
 					volume_name = os.path.basename(os.readlink(volume_path))
-					vol = getVolumeInfo(volume_name, udv_list)
+					vol = getVolumeInfo(volume_name)
 					lun = vol.__dict__
 					lun['lun_id'] = int(k)
 					lun['target_name'] = t.name
