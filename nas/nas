@@ -5,46 +5,13 @@ import sys
 import os
 import getopt
 import json
-os.chdir(os.path.dirname(sys.argv[0]))
 
+from libcommon import *
 from libnas import *
 
-def DictDump(row_list):
-	return row_list
-
-def DefaultDump(row_list):
-	rows = []
-	for row in row_list:
-		rows.append(row.__dict__)
-	return rows
-
-class UniOutput:
-	def __init__(self, row_list, dump = DefaultDump):
-		self.total = 0
-		self.rows = []
-		#for row in row_list:
-		#	self.rows.append(row.__dict__)
-		#self.total = len(self.rows)
-		self.rows = dump(row_list)
-		self.total = len(self.rows)
-
-		#print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
-		print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
-		sys.exit(0)
-
-
-def nasExit(ret = True, msg = ''):
-	ret_msg = {'status':True, 'msg':''}
-	ret_msg['status'] = ret
-	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
-	if ret:
-		sys.exit(0)
-	sys.exit(-1)
-
-def nasUsage():
+def usage():
 	print """
-nas --list [--volume <name> | --state formatting|mounted|all [--not-fail]]
+nas --list [--volume <name>] [--state formatting|mounted|all] [--not-fail]
     --map --udv <name> [--filesystem xfs|ext3|ext4]
     --unmap --volume <name>
     --misc --update-cfg
@@ -59,7 +26,7 @@ def nas_main():
 	try:
 		opts, args = getopt.gnu_getopt(sys.argv[1:], '', nas_long_opt)
 	except getopt.GetoptError, e:
-		nasExit(False, '未识别的命令参数: %s' % e)
+		comm_exit(False, '未识别的命令参数: %s' % e)
 
 	arg_op_mode = ''
 	arg_volume = ''
@@ -89,23 +56,23 @@ def nas_main():
 			arg_not_fail = True
 
 	if arg_op_mode == '--list':
-		UniOutput(nasGetList(arg_volume, arg_state, arg_not_fail))
+		CommOutput(get_nasvol_list(arg_volume, arg_state, arg_not_fail))
 	elif arg_op_mode == '--map':
-		ret,msg = nasMapping(arg_udv, arg_fs)
-		nasExit(ret, msg)
+		ret,msg = nas_vol_add(arg_udv, '', arg_fs)
+		log_insert('NAS', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 	elif arg_op_mode == '--unmap':
-		ret,msg = nasUnmapping(arg_volume)
-		nasExit(ret, msg)
+		ret,msg = nas_vol_remove(arg_volume)
+		log_insert('NAS', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 	elif arg_op_mode == '--misc':
 		if arg_update:
-			ret,msg = nasUpdateCFG()
-			nasExit(ret, msg)
+			comm_exit(False, 'not support')
 		elif arg_restore:
-			ret,msg = nasRestoreCFG()
-			nasExit(ret, msg)
+			ret,msg = nas_conf_load()
+			comm_exit(ret, msg)
 
-	nasUsage()
-
+	usage()
 
 if __name__ == '__main__':
 	nas_main()

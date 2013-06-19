@@ -77,28 +77,26 @@ def iscsiTargetProc(args = iSCSIArgs()):
 		CommOutput(iSCSIGetTargetList(args.target_name_str))
 	elif args.modify_set:
 		if args.name_str == '':
-			iscsiExit(False, '请输入被操作的Target名称!')
+			comm_exit(False, '请输入被操作的Target名称!')
 		elif args.attr_str == '':
-			iscsiExit(False, '请输入设置的属性名称!')
+			comm_exit(False, '请输入设置的属性名称!')
 		elif args.value_str == '':
-			iscsiExit(False, '请输入设置的属性取值!')
+			comm_exit(False, '请输入设置的属性取值!')
 		else:
 			ret,msg = iSCSISetTargetAttr(args.name_str, args.attr_str, args.value_str)
-			if ret:
-				iscsiExit(True, '设置Target %s 属性 %s 为 %s 成功!' % (args.name_str, args.attr_str, args.value_str))
-			else:
-				iscsiExit(False, '设置Target %s 属性 %s 为 %s 失败!' % (args.name_str, args.attr_str, args.value_str))
+			log_insert('NAS', 'Auto', 'Info' if ret else 'Error', msg)
+			comm_exit(ret, msg)
 	elif args.add_set:
-		iscsiExit(False, '暂不支持添加Target操作!')
+		comm_exit(False, '暂不支持添加Target操作!')
 	elif args.remove_set:
-		iscsiExit(False, '暂不支持删除Target操作!')
+		comm_exit(False, '暂不支持删除Target操作!')
 	else:
-		iscsiExit(False, '缺少参数!')
+		comm_exit(False, '缺少参数!')
 	return
 
 def iscsiAddVolume(args = iSCSIArgs()):
 	if not len(args.udv_str):
-		iscsiExit(False, '请输入UDV名称!')
+		comm_exit(False, '请输入UDV名称!')
 	try:
 		blocksize = 512
 		if len(args.blocksize_str):
@@ -118,71 +116,82 @@ def iscsiVolumeProc(args = iSCSIArgs()):
 		CommOutput(iSCSIVolumeGetList(args.volume_name_str, args.udv_str))
 	elif args.add_set:
 		ret,msg = iscsiAddVolume(args) 
-		iscsiExit(ret, msg)
+		log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 	elif args.remove_set:
 		if not len(args.remove_str):
-			iscsiExit(False, '请设置需要删除的iSCSI数据卷名称!')
+			comm_exit(False, '请设置需要删除的iSCSI数据卷名称!')
 		else:
 			ret,msg = iSCSIVolumeRemove(args.remove_str)
-			iscsiExit(ret, msg)
+			log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+			comm_exit(ret, msg)
 	else:
-		iscsiExit(False, '缺少参数!')
+		comm_exit(False, '缺少参数!')
 
 # 处理LUN相关参数
 def iscsiLunProc(args = iSCSIArgs()):
 	if args.list_set:
 		if len(args.lun_id_str):
-			iscsiExit(False, '暂不支持获取指定LUN ID信息！')
+			comm_exit(False, '暂不支持获取指定LUN ID信息！')
 		CommOutput(iSCSILunGetList(args.target_name_str), DictDump)
+
 	elif args.map_set:
 		if not len(args.target_name_str):
-			iscsiExit(False, '请输入Target名称!')
+			comm_exit(False, '请输入Target名称!')
 		elif not args.add_set and not len(args.volume_name_str):
-			iscsiExit(False, '请输入iSCSI数据卷名称!')
+			comm_exit(False, '请输入iSCSI数据卷名称!')
 		elif not len(args.lun_id_str):
-			iscsiExit(False, '请输入LUN ID!')
+			comm_exit(False, '请输入LUN ID!')
 		elif not len(args.lun_read_only_str):
-			iscsiExit(False, '请输入读写属性!')
+			comm_exit(False, '请输入读写属性!')
 
 		# check if add volume
 		if args.add_set:
 			ret,msg = iscsiAddVolume(args) 
 			if not ret:
-				iscsiExit(ret, msg)
+				log_insert('iSCSI', 'Auto', 'Error', msg)
+				comm_exit(ret, msg)
 			volume_name = getVolumeByUdv(args.udv_str)
 			if not volume_name:
-				iscsiExit(False, '无法获取iSCSI数据卷名称!')
+				comm_exit(False, '无法获取iSCSI数据卷名称!')
 			args.volume_name_str = volume_name
 		
 		ret,msg = iSCSILunMap(args.target_name_str, args.volume_name_str,
 				args.lun_id_str, args.lun_read_only_str, args.initor)
 		if ret == False and args.add_set:
 			iSCSIVolumeRemove(volume_name)
-		iscsiExit(ret, msg)
+		log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
+
 	elif args.modify_set:
 		ret,msg = iSCSILunModify(args.target_name_str, args.lun_id_str, args.cur_initor, args.fre_initor)
-		iscsiExit(ret, msg)
+		log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
+
 	elif args.unmap_set:
 		if not len(args.target_name_str):
-			iscsiExit(False, '请输入Target名称!')
+			comm_exit(False, '请输入Target名称!')
 		elif not len(args.lun_id_str):
-			iscsiExit(False, '请输入LUN ID!')
+			comm_exit(False, '请输入LUN ID!')
 		try:
 			ret,msg = iSCSILunUnmap(args.target_name_str, int(args.lun_id_str), args.initor)
-			iscsiExit(ret, msg)
+			log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+			comm_exit(ret, msg)
 		except:
 			sys.exit(-1)
+
 	elif args.get_privilage_set:
 		if not len(args.udv_str):
-			iscsiExit(False, '请输入需要查询的用户数据卷名称！')
+			comm_exit(False, '请输入需要查询的用户数据卷名称')
 		priv = iSCSILunGetPrivilage(args.udv_str)
 		if priv != {}:
 			print json.dumps(priv)
 			sys.exit(0)
 		else:
-			iscsiExit(False, '用户数据卷 %s 不是iscsi卷！' % args.udv_str)
+			comm_exit(False, '用户数据卷 %s 不是iscsi卷！' % args.udv_str)
+
 	else:
-		iscsiExit(False, '缺少参数!')
+		comm_exit(False, '缺少参数!')
 
 # 处理Session相关参数
 def iscsiSessionProc(args = iSCSIArgs()):
@@ -194,31 +203,33 @@ def iscsiSessionProc(args = iSCSIArgs()):
 
 	if args.force_close_sid != None:
 		ret,msg = iSCSIDeleteSession(args.force_close_sid)
-		iscsiExit(ret, msg)
-	iscsiExit(False, '请输入正确的session操作!')
+		comm_exit(ret, msg)
+	comm_exit(False, '请输入正确的session操作!')
 
 def iscsiMiscProc(args = iSCSIArgs()):
 	if args.update_cfg:
-		ret,msg = iSCSIUpdateCFG()
-		iscsiExit(ret,msg)
+		ret = iSCSIUpdateCFG()
+		comm_exit(ret, '更新配置文件%s' % '成功' if ret else '失败')
 	if args.restore_cfg:
 		ret,msg = iSCSIRestoreCFG()
-		iscsiExit(ret,msg)
+		comm_exit(ret,msg)
 	if args.default_target:
 		ret = iSCSISetDefaultTarget()
-		iscsiExit(ret, '')
+		comm_exit(ret, '')
 
 def iscsiChapProc(args = iSCSIArgs()):
 	if not args.list_set and args.chap_type != 'incoming' and args.chap_type != 'outgoing':
-		iscsiExit(False, '请设置正确的CHAP认证方向(incoming 或者 outgoing)!')
+		comm_exit(False, '请设置正确的CHAP认证方向(incoming 或者 outgoing)!')
 	# chap add user
 	if args.add_set:
 		ret,msg = iSCSIChapAddUser(args.target_name_str, args.chap_user_str, args.chap_pass_str)
-		iscsiExit(ret, msg)
+		log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 	# chap remove user
 	if args.remove_set:
 		ret,msg = iSCSIChapRemoveUser(args.target_name_str, args.remove_str)
-		iscsiExit(ret, msg)
+		log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 	
 	# chap dup
 	if args.chap_dup:
@@ -237,17 +248,19 @@ def iscsiChapProc(args = iSCSIArgs()):
 			ret,msg = iSCSIChapEnableUser(args.target_name_str, args.chap_user_str)
 		else:
 			ret,msg = iSCSIChapEnable(args.target_name_str)
-		iscsiExit(ret, msg)
+		log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 	elif args.chap_set_str == 'disable':
 		if args.chap_user_str != '':
 			ret,msg = iSCSIChapDisableUser(args.target_name_str, args.chap_user_str)
 		else:
 			ret,msg = iSCSIChapDisable(args.target_name_str)
-		iscsiExit(ret, msg)
+		log_insert('iSCSI', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 	# chap list
 	if args.list_set:
 		CommOutput(iSCSIChapList(args.target_name_str))
-	iscsiExit(False, '请输入正确的CHAP操作参数!')
+	comm_exit(False, '请输入正确的CHAP操作参数!')
 	return
 
 def iscsiUsage():
@@ -300,7 +313,7 @@ def iscsi_main():
 	try:
 		opts, args = getopt.gnu_getopt(sys.argv[1:], '', iscsi_long_opt)
 	except getopt.GetoptError, e:
-		iscsiExit(False, '%s' % e)
+		comm_exit(False, '%s' % e)
 
 	iscsiArgs = iSCSIArgs()
 	for opt,arg in opts:

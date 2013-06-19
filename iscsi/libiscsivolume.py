@@ -11,6 +11,7 @@ from libcommon import *
 from libudv import *
 from libiscsicomm import *
 from libiscsitarget import iSCSIUpdateCFG
+from libnas import is_nasvolume
 
 # 参数约束条件
 VOL_BLOCK_SIZE = [512, 1024, 2048, 4096]
@@ -43,28 +44,36 @@ def __wrth_str(wr):
 	return 'wt' if wr == '1' else 'wb'
 
 def iSCSIVolumeAdd(udv_name, blocksize = 512, ro = 'disable', wrth = 'wb'):
+	err_msg = '添加用户数据卷 %s 为iSCSI卷 ' % udv_name
 	if not blocksize in VOL_BLOCK_SIZE:
-		return (False, '映射iSCSI数据卷失败, Block Size参数不正确')
+		return (False, err_msg + '失败, Block Size: %s 错误' % blocksize)
 	if not ro in VOL_BOOL_MAP:
-		return (False, '映射iSCSI数据卷失败, Read Only参数不正确')
+		return (False, err_msg + '失败, Read Only: %s 错误' % ro)
 
 	udv_dev = get_dev_byudvname(udv_name)
 	if '' == udv_dev:
-		return (False, '映射iSCSI数据卷失败, 用户数据卷不存在.')
+		return (False, err_msg + '失败, 用户数据卷 %s 不存在' % udv_name)
 
-	# todo: add nas check
 	if get_iscsivolname_bydev(udv_dev) != '':
-		return (False, '映射iSCSI数据卷失败！用户数据卷 %s 已经被使用！' % udv_name)
+		return (False, err_msg + '失败, 用户数据卷已经映射为iSCSI卷')
+	
+	if is_nasvolume(udv_name):
+		return (False, err_msg + '失败, 用户数据卷已经映射为NAS卷')
 
-	vol_name = 'vd' + str(uuid.uuid1()).split('-')[0]
+	# vol_name = 'vd' + str(uuid.uuid1()).split('-')[0]
+	vol_name = udv_name
 	iscsi_cmd = 'add_device %s filename=%s;blocksize=%d;read_only=%s;write_through=%s' % (vol_name, udv_dev, blocksize, VOL_BOOL_MAP[ro], __wrth_int(wrth))
 
-	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
-		ret,msg = iSCSIUpdateCFG()
-		if not ret:
-			return (True, '添加iSCSI数据卷 %s 成功, 更新配置文件失败 %s' % (vol_name, msg))
-		return (True, '添加iSCSI数据卷 %s 成功' % vol_name)
-	return (False, '添加iSCSI数据卷 %s 失败' % vol_name)
+	if not fs_attr_write(SCST.VDISK_DIR + '/mgmt', iscsi_cmd):
+		return (False, err_msg + '失败, 系统错误')
+
+	if not iSCSIUpdateCFG():
+		iscsi_cmd = 'del_device %s' % vol_name
+		fs_attr_write(SCST.VDISK_DIR + '/mgmt', iscsi_cmd)
+		iSCSIUpdateCFG()
+		return (False, err_msg + '失败, 保存配置文件失败')
+	
+	return (True, err_msg + '%s 成功' % vol_name)
 
 # 检查Vdisk是否有lun在使用
 def isLunExported(volume_name):
@@ -80,36 +89,42 @@ def isLunExported(volume_name):
 	return exported
 
 def iSCSIVolumeRemove(volume_name):
+	err_msg = '删除iSCSI卷 %s ' % volume_name
 	if not isVolumeExist(volume_name):
-		return (False, 'iSCSI数据卷 %s 不存在' % volume_name)
+		return (False, err_msg + '失败, iSCSI卷不存在')
 
 	if isLunExported(volume_name):
-		return (False, '删除iSCSI数据卷失败, iSCSI数据卷正在被其他LUN使用')
+		return (False, err_msg + '失败, iSCSI卷正在使用')
 
 	iscsi_cmd = 'del_device %s' % volume_name
-	if AttrWrite(SCST.VDISK_DIR, 'mgmt', iscsi_cmd):
-		ret,msg = iSCSIUpdateCFG()
-		if not ret:
-			return (True, '删除iSCSI数据卷 %s 成功, 更新配置文件失败 %s' % (volume_name, msg))
-		return (True, '删除iSCSI数据卷 %s 成功' % volume_name)
-	return (False, '删除iSCSI数据卷 %s 失败' % volume_name)
+	if not fs_attr_write(SCST.VDISK_DIR + '/mgmt', iscsi_cmd):
+		return (False, err_msg + '失败, 系统错误')
+
+	if not iSCSIUpdateCFG():
+		return (False, err_msg + '失败, 保存配置文件失败')
+
+	return (True, err_msg + '成功')
 
 def getVolumeInfo(volume_name):
 	if not isVolumeExist(volume_name):
 		return None
 
-	vol_full_path = SCST.VDISK_DIR + os.sep + volume_name
+	vol_sys_dir = SCST.VDISK_DIR + os.sep + volume_name
 	vol = iSCSIVolume()
 	vol.volume_name = volume_name
-	vol.udv_dev = AttrRead(vol_full_path, 'filename')
+	vol.udv_dev = fs_attr_read(vol_sys_dir + '/filename')
 	vol.udv_name = get_udvname_bydev(vol.udv_dev)
 	vol.vg_name = get_vgname_bydev(vol.udv_dev)
-	vol.capacity = int(AttrRead(vol_full_path, 'size_mb')) * 1024 * 1024
-	vol.blocksize = int(AttrRead(vol_full_path, 'blocksize'))
-	vol.read_only = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'read_only')]
-	vol.nv_cache = VOL_BOOL_RMAP[AttrRead(vol_full_path, 'nv_cache')]
-	vol.t10_dev_id = AttrRead(vol_full_path, 't10_dev_id')
-	vol.wr_method = __wrth_str(AttrRead(vol_full_path, 'write_through'))
+	val = fs_attr_read(vol_sys_dir + '/size_mb')
+	if val != '' and val.isdigit():
+		vol.capacity = int(val) * 1024 * 1024
+	val = fs_attr_read(vol_sys_dir + '/blocksize')
+	if val != '' and val.isdigit():
+		vol.blocksize = int(val)
+	vol.read_only = VOL_BOOL_RMAP[fs_attr_read(vol_sys_dir + '/read_only')]
+	vol.nv_cache = VOL_BOOL_RMAP[fs_attr_read(vol_sys_dir + '/nv_cache')]
+	vol.t10_dev_id = fs_attr_read(vol_sys_dir + '/t10_dev_id')
+	vol.wr_method = __wrth_str(fs_attr_read(vol_sys_dir + '/write_through'))
 	return vol
 
 def iSCSIVolumeGetList(volume_name = '', udv_name = ''):

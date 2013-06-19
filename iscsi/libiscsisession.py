@@ -30,14 +30,38 @@ class iSCSI_Session():
 def __sess_get_stat(sess_path):
 	# session stat
 	_stat = SessionStat()
-	_stat.none_cmd_count = int(AttrRead(sess_path, 'none_cmd_count'))
-	_stat.unknown_cmd_count = int(AttrRead(sess_path, 'unknown_cmd_count'))
-	_stat.bidi_cmd_count = int(AttrRead(sess_path, 'bidi_cmd_count'))
-	_stat.bidi_io_count_kb = int(AttrRead(sess_path, 'bidi_io_count_kb'))
-	_stat.read_cmd_count = int(AttrRead(sess_path, 'read_cmd_count'))
-	_stat.read_io_count_kb = int(AttrRead(sess_path, 'read_io_count_kb'))
-	_stat.write_cmd_count = int(AttrRead(sess_path, 'write_cmd_count'))
-	_stat.write_io_count_kb = int(AttrRead(sess_path, 'write_io_count_kb'))
+	
+	val = fs_attr_read(sess_path + '/none_cmd_count')
+	if val != '' and val.isdigit():
+		_stat.none_cmd_count = int(val)
+	
+	val = fs_attr_read(sess_path + '/unknown_cmd_count')
+	if val != '' and val.isdigit():
+		_stat.unknown_cmd_count = int(val)
+	
+	val = fs_attr_read(sess_path + '/bidi_cmd_count')
+	if val != '' and val.isdigit():
+		_stat.bidi_cmd_count = int(val)
+	
+	val = fs_attr_read(sess_path + '/bidi_io_count_kb')
+	if val != '' and val.isdigit():
+		_stat.bidi_io_count_kb = int(val)
+	
+	val = fs_attr_read(sess_path + '/read_cmd_count')
+	if val != '' and val.isdigit():
+		_stat.read_cmd_count = int(val)
+	
+	val = fs_attr_read(sess_path + '/read_io_count_kb')
+	if val != '' and val.isdigit():
+		_stat.read_io_count_kb = int(val)
+	
+	val = fs_attr_read(sess_path + '/write_cmd_count')
+	if val != '' and val.isdigit():
+		_stat.write_cmd_count = int(val)
+	
+	val = fs_attr_read(sess_path + '/write_io_count_kb')
+	if val != '' and val.isdigit():
+		_stat.write_io_count_kb = int(val)
 	return _stat
 
 def __sess_get_ip(sess_path):
@@ -46,7 +70,7 @@ def __sess_get_ip(sess_path):
 		if not os.path.isdir('%s/%s' % (sess_path, d)):
 			continue
 		if os.path.exists('%s/%s/ip' % (sess_path, d)):
-			ip = AttrRead('%s/%s' % (sess_path, d), 'ip')
+			ip = fs_attr_read('%s/%s/ip' % (sess_path, d))
 			break
 	return ip
 
@@ -63,7 +87,7 @@ def iSCSIGetSessionList(spec_tgt=None):
 			_session.iscsi_protocol = _iscsi_proto
 			_session.initiator_name = sess
 			_sess_path = '%s/%s/sessions/%s' % (SCST.TARGET_DIR, tgt.name, sess)
-			_session.sid = AttrRead(_sess_path, 'sid')
+			_session.sid = fs_attr_read(_sess_path + '/sid')
 			_session.luns = len(os.listdir('%s/luns' % _sess_path)) -1
 			_session.target_name = tgt.name
 			_session.ip_addr = __sess_get_ip(_sess_path)
@@ -78,11 +102,10 @@ def iSCSIDeleteSession(sid):
 			cmd = 'echo "1" > %s/%s/sessions/%s/force_close' % (SCST.TARGET_DIR, sess.target_name, sess.initiator_name)
 			ret,txt = commands.getstatusoutput(cmd)
 			if ret == 0:
-				return True,'删除iSCSI Session %s 成功!' % sid
+				return True,'删除iSCSI Session %s 成功' % sid
 			else:
 				return False,'删除iSCSI Session %s 失败' % sid
-	return False,'删除iSCSI Session失败，Session不存在!'
+	return False,'删除iSCSI Session失败，Session %s 不存在' % sid
 
 if __name__ == '__main__':
-	for sess in iSCSIGetSessionList():
-		print sess.__dict__
+	sys.exit(0)
