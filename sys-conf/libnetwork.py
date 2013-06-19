@@ -157,7 +157,6 @@ iface lo inet loopback\n
 				iflist = deviant(name, 'iflist').split(',')
 				if len(iflist) > 0:
 					for i in iflist:
-						bond_str = bond_str + 'ifconfig ' + i + ' 0.0.0.0 > /dev/null\n'
 						bond_str = bond_str + 'ifdown ' + i + ' > /dev/null\n'
 						bond_str = bond_str + 'ip rule del table ' + i + '\n'
 						bond_str = bond_str + 'echo +' + i + ' > /sys/class/net/' + name  + '/bonding/slaves\n'
@@ -166,6 +165,7 @@ iface lo inet loopback\n
 						bond_str = bond_str + 'if [ "$route_str" !=  "" ]; then\n'
 						bond_str = bond_str + '	ip ro del $route_str\n'
 						bond_str = bond_str + 'fi\n'
+						bond_str = bond_str + 'ifconfig ' + i + ' 0.0.0.0 > /dev/null\n'
 				bond_str = bond_str + '\n'
 				if deviant(name, 'gateway') != '':
 						bond_str = bond_str + 'route add default gw '+deviant(name, 'gateway')+' dev ' + name  + '\n\n'
@@ -274,7 +274,7 @@ def AUsage(err=""):
 	print """
 network --list < --iface <name> | --filter |--intbond >
 	--ifconfig --iface <name> < --dhcp  | [ --ip <address> --mask <netmask> --gw <gateway> ] > 		##设置IP地址
-	--bond --iface <bond0|bond1> --nic <eth1,eth2,eth3,eth4,.....> --mode <bonding mode(1|2|4)> --ip <address> --mask <netmask> [--gw<gateway>]		###配置启用BOND接口
+	--bond --iface <bond0|bond1> --nic <eth1,eth2,eth3,eth4,.....> --mode <1|2|4|6> --ip <address> --mask <netmask> [--gw<gateway>]		###配置启用BOND接口
 	--bond --remove --iface <bond0|bond1>			###卸载bond接口
 	--dns < --val <nameserver1,nameserver2> >
 	--default [--iface <eth0> ]		###恢复默认
@@ -461,25 +461,25 @@ def BOND_Set(value):
 				os.system('echo 2 > /sys/class/net/' +name+ '/bonding/xmit_hash_policy')
 				SYSTEM_OUT('ifconfig '+name+' '+ip+' netmask '+mask+' up')
 				os.system('advanceroute ' + name)
-				if len(gw) > 0:
-					SYSTEM_OUT('route add default gw '+gw+' dev ' + name)
+				os.system('echo 100 > /sys/class/net/'+ name+'/bonding/miimon')
 				for x in  Nic_Array:
 					if len(x) > 0:
 						config.set(x, 'bond',  name)
-						os.system('ip rule del table ' +x)
-						os.system('ifconfig '+x+' 0.0.0.0 > /dev/null')
 						os.system('ifdown '+x+' > /dev/null')
+						os.system('ip rule del table ' +x)
 						SYSTEM_OUT('echo +'+x+' > /sys/class/net/'+name+'/bonding/slaves')
 						route_str = SYSTEM_OUT('ip route|grep "'+x+'  proto"|cut -d " " -f1,2,3')
 						if len(route_str) > 9:
 							SYSTEM_OUT('ip ro del '+route_str)
+						os.system('ifconfig '+x+' 0.0.0.0 > /dev/null')
 				for n in __NET_LIST__():
 					if n not in Nic_Array:
 						if __deviant__(n, 'bond') == name:
 							config.set(n, 'bond',  '')
 							SYSTEM_OUT('echo -'+n+' > /sys/class/net/'+name+'/bonding/slaves;')
 							os.system('ifup '+n+' > /dev/null')
-				
+				if len(gw) > 0:
+					SYSTEM_OUT('route add default gw '+gw+' dev ' + name)
 				__Conf_Save__()
 				Export(True, '开启成功！')
 			else:
@@ -494,11 +494,11 @@ def BOND_Set(value):
 						config.set(e, 'bond', '')
 				if int(SYSTEM_OUT('ifconfig|grep "^'+name+'"|wc -l')) > 0:
 					os.system('ifconfig '+name+' down > /dev/null')
-					os.system('ip rule del table ' +name)
+					os.system('ip rule del table ' +name+' >/dev/null')
 				for e in Nic.split(','):
 					if len(e) > 0:
 						os.system('ifup '+e+' > /dev/null')
-						os.system('advanceroute '+e)
+						os.system('advanceroute '+e+' >/dev/null')
 				SYSTEM_OUT('echo -'+name+' > /sys/class/net/bonding_masters')
 				config.set(name, 'iflist', '')
 				__Conf_Save__()

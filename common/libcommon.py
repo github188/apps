@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os, re, json, sys, fcntl
+import xml
+from xml.dom import minidom
 
 CONF_ROOT_DIR = '/opt/jw-conf'
 
@@ -146,6 +148,34 @@ class CommOutput:
 			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
 		
 		sys.exit(0)
+
+def comm_exit(ret = True, msg = ''):
+	ret_msg = {'status':True, 'msg':''}
+	ret_msg['status'] = ret
+	ret_msg['msg'] = msg
+	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	if ret:
+		sys.exit(0)
+	sys.exit(-1)
+
+def xml_load(path):
+	try:
+		doc = minidom.parse(path)
+	except:
+		return None
+	return doc
+
+def xml_save(doc, path):
+	path_tmp = path + '.tmp'
+	try:
+		fd = open(path_tmp, 'w')
+		doc.writexml(fd, encoding='utf-8')
+		fd.close()
+		os.rename(path_tmp, path)
+	except:
+		return False
+
+	return True
 
 if __name__ == '__main__':
 	log = initlog()

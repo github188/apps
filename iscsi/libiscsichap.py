@@ -26,375 +26,275 @@ class iSCSICHAP:
 		self.target_name = ''
 		self.incoming = []
 
-# ----------------------------------------
-# xml操作
-# ----------------------------------------
+def chap_sysfs_user_add(tgt, user, pwd):
+	cmd = 'add_target_attribute %s IncomingUser %s %s' % (tgt, user, pwd)
+	return fs_attr_write(SCST.TARGET_DIR + '/mgmt', cmd)
 
-def __load_xml(filename):
-	try:
-		doc = minidom.parse(filename)
-	except IOError,e:
-		return False, '读取配置分区出错！%s' % e
-	except xml.parsers.expat.ExpatError, e:
-		return False, '磁盘配置文件格式出错！%s' % e
-	except e:
-		return False, '无法解析磁盘配置文件！%s' % e
-	except:
-		return False, '加载配置文件失败，未知错误!'
-	return True,doc
-
-def __get_xmlnode(node, name):
-	return node.getElementsByTagName(name) if node else None
-
-def __get_attrvalue(node, attrname):
-	return node.getAttribute(attrname) if node else None
-
-def __set_attrvalue(node, attr, value):
-	return node.setAttribute(attr, value)
-
-def __remove_attr(node, attr):
-	return node.removeAttribute(attr)
-
-
-def _chap_sysfs_user_add(tgt, user, pwd):
-	if not isTargetExist(tgt):
-		return False, '增加CHAP用户失败，Target %s 不存在!' % tgt
-	try:
-		cmd = 'add_target_attribute %s IncomingUser %s %s' % (tgt, user, pwd)
-		AttrWrite(SCST.TARGET_DIR, 'mgmt', cmd)
-	except:
-		return False, '增加CHAP用户 %s 失败，写入iSCSI命令错误!'
-	return True, ''
-
-def _chap_sysfs_user_remove(tgt, user):
-	if not isTargetExist(tgt):
-		return False, '删除CHAP用户失败，Target %s 不存在!' % tgt
+def chap_sysfs_user_remove(tgt, user):
 	cmd = 'del_target_attribute %s IncomingUser %s' % (tgt, user)
-	if not AttrWrite(SCST.TARGET_DIR, 'mgmt', cmd):
-		return False, '删除CHAP用户 %s 失败，写入iSCSI命令错误!'
-	return True, '删除CHAP用户 %s 成功!'
+	return fs_attr_write(SCST.TARGET_DIR + '/mgmt', cmd)
 
-def _chap_conf_check():
+def chap_conf_check():
 	if os.path.isfile(ISCSI_CHAP_CONF):
 		return
-	try:
-		_dir = os.path.split(ISCSI_CHAP_CONF)[0]
-		if not os.path.exists(_dir):
-			os.makedirs(_dir)
-		doc = minidom.Document()
-		root = doc.createElement('iscsi')
-		doc.appendChild(root)
 
-		f = open(ISCSI_CHAP_CONF, 'w')
-		#f.write(doc.toprettyxml(newl='', indent='', encoding='UTF-8'))
-		f.write(doc.toxml(encoding='UTF-8'))
-		f.close()
-	except:
-		return
+	_dir = os.path.dirname(ISCSI_CHAP_CONF)
+	if not os.path.exists(_dir):
+		os.makedirs(_dir)
+
+	doc = minidom.Document()
+	root = doc.createElement('iscsi')
+	doc.appendChild(root)
+
+	xml_save(doc, ISCSI_CHAP_CONF)
 	return
 
-def _chap_conf_user_add(tgt, user, pwd):
-	_chap_conf_check()
+def chap_conf_user_add(tgt, user, pwd):
+	chap_conf_check()
 
-	ret,doc = __load_xml(ISCSI_CHAP_CONF)
-	if not ret:
-		return False, doc
+	doc = xml_load(ISCSI_CHAP_CONF)
+	if None == doc:
+		return False
+
 	root = doc.documentElement
 	
 	# find target node
 	target = None
-	for x in __get_xmlnode(root, 'target'):
-		if __get_attrvalue(x, 'name') == tgt:
-			target = x
+	for item in root.getElementsByTagName('target'):
+		if item.getAttribute('name') == tgt:
+			target = item
 			break
 	if target is None:
 		target = doc.createElement('target')
 		__set_attrvalue(target, 'name', tgt)
 		root.appendChild(target)
 	
-
 	# add new incoming user
 	incoming = doc.createElement('incoming')
-	__set_attrvalue(incoming, 'user', user)
-	__set_attrvalue(incoming, 'password', pwd)
-	__set_attrvalue(incoming, 'active', 'enable')
+	incoming.setAttribute('user', user)
+	incoming.setAttribute('password', pwd)
+	incoming.setAttribute('active', 'enable')
 	target.appendChild(incoming)
 
-	try:
-		f = open(ISCSI_CHAP_CONF, 'w')
-		#f.write(doc.toprettyxml(newl='', indent='', encoding='UTF-8'))
-		f.write(doc.toxml(encoding='UTF-8'))
-		f.close()
-	except:
-		return False, '增加iSCSI CHAP Incoming用户出错，写入配置文件失败!'
-	return True, '增加iSCSI CHAP Incoming用户到配置文件成功!'
+	return xml_save(doc, ISCSI_CHAP_CONF)
 
-def _chap_conf_user_remove(tgt, user):
-	_chap_conf_check()
+def chap_conf_user_remove(tgt, user):
+	chap_conf_check()
 
-	ret,doc = __load_xml(ISCSI_CHAP_CONF)
-	if not ret:
-		return False,doc
+	doc = xml_load(ISCSI_CHAP_CONF)
+	if None == doc:
+		return False
+
 	root = doc.documentElement
-
-	target_found = False
-	incoming_found = False
-	for target in __get_xmlnode(root, 'target'):
-		if __get_attrvalue(target, 'name') != tgt:
-			continue
-		target_found = True
-		for incoming in __get_xmlnode(target, 'incoming'):
-			if __get_attrvalue(incoming, 'user') != user:
-				continue
-			target.removeChild(incoming)
-			incoming_found = True
+	
+	# find target node
+	target = None
+	for item in root.getElementsByTagName('target'):
+		if item.getAttribute('name') == tgt:
+			target = item
 			break
+	if target is None:
+		return False
 	
-	if not target_found:
-		return False, '删除CHAP用户 %s 失败，未找到Target %s' % (user,tgt)
-	elif not incoming_found:
-		return False, '删除CHAP用户 %s 失败，未找到用户配置!' % user
-	
-	try:
-		f = open(ISCSI_CHAP_CONF, 'w')
-		#f.write(doc.toprettyxml(newl='', indent='', encoding='UTF-8'))
-		f.write(doc.toxml(encoding='UTF-8'))
-		f.close()
-	except:
-		return '删除CHAP用户 %s 失败，写入配置文件出错!' % user
-	return True, '删除CHAP用户 %s 成功!' % user
+	incoming = None
+	for item in target.getElementsByTagName('incoming'):
+		if item.getAttribute('user') == user:
+			incoming = item
+			break
 
-def _chap_conf_user_get(tgt, user):
-	_chap_conf_check()
+	if incoming is None:
+		return False
 
-	ret,doc = __load_xml(ISCSI_CHAP_CONF)
-	if not ret:
+	target.removeChild(incoming)
+	return xml_save(doc, ISCSI_CHAP_CONF)
+
+def chap_conf_user_get(tgt, user):
+	chap_conf_check()
+
+	doc = xml_load(ISCSI_CHAP_CONF)
+	if None == doc:
 		return None
-	root = doc.documentElement
 
-	for target in __get_xmlnode(root, 'target'):
-		if __get_attrvalue(target, 'name') != tgt:
-			continue
-		for incoming in __get_xmlnode(target, 'incoming'):
-			if __get_attrvalue(incoming, 'user') != user:
-				continue
+	root = doc.documentElement
+	
+	# find target node
+	target = None
+	for item in root.getElementsByTagName('target'):
+		if item.getAttribute('name') == tgt:
+			target = item
+			break
+	if target is None:
+		return None
+	
+	incoming = None
+	for item in target.getElementsByTagName('incoming'):
+		if item.getAttribute('user') == user:
 			tmp = iSCSICHAPIncoming()
-			tmp.user = __get_attrvalue(incoming, 'user')
-			tmp.password = __get_attrvalue(incoming, 'password')
-			tmp.active = __get_attrvalue(incoming, 'active')
+			tmp.user = item.getAttribute('user')
+			tmp.password = item.getAttribute('password')
+			tmp.active = item.getAttribute('active')
 			return tmp
+
 	return None
 
-def _chap_conf_user_enable(tgt, user, set_all = False):
-	_chap_conf_check()
+def chap_conf_user_set(tgt, user, state):
+	chap_conf_check()
+	
+	if state != 'enable':
+		state = 'disable'
 
-	ret,doc = __load_xml(ISCSI_CHAP_CONF)
-	if not ret:
-		return ret,doc
+	doc = xml_load(ISCSI_CHAP_CONF)
+	if None == doc:
+		return False
 	root = doc.documentElement
-
-	for target in __get_xmlnode(root, 'target'):
-		if __get_attrvalue(target, 'name') != tgt:
-			continue
-		target_found = True
-		for incoming in __get_xmlnode(target, 'incoming'):
-			if not set_all:
-				if __get_attrvalue(incoming, 'user') != user:
-					continue
-			incoming_found = True
-			__set_attrvalue(incoming, 'active', 'enable')
 	
-	if not target_found:
-		return False, '打开CHAP用户%s配置失败，Target % 不存在!' % (user, tgt)
-	elif not incoming_found:
-		return False, '打开CHAP用户%s配置失败，用户不存在!' % user
-
-	try:
-		f = open(ISCSI_CHAP_CONF, 'w')
-		#f.write(doc.toprettyxml(newl='', indent='', encoding='UTF-8'))
-		f.write(doc.toxml(encoding='UTF-8'))
-		f.close()
-	except:
-		return False, '打开CHAP用户%s配置失败，写入配置文件错误!' % user
-	return True, '打开CHAP用户%s配置成功!' % user
-
-def _chap_conf_user_disable(tgt, user, set_all = False):
-	_chap_conf_check()
-
-	ret,doc = __load_xml(ISCSI_CHAP_CONF)
-	if not ret:
-		return ret,doc
-	root = doc.documentElement
-
-	for target in __get_xmlnode(root, 'target'):
-		if __get_attrvalue(target, 'name') != tgt:
-			continue
-		target_found = True
-
-		for incoming in __get_xmlnode(target, 'incoming'):
-			if not set_all:
-				if __get_attrvalue(incoming, 'user') != user:
-					continue
-			incoming_found = True
-			__set_attrvalue(incoming, 'active', 'disable')
+	# find target node
+	target = None
+	for item in root.getElementsByTagName('target'):
+		if item.getAttribute('name') == tgt:
+			target = item
+			break
+	if target is None:
+		return False
 	
-	if not target_found:
-		return False, '禁用CHAP用户%s配置失败，Target % 不存在!' % (user, tgt)
-	elif not incoming_found:
-		return False, '禁用CHAP用户%s配置失败，用户不存在!' % user
-
-	try:
-		f = open(ISCSI_CHAP_CONF, 'w')
-		#f.write(doc.toprettyxml(newl='', encoding='UTF-8'))
-		f.write(doc.toxml(encoding='UTF-8'))
-		f.close()
-	except:
-		return False, '禁用CHAP用户%s配置失败，写入配置文件错误!' % user
-	return True, '禁用CHAP用户%s配置成功!' % user
+	finished = False
+	for item in target.getElementsByTagName('incoming'):
+		if user != '':
+			if item.getAttribute('user') != user:
+				continue
+			else:
+				finished = True
+		
+		item.setAttribute('active', state)
+		if finished:
+			break
 	
-	return True, ''
+	return xml_save(doc, ISCSI_CHAP_CONF)
 
 def iSCSIChapUserExist(tgt, user):
-	for x in iSCSIChapList(tgt):
-		for y in x.incoming:
-			if y['user'] == user:
-				return True
+	if chap_conf_user_get(tgt, user) != None:
+		return True
 	return False
-
-# -----------------------------------------------------------------------------------------
 
 def iSCSIChapList(tgt = ''):
 	chap_list = []
 
-	ret,doc = __load_xml(ISCSI_CHAP_CONF)
-	if not ret:
-		return []
+	doc = xml_load(ISCSI_CHAP_CONF)
+	if None == doc:
+		return chap_list
+
 	root = doc.documentElement
-
-	for x in __get_xmlnode(root, 'target'):
-		finish = False
-		if finish == True:
-			break
-
+	for target in root.getElementsByTagName('target'):
 		chap = iSCSICHAP()
-		name = __get_attrvalue(x, 'name')
-		if tgt != '':
-			if tgt == name:
-				finish = True
-			else:
-				continue
-		
-		chap.target_name = name
-	
-		for y in __get_xmlnode(x, 'incoming'):
-			incoming = iSCSICHAPIncoming()
-			incoming.user = __get_attrvalue(y, 'user')
-			incoming.password = __get_attrvalue(y, 'password')
-			incoming.active = __get_attrvalue(y, 'active')
-			chap.incoming.append(incoming.__dict__)
+		for incoming in target.getElementsByTagName('incoming'):
+			tmp = iSCSICHAPIncoming()
+			tmp.user = incoming.getAttribute('user')
+			tmp.password = incoming.getAttribute('password')
+			tmp.active = incoming.getAttribute('active')
+			chap.incoming.append(tmp.__dict__)
 
 		chap_list.append(chap)
+
 	return chap_list
 
 def iSCSIChapAddUser(tgt, user, pwd):
+	err_msg = '添加CHAP用户 %s ' % user
+	
+	if not isTargetExist(tgt):
+		return False, err_msg + '失败, Target %s 不存在' % tgt
+
 	if iSCSIChapUserExist(tgt, user):
-		return False, '增加CHAP用户失败，用户 %s 已经存在!' % user
+		return False, err_msg + '失败, 用户已存在'
+
 	if len(pwd) < 12:
-		return False, '增加CHAP用户 %s 失败，密码长度至少为12个英文或数字!'
-	ret,msg = _chap_sysfs_user_add(tgt, user, pwd)
-	if not ret:
-		return ret,msg
-	ret,msg = _chap_conf_user_add(tgt, user, pwd)
-	if not ret:
-		_chap_sysfs_user_remove(tgt, user, pwd)
-		return ret,msg
-	ret,msg = iSCSIUpdateCFG()
-	if not ret:
-		return ret,msg
-	return True, '增加CHAP用户 %s 成功!' % user
+		return False, err_msg + '失败, 密码长度至少为12个英文或数字'
+
+	if not chap_sysfs_user_add(tgt, user, pwd):
+		return False, err_msg + '失败, 系统错误'
+	
+	if not iSCSIUpdateCFG():
+		chap_sysfs_user_remove(tgt, user, pwd)
+		return False, err_msg + '失败, 保存配置文件失败'
+
+	if not chap_conf_user_add(tgt, user, pwd):
+		chap_sysfs_user_remove(tgt, user, pwd)
+		iSCSIUpdateCFG()
+		return False, err_msg + '失败, 保存CHAP配置文件失败'
+
+	return True, err_msg + '成功'
 
 def iSCSIChapRemoveUser(tgt, user):
+	err_msg = '删除CHAP用户 %s ' % user
+
+	if not isTargetExist(tgt):
+		return False, err_msg + '失败, Target %s 不存在' % tgt
+
 	if not iSCSIChapUserExist(tgt, user):
-		return False, '删除CHAP用户失败， 用户 %s 不存在!' % user
-	_chap_sysfs_user_remove(tgt, user)
-	ret,msg = _chap_conf_user_remove(tgt, user)
-	if not ret:
-		return ret,msg
-	ret,msg = iSCSIUpdateCFG()
-	if not ret:
-		return ret,msg
-	return True, '删除CHAP用户 %s 成功!' % user
+		return False, err_msg + '失败, 用户不存在'
+
+	if not chap_conf_user_remove(tgt, user):
+		return False, err_msg + '失败, 保存CHAP配置文件失败'
+
+	chap_sysfs_user_remove(tgt, user)
+	iSCSIUpdateCFG()
+
+	return True, err_msg + '成功'
 
 def iSCSIChapDisableUser(tgt, user):
+	err_msg = '禁用CHAP用户 %s ' % user
+
 	if not iSCSIChapUserExist(tgt, user):
-		return False, '禁用CHAP用户失败，用户 %s 不存在!' % user
-	ret,msg = _chap_sysfs_user_remove(tgt, user)
-	if not ret:
-		return ret,msg
-	ret,msg = _chap_conf_user_disable(tgt, user)
-	if not ret:
-		return ret,msg
-	ret,msg = iSCSIUpdateCFG()
-	if not ret:
-		return ret,msg
-	return True, '禁用CHAP用户 %s 成功!' % user
+		return False, err_msg + '失败, 用户不存在'
+
+	if not chap_conf_user_set(tgt, user, 'disable'):
+		return False, err_msg + '失败, 保存CHAP配置文件失败'
+	
+	if not chap_sysfs_user_remove(tgt, user):
+		return ret, err_msg + '失败, 系统错误'
+
+	if not iSCSIUpdateCFG():
+		return  False, err_msg + '失败, 保存配置文件失败'
+
+	return True, err_msg + '成功'
 
 def iSCSIChapEnableUser(tgt, user):
-	if not iSCSIChapUserExist(tgt, user):
-		return False, '启用CHAP用户失败，用户 %s 不存在!' % user
-	incoming = _chap_conf_user_get(tgt, user)
+	err_msg = '启用CHAP用户 %s ' % user
+
+	incoming = chap_conf_user_get(tgt, user)
 	if incoming is None:
-		return False, '启用CHAP用户失败，用户 %s 配置无法获取!' % user
-	ret,msg = _chap_sysfs_user_add(tgt, incoming.user, incoming.password)
-	if not ret:
-		return ret,msg
-	ret,msg = _chap_conf_user_enable(tgt, user)
-	if not ret:
-		return ret,msg
-	ret,msg = iSCSIUpdateCFG()
-	if not ret:
-		return ret,msg
+		return False, err_msg + '失败, 用户不存在'
+	
+	if not chap_conf_user_set(tgt, user, 'enable'):
+		return False, err_msg + '失败, 保存CHAP配置文件失败'
+
+	if not chap_sysfs_user_add(tgt, incoming.user, incoming.password):
+		return ret, err_msg + '失败, 系统错误'
+
+	if not iSCSIUpdateCFG():
+		return  False, err_msg + '失败, 保存配置文件失败'
+
 	return True, '启用CHAP用户 %s 成功!' % user
 
 def iSCSIChapEnable(tgt):
-	try:
-		for x in iSCSIChapList(tgt):
-			for y in x.incoming:
-				_chap_sysfs_user_add(tgt, y['user'], y['password'])
-		_chap_conf_user_enable(tgt, 'all', True)
-	except AttributeError, e:
-		return False, '打开CHAP认证失败, 未配置CHAP认证用户!'
-	except:
-		return False, '打开CHAP认证失败，未知错误!'
-	return True, '打开CHAP认证成功!'
+	for x in iSCSIChapList(tgt):
+		for y in x.incoming:
+			chap_sysfs_user_add(tgt, y['user'], y['password'])
+	iSCSIUpdateCFG()
+	if not chap_conf_user_set(tgt, '', 'enable'):
+		return False, '打开CHAP认证失败, 保存CHAP配置文件失败'
+
+	return True, '打开CHAP认证成功'
 
 def iSCSIChapDisable(tgt):
-	try:
-		for x in iSCSIChapList(tgt):
-			for y in x.incoming:
-				_chap_sysfs_user_remove(tgt, y['user'])
-		_chap_conf_user_disable(tgt, 'all', True)
-	except AttributeError, e:
-		return False, '禁用CHAP认证失败，未配置CHAP认证用户!'
-	except:
-		return False, '禁用CHAP认证失败，未知错误!'
-	return True, '禁用CHAP成功!'
+	for x in iSCSIChapList(tgt):
+		for y in x.incoming:
+			chap_sysfs_user_remove(tgt, y['user'])
+
+	iSCSIUpdateCFG()
+	if not chap_conf_user_set(tgt, '', 'disable'):
+		return False, '关闭CHAP认证失败, 保存CHAP配置文件失败'
+
+	return True, '关闭CHAP认证成功'
 
 if __name__ == '__main__':
-	#_chap_conf_user_add('abc', 'u123', '123456')
-	#_chap_conf_user_add('def', 'u123', '123456')
-	#_chap_conf_user_remove('def', 'u123')
-	#x = _chap_conf_user_get('abc', 'u123')
-	#print x.__dict__
-	#print _chap_conf_user_enable('abc', 'u123')
-	#print _chap_conf_user_disable('abc', 'u123')
-	#print iSCSIChapUserExist('abc', 'u123')
-	#print iSCSIChapList()
-	#_chap_sysfs_user_add('iqn.2012-12.com.jwele:tgt-2eb526c4', 'abc', '111111111111')
-	#_chap_sysfs_user_remove('iqn.2012-12.com.jwele:tgt-2eb526c4', 'abc')
-	#print iSCSIChapAddUser('iqn.2012-12.com.jwele:tgt-2eb526c4', 'jxa1', '111111111111')
-	#print iSCSIChapRemoveUser('iqn.2012-12.com.jwele:tgt-2eb526c4', 'jxa1')
-	#print iSCSIChapDisableUser( 'iqn.2012-12.com.jwele:tgt-2eb526c4', 'jxa1')
-	#print iSCSIChapEnableUser( 'iqn.2012-12.com.jwele:tgt-2eb526c4', 'jxa1')
-	#print iSCSIChapEnable('iqn.2012-12.com.jwele:tgt-2eb526c4')
-	print iSCSIChapDisable('iqn.2012-12.com.jwele:tgt-2eb526c4')
+	sys.exit(0)

@@ -19,7 +19,6 @@ def get_dev_byudvname(udv_name):
 			sysdir_part = sysdir_md + os.sep + entry
 			if fs_attr_read(sysdir_part + '/volname') == udv_name:
 				part_dev = '/dev/' + entry
-				find = True
 				break
 		if part_dev != '':
 			break

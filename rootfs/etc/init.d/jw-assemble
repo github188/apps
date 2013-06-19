@@ -23,8 +23,53 @@ _usage()
 
 start_md()
 {
+	RAID_DIR="/tmp/.raid-info"
+	RAID_DIR_LOCK="${RAID_DIR}/lock"
+	RAID_DIR_BYMD="${RAID_DIR}/by-md"
+	RAID_DIR_BYNAME="${RAID_DIR}/by-name"
+	RAID_DIR_BYUUID="${RAID_DIR}/by-uuid"
+	RAID_DIR_BYDISK="${RAID_DIR}/by-disk"
+	
+	if [ ! -d $RAID_DIR ]; then
+		rm -rf $RAID_DIR
+		mkdir $RAID_DIR
+	fi
+	if [ ! -d $RAID_DIR_LOCK ]; then
+		rm -rf $RAID_DIR_LOCK
+		mkdir $RAID_DIR_LOCK
+	fi
+	if [ ! -d $RAID_DIR_BYMD ]; then
+		rm -rf $RAID_DIR_BYMD
+		mkdir $RAID_DIR_BYMD
+	fi
+	if [ ! -d $RAID_DIR_BYNAME ]; then
+		rm -rf $RAID_DIR_BYNAME
+		mkdir $RAID_DIR_BYNAME
+	fi
+	if [ ! -d $RAID_DIR_BYUUID ]; then
+		rm -rf $RAID_DIR_BYUUID
+		mkdir $RAID_DIR_BYUUID
+	fi
+	if [ ! -d $RAID_DIR_BYDISK ]; then
+		rm -rf $RAID_DIR_BYDISK
+		mkdir $RAID_DIR_BYDISK
+	fi
+
 	sys-manager vg --load-sync-prio >/dev/null
 	/usr/local/bin/md-assume.sh
+	
+	# 等待md添加到tmp目录
+	while true
+	do
+		sys_mds=`ls /sys/block/ | grep "md[1-9]" | wc -l`
+		tmp_mds=`ls $RAID_DIR_BYUUID | wc -l`
+		if [ $tmp_mds -lt $sys_mds ]; then
+			sleep 1
+			continue
+		else
+			break
+		fi
+	done
 }
 
 stop_md()

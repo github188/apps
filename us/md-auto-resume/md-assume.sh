@@ -48,38 +48,6 @@ assemble() # arg1: md_num, arg2: disk_list
 	mddev_part_wait $mddev
 }
 
-RAID_DIR="/tmp/.raid-info"
-RAID_DIR_LOCK="${RAID_DIR}/lock"
-RAID_DIR_BYMD="${RAID_DIR}/by-md"
-RAID_DIR_BYNAME="${RAID_DIR}/by-name"
-RAID_DIR_BYUUID="${RAID_DIR}/by-uuid"
-RAID_DIR_BYDISK="${RAID_DIR}/by-disk"
-
-if [ ! -d $RAID_DIR ]; then
-	rm -rf $RAID_DIR
-	mkdir $RAID_DIR
-fi
-if [ ! -d $RAID_DIR_LOCK ]; then
-	rm -rf $RAID_DIR_LOCK
-	mkdir $RAID_DIR_LOCK
-fi
-if [ ! -d $RAID_DIR_BYMD ]; then
-	rm -rf $RAID_DIR_BYMD
-	mkdir $RAID_DIR_BYMD
-fi
-if [ ! -d $RAID_DIR_BYNAME ]; then
-	rm -rf $RAID_DIR_BYNAME
-	mkdir $RAID_DIR_BYNAME
-fi
-if [ ! -d $RAID_DIR_BYUUID ]; then
-	rm -rf $RAID_DIR_BYUUID
-	mkdir $RAID_DIR_BYUUID
-fi
-if [ ! -d $RAID_DIR_BYDISK ]; then
-	rm -rf $RAID_DIR_BYDISK
-	mkdir $RAID_DIR_BYDISK
-fi
-
 while read LINE
 do
         #echo "$LINE"

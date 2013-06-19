@@ -13,68 +13,25 @@ import sys, os
 from libnas import *
 from libcommon import log_insert
 
-MOUNT_ROOT = '/mnt/Share'
-
-"""
-需要记录的有：
-挂载 path
-格式化进度 fmt_percent
-卷名称 volume_name
-设备名称 dev
-"""
-
-"""
-state:
-	format-starting	正在启动格式化
-	formating	正在格式化
-	format-finished	正在结束格式化
-	format-error	格式化出错
-	mounting	正在挂载
-	mounted		已经挂载并且加入到配置文件
-	mount-error	挂载失败
-	conf-error	设置配置文件失败
-"""
-
-
-def nas_mkfs(dev, filesystem):
-	cmd = 'nas-mkfs.sh %s %s' % (dev, filesystem)
+def nas_mkfs(udv_name, udv_dev, filesystem):
+	progress_file = NAS_DIR + os.sep + udv_name + '/fmt_percent'
+	cmd = 'nas-mkfs.sh %s %s' % (udv_dev, filesystem)
 	args = shlex.split(cmd)
 	calc_start = False  # 检查 Writing inode tables
 	progress = 0.00
-	conf_added = False
-	counter = 3
+	fmt_record = [30.0, 70.0, 90.0]
+	i = 0
 
-	nas_tmpfs_set_value('state', 'format-starting')
 	p = sp.Popen(args, stdout=sp.PIPE)
-
-	nas_tmpfs_set_value('state', 'formatting')
 	while True:
+		time.sleep(1)
 		ret = sp.Popen.poll(p)
 		if ret == 0:	# 程序正常结束
 			progress = 100.00
-			nas_tmpfs_set_value('fmt_percent', '%.2f' % progress)
-			nas_tmpfs_set_value('state', 'format-finished')
+			nas_fmt_record_set(udv_name, '%.2f' % progress)
+			log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化完成' % udv_name)
 			return True
 		elif ret is None:	# 程序正在运行
-			if progress > 90.0 and counter > 0:
-				log_insert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 90% 已经接近完成，请耐心等待')
-				counter = counter - 1
-			elif progress >= 70.0 and counter > 0:
-				log_insert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 70% 请耐心等待')
-				counter = counter - 1
-			elif progress >= 30.0 and counter > 0:
-				log_insert('NAS', 'Auto', 'Info', 'NAS卷格式化进度超过 30% 请耐心等待')
-				counter = counter - 1
-
-			if not conf_added and progress > 0.00:
-				conf = NasVolumeAttr()
-				tmp_dir = nas_tmpfs_get_dir()
-				conf.state = nas_tmpfs_get_value('%s/state' % tmp_dir)
-				conf.volume_name = nas_tmpfs_get_value('%s/volume_name'% tmp_dir)
-				conf.fs_type = nas_tmpfs_get_value('%s/fs_type' % tmp_dir)
-				conf.path = nas_tmpfs_get_value('%s/path' % tmp_dir)
-				ret,msg = nas_conf_add(conf)
-				conf_added = ret
 			p.stdout.flush()
 			line = p.stdout.readline().strip()
 			if not calc_start and line.find('Writing inode tables') >= 0:
@@ -83,57 +40,42 @@ def nas_mkfs(dev, filesystem):
 			if calc_start and line.find('Writing superblocks and filesystem accounting information') >= 0:
 				calc_start = False
 				continue
-			progress = line.split('/')
-			if calc_start and len(progress) == 2:
-				curr = float(progress[0])
-				total = float(progress[1])
-				progress = ((curr / total) * 100.0)
-				nas_tmpfs_set_value('fmt_percent', '%.2f' % progress)
-		else:	# 程序异常退出
+
+			val = line.split('/')
+			if calc_start and len(val) == 2:
+				progress = float(val[0]) * 100.00 / float(val[1])
+				nas_fmt_record_set(udv_name, '%.2f' % progress)
+			
+				if i < len(fmt_record) and progress > fmt_record[i]:
+					log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化进度 %.2f' % (udv_name, progress))
+					i += 1
+
+		elif 35072 == ret: # 格式化进程被kill -9杀死, nas卷被删除, 直接退出
+			sys.exit(0)
+		else:	# 格式化失败
 			return False
 
-def _name(mnt):
-	return mnt.split('/')[-1]
+def do_run(udv_name, udv_dev, mount_dir, filesystem):
+	# 格式化
+	log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化开始' % udv_name)
+	if not nas_mkfs(udv_name, udv_dev, filesystem):
+		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 格式化失败' % udv_name)
+		nas_vol_remove(udv_name)
+		return
 
-def _remove_udv(mnt):
-	udv_name = mnt.split('/')[-1]
-	os.popen('sys-manager udv --delete %s' % udv_name)
-	return
+	# 挂载
+	if not nas_vol_mount(udv_dev, mount_dir):
+		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败' % udv_name)
+		nas_vol_remove(udv_name)
+		return
 
-def do_run(dev, mnt, filesystem):
-	try:
-		# 格式化
-		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化开始!' % _name(mnt))
-		if not nas_mkfs(dev, filesystem):
-			nas_tmpfs_set_value('state', 'format-error')
-			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 格式化失败!' % _name(mnt))
-			_remove_udv(mnt)
-			return
-
-		# 挂载
-		nas_tmpfs_set_value('state', 'mounting')
-		if not os.path.exists(MOUNT_ROOT):
-			os.mkdir(MOUNT_ROOT)
-		if not os.path.exists(mnt):
-			os.mkdir(mnt)
-		ret,msg = commands.getstatusoutput('mount %s %s' % (dev, mnt))
-		if ret != 0:
-			nas_tmpfs_set_value('state', 'mount-error')
-			log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败！' % _name(mnt))
-			_remove_udv(mnt)
-			return
-
-		# 设置访问权限 777
-		os.chmod(mnt, stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO)
-
-		# 操作成功，退出
-		nas_tmpfs_set_value('state', 'mounted')
-		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功!' % _name(mnt))
-
-		nasUpdateCFG()
-		sys.exit(0)
-	except:
-		pass
+	# 更新配置文件
+	if not nas_conf_update_bydev(udv_dev, 'mounted', filesystem):
+		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 更新配置文件失败' % udv_name)
+		nas_vol_remove(udv_name)
+		return
+	
+	log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功' % udv_name)
 
 def nas_mkfs_usage():
 	print """
@@ -145,9 +87,9 @@ mkfs_long_opt = ['udv=', 'dev=', 'mount=', 'filesystem=']
 
 # 主函数入口
 def main():
-	dev = ''
-	udv = ''
-	mount = ''
+	udv_dev = ''
+	udv_name = ''
+	mount_dir = ''
 	filesystem = 'ext4'	# set default to ext4
 	try:
 		opts,args = getopt.gnu_getopt(sys.argv[1:], '', mkfs_long_opt)
@@ -156,19 +98,16 @@ def main():
 
 	for opt,arg in opts:
 		if opt == '--udv':
-			udv = arg
+			udv_name = arg
 		elif opt == '--dev':
-			dev = arg
+			udv_dev = arg
 		elif opt == '--mount':
-			mount = arg
+			mount_dir = arg
 		elif opt == '--filesystem':
 			filesystem = arg
 
-	if dev!='' and udv!='' and mount!='':
-		nas_tmpfs_set_value('volume_name', udv)
-		nas_tmpfs_set_value('path', mount)
-		nas_tmpfs_set_value('fs_type', filesystem)
-		do_run(dev, mount, filesystem)
+	if udv_dev != '' and udv_name != '' and mount_dir != '':
+		do_run(udv_name, udv_dev, mount_dir, filesystem)
 	else:
 		nas_mkfs_usage()
 

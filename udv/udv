@@ -4,7 +4,7 @@
 import sys, json
 import getopt
 
-from libnas import isNasVolume
+from libnas import is_nasvolume
 from libudv import *
 
 reload(sys)
@@ -18,15 +18,6 @@ class UdvInfo:
 		self.vg = ''
 		self.combin = ''
 		self.dev = ''
-
-def udv_exit(ret = True, msg = ''):
-	ret_msg = {'status':True, 'msg':''}
-	ret_msg['status'] = ret
-	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
-	if ret:
-		sys.exit(0)
-	sys.exit(-1)
 
 def udv_list(udvargs):
 	udvinfo_list = []
@@ -65,7 +56,7 @@ def udv_list(udvargs):
 			
 			if get_iscsivolname_bydev(udvinfo.dev) != '':
 				udvinfo.state = 'iscsi'
-			elif isNasVolume(udvinfo.name):
+			elif is_nasvolume(udvinfo.name):
 				udvinfo.state = 'nas'
 			
 			if udvargs.name_set:
@@ -94,7 +85,7 @@ def output_dev_byudvname(udvargs):
 	part_name = udvargs.get_dev_byname_str
 	part_dev = get_dev_byudvname(part_name)
 	if '' == part_dev:
-		udv_exit(False, '用户数据卷不存在')
+		comm_exit(False, '用户数据卷不存在')
 	
 	print '{"status":true,"udv_name":"%s","udv_dev":"%s"}' % (part_name, part_dev)
 	sys.exit(0)
@@ -102,7 +93,7 @@ def output_dev_byudvname(udvargs):
 def output_udvname_bydev(udvargs):
 	part_dev = udvargs.get_name_bydev_str
 	if '' == part_dev or os.system('[ -b %s ]' % part_dev) != 0:
-		udv_exit(False, part_dev + '不是分区设备文件')
+		comm_exit(False, part_dev + '不是分区设备文件')
 	
 	part_name = get_udvname_bydev(part_dev)
 	print '{"status":true,"udv_name":"%s","udv_dev":"%s"}' % (part_name, part_dev)
@@ -158,7 +149,7 @@ def udv_main():
 	try:
 		opts, args = getopt.gnu_getopt(sys.argv[1:], '', udv_long_opt)
 	except getopt.GetoptError, e:
-		udv_exit(False, '%s' % e)
+		comm_exit(False, '%s' % e)
 
 	udvargs = UdvArgs()
 	for opt,arg in opts:

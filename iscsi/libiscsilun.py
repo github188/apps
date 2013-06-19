@@ -8,8 +8,7 @@ from libiscsicomm import *
 from libiscsitarget import *
 from libiscsivolume import *
 
-LUN_MIN_ID = 0
-LUN_MAX_ID = 254
+LUN_ID_MAX = 254
 
 """
 class iSCSILun:
@@ -41,18 +40,10 @@ def isLunIdExist(tgt, initor, lun_id):
 
 def __getFreeLunId(lun_dir):
 	luns = list_child_dir(lun_dir)
-	if not len(luns) or not '0' in luns:
-		return 0
-	idx = 0
-	luns_len = len(luns) - 1
-	while idx < luns_len:
-		if int(luns[idx]) + 1 < int(luns[idx+1]):
-			return int(luns[idx]) + 1
-		idx = idx + 1
-	max_id = int(luns[idx]) + 1
-	if max_id >= LUN_MAX_ID:
-		return -1
-	return max_id
+	for i in xrange(0, LUN_ID_MAX+1):
+		if str(i) not in luns:
+			return i
+	return -1
 
 # 检查指定的Volume当前映射的读写方式
 # 判断条件
@@ -68,10 +59,10 @@ def isLunMappedRw(volume_name):
 			if volume_name != os.path.basename(os.readlink(lun_device)):
 				continue
 			# 如果Volume是只读，则映射的所有卷都是只读
-			if AttrRead(lun_device, 'read_only') == '1':
+			if fs_attr_read(lun_device + '/read_only') == '1':
 				return False
 			# 如果Volume映射的Lun有一个是读写，则返回只读
-			if AttrRead(lun_path, 'read_only') == '0':
+			if fs_attr_read(lun_path + '/read_only') == '0':
 				return False
 	return True
 
@@ -81,39 +72,41 @@ def __set_initiator(tgt, initor):
 		initor_grp = '%s/%s-grp' % (grp_dir, initor)
 		if not os.path.exists(initor_grp):
 			_cmd = 'create %s-grp' % initor
-			if not AttrWrite(grp_dir, 'mgmt', _cmd):
+			if not fs_attr_write(grp_dir + '/mgmt', _cmd):
 				return False
 		if not os.path.isdir(initor_grp):
 			return False
 		initor_dir = '%s/initiators' % initor_grp
 		if not os.path.isfile('%s/%s' % (initor_dir, initor)):
 			_cmd = 'add %s' % initor
-			return True if AttrWrite(initor_dir, 'mgmt', _cmd) else False
+			return True if fs_attr_write(initor_dir + '/mgmt', _cmd) else False
 	except:
 		return False
 	return True
 
 def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
-
+	err_msg = '映射iSCSI卷 %s 为LUN' % volume_name
 	if not isTargetExist(tgt):
-		return (False, '添加LUN映射失败！Target %s 不存在！' % tgt)
+		return (False, err_msg + '失败, Target %s 不存在' % tgt)
 
 	if not isVolumeExist(volume_name):
-		return (False, '添加LUN映射失败！iSCSI数据卷 %s 不存在！' % volume_name)
+		return (False, err_msg + '失败, iSCSI卷不存在')
 
 	lun_dir = '%s/%s/luns' % (SCST.TARGET_DIR, tgt)
 	if initor != '*':
 		if __set_initiator(tgt, initor):
 			lun_dir = '%s/%s/ini_groups/%s-grp/luns' % (SCST.TARGET_DIR, tgt, initor)
 		else:
-			return False, '增加Initiator配置到Target出错!'
+			return (False, err_msg + '失败, 增加Initiator配置到Target出错')
 
 	if lun_id == 'auto':
 		_lun_id = __getFreeLunId(lun_dir)
 		if _lun_id == -1:
-			return (False, '添加LUN映射失败！LUN映射已经超出最大允许范围！')
+			return (False, err_msg + '失败, LUN数量已经达到最大值')
 	else:
 		_lun_id = int(lun_id)
+		if isLunIdExist(tgt, initor, _lun_id):
+			return (False, err_msg + '失败, LUN %d(%s) 已存在' % (_lun_id, initor))
 
 	lunRW = isLunMappedRw(volume_name)
 	if ro == 'auto':
@@ -124,66 +117,70 @@ def iSCSILunMap(tgt, volume_name, lun_id = 'auto', ro = 'auto', initor = '*'):
 	elif ro == 'enable':
 		lunRO = '1'
 	elif ro == 'disable':
-		"""
-		if not lunRW:
-			return (False, '设置映射LUN读写属性失败，iSCSI数据卷 %s 只能映射为只读属性!' % volume_name)
-		"""
 		lunRO = '0'
 	else:
-		return (False, '添加LUN映射失败！ReadOnly属性设置不正确！')
+		return (False, err_msg + '失败, ReadOnly属性设置不正确！')
 
 	lun_cmd = 'add %s %d read_only=%s' % (volume_name, _lun_id, lunRO)
-	if AttrWrite(lun_dir, 'mgmt', lun_cmd):
-		ret,msg = iSCSIUpdateCFG()
-		if not ret:
-			return (True, '添加LUN映射成功！更新配置文件失败! %s' % msg)
-		return (True, '添加LUN映射成功！')
-	return (False, '添加LUN映射失败！')
+	if not fs_attr_write(lun_dir + '/mgmt', lun_cmd):
+		return (False, err_msg + '失败, 系统错误')
 
-def iSCSILunModify(tgt, lun_id, cur_initor, fre_initor):
+	if not iSCSIUpdateCFG():
+		lun_cmd = 'del %d' % _lun_id
+		fs_attr_write(lun_dir + '/mgmt', lun_cmd)
+		iSCSIUpdateCFG()
+		return (False, err_msg + '失败, 保存配置文件失败')
+	
+	return (True, err_msg + ' %d(%s) 成功' % (_lun_id, initor))
 
+def iSCSILunModify(tgt, lun_id, cur_initor, new_initor):
 	_lun_id = int(lun_id)
-	_volume_name = None
-	_read_only = None
-
-	# 获取当前LUN的读写属性以及volume_name
-	for x in iSCSILunGetList(tgt):
-		if x['initiator']==cur_initor and x['lun_id']==_lun_id:
-			_volume_name = x['volume_name']
-			_read_only = x['read_only']
-	if (_volume_name==None) or (_read_only==None):
-		return False, '修改LUN映射失败! LUN_ID %d 不存在!' % _lun_id
-
+	volume_name = None
+	read_only = None
+	
+	err_msg = '修改LUN %d(%s) ' % (_lun_id, cur_initor)
 	if not isLunIdExist(tgt, cur_initor, _lun_id):
-		return (False, '解除LUN %d 映射失败！LUN不存在！' % _lun_id)
+		return (False, err_msg + '失败, LUN不存在')
+	
+	if isLunUsed(tgt, lun_id, cur_initor):
+		return (False, err_msg + '失败, LUN正在使用')
+
+	if cur_initor == '*':
+		lun_dir = '%s/%s/luns/%s' % (SCST.TARGET_DIR, tgt, lun_id)
+	else:
+		lun_dir = '%s/%s/ini_groups/%s-grp/luns/%s' % (SCST.TARGET_DIR, tgt, cur_initor, lun_id)
+	
+	volume_name = basename(os.readlink(lun_dir + '/device'))
+	if '0' == fs_attr_read(lun_dir + '/read_only'):
+		read_only = 'disable'
+	else:
+		read_only = 'enable'
 
 	# 删除当前Lun映射
 	ret, msg = iSCSILunUnmap(tgt, _lun_id, cur_initor, remove_volume = False)
 	if not ret:
-		return ret,msg
+		return (ret, err_msg + '失败, ' + msg)
 
 	# 增加新映射
-	ret, msg = iSCSILunMap(tgt, _volume_name, 'auto', _read_only, fre_initor)
+	ret, msg = iSCSILunMap(tgt, volume_name, 'auto', read_only, new_initor)
 	if not ret:
-		return ret,msg
+		return (False, err_msg + '失败.' + msg)
 	else:
-		return True, '修改LUN映射成功'
+		return (True, err_msg + '成功.' + msg)
 
-def isLunUsedInSession(tgt, lun_id, initor):
+def isLunUsed(tgt, lun_id, initor):
+	sess_dir = '%s/%s/sessions' % (SCST.TARGET_DIR, tgt)
 	if initor != '*':
-		sess_lun_dir = '%s/%s/sessions/%s/luns/%d' % (SCST.TARGET_DIR, tgt, initor, lun_id)
-		return True if os.path.isdir(sess_lun_dir) else False
-	else:
-		return False
+		initor_dir = sess_dir + os.sep + initor
+		return True if os.path.isdir(initor_dir) else False
+	
+	for initor in list_child_dir(sess_dir):
+		initor_dir = sess_dir + os.sep + initor
+		if os.path.islink(initor_dir + '/luns'):
+			if os.readlink(initor_dir + '/luns') == '../../luns':
+				return True
 
-def __get_vdisk_by_lun(lun_dir):
-	volume = ''
-	try:
-		lun_dev = lun_dir + os.sep + 'device'
-		volume = os.path.basename(os.readlink(lun_dev))
-	except:
-		pass
-	return volume
+	return False
 
 def __isInitiatorExists(tgt, initor):
 	initor = '%s/%s/ini_groups/%s-grp/initiators/%s' % (SCST.TARGET_DIR, tgt, initor, initor)
@@ -192,17 +189,19 @@ def __isInitiatorExists(tgt, initor):
 def __delInitiatorConf(tgt, initor):
 	grp_mgr = '%s/%s/ini_groups' % (SCST.TARGET_DIR, tgt)
 	grp_cmd = 'del %s-grp' % initor
-	return True if AttrWrite(grp_mgr, 'mgmt', grp_cmd) else False
+	return True if fs_attr_write(grp_mgr + '/mgmt', grp_cmd) else False
 
-def __iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
+def iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = False):
+	err_msg = '解除LUN %d(%s) 映射' % (lun_id, initor)
+
 	if not isTargetExist(tgt):
-		return (False, '解除LUN %d 映射失败！Target %s 不存在！' % (lun_id, tgt))
+		return (False, err_msg + '失败, Target %s 不存在' % tgt)
 	if not isLunIdExist(tgt, initor, lun_id):
-		return (False, '解除LUN %d 映射失败！LUN不存在！' % lun_id)
+		return (False, err_msg + '失败, LUN不存在')
 	if initor != '*' and not __isInitiatorExists(tgt, initor):
-		return False, '解除 %s 映射失败！Initiator不存在！' % lun_id
-	if isLunUsedInSession(tgt, lun_id, initor):
-		return False, '解除 %s 映射失败! LUN正在被访问! ' % lun_id
+		return (False, err_msg + '失败, Initiator不存在')
+	if isLunUsed(tgt, lun_id, initor):
+		return (False, err_msg + '失败, LUN正在使用')
 
 	lun_cmd = 'del %d' % lun_id
 	if initor != '*':
@@ -210,39 +209,31 @@ def __iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
 	else:
 		luns_dir = '%s/%s/luns' % (SCST.TARGET_DIR, tgt)
 
-	volume = __get_vdisk_by_lun('%s/%d' % (luns_dir, lun_id))	# 保留vdisk名称供删除后检查
+	# 保留vdisk名称供删除后检查
+	volume = basename(os.readlink(luns_dir + os.sep + str(lun_id) + '/device'))
 
-	if AttrWrite(luns_dir, 'mgmt', lun_cmd):
-		# 检查initiator配置，如果是最后一个lun，删除initiator组配置
-		if initor != '*' and list_child_dir(luns_dir) == []:
-			if not __delInitiatorConf(tgt, initor):
-				return False, '解除LUN %d 映射失败!无法删除Initiator %s 配置!' % (lun_id, initor)
-		if not isLunExported(volume) and remove_volume:
-			vol_info = getVolumeInfo(volume)
-			if iSCSIVolumeRemove(volume):
-				return (True, '解除LUN %d 映射成功！' % lun_id)
-			else:
-				return (False, '解除LUN %d 映射成功！删除VDISK %s失败！' % (lun_id, volume))
-		else:
-			return (True, '解除LUN %d 映射成功！' % lun_id)
-	return (False, '解除LUN %d 映射失败！' % lun_id)
+	if not fs_attr_write(luns_dir + '/mgmt', lun_cmd):
+		return (False, err_msg + '失败, 系统错误')
 
-def iSCSILunUnmap(tgt, lun_id, initor = '*', remove_volume = True):
-	ret,msg = __iSCSILunUnmap(tgt, lun_id, initor, remove_volume)
+	# 检查initiator配置，如果是最后一个lun，删除initiator组配置
+	if initor != '*' and list_child_dir(luns_dir) == []:
+		__delInitiatorConf(tgt, initor)
 
-	if not ret:
-		return ret,msg
-	ret,_msg = iSCSIUpdateCFG()
-	if not ret:
-		return True, '%s 更新配置文件失败! %s' % (msg,_msg)
-	return ret,msg
+	if not isLunExported(volume) and remove_volume:
+		vol_info = getVolumeInfo(volume)
+		if not iSCSIVolumeRemove(volume):
+			iSCSIUpdateCFG()
+			return (False, err_msg + '成功, 删除iSCSI卷 %s 失败' % volume)
+	
+	if not iSCSIUpdateCFG():
+		return (False, err_msg + '成功, 更新配置文件失败')
+
+	return (True, err_msg + '成功')
 
 def iSCSILunGetList(tgt = ''):
 	tgt_lun_list = []
-	udv_list = []
 	try:
 		for t in iSCSIGetTargetList(tgt):
-
 			# get target luns
 			tgt_luns_dir = SCST.TARGET_DIR + os.sep + t.name + '/luns'
 			for l in list_child_dir(tgt_luns_dir):
@@ -257,7 +248,7 @@ def iSCSILunGetList(tgt = ''):
 					lun['read_only'] = vol.read_only
 					lun['wr_method'] = 'N/A'
 				else:
-					if AttrRead(tgt_luns_dir + os.sep + l, 'read_only') == '0':
+					if fs_attr_read(tgt_luns_dir + os.sep + l + '/read_only') == '0':
 						lun['read_only'] = 'disable'
 					else:
 						lun['read_only'] = 'enable'
@@ -280,7 +271,7 @@ def iSCSILunGetList(tgt = ''):
 					if vol.read_only == 'enable':
 						lun['read_only'] = vol.read_only
 					else:
-						if AttrRead('%s/%s' % (luns_dir, k), 'read_only') == '0':
+						if fs_attr_read('%s/%s' % (luns_dir, k) + '/read_only') == '0':
 							lun['read_only'] == 'disable'
 						else:
 							lun['read_only'] = 'enable'
@@ -310,8 +301,4 @@ def iSCSILunGetPrivilage(udv_name):
 	return priv_dict
 
 if __name__ == '__main__':
-	#print iSCSILunGetPrivilage('Udv326_1')
-	#print isLunMappedRw('vd7a9e46f2')
-	#print __set_initiator('iqn.2006-10.net.vlnb:tgt', 'abc')
-	#print __isInitiatorExists('iqn.2006-10.net.vlnb:tgt', 'abc')
-	print __delInitiatorConf('iqn.2006-10.net.vlnb:tgt', 'abc')
+	sys.exit(0)

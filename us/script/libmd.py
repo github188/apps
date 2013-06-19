@@ -3,9 +3,7 @@
 
 import sys
 import commands, re, os, time, copy
-from xml.dom import minidom
 from libsysmon import sysmon_event
-import xml
 
 from libcommon import *
 
@@ -144,12 +142,18 @@ def get_free_md():
 	mds = md_list()
 	for i in xrange(1, 255):
 		md = "md%u" % i
-		if not (md in mds):
+		if md not in mds:
 			return md
 	return None
 
 def get_md_by_name(raid_name):
 	return fs_attr_read(RAID_DIR_BYNAME + os.sep + raid_name)
+	
+def get_md_by_mduuid(mduuid):
+	return fs_attr_read(RAID_DIR_BYUUID + os.sep + mduuid)
+
+def get_mduuid_by_md(md):
+	return fs_attr_read('/sys/block/%s/md/array_uuid' % md)
 
 def get_mdattr_by_name(raid_name):
 	md = get_md_by_name(raid_name)
@@ -169,7 +173,7 @@ def get_mdattr_by_disk(dev):
 
 # 使用mduuid查找所在卷组信息
 def get_mdattr_by_mduuid(mduuid):
-	md = fs_attr_read(RAID_DIR_BYUUID + os.sep + mduuid)
+	md = get_md_by_mduuid(mduuid)
 	if '' == md:
 		return None
 	return get_mdattr_by_mddev('/dev/' + md)
@@ -462,18 +466,6 @@ def check_disk_hotrep_conf():
 		fd.close()
 	return
 
-def __get_xmlnode(node, name):
-	return node.getElementsByTagName(name) if node else []
-
-def __get_attrvalue(node, attrname):
-	return node.getAttribute(attrname) if node else ''
-
-def __set_attrvalue(node, attr, value):
-	return node.setAttribute(attr, value)
-
-def __remove_attr(node, attr):
-	return node.removeAttribute(attr)
-
 # 设置磁盘管理类型：
 #	* Global   - 全局热备盘
 #	* Special  - 专用热备盘
@@ -514,25 +506,20 @@ def disk_set_type(slot, disk_type, raid_name=''):
 
 	check_disk_hotrep_conf()
 
-	try:
-		doc = minidom.parse(DISK_HOTREP_CONF)
-	except IOError,e:
-		return False, '读取配置分区出错 %s' % e
-	except xml.parsers.expat.ExpatError, e:
-		return False, '磁盘配置文件格式出错 %s' % e
-	except e:
-		return False, '无法解析磁盘配置文件 %s' % e
+	doc = xml_load(DISK_HOTREP_CONF)
+	if None == doc:
+		return False, '打开配置文件 %s 失败' % DISK_HOTREP_CONF
 
 	disk_serial = disk_slot2serial(slot)
 
 	set_exist = False
 	root = doc.documentElement
-	for item in __get_xmlnode(root, 'disk'):
+	for item in root.getElementsByTagName('disk'):
 		# 更新已经存在的节点
-		if disk_serial == __get_attrvalue(item, 'serial'):
-			__set_attrvalue(item, 'type', disk_type)
-			__set_attrvalue(item, 'md_uuid', md_uuid)
-			__set_attrvalue(item, 'md_name', raid_name);
+		if disk_serial == item.getAttribute('serial'):
+			item.setAttribute('type', disk_type)
+			item.setAttribute('md_uuid', md_uuid)
+			item.setAttribute('md_name', raid_name)
 			set_exist = True
 			break
 
@@ -541,16 +528,14 @@ def disk_set_type(slot, disk_type, raid_name=''):
 		impl = minidom.getDOMImplementation()
 		dom = impl.createDocument(None, 'disk', None)
 		disk_node = dom.createElement('disk')
-		__set_attrvalue(disk_node, 'serial', disk_serial)
-		__set_attrvalue(disk_node, 'md_uuid', md_uuid)
-		__set_attrvalue(disk_node, 'type', disk_type)
-		__set_attrvalue(disk_node, 'md_name', raid_name);
+		disk_node.setAttribute('serial', disk_serial)
+		disk_node.setAttribute('type', disk_type)
+		disk_node.setAttribute('md_uuid', md_uuid)
+		disk_node.setAttribute('md_name', raid_name)
 		root.appendChild(disk_node)
 
 	# 更新xml配置文件
-	f = open(DISK_HOTREP_CONF, 'w')
-	doc.writexml(f, encoding='utf-8')
-	f.close()
+	xml_save(doc, DISK_HOTREP_CONF)
 
 	# 清除磁盘上的superblock信息
 	cleanup_disk_mdinfo(disk_slot2dev(slot))
@@ -571,11 +556,7 @@ def disk_set_type(slot, disk_type, raid_name=''):
 
 def hotrep_conf_load():
 	check_disk_hotrep_conf()
-	try:
-		doc = minidom.parse(DISK_HOTREP_CONF)
-	except:
-		return None
-	return doc
+	return xml_load(DISK_HOTREP_CONF)
 
 # 获取指定RAID所有专用热备盘
 def get_specials_by_mduuid(md_uuid=''):
@@ -587,11 +568,12 @@ def get_specials_by_mduuid(md_uuid=''):
 	doc = hotrep_conf_load()
 	if doc == None:
 		return spec_list
-	doc_root = doc.documentElement
+	root = doc.documentElement
 	try:
-		for item in __get_xmlnode(doc_root, 'disk'):
-			if __get_attrvalue(item, 'md_uuid') == md_uuid and __get_attrvalue(item, 'type') == 'Special':
-				spec_list.append(disk_serial2slot(__get_attrvalue(item, 'serial')))
+		for item in root.getElementsByTagName('disk'):
+			if item.getAttribute('md_uuid') == md_uuid and item.getAttribute('type') == 'Special':
+				serial = item.getAttribute('serial')
+				spec_list.append(disk_serial2slot(serial))
 	except:
 		pass
 	return spec_list
@@ -607,20 +589,20 @@ def get_hotrep_by_mduud(md_uuid=''):
 	doc = hotrep_conf_load()
 	if doc == None:
 		return disk_info
-	doc_root = doc.documentElement
+	root = doc.documentElement
 	try:
-		for item in __get_xmlnode(doc_root, 'disk'):
-			tmp_info['serial'] = __get_attrvalue(item, 'serial')
-			tmp_info['type'] = __get_attrvalue(item, 'type')
+		for item in root.getElementsByTagName('disk'):
+			tmp_info['serial'] = item.getAttribute('serial')
+			tmp_info['type'] = item.getAttribute('type')
 			
 			slot = disk_serial2slot(tmp_info['serial'])
 			if slot == None:
-				doc_root.removeChild(item)
+				root.removeChild(item)
 				update_conf = True
 				continue
 
 			# 专用热备盘
-			if md_uuid == __get_attrvalue(item, 'md_uuid'):
+			if md_uuid == item.getAttribute('md_uuid'):
 				disk_info = tmp_info
 				disk_info['type'] = '专用热备盘'
 				break
@@ -633,9 +615,7 @@ def get_hotrep_by_mduud(md_uuid=''):
 		pass
 	
 	if update_conf:
-		f = open(DISK_HOTREP_CONF, 'w')
-		doc.writexml(f, encoding='utf-8')
-		f.close()
+		xml_save(doc, DISK_HOTREP_CONF)
 
 	return disk_info
 
@@ -645,18 +625,15 @@ def remove_hotrep_by_serial(serial):
 	if doc == None:
 		return False
 
-	doc_root = doc.documentElement
-	for item in __get_xmlnode(doc_root, 'disk'):
-		if serial == __get_attrvalue(item, 'serial'):
-			doc_root.removeChild(item)
+	root = doc.documentElement
+	for item in root.getElementsByTagName('disk'):
+		if serial == item.getAttribute('serial'):
+			root.removeChild(item)
 			update_conf = True
 			break
 
 	if update_conf:
-		f = open(DISK_HOTREP_CONF, 'w')
-		doc.writexml(f, encoding='utf-8')
-		f.close()
-		return True
+		return xml_save(doc, DISK_HOTREP_CONF)
 
 	return False
 
