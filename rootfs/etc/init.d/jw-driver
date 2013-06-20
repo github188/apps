@@ -22,8 +22,7 @@ do_driver_start()
 
 do_driver_stop()
 {
-	rmmod nct6106
-	rmmod smbus-power
+	:
 }
 
 driver_usage()

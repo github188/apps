@@ -55,7 +55,7 @@ start_md()
 	sys-manager vg --load-sync-prio >/dev/null
 	/usr/local/bin/md-assemble.sh
 	
-	# 等待md添加到tmp目录
+	# 绛夊緟md娣诲姞鍒皌mp鐩綍
 	while true
 	do
 		sys_mds=`ls /sys/block/ | grep "md[1-9]" | wc -l`

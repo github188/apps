@@ -11,6 +11,8 @@
 #ifndef __WEB_IFACE_H__
 #define __WEB_IFACE_H__
 
+#define WEB_USER_NAME   "www-data"
+
 // 调试显示输入参数
 #define DUMP_PARM(argc, argv) { \
   int i; \

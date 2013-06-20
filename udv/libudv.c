@@ -180,8 +180,8 @@ int udv_create(const char *vg_dev, const char *name,
 		goto error;
 	}
 
-	if (start < 1024)
-		start = 1024;
+	if (start < PART_START_SECTOR)
+		start = PART_START_SECTOR;
 	else
 		start = _fix_4k(start);
 
@@ -200,8 +200,28 @@ int udv_create(const char *vg_dev, const char *name,
 		if (start >= part->geom.start) {
 			if (start <= part->geom.end) {
 				if (start+length-1 <= part->geom.end) {
+					/* if free space <MIN_PART_SIZE(1G), 
+					 * use all free space, aviod fragment
+					 */
+					uint64_t end = start + length - 1;
+					uint64_t free_start;
+					uint64_t fragment = 0;
+
+					if (part->geom.start < PART_START_SECTOR)
+						free_start = PART_START_SECTOR;
+					else
+						free_start = part->geom.start;
+
+					fragment = start - free_start;
+					if (fragment >= 8 && fragment < MIN_PART_SIZE)
+						start -= _fix_4k(fragment);
+
+					fragment = part->geom.end - end;
+					if (fragment >= 8 && fragment < MIN_PART_SIZE)
+						end += _fix_4k(fragment);
+
 					part = ped_partition_new(disk, PED_PARTITION_NORMAL, NULL,
-									start, start+length-1);
+									start, end);
 					ped_partition_set_name(part, name);
 					ped_disk_add_partition(disk, part, constraint);
 					ped_disk_commit(disk);

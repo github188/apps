@@ -172,10 +172,19 @@ void list_part(const char *vg_name)
 	
 	ssize_t udv_cnt;
 	uint64_t capacity = 0;
+	uint64_t start;
 	char vg_dev[32];
 	int first_print = 1, rows = 0;
 	int ret = E_OK;
 	char err_msg[256];
+
+	char *newl = "\n";
+	char *sudo_user = getenv("SUDO_USER");
+	char *login_name = getenv("LOGNAME");
+
+	if ((sudo_user && !strcmp(sudo_user, WEB_USER_NAME))
+		|| (login_name && !strcmp(login_name, WEB_USER_NAME)))
+		newl = " ";
 
 	list_init(&list);
 	
@@ -191,35 +200,38 @@ void list_part(const char *vg_name)
 		goto error_out;
 	}
 
-	printf("{\n");
-	printf("\t\"rows\":\n");
-	printf("\t[\n");
+	printf("{%s", newl);
+	printf("\t\"rows\":%s", newl);
+	printf("\t[%s", newl);
 
 	list_iterate_safe(n, nt, &list)	{
 		udv_info = list_struct_base(n, udv_info_t, list);
 	
 		// 不显示小于100M的空闲空间
-		if (!udv_info->part_used && udv_info->geom.length < 204800)
+		if (!udv_info->part_used && udv_info->geom.length < MIN_PART_SIZE)
 			continue;
 
 		if (first_print)
 			first_print = 0;
 		else
-			printf(",\n");
+			printf(",%s", newl);
+
+		start = udv_info->geom.start;
+		if (start < PART_START_SECTOR)
+			start = PART_START_SECTOR;
 
 		printf("\t\t{\"start\": %llu, \"end\": %llu, \"len\": %llu, "
 			"\"name\":\"%s\", \"stat\":\"%s\"}",
-			udv_info->geom.start<1024 ? 1024*512 : udv_info->geom.start*512,
-			udv_info->geom.end*512, udv_info->geom.length*512, udv_info->name,
-			udv_info->part_used ? "used" : "free");
+			start*512, udv_info->geom.end*512, udv_info->geom.length*512,
+			udv_info->name,	udv_info->part_used ? "used" : "free");
 
 		++rows;
 		capacity += udv_info->geom.length*512;
 	}
 
-	printf("\n\t],\n");
-	printf("\t\"total\":%d,\n", rows);
-	printf("\t\"capacity\":%llu\n", capacity);
+	printf("%s\t],%s", newl, newl);
+	printf("\t\"total\":%d,%s", rows, newl);
+	printf("\t\"capacity\":%llu%s", capacity, newl);
 	printf("}\n");
 
 	free_udv_list(&list);

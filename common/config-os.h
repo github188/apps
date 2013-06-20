@@ -1,12 +1,12 @@
 /*
  * config-os.h: platform-specific code
  *
- * Copyright (C) 2012-2013 WISDATA, Inc. (yanyonggang@wisdata.com.cn)
+ * Copyright (C) 2012-2013
  *
  */
 
-#ifndef __WIS_CONFIG_OS_H_
-#define __WIS_CONFIG_OS_H_
+#ifndef __CONFIG_OS_H_
+#define __CONFIG_OS_H_
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -59,4 +59,5 @@ typedef unsigned long long u_longlong;
 #  endif
 #endif
 
-#endif /* __WIS_CONFIG_OS_H_ */
+#endif
+

@@ -11,6 +11,9 @@
 //#define ALIGN_BEGIN_SECT 1024
 #define ALIGN_BEGIN_SECT 0
 
+#define PART_START_SECTOR	1024
+#define MIN_PART_SIZE		1953120	// 1000*1000*1000/512/8*8
+
 /* Error Code */
 enum {
 	E_OK = 0,

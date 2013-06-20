@@ -9,10 +9,10 @@ liblog.a: $(OBJECTS)
 	ar -rcs liblog.a $(OBJECTS)
 
 daemon: log-daemon.c
-	gcc $(CARGS) -o log-daemon log-daemon.c -L./ -llog -lsqlite3
+	gcc $(CARGS) -o log-daemon log-daemon.c liblog.a -lsqlite3
 
 test: test.c
-	gcc $(CARGS) -o test-log test.c -L$(PWD) -llog -lsqlite3
+	gcc $(CARGS) -o test-log test.c -L$(PWD) liblog.a -lsqlite3
 
 clean:
 	rm -fr liblog.a $(OBJECTS) log-daemon test-log

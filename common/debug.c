@@ -1,7 +1,7 @@
 /*
  * debug.c
  *
- * Copyright (C) 2012 WISDATA Ltd. <yanyonggang@wisdata.com.cn>
+ * Copyright (C) 2012
  *
  * Date:	Thu Apr 19, 2012
  * Desc:	Provides the definition of debug routines.

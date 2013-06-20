@@ -73,7 +73,6 @@ sys_module_t *sys_module_get(const char *name)
 		}
 	}
 
-	syslog(LOG_NOTICE, "sys_module_get('%s'): module not found!", name);
 	return NULL;
 }
 

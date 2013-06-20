@@ -21,7 +21,7 @@
 #ifndef __YCC_COMMON_UNISTD_H_
 #define __YCC_COMMON_UNISTD_H_
 
-#include "config-wis.h"
+#include "config.h"
 
 __BEGIN_DECLS
 
