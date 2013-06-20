@@ -1,0 +1,43 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          jw-nas
+# Required-Start:    jw-md
+# Required-Stop:
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: nas volume
+# Description:       same with above.
+### END INIT INFO
+
+. /usr/local/lib/jw-functions
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+_usage()
+{
+	echo "Usage: $(basename "$0")  {start}"
+}
+
+start_nas()
+{
+	sys-manager nas --misc --restore-cfg | awk -F':' '{ print $NF }' | sed 's/^ //' | tr -d '}"!'
+}
+
+stop_nas()
+{
+	:
+}
+
+case "${1:-}" in
+	start)
+		start_nas
+	;;
+	stop)
+		stop_nas
+	;;
+	*)
+		_usage
+	;;
+esac
+
+exit 0

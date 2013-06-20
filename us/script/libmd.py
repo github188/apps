@@ -59,7 +59,7 @@ def get_mdattr_by_mddev(mddev):
 	mdattr.raid_uuid = fs_attr_read(sysdir + '/md/array_uuid')
 	mdattr.raid_level = fs_attr_read(sysdir + '/md/array_level')
 	
-	val = fs_attr_read(sysdir + '/md/array_level')
+	val = fs_attr_read(sysdir + '/md/raid_disks')
 	if val.isdigit():
 		mdattr.disk_total = int(val)
 
@@ -84,19 +84,23 @@ def get_mdattr_by_mddev(mddev):
 		mdattr.remain = 0
 
 	if mdattr.raid_level in ('1', '5', '6'):
+		val = list_dir(sysdir + '/slaves')
+		mdattr.disk_list = [disk_dev2slot('/dev/'+x) for x in val]
+		mdattr.disk_cnt = len(mdattr.disk_list)
+		
+		if '5' == mdattr.raid_level:
+			max_degraded = 1
+		elif '6' == mdattr.raid_level:
+			max_degraded = 2
+		else:	# raid1
+			max_degraded = mdattr.disk_total
+
 		val = fs_attr_read(sysdir + '/md/sync_action')
 		if 'recover' == val:
 			mdattr.raid_state = 'rebuild'
 		elif 'resync' == val:
 			mdattr.raid_state = 'initial'
 		else:
-			if '5' == mdattr.raid_level:
-				max_degraded = 1
-			elif '6' == mdattr.raid_level:
-				max_degraded = 2
-			else:	# raid1
-				max_degraded = mdattr.disk_total
-
 			val = fs_attr_read(sysdir + '/md/degraded')
 			degraded = int(val)
 			if 0 == degraded:
@@ -107,6 +111,13 @@ def get_mdattr_by_mddev(mddev):
 				mdattr.raid_state = 'fail'
 		
 		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state:
+			faulty_disks = mdattr.disk_total - mdattr.disk_cnt
+			if faulty_disks > max_degraded:
+				mdattr.raid_state = 'fail'
+			elif faulty_disks == max_degraded:
+				mdattr.raid_state = 'degrade'
+		
+		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state:
 			val = fs_attr_read(sysdir + '/md/sync_completed')
 			if 'none' == val:
 				mdattr.raid_rebuild = '100.0'
@@ -115,10 +126,7 @@ def get_mdattr_by_mddev(mddev):
 				resync = float(list_tmp[0])
 				max_sectors = float(list_tmp[1])
 				mdattr.raid_rebuild = '%.1f' % (resync*100/max_sectors)
-		
-		val = list_dir(sysdir + '/slaves')
-		mdattr.disk_list = [disk_dev2slot('/dev/'+x) for x in val]
-		mdattr.disk_cnt = len(mdattr.disk_list)
+
 	else:	# raid0, jbod
 		f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, basename(mdattr.dev)))
 		mdattr.disk_list = list_file('%s/%s/disk-list' % (RAID_DIR_BYMD, md))
@@ -347,19 +355,20 @@ def __md_create(raid_name, level, chunk, slots):
 		return False, "创建卷组失败"
 
 	msg = ''
-	try:
+
+	retry_cnt = 10
+	while retry_cnt > 0:
 		# 强制重写分区表
-		cmd = 'sys-manager udv --force-init-vg %s' % mddev
-		sts,out = commands.getstatusoutput(cmd)
-		if sts != 0:
-			time.sleep(1)
-			sts,out = commands.getstatusoutput(cmd)
-			if sts != 0:
-				force = json.loads(out)
-				msg = force['msg']
-	except:
-		msg = '初始化卷组未知错误'
-		pass
+		cmd = 'sys-manager udv --force-init-vg %s >/dev/null 2>&1' % mddev
+		if os.system(cmd) == 0:
+			break
+		
+		time.sleep(0.5)
+		retry_cnt -= 1
+	
+	if 0 == retry_cnt:
+		msg = ' 初始化分区表失败'
+
 	return True, '创建卷组成功%s' % msg
 
 def md_is_used(raid_name):
@@ -384,7 +393,7 @@ def md_del(raid_name):
 		msg = '删除卷组 %s 成功' % raid_name
 		vg_log('Info', msg)
 	else:
-		vg_log('Error', '删除卷组 %s 失败%s' % (raid_name, msg))
+		vg_log('Error', '删除卷组 %s 失败, %s' % (raid_name, msg))
 	return ret,msg
 
 def __md_del(raid_name):
@@ -396,7 +405,7 @@ def __md_del(raid_name):
 		mdattr = get_mdattr_by_mddev(mddev)
 		md_uuid = mdattr.raid_uuid
 		if mdattr.raid_state != 'fail' and md_is_used(raid_name):
-			return False, '卷组 %s 存在未删除的用户数据卷, 请先删除' % raid_name
+			return False, '卷组存在未删除的用户数据卷'
 	except:
 		md_uuid = ''
 	dev_list = disks_slot2dev(mdattr.disk_list)
@@ -676,7 +685,7 @@ def md_rebuild(mdattr):
 	unlock_file(f_lock)
 
 def inc_md_rebuilder_cnt(md):
-	filepath = '%s/.%s_rebuilder_cnt' % (RAID_DIR_BYMD, md)
+	filepath = '%s/%s/rebuilder_cnt' % (RAID_DIR_BYMD, md)
 	cnt = 1
 	f_lock = lock_file('%s/%s_rebuilder' % (RAID_DIR_LOCK, md))
 	if os.path.isfile(filepath):
@@ -689,7 +698,7 @@ def inc_md_rebuilder_cnt(md):
 	return cnt
 
 def dec_md_rebuilder_cnt(md):
-	filepath = '%s/.%s_rebuilder_cnt' % (RAID_DIR_BYMD, md)
+	filepath = '%s/%s/rebuilder_cnt' % (RAID_DIR_BYMD, md)
 	cnt = 0
 	f_lock = lock_file('%s/%s_rebuilder' % (RAID_DIR_LOCK, md))
 	if os.path.isfile(filepath):
@@ -701,7 +710,7 @@ def dec_md_rebuilder_cnt(md):
 	unlock_file(f_lock)
 
 def get_md_rebuilder_cnt(md):
-	filepath = '%s/.%s_rebuilder_cnt' % (RAID_DIR_BYMD, md)
+	filepath = '%s/%s/rebuilder_cnt' % (RAID_DIR_BYMD, md)
 	cnt = 0
 	f_lock = lock_file('%s/%s_rebuilder' % (RAID_DIR_LOCK, md))
 	if os.path.isfile(filepath):
@@ -817,11 +826,15 @@ def faulty_disk_in_md(mddev, diskdev):
 
 # 从指定卷组删除磁盘
 def remove_disk_from_md(mddev, diskdev):
-	cmd = 'mdadm --remove %s %s 2>&1' % (mddev, basename(diskdev))
-	ret,msg = commands.getstatusoutput(cmd)
+	retry_cnt = 10
+	while retry_cnt > 0:
+		cmd = 'mdadm --remove %s %s 2>&1' % (mddev, basename(diskdev))
+		if os.system(cmd) == 0:
+			break
+		time.sleep(0.5)
+		retry_cnt -= 1	
 	
 	tmpfs_remove_disk_from_md(mddev, disk_dev2slot(diskdev))
-	return ret
 
 # 将磁盘加入指定卷组
 def add_disk_to_md(mddev, diskdev):

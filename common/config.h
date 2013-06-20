@@ -1,12 +1,12 @@
 /*
- * config-wis.h: project config header file
+ * project config header file
  *
- * Copyright (C) 2012-2013 WISDATA, Inc. (yanyonggang@wisdata.com.cn)
+ * Copyright (C) 2012-2013
  *
  */
 
-#ifndef __WIS_CONFIG_WIS_H_
-#define __WIS_CONFIG_WIS_H_
+#ifndef __CONFIG_H_
+#define __CONFIG_H_
 
 #ifdef __GNUC__
 #include "config-gcc.h"
@@ -36,11 +36,6 @@
 	((type*)((char*)ptr - offsetof(type, member)))
 #endif
 
-/* prevent compiler warning */
-#ifndef __WIS_UNUSED
-#define __WIS_UNUSED(var)	((void)(var))
-#endif
-
 #ifndef __BEGIN_DECLS
 #ifdef __END_DECLS
 # undef __END_DECLS
@@ -54,4 +49,5 @@
 #endif
 #endif
 
-#endif /* __WIS_CONFIG_WIS_H_ */
+#endif
+

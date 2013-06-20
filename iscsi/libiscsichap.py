@@ -66,7 +66,7 @@ def chap_conf_user_add(tgt, user, pwd):
 			break
 	if target is None:
 		target = doc.createElement('target')
-		__set_attrvalue(target, 'name', tgt)
+		target.setAttribute('name', tgt)
 		root.appendChild(target)
 	
 	# add new incoming user

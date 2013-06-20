@@ -215,8 +215,6 @@ static int disk_read_mdinfo(const char *cmd, struct disk_md_info *mi)
 
 	r = fread(buf, 1, sizeof(buf) - 1, fp);
 	if (r <= 0) {
-		clog(LOG_ERR, "%s: fork cmd %s failed\n",
-		     __func__, cmd);
 		memset(mi, 0, sizeof(*mi));
 		goto out;
 	}

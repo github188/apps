@@ -101,7 +101,6 @@ sys_action_t *sys_action_get(const char *name)
 		}
 	}
 
-	syslog(LOG_NOTICE, "sys_action_get('%s'): not found!", name);
 	return NULL;
 }
 

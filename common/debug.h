@@ -1,22 +1,22 @@
 /*
  * debug.h
  *
- * Copyright (C) 2012 WISDATA Ltd. <yanyonggang@wisdata.com.cn>
+ * Copyright (C) 2012
  *
  * Date:	Thu Apr 19, 2012
  * Desc:	Provides the definition of debug routines.
  *
  */
 
-#ifndef __WIS_COMMON_DEBUG_H_
-#define __WIS_COMMON_DEBUG_H_
+#ifndef __COMMON_DEBUG_H_
+#define __COMMON_DEBUG_H_
 
 #include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "config-wis.h"
+#include "config.h"
 
 __BEGIN_DECLS
 
@@ -72,6 +72,5 @@ void __dbg_fprintf(FILE *stream,
 
 __END_DECLS
 
-#endif /* __YCC_COMMON_DEBUG_H_ */
+#endif
 
-/* eof */

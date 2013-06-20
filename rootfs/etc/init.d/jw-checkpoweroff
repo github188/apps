@@ -35,7 +35,6 @@ do_start()
 		sys-manager log --insert --module SysConf --category Auto --event Warning --content "上次关机为非法关机"
 	fi
 	sys-manager log --insert --module SysConf --category Auto --event Info --content "系统正常启动"
-	echo $?
 	if [ ! -f "$FLAGFILE" ];then
 		touch $FLAGFILE
 	fi

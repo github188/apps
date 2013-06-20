@@ -4,7 +4,7 @@
 
 ### BEGIN INIT INFO
 # Provides:          jw-driver
-# Required-Start:    jw-userconfigd
+# Required-Start:    
 # Required-Stop:
 # Default-Start:     2
 # Default-Stop:      0 1 6
@@ -22,8 +22,7 @@ do_driver_start()
 
 do_driver_stop()
 {
-	rmmod nct6106
-	rmmod smbus-power
+	:
 }
 
 driver_usage()

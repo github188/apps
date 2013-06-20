@@ -13,7 +13,8 @@ from libudv import get_dev_byudvname, get_udvname_bydev, get_iscsivolname_bydev
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-NAS_CONF_FILE = CONF_ROOT_DIR + '/nas/nas.conf'
+NAS_CONF_DIR = CONF_ROOT_DIR + '/nas'
+NAS_CONF_FILE = NAS_CONF_DIR + '/nas.conf'
 NAS_DIR = '/tmp/.nas-info'
 NAS_CONF_LOCK = NAS_DIR + '/.lock_conf'
 MOUNT_ROOT = '/mnt/share'
@@ -384,6 +385,9 @@ def nas_conf_load():
 	f_lock = lock_file(NAS_CONF_LOCK)
 
 	if not os.path.isfile(NAS_CONF_FILE):
+		if not os.path.isdir(NAS_CONF_DIR):
+			os.makedirs(NAS_CONF_DIR)
+
 		fd = open(NAS_CONF_FILE, 'w')
 		fd.write(NAS_CONF_DEF)
 		fd.close()

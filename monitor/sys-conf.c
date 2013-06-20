@@ -6,7 +6,7 @@
 #include "sys-interval-check.h"
 
 #define _XML_STR_VAL(node, key) (char*)xmlGetProp(node, BAD_CAST(key))
-#define _XML_IGN_CHECK(node) if ((xmlStrcmp(node->name, BAD_CAST"text")) || xmlStrcmp(node->name, BAD_CAST"comment"))
+#define _XML_IGN_CHECK(node) if (xmlStrcmp(node->name, BAD_CAST"text") && xmlStrcmp(node->name, BAD_CAST"comment"))
 #define _XML_NODE_NAME(node, name1) (!xmlStrcmp(node->name, BAD_CAST(name1)))
 #define _XML_ATTR_EQU(node, key, value) (!strcmp(_XML_STR_VAL(node, key), value))
 
