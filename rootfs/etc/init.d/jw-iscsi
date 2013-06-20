@@ -1,0 +1,63 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          jw-iscsi
+# Required-Start:    jw-md
+# Required-Stop:
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: iscsi
+# Description:       same with above.
+### END INIT INFO
+
+. /usr/local/lib/jw-functions
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+_usage()
+{
+	echo "Usage: $(basename "$0")  {start|stop|restart}"
+}
+
+start_scst()
+{
+	modprobe scst
+	modprobe scst_vdisk
+	modprobe iscsi-scst
+	iscsi-scstd
+	if [ $? -eq 0 ]; then
+		sys-manager iscsi --misc --restore-cfg | awk -F':' '{ print $NF }' | sed 's/^ //'| tr -d '}"!'
+	fi
+}
+
+stop_scst()
+{
+	while true
+	do
+		killall iscsi-scstd 2>/dev/null
+		if [ $? -ne 0 ]; then
+			break;
+		fi
+		sleep 1
+	done
+	rmmod scst_vdisk
+	rmmod iscsi-scst
+	rmmod scst
+}
+
+case "${1:-}" in
+	start)
+		start_scst
+	;;
+	stop)
+		stop_scst
+	;;
+	restart)
+		$0 stop
+		$0 start
+	;;
+	*)
+		_usage
+	;;
+esac
+
+exit 0
