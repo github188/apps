@@ -24,7 +24,7 @@ def nas_mkfs(udv_name, udv_dev, filesystem):
 
 	p = sp.Popen(args, stdout=sp.PIPE)
 	while True:
-		time.sleep(1)
+		time.sleep(0.5)
 		ret = sp.Popen.poll(p)
 		if ret == 0:	# 程序正常结束
 			progress = 100.00
