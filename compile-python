@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+import os, sys, compileall
+
+def main():
+	if len(sys.argv) != 2:
+		return
+
+	if os.path.isdir(sys.argv[1]):
+		compileall.compile_dir(sys.argv[1])
+
+if __name__ == '__main__':
+	main()
+

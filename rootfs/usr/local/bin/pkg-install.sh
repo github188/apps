@@ -11,18 +11,32 @@ usage()
 local_install()
 {
 	local _pkg="$1"
+	update_cmd="pkg-install.sh"
+	update_dir="/tmp/.update_dir"
+
 	/etc/init.d/jw-apps stop
-	cd /
-	tar jxvf "$_pkg"
+
+	mkdir $update_dir
+	cd $update_dir
+	tar xfj "$_pkg"
+	rm -fr "$_pkg"
+	if [ -f $update_cmd ]; then
+		$update_cmd
+	else
+		cp -a ./* /
+		cd /tmp
+		rm -rf $update_dir
+	fi
+
 	if [ $? -eq 0 ]; then
-		echo "---------- package $_pkg installed OK! ------------"
+		echo "package $_pkg installed OK!"
 		sys-manager log --insert --module SysConf --category Auto --event Info --content '存储系统软件包升级成功!'
 	else
-		echo "---------- package $_pkg install failed! ------------"
+		echo "package $_pkg install failed!"
 	fi
-	rm /usr/local/bin/*.pyc
+
+	rm -f /usr/local/bin/*.py
 	/etc/init.d/jw-apps start
-	rm -fr "$_pkg"
 }
 
 remote_install()

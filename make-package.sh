@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/mon_test us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test test-utils/tools-test-led'
-UDV_BIN='udv/libudv.py udv/udv'
+DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test test-utils/tools-test-led'
+UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
-NAS_BIN='nas/nas nas/nasconf nas/tr-simple nas/*.py nas/*.sh nas/usermanage'
+NAS_BIN='nas/*'
 SYSCONF_BIN='sys-conf/* sys-conf/.build-date'
-COMMON_BIN='common/loglist common/log-daemon common/libcommon.py'
-MON_BIN='monitor/sys-mon monitor/buzzer monitor/set-buzzer.sh monitor/libsysmon.py'
+COMMON_BIN='common/*'
+MON_BIN='monitor/*'
 WEB_BIN='web/*'
 
 # sync list
@@ -19,12 +19,24 @@ sync_apps()
 {
 	local _target="$1"
 	mkdir -pv $_target/usr/local/{bin,lib}
-	chmod +x $BIN_LIST
+
 	cp -fRav $BIN_LIST  "$_target"/usr/local/bin/
+	cp -fRav $LIB_LIST  "$_target"/usr/local/lib/
+	
+	# 编译python脚本
+	./compile-python "$_target"/usr/local/bin/
+	
+	# 删除程序源码, 中间文件, 配置文件
+	rm -f "$_target"/usr/local/bin/*.py
 	rm -f "$_target"/usr/local/bin/Makefile
 	rm -f "$_target"/usr/local/bin/*.c
 	rm -f "$_target"/usr/local/bin/*.h
-	cp -fRav $LIB_LIST  "$_target"/usr/local/lib/
+	rm -f "$_target"/usr/local/bin/*.o
+	rm -f "$_target"/usr/local/bin/*.a
+	rm -f "$_target"/usr/local/bin/*.xml
+	chmod +x "$_target"/usr/local/bin/*
+	chmod -x "$_target"/usr/local/bin/*.pyc
+
 	chown -fRv root:root $_target/*
 }
 
