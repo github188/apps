@@ -286,7 +286,7 @@ def nas_fmt_record_remove(volume_name):
 def nas_vol_format(udv_name, udv_dev, filesystem):
 	nas_fmt_record_set(udv_name, '0.00')
 	mount_dir = MOUNT_ROOT + os.sep + udv_name
-	cmd =  'nas-mkfs.py --udv %s --dev %s --mount %s --filesystem %s' % (udv_name, udv_dev, mount_dir, filesystem)
+	cmd =  'nas_mkfs --udv %s --dev %s --mount %s --filesystem %s' % (udv_name, udv_dev, mount_dir, filesystem)
 	os.popen('%s &' % cmd)
 
 # 添加NAS卷, 格式化并挂载
