@@ -14,29 +14,33 @@ local_install()
 	update_cmd="pkg-install.sh"
 	update_dir="/tmp/.update_dir"
 
-	/etc/init.d/jw-apps stop
-
+	rm -rf $update_dir
 	mkdir $update_dir
 	cd $update_dir
 	tar xfj "$_pkg"
+	if [ $? -ne 0 ]; then
+		rm -rf $update_dir
+		return 2
+	fi
 	rm -fr "$_pkg"
+	
 	if [ -f $update_cmd ]; then
 		$update_cmd
+		ret=$?
+		if [ $ret -ne 0 ]; then
+			rm -rf $update_dir
+			return $ret
+		fi
 	else
-		cp -a ./* /
+		cp -fa ./* /
 		cd /tmp
 		rm -rf $update_dir
 	fi
 
-	if [ $? -eq 0 ]; then
-		echo "package $_pkg installed OK!"
-		sys-manager log --insert --module SysConf --category Auto --event Info --content '存储系统软件包升级成功!'
-	else
-		echo "package $_pkg install failed!"
-	fi
-
+	rm -rf $update_dir
 	rm -f /usr/local/bin/*.py
-	/etc/init.d/jw-apps start
+
+	return 0
 }
 
 remote_install()
@@ -50,7 +54,6 @@ remote_install()
 TEMP=`getopt -o p:t: --long package:,target: -n 'pkg-install.sh' -- "$@"`
 
 if [ $? != 0 ]; then
-	echo "Terminating..." >&2
 	exit 1
 fi
 
@@ -70,12 +73,24 @@ done
 
 [ "$package" = "" ] && usage
 if [ ! -f "$package" ]; then
-	echo "$package : No such file"
+	echo "升级包: $package 不存在"
 	exit 1
 fi
 
 if [ "$target" == "" ]; then
 	local_install "$package"
+	ret=$?
+	if [ $ret -eq 0 ]; then
+		echo "升级包: $package 安装成功"
+		exit 0
+	elif [ $ret -eq 2 ]; then
+		echo "升级包格式错误"
+	elif [ $ret -eq 3 ]; then
+		echo "升级包不适用当前系统"
+	else
+		echo "升级失败"
+	fi
+	exit $ret
 else
 	remote_install "$package" "$target"
 fi

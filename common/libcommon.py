@@ -94,6 +94,16 @@ def list_dir(path):
 def basename(dev):
 	return os.path.basename(str(dev))
 
+def read_file(file_path):
+	str = ''
+	try:
+		f = open(file_path, 'r')
+		str = f.read()
+		f.close()
+	except:
+		pass
+	return str
+
 def initlog():
 	import logging
 	
@@ -133,6 +143,9 @@ def default_dump(row_list):
 	for row in row_list:
 		rows.append(row.__dict__)
 	return rows
+
+def dict_dump(row_list):
+	return row_list
 
 class CommOutput:
 	def __init__(self, row_list, dump = default_dump):

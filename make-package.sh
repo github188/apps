@@ -15,18 +15,24 @@ WEB_BIN='web/*'
 BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN $WEB_BIN"
 LIB_LIST=""
 
+# 升级包
+PKG_TAR="/tmp/jwipsan-upgrade-$(date +%Y%m%d).tar.bz2"
+PKG_BIN="/tmp/jwipsan-upgrade-$(date +%Y%m%d).bin"
+
 sync_apps()
 {
 	local _target="$1"
-	mkdir -pv $_target/usr/local/{bin,lib}
+	mkdir -p $_target/usr/local/bin
 
-	cp -fRav $BIN_LIST  "$_target"/usr/local/bin/
-	cp -fRav $LIB_LIST  "$_target"/usr/local/lib/
+	echo "copy all app files ..."
+	cp -fa $BIN_LIST  "$_target"/usr/local/bin/
 	
 	# 编译python脚本
-	./compile-python "$_target"/usr/local/bin/
+	echo "compile python source ..."
+	./compile-python "$_target"/usr/local/bin/ >/dev/null
 	
 	# 删除程序源码, 中间文件, 配置文件
+	echo "remove source ..."
 	rm -f "$_target"/usr/local/bin/*.py
 	rm -f "$_target"/usr/local/bin/Makefile
 	rm -f "$_target"/usr/local/bin/*.c
@@ -36,44 +42,71 @@ sync_apps()
 	rm -f "$_target"/usr/local/bin/*.xml
 	chmod +x "$_target"/usr/local/bin/*
 	chmod -x "$_target"/usr/local/bin/*.pyc
-
-	chown -fRv root:root $_target/*
 }
 
 sync_rootfs()
 {
 	local _target="$1"
-	cp -fRav rootfs/* "$_target"/
+	
+	echo "copy rootfs ..."
+	cp -fa rootfs/* "$_target"/
 
-	chown -fvR root:root $_target/*
-	chmod -fv 440 $_target/etc/sudoers
+	chmod -f 440 $_target/etc/sudoers
 }
 
 sync_conf()
 {
 	local _target="$1"
-	mkdir -pv $_target/opt/jw-conf/system/
-	mkdir -pv $_target/opt/jw-conf.bak/system/
-	cp -fav monitor/conf-example.xml "$_target"/opt/jw-conf/system/sysmon-conf.xml
-	cp -fav monitor/conf-example.xml "$_target"/opt/jw-conf.bak/system/sysmon-conf.xml
+	
+	echo "copy conf ..."
+	mkdir -p $_target/opt/jw-conf/system/
+	mkdir -p $_target/opt/jw-conf.bak/system/
+	cp -fa monitor/conf-example.xml "$_target"/opt/jw-conf/system/sysmon-conf.xml
+	cp -fa monitor/conf-example.xml "$_target"/opt/jw-conf.bak/system/sysmon-conf.xml
+}
+
+sysnc_kernel()
+{
+	local _target="$1"
+	
+	echo "copy kernel ..."
+	mkdir -p $_target/boot/grub
+	mkdir -p $_target/lib/modules/
+	cp -f /boot/*`uname -r` $_target/boot/
+	cp -f /boot/grub/grub.cfg $_target/boot/grub/
+	cp -fa /lib/modules/`uname -r` $_target/lib/modules/
 }
 
 tar_pkg()
 {
 	local _target="$1"
-	_f="/tmp/apps-$(date +%Y%m%d-%H%M%S).tar.bz2"
+	
+	echo "pakaging ..."
 	cd "$_target"
-	tar jcf $_f ./*
-	[ $? -eq 0 ] && echo "Package $_f created!"
+	chown -fR root:root ./*
+	tar jcf $PKG_TAR ./*
 	rm -rf $_target
 }
 
+encode_pkg()
+{
+	echo "encoding pkg ..."
+	openssl enc -des3 -salt -a -pass file:/sys/kernel/vendor -in $PKG_TAR -out $PKG_BIN
+	[ $? -eq 0 ] && echo "Package $PKG_BIN create ok"
+	rm -f $PKG_TAR
+}
 
 target="/tmp/.pkg"
 rm -fr $target
 mkdir $target
+rm -f $PKG_TAR
+rm -f $PKG_BIN
 
 sync_apps "$target"
 sync_rootfs "$target"
 sync_conf "$target"
+if [ "x$1" = "x--kernel" ]; then
+	sysnc_kernel "$target"
+fi
 tar_pkg "$target"
+encode_pkg

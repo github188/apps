@@ -68,9 +68,6 @@ class iSCSIArgs:
 		if self.mode == '':
 			self.mode = mode
 
-def DictDump(row_list):
-	return row_list
-
 # 处理Target相关参数
 def iscsiTargetProc(args = iSCSIArgs()):
 	if args.list_set:
@@ -133,7 +130,7 @@ def iscsiLunProc(args = iSCSIArgs()):
 	if args.list_set:
 		if len(args.lun_id_str):
 			comm_exit(False, '暂不支持获取指定LUN ID信息！')
-		CommOutput(iSCSILunGetList(args.target_name_str), DictDump)
+		CommOutput(iSCSILunGetList(args.target_name_str), dict_dump)
 
 	elif args.map_set:
 		if not len(args.target_name_str):
