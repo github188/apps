@@ -172,7 +172,7 @@ void list_part(const char *vg_name)
 	
 	ssize_t udv_cnt;
 	uint64_t capacity = 0;
-	uint64_t start;
+	uint64_t start, length;
 	char vg_dev[32];
 	int first_print = 1, rows = 0;
 	int ret = E_OK;
@@ -217,16 +217,19 @@ void list_part(const char *vg_name)
 			printf(",%s", newl);
 
 		start = udv_info->geom.start;
-		if (start < PART_START_SECTOR)
+		length = udv_info->geom.length;
+		if (start < PART_START_SECTOR) {
+			length -= (PART_START_SECTOR - start);
 			start = PART_START_SECTOR;
+		}
 
 		printf("\t\t{\"start\": %llu, \"end\": %llu, \"len\": %llu, "
 			"\"name\":\"%s\", \"stat\":\"%s\"}",
-			start*512, udv_info->geom.end*512, udv_info->geom.length*512,
+			start*512, udv_info->geom.end*512, length*512,
 			udv_info->name,	udv_info->part_used ? "used" : "free");
 
 		++rows;
-		capacity += udv_info->geom.length*512;
+		capacity += length*512;
 	}
 
 	printf("%s\t],%s", newl, newl);
