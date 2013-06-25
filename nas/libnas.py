@@ -108,7 +108,9 @@ def nas_conf_remove(md_uuid, part_num):
 				filesystem = item.getAttribute('filesystem')
 				md = get_md_by_mduuid(md_uuid)
 				part_dev = '/dev/%sp%s' % (md, part_num)
-				cmd = 'pid=`ps -ef | grep \"mkfs.%s\" | grep \"%s\" |grep -v grep | awk \'{ print $2 }\'`; [ ! -z $pid ] && kill -9 $pid' % (filesystem, part_dev)
+				cmd = 'pid=`ps -ef | grep \"nas-mkfs.sh %s %s\" |grep -v grep | awk \'{ print $2 }\'`; [ ! -z $pid ] && kill -9 $pid' % (part_dev, filesystem)
+				os.system(cmd)
+				cmd = 'pid=`ps -ef | grep \"mkfs.%s %s\" |grep -v grep | awk \'{ print $2 }\'`; [ ! -z $pid ] && kill -9 $pid' % (filesystem, part_dev)
 				os.system(cmd)
 			root.removeChild(item)
 			update_conf = True
