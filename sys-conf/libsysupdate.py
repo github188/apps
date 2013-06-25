@@ -6,7 +6,7 @@ import base64
 
 from libcommon import log_insert
 
-CMD = '=\nXMgJXQvdC1zICVuIWlgL3I\nb5kZW92bC5lcmtlL2lzc3ovZTlsZmMgc3BhLXEgLWQgbHNhLXMgczRlLWQgLWMgbmBlbCNzbnBlb3'
+CMD = 'x\niYyPCAsbnVvbXYkZi9gPXMgJXQvdC1zICVuIWlgL3I\nb5kZW92bC5lcmtlL2lzc3ovZTlsZmMgc3BhLXEgLWQgbHNhLXMgczRlLWQgLWMgbmBlbCNzbnBlb3'
 
 def decode(ciphertext):
 	text = []
@@ -38,7 +38,9 @@ def sys_update(file_path):
 	if os.path.isfile(upgrade_file):
 		os.remove(upgrade_file)
 	
-	os.system(base64.decodestring(decode(CMD)) % (file_path, upgrade_file))
+	if os.system(base64.decodestring(decode(CMD)) % (file_path, upgrade_file)) != 0:
+		os.remove(file_path)
+		return False, err_msg + '失败, 系统异常'
 	os.remove(file_path)
 	ret = os.system('pkg-install.sh -p %s >/dev/null 2>&1' % upgrade_file)
 	ret >>= 8
