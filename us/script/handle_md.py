@@ -104,12 +104,9 @@ def main():
 	if len(sys.argv) != 3:
 		return
 
-	log = initlog()
-
 	action = sys.argv[2]
 	mddev = sys.argv[1]
 
-	log.info('action: %s, mddev: %s' % (action, mddev))
 	if 'online' == action:
 		tmpfs_add_md(mddev)
 	elif 'remove' == action:

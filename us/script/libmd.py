@@ -117,6 +117,15 @@ def get_mdattr_by_mddev(mddev):
 			elif faulty_disks == max_degraded:
 				mdattr.raid_state = 'degrade'
 		
+		if mdattr.raid_state != 'normal' and  '1' == mdattr.raid_level:
+			fail = True
+			for entry in list_child_dir(sysdir + '/md'):
+				if entry[:2] == 'rd':
+					fail = False
+					break
+			if fail:
+				mdattr.raid_state = 'fail'
+		
 		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state:
 			val = fs_attr_read(sysdir + '/md/sync_completed')
 			if 'none' == val:
@@ -307,7 +316,9 @@ def tmpfs_add_disk_to_md(mddev, slot):
 	unlock_file(f_lock)
 
 def md_create(raid_name, level, chunk, slots):
+	f_lock = lock_file(RAID_REBUILD_LOCK)
 	ret,msg = __md_create(raid_name, level, chunk, slots)
+	unlock_file(f_lock)
 	if ret:
 		vg_log('Info', '使用磁盘 %s 创建RAID级别为 %s 的卷组 %s 成功' % (slots, level, raid_name))
 	else:
@@ -320,6 +331,20 @@ def __md_create(raid_name, level, chunk, slots):
 	if md == None:
 		return False,"RIAD数达到最大限制"
 	mddev = '/dev/' + md
+	
+	# 检查磁盘是否仍为空闲盘
+	slot_list = slots.split()
+	disk_info_list = json.loads(commands.getoutput('disk --list'))['rows']
+	for disk_info in disk_info_list:
+		if disk_info['slot'] in slot_list:
+			if disk_info['state'] != 'Free' and disk_info['state'] != 'Invalid':
+				return False, "磁盘 %s 不是空闲盘或无效RAID盘" % disk_info['slot']
+
+			slot_list.remove(disk_info['slot'])
+	
+	if len(slot_list) > 0:
+		return False, "未找到磁盘 %s, 可能已掉线" % slot_list[0]
+	
 	dev_list = disks_slot2dev(slots.split())
 	if len(dev_list) == 0:
 		return False, "没有磁盘"
