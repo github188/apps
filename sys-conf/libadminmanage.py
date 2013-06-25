@@ -16,7 +16,7 @@ sys.setdefaultencoding('utf8')
 
 CONF_PATH="/opt/etc/userconf/"
 Admin_CONF_PATH=CONF_PATH+'manage.conf'
-Session_CONF_PATH=CONF_PATH+'session.conf'
+Session_CONF_PATH='/opt/jw-conf/system/session.conf'
 
 config = ConfigParser.ConfigParser()  
 config.read(Admin_CONF_PATH) 
