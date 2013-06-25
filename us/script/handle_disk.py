@@ -103,6 +103,10 @@ def handle_disk_remove_kicked(diskinfo, event):
 				break
 			time.sleep(0.5)
 			retry_cnt -= 1
+		
+		# 磁盘故障灯可能会被其他掉盘/踢盘事件关掉，重新打开
+		if event == 'rdkicked':
+			sysmon_event('disk', 'led_blink1s4', 'disks=%s' % diskinfo.slot, '')
 
 		if mdattr.raid_state != 'degrade':
 			dec_md_rebuilder_cnt(basename(mdattr.dev))

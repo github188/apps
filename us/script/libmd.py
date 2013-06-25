@@ -117,6 +117,15 @@ def get_mdattr_by_mddev(mddev):
 			elif faulty_disks == max_degraded:
 				mdattr.raid_state = 'degrade'
 		
+		if mdattr.raid_state != 'normal' and  '1' == mdattr.raid_level:
+			fail = True
+			for entry in list_child_dir(sysdir + '/md'):
+				if entry[:2] == 'rd':
+					fail = False
+					break
+			if fail:
+				mdattr.raid_state = 'fail'
+		
 		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state:
 			val = fs_attr_read(sysdir + '/md/sync_completed')
 			if 'none' == val:

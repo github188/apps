@@ -17,7 +17,7 @@
 #include "script.h"
 #include "safe_popen.h"
 
-#define DISK_HOTREP_CONF "/opt/jw-conf/disk/hotreplace.xml"
+#define DISK_HOTREP_CONF "/opt/etc/disk/hotreplace.xml"
 
 extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
