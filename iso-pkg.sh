@@ -121,7 +121,7 @@ PATH=/usr/local/bin:$PATH
 
 upload_dir=/var/www/Upload
 [ ! -d \$upload_dir ] && mkdir \$upload_dir
-chmod a+w $upload_dir
+chmod a+w \$upload_dir
 
 usermanage --default
 nasconf --default
@@ -136,6 +136,13 @@ EOF
 	cd -
 	echo "local.tgz packaged OK!"
 }
+
+if [ -z $1 ]; then
+	echo "input release version"
+	exit 1
+fi
+
+echo "JW-Linux GNU/Linux $1 \n \l" >/etc/issue
 
 cd $PKG_STORE_DIR
 rm -rf root.tgz local.tgz opt.tgz
