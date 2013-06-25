@@ -1,3 +1,10 @@
+export CFLAGS = -Wall -O2 -g
+export STRIP
+
+ifdef release
+	STRIP = strip
+endif
+
 all:
 	$(MAKE) -C common
 	$(MAKE) -C udv

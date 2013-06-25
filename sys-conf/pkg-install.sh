@@ -18,11 +18,12 @@ local_install()
 	mkdir $update_dir
 	cd $update_dir
 	tar xfj "$_pkg"
+	ret=$?
+	rm -fr "$_pkg"
 	if [ $? -ne 0 ]; then
 		rm -rf $update_dir
 		return 2
 	fi
-	rm -fr "$_pkg"
 	
 	if [ -f $update_cmd ]; then
 		$update_cmd

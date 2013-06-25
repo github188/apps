@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "../pic_ctl.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))

@@ -60,9 +60,7 @@ sync_conf()
 	
 	echo "copy conf ..."
 	mkdir -p $_target/opt/jw-conf/system/
-	mkdir -p $_target/opt/jw-conf.bak/system/
 	cp -fa monitor/conf-example.xml "$_target"/opt/jw-conf/system/sysmon-conf.xml
-	cp -fa monitor/conf-example.xml "$_target"/opt/jw-conf.bak/system/sysmon-conf.xml
 }
 
 sysnc_kernel()

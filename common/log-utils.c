@@ -8,6 +8,7 @@
 #include <limits.h>
 #include "log.h"
 #include "debug.h"
+#include "jw-unistd.h"
 
 const char *_mod_name[] = {"Web", "Disk", "VG", "UDV", "iSCSI", "NAS", "SysConf", "SysMon", "Unknown", NULL};
 const char *_mod_category[] = {"Auto", "Manual", NULL};

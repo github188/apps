@@ -35,6 +35,9 @@ def sys_update(file_path):
 	if not os.path.isfile(file_path):
 		return False, err_msg + '失败, 升级包不存在'
 	
+	if os.path.isfile(upgrade_file):
+		os.remove(upgrade_file)
+	
 	os.system(base64.decodestring(decode(CMD)) % (file_path, upgrade_file))
 	os.remove(file_path)
 	ret = os.system('pkg-install.sh -p %s >/dev/null 2>&1' % upgrade_file)

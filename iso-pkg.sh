@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 PKG_STORE_DIR=/home
-JW_CONF_DIR=/opt/jw-conf
+USER_CONF_DIR=/opt/etc
 
 conf_backup()
 {
@@ -11,6 +11,8 @@ conf_backup()
 
 	mv /root/.ssh conf_bak
 	mv -f /boot/grub/.grub.bak* conf_bak
+	
+	HOSTNAME=`hostname`
 }
 
 conf_restore()
@@ -20,12 +22,14 @@ conf_restore()
 
 	cp conf_bak/* /opt/ -a
 	rm -rf conf_bak
+	
+	sysconfig --hosts $HOSTNAME
 }
 
 service_stop()
 {
 	/etc/init.d/lighttpd stop
-	/etc/init.d/jw-assemble stop
+	/etc/init.d/jw-iscsi stop
 	/etc/init.d/jw-apps stop
 }
 
@@ -33,7 +37,7 @@ service_start()
 {
 	/etc/init.d/rsyslog restart
 	/etc/init.d/jw-apps start
-	/etc/init.d/jw-assemble start
+	/etc/init.d/jw-iscsi start
 	/etc/init.d/lighttpd start
 }
 
@@ -42,9 +46,13 @@ make_default_conf()
 	# nfs
 	cat /dev/null > /etc/exports
 
-	# jw
-	rm -rf $JW_CONF_DIR
-	cp ${JW_CONF_DIR}.bak $JW_CONF_DIR -a
+	# disk iscsi nas
+	rm -rf $USER_CONF_DIR/disk
+	rm -rf $USER_CONF_DIR/iscsi
+	rm -rf $USER_CONF_DIR/nas
+	
+	# defualt hostname
+	sysconfig --hosts JW-Linux
 
 	# clear log
 	find /var/log/ -type f -exec rm -f {} \;
@@ -110,6 +118,11 @@ EOF
 	cat << EOF > ./bin/set_misc_default
 #!/bin/sh
 PATH=/usr/local/bin:$PATH
+
+upload_dir=/var/www/Upload
+[ ! -d \$upload_dir ] && mkdir \$upload_dir
+chmod a+w $upload_dir
+
 usermanage --default
 nasconf --default
 web --default
@@ -119,6 +132,7 @@ EOF
 
 	tar zcf $PKG_STORE_DIR/local.tgz ./
 	rm -f ./bin/set_network_default
+	rm -f ./bin/set_misc_default
 	cd -
 	echo "local.tgz packaged OK!"
 }

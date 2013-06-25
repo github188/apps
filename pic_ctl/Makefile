@@ -1,5 +1,4 @@
 CROSS_COMPILE =
-CFLAGS = -Wall -O2 
 
 lib-objs := pic_ctl.o
 

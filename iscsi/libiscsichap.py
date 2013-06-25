@@ -13,7 +13,7 @@ from libiscsitarget import iSCSIUpdateCFG
 from libiscsitarget import isTargetExist
 from libiscsitarget import iSCSIGetTargetList
 
-ISCSI_CHAP_CONF = '/opt/jw-conf/iscsi/iscsi-chap-conf.xml'
+ISCSI_CHAP_CONF = SCST.CFG_DIR + '/iscsi-chap-conf.xml'
 
 class iSCSICHAPIncoming:
 	def __init__(self):
