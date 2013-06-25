@@ -15,7 +15,7 @@ WEB_BIN='web/*'
 BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN $WEB_BIN"
 LIB_LIST=""
 
-# 升级包
+# ??????
 PKG_TAR="/tmp/jwipsan-upgrade-$(date +%Y%m%d).tar.bz2"
 PKG_BIN="/tmp/jwipsan-upgrade-$(date +%Y%m%d).bin"
 
@@ -27,11 +27,11 @@ sync_apps()
 	echo "copy all app files ..."
 	cp -fa $BIN_LIST  "$_target"/usr/local/bin/
 	
-	# 编译python脚本
+	# ????python?疟?
 	echo "compile python source ..."
 	./compile-python "$_target"/usr/local/bin/ >/dev/null
 	
-	# 删除程序源码, 中间文件, 配置文件
+	# 删??????源??, ?屑??募?, ?????募?
 	echo "remove source ..."
 	rm -f "$_target"/usr/local/bin/*.py
 	rm -f "$_target"/usr/local/bin/Makefile
@@ -91,7 +91,7 @@ encode_pkg()
 	echo "encoding pkg ..."
 	openssl enc -des3 -salt -a -pass file:/sys/kernel/vendor -in $PKG_TAR -out $PKG_BIN
 	[ $? -eq 0 ] && echo "Package $PKG_BIN create ok"
-	rm -f $PKG_TAR
+	#rm -f $PKG_TAR
 }
 
 target="/tmp/.pkg"
