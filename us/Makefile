@@ -1,12 +1,6 @@
 CROSS_COMPILE =
 
-
-ifeq ($(T), debug)
-CFLAGS = -Wall -O2 -Dclog_level=CL_DEBUG -DDEBUG -g
-else
-CFLAGS = -Wall -O2 -Dclog_level=CL_NONE -DNDEBUG 
-endif
-CFLAGS += -Wstrict-aliasing=0 -I/usr/include/libxml2
+CFLAGS += -Dclog_level=CL_NONE -DNDEBUG -Wstrict-aliasing=0 -I/usr/include/libxml2
 LDFLAGS =
 LDLIBS =
 uslibs = -lev -ludev -latasmart -lxml2  -L../common -llog -lsqlite3

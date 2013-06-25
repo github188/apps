@@ -3,18 +3,15 @@
 
 import getopt
 import sys
+
+from libcommon import *
 from libsysinfo import *
 from libsysalarm import *
 from libsysparam import *
+from libsysupdate import sys_update
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
-
-def json_dump(obj):
-	if os.environ.get('SUDO_USER') == 'www-data' or os.environ.get('LOGNAME') == 'www-data':
-		print json.dumps(obj, ensure_ascii=False, sort_keys=True)
-	else:
-		print json.dumps(obj, ensure_ascii=False, sort_keys=True, indent=4)
 
 def __alarm_email_conf_todict(email):
 	_email_dict = {}
@@ -37,15 +34,6 @@ def __alarm_email_conf_todict(email):
 		_email_dict['attrs'] = _email_attr
 	return _email_dict
 
-def __systemExit(ret = True, msg = ''):
-	ret_msg = {'status':True, 'msg':''}
-	ret_msg['status'] = ret
-	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
-	if ret:
-		sys.exit(0)
-	sys.exit(-1)
-
 def __system_usage():
 	print 'system --get-info [--item <name>]'
 	print '            info item support: %s' % get_info_item()
@@ -61,12 +49,13 @@ def __system_usage():
 	print '            module: %s' % get_alarm_module()
 	print '            category: %s' % get_alarm_category()
 	print '       --alarm --get [--module <name>]'
+	print '       --update <file_path>'
 	sys.exit(-1)
 
-OP_MODE = ['--get-info', '--get-status', '--alarm']
+OP_MODE = ['--get-info', '--get-status', '--alarm', '--update']
 system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email',
 'receiver=', 'smtp-host=', 'smtp-port=', 'with-ssl=', 'with-auth=', 'auth-user=', 'auth-password=',
-'get', 'test', 'module=', 'category=', 'switch=', 'send', 'subject=', 'content=']
+'get', 'test', 'module=', 'category=', 'switch=', 'send', 'subject=', 'content=', 'update=']
 
 
 def main():
@@ -85,16 +74,18 @@ def main():
 	_subject = None
 	_content = None
 	_email = email_conf()
+	_file_path = None
 
 	try:
 		opts,args = getopt.gnu_getopt(sys.argv[1:], '', system_long_opt)
 	except getopt.GetoptError, e:
-		__systemExit(False, '%s' % e)
+		comm_exit(False, '%s' % e)
 
 	for opt,arg in opts:
 		if opt in OP_MODE:
 			_mode = opt
-		elif opt == '--item':
+
+		if opt == '--item':
 			_sys_item = arg
 		elif opt == '--set':
 			_set_arg = arg
@@ -135,15 +126,15 @@ def main():
 			_subject = arg
 		elif opt == '--content':
 			_content = arg
+		elif opt == '--update':
+			_file_path = arg
 
 	# mode check
 	if _mode == '--get-info':
-		#print json.dumps(sys_global(get_sys_info(_sys_item)))
-		json_dump(sys_global(get_sys_info(_sys_item)))
+		CommOutput(get_sys_info(_sys_item), dict_dump)
 		sys.exit(0)
 	elif _mode == '--get-status':
-		#print json.dumps(sys_global(get_sys_stat(_sys_item)))
-		json_dump(sys_global(get_sys_stat(_sys_item)))
+		CommOutput(get_sys_stat(_sys_item), dict_dump)
 		sys.exit(0)
 	elif _mode == '--alarm':
 		if _email_arg:
@@ -152,13 +143,13 @@ def main():
 				if ret:
 					print json.dumps(__alarm_email_conf_todict(_msg))
 					sys.exit(0)
-				__systemExit(_ret, _msg)
+				comm_exit(_ret, _msg)
 			elif _set_arg:
 				_ret,_msg = alarm_email_set(_email)
-				__systemExit(_ret, _msg)
+				comm_exit(_ret, _msg)
 			elif _test_arg:
 				_ret,_msg = alarm_email_test()
-				__systemExit(_ret, _msg)
+				comm_exit(_ret, _msg)
 			elif _send_arg:
 				if _subject == None:
 					_systemExit(False, '邮件主题不能为空!')
@@ -167,21 +158,27 @@ def main():
 
 				_ret,_msg = alarm_email_send(_subject, _content)
 			else:
-				__systemExit(False, '请输入email的配置项')
+				comm_exit(False, '请输入email的配置项')
 		elif _get_arg:
 			_ret,_msg = alarm_get(_module)
 			if _ret:
 				print json.dumps(sys_global(_msg))
 				sys.exit(0)
-			__systemExit(_ret, _msg)
+			comm_exit(_ret, _msg)
 		elif _set_arg:
 			_ret,_msg = alarm_set(_set_arg, _switch, _category)
-			__systemExit(_ret, _msg)
+			comm_exit(_ret, _msg)
 		else:
-			__systemExit(False, '请输入正确的告警参数!')
+			comm_exit(False, '请输入正确的告警参数!')
+
 	elif _set_arg:
 		_ret,_msg = sys_param_set(_set_arg, _value_arg)
-		__systemExit(_ret, _msg)
+		comm_exit(_ret, _msg)
+
+	elif _mode == '--update':
+		_ret,_msg = sys_update(_file_path)
+		log_insert('SysConf', 'Auto', 'Info' if _ret else 'Error', _msg)
+		comm_exit(_ret, _msg)
 
 	__system_usage()
 

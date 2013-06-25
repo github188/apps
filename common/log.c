@@ -71,7 +71,7 @@ ssize_t LogGetQuantity()
 	sqlite3 *db;
 	char *errmsg, **result;
 	char sql_cmd[256];
-	int col, row, pos;
+	int col, row;
 	ssize_t ret = -1;
 
 	if (SQLITE_OK != sqlite3_open_v2(LOG_FILE, &db, SQLITE_OPEN_READONLY, NULL))

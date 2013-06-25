@@ -19,9 +19,9 @@ class SCST_CONFIG(object):
 		self.ROOT_DIR = '/sys/kernel/scst_tgt'
 		self.TARGET_DIR = '%s/targets/iscsi' % self.ROOT_DIR
 		self.VDISK_DIR = '%s/handlers/vdisk_blockio' % self.ROOT_DIR
-		self.CFG = CONF_ROOT_DIR + '/iscsi/scst.conf'
-		d,f = os.path.split(self.CFG)
-		os.makedirs(d) if not os.path.isdir(d) else None
+		self.CFG_DIR = CONF_ROOT_DIR + '/iscsi'
+		self.CFG = self.CFG_DIR + '/scst.conf'
+		os.makedirs(self.CFG_DIR) if not os.path.isdir(self.CFG_DIR) else None
 
 SCST = SCST_CONFIG()
 

@@ -1,5 +1,4 @@
 CC=gcc
-#CFLAGS+=-g
 CFLAGS+=-DNDEBUG
 OBJECTS=log.o log-utils.o debug.o mkdir-p.o
 
@@ -10,6 +9,9 @@ liblog.a: $(OBJECTS)
 
 daemon: log-daemon.c
 	gcc $(CARGS) -o log-daemon log-daemon.c liblog.a -lsqlite3
+ifneq ($(STRIP),)
+	$(STRIP) log-daemon
+endif
 
 test: test.c
 	gcc $(CARGS) -o test-log test.c -L$(PWD) liblog.a -lsqlite3

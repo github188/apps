@@ -14,7 +14,7 @@ import hashlib
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-CONF_PATH="/opt/jw-conf/system/"
+CONF_PATH="/opt/etc/userconf/"
 Admin_CONF_PATH=CONF_PATH+'manage.conf'
 Session_CONF_PATH=CONF_PATH+'session.conf'
 
