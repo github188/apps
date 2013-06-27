@@ -10,7 +10,6 @@ conf_backup()
 	cp /opt/* conf_bak/ -a
 
 	mv /root/.ssh conf_bak
-	mv -f /boot/grub/.grub.bak* conf_bak
 	
 	HOSTNAME=`hostname`
 }
@@ -18,27 +17,22 @@ conf_backup()
 conf_restore()
 {
 	mv -f conf_bak/.ssh /root
-	mv -f conf_bak/.grub.bak* /boot/grub
 
 	cp conf_bak/* /opt/ -a
 	rm -rf conf_bak
-	
-	sysconfig --hosts $HOSTNAME
 }
 
 service_stop()
 {
 	/etc/init.d/lighttpd stop
 	/etc/init.d/jw-iscsi stop
+	/etc/init.d/samba stop
 	/etc/init.d/jw-apps stop
 }
 
 service_start()
 {
-	/etc/init.d/rsyslog restart
-	/etc/init.d/jw-apps start
-	/etc/init.d/jw-iscsi start
-	/etc/init.d/lighttpd start
+	echo -e "\n\n--- Please reboot system! ---\n"
 }
 
 make_default_conf()
@@ -53,6 +47,9 @@ make_default_conf()
 	
 	# defualt hostname
 	sysconfig --hosts JW-Linux
+	web --default
+	usermanage --default
+	nasconf --default
 
 	# clear log
 	find /var/log/ -type f -exec rm -f {} \;
@@ -88,7 +85,35 @@ pkg_root()
 	
 	echo "mount rootfs OK! package start ..."
 	cd $PKG_STORE_DIR/sda1
+	
+	cp etc/fstab etc/fstab-
+	sed -i /"sda6"/d etc/fstab
+	rm -rf usr/local/*
+	mkdir usr/local/bin
+	mkdir usr/local/sbin
+	cp /usr/local/bin/sys-manager usr/local/bin
+	cp /usr/local/bin/*adminmanage* usr/local/bin
+	cp /usr/local/bin/*network* usr/local/bin
+	cp /usr/local/bin/license usr/local/bin
+	cp /usr/local/sbin/apply_license usr/local/sbin
+	cp /usr/local/sbin/generate_uuid usr/local/sbin
+	cp /usr/local/sbin/import_license usr/local/sbin
+	cp /usr/local/sbin/license_client usr/local/sbin
+
+	cat << EOF > bin/set_network_default
+#!/bin/sh
+network --default
+EOF
+	chmod +x bin/set_network_default
+	
+	mv -f boot/grub/.grub.bak* /tmp
+
 	tar zcf $PKG_STORE_DIR/root.tgz ./
+	
+	mv etc/fstab- etc/fstab
+	rm bin/set_network_default
+	mv /tmp/.grub.bak* boot/grub/
+
 	cd $PKG_STORE_DIR
 	umount sda1 && rm -rf sda1
 	echo "root.tgz packaged OK!"
@@ -108,31 +133,24 @@ pkg_local()
 	echo "local.tgz package start ..."
 	cd /usr/local
 
-	cat << EOF > ./bin/set_network_default
-#!/bin/sh
-network --default
-EOF
-	chmod +x ./bin/set_network_default
-	cat ./bin/set_network_default
-
 	cat << EOF > ./bin/set_misc_default
 #!/bin/sh
-PATH=/usr/local/bin:$PATH
-
 upload_dir=/var/www/Upload
 [ ! -d \$upload_dir ] && mkdir \$upload_dir
 chmod a+w \$upload_dir
-
-usermanage --default
-nasconf --default
-web --default
 EOF
 	chmod +x ./bin/set_misc_default
-	cat ./bin/set_misc_default
 
-	tar zcf $PKG_STORE_DIR/local.tgz ./
-	rm -f ./bin/set_network_default
+	tar zcf /tmp/local.tgz ./
 	rm -f ./bin/set_misc_default
+	openssl enc -aes256 -salt -a -pass file:/sys/kernel/vendor -in /tmp/local.tgz -out ./local.bin >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		echo "encode local pkg failed."
+		exit 1
+	fi
+
+	tar zcf $PKG_STORE_DIR/local.tgz ./local.bin
+	rm -f ./local.bin /tmp/local.tgz
 	cd -
 	echo "local.tgz packaged OK!"
 }
@@ -140,6 +158,15 @@ EOF
 if [ -z $1 ]; then
 	echo "input release version"
 	exit 1
+fi
+
+echo -n "Confirm system info: "
+cat /sys/kernel/vendor
+echo ""
+echo -n "input \"yes\" confirm: "
+read input
+if [ "x$input" != "xyes" ]; then
+	exit 0
 fi
 
 echo "JW-Linux GNU/Linux $1 \n \l" >/etc/issue

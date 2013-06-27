@@ -32,8 +32,8 @@ echo_nic_ip()
 }
 
 do_start() {
-	CMD=/usr/local/bin/set_misc_default
-	if [ -x $CMD ]; then
+	CMD=`which set_misc_default`
+	if [ $? -eq 0 ]; then
 		$CMD
 		rm -f $CMD
 	fi
