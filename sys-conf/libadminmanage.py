@@ -22,7 +22,7 @@ config = ConfigParser.ConfigParser()
 config.read(Admin_CONF_PATH) 
 
 Admin_CONF = """[admin]
-password = 21232F297A57A5A743894A0E4A801FC3
+password = C21F969B5F03D33D43E04F8F136E7682
 manage_type = 1
 note = 超级管理员
 [root]
