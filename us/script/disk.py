@@ -72,7 +72,7 @@ def diskSetProc(arg = diskArgs()):
 		# 降级 且 没有事件触发重建 时, 执行重建
 		if mdattr.raid_state == 'degrade' and mdattr.disk_cnt < mdattr.disk_total:
 			if get_md_rebuilder_cnt(basename(mdattr.dev)) > 0:
-				return
+				continue
 			
 			md_rebuild(mdattr)
 
