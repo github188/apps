@@ -50,7 +50,9 @@ def sys_update(file_path):
 	elif 2 == ret:
 		return False, err_msg + '失败, 升级包格式错误'
 	elif 3 == ret:
-		return False, err_msg + '失败, 升级包不适用当前系统'
+		return False, err_msg + '失败, 升级包不适用本机的系统平台'
+	elif 4 == ret:
+		return False, err_msg + '失败, 升级包不兼容本机的系统版本'
 	else:
 		return False, err_msg + '失败, 系统错误'
 

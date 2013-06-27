@@ -33,6 +33,18 @@ local_install()
 			return $ret
 		fi
 	else
+		if [ "x`uname -m`" = "xx86_64" ]; then
+			platform="64-bit"
+		else
+			platform="32-bit"
+		fi
+		
+		if ! file usr/local/bin/sys-manager | grep -q $platform; then
+			cd /tmp
+			rm -rf $update_dir
+			return 3
+		fi
+		
 		cp -fa ./* /
 		cd /tmp
 		rm -rf $update_dir
@@ -87,7 +99,9 @@ if [ "$target" == "" ]; then
 	elif [ $ret -eq 2 ]; then
 		echo "升级包格式错误"
 	elif [ $ret -eq 3 ]; then
-		echo "升级包不适用当前系统"
+		echo "升级包不适用本机的系统平台"
+	elif [ $ret -eq 4 ]; then
+		echo "升级包不兼容本机的系统版本"
 	else
 		echo "升级失败"
 	fi
