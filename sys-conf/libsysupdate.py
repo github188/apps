@@ -46,7 +46,7 @@ def sys_update(file_path):
 	ret >>= 8
 	if 0 == ret:
 		os.system('{ sleep 10; reboot; } &')
-		return True, err_msg + '成功, 10秒后系统将自动重启系统'
+		return True, err_msg + '成功, 10秒后系统将自动重启'
 	elif 2 == ret:
 		return False, err_msg + '失败, 升级包格式错误'
 	elif 3 == ret:

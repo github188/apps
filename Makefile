@@ -1,8 +1,8 @@
 export CFLAGS = -Wall -O2 -g
-export STRIP
+export STRIP = strip
 
-ifdef release
-	STRIP = strip
+ifdef debug
+	STRIP =
 endif
 
 all:

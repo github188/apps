@@ -22,7 +22,8 @@ import()
 	import_license -f /boot/lic.bin >/dev/null 2>&1
 	if [ $? -eq 0 ]; then
 		status="true"
-		msg="导入license文件成功"
+		{ sleep 10; reboot; } &
+		msg="导入license文件成功, 10秒后系统将自动重启"
 	else
 		msg="导入license文件失败"
 	fi

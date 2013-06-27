@@ -16,8 +16,8 @@ BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COM
 LIB_LIST=""
 
 # 升级包
-PKG_TAR="/tmp/jwipsan-upgrade-$(date +%Y%m%d).tar.bz2"
-PKG_BIN="/tmp/jwipsan-upgrade-$(date +%Y%m%d).bin"
+PKG_TAR="/tmp/jwipsan-`uname -m`-upgrade-$(date +%Y%m%d).tar.bz2"
+PKG_BIN="/tmp/jwipsan-`uname -m`-upgrade-$(date +%Y%m%d).bin"
 
 sync_apps()
 {

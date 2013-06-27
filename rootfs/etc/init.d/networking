@@ -87,8 +87,8 @@ start)
 
 	log_action_begin_msg "Configuring network interfaces"
 
-	CMD=/usr/local/bin/set_network_default
-	if [ -x $CMD ]; then
+	CMD=`which set_network_default`
+	if [ $? -eq 0 ]; then
 		$CMD
 		rm -f $CMD
 	fi
