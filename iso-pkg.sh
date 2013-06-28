@@ -64,6 +64,10 @@ pkg_root_preprocess()
 	chmod 440 /etc/sudoers
 	
 	rm -f /etc/udev/rules.d/70-persistent-net.rules
+
+	upload_dir=/var/www/Upload
+	[ ! -d $upload_dir ] && mkdir $upload_dir
+	chmod a+w $upload_dir
 }
 
 pkg_root()
