@@ -50,6 +50,7 @@ make_default_conf()
 	web --default
 	usermanage --default
 	nasconf --default
+	adminmanage --default
 
 	# clear log
 	find /var/log/ -type f -exec rm -f {} \;
