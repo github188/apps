@@ -134,7 +134,7 @@ do
 	shift
 done
 
-if [ $pack_web -eq 1 ] -a [ ! -d "$web_dir" ]; then
+if [ $pack_web -eq 1 ] && [ ! -d "$web_dir" ]; then
 	echo "web dir input error, please check"
 	exit 1
 fi
