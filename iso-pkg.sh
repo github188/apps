@@ -91,8 +91,6 @@ pkg_root()
 	echo "mount rootfs OK! package start ..."
 	cd $PKG_STORE_DIR/sda1
 	
-	cp etc/fstab etc/fstab-
-	sed -i /"sda6"/d etc/fstab
 	rm -rf usr/local/*
 	mkdir usr/local/bin
 	mkdir usr/local/sbin
@@ -115,7 +113,6 @@ EOF
 
 	tar zcf $PKG_STORE_DIR/root.tgz ./
 	
-	mv etc/fstab- etc/fstab
 	rm bin/set_network_default
 	mv /tmp/.grub.bak* boot/grub/
 
