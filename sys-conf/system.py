@@ -13,26 +13,32 @@ from libsysupdate import sys_update
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-def __alarm_email_conf_todict(email):
-	_email_dict = {}
-	_email_dict['alarm'] = 'email'
-	if email.switch:
-		_email_dict['value'] = email.switch
+def alarm_email_output():
+	alarm_email = alarm_email_get()
+	if alarm_email is None:
+		comm_exit(False, '获取邮件告警配置失败')
+
+	email_dict = {}
+	email_dict['alarm'] = 'email'
+	if alarm_email.switch:
+		email_dict['value'] = alarm_email.switch
 	else:
-		_email_dict['value'] = 'disable'
-	if email.smtp_host and email.smtp_port and email.receiver and email.ssl:
-		_email_attr = {}
-		_email_attr['receiver'] = email.receiver
-		_email_attr['smtp_host'] = email.smtp_host
-		_email_attr['smtp_port'] = email.smtp_port
-		_email_attr['with_ssl'] = email.ssl
-		if email.auth == 'enable':
-			_attr_auth = {}
-			_attr_auth['user'] = email.auth_user
-			_attr_auth['password'] = email.auth_password
-			_email_attr['auth'] = _attr_auth
-		_email_dict['attrs'] = _email_attr
-	return _email_dict
+		email_dict['value'] = 'disable'
+	if alarm_email.smtp_host and alarm_email.smtp_port and alarm_email.receiver and alarm_email.ssl:
+		email_attr = {}
+		email_attr['receiver'] = alarm_email.receiver
+		email_attr['smtp_host'] = alarm_email.smtp_host
+		email_attr['smtp_port'] = alarm_email.smtp_port
+		email_attr['with_ssl'] = alarm_email.ssl
+
+		attr_auth = {}
+		attr_auth['user'] = alarm_email.auth_user
+		attr_auth['password'] = alarm_email.auth_password
+		email_attr['auth'] = attr_auth
+		email_dict['attrs'] = email_attr
+	
+	print json.dumps(email_dict)
+	sys.exit(0)
 
 def __system_usage():
 	print 'system --get-info [--item <name>]'
@@ -45,10 +51,6 @@ def __system_usage():
 	print '       --alarm --email --get'
 	print '       --alarm --email --test'
 	print '       --alarm --email --send --subject <email subject> --content <email content>'
-	print '       --alarm --set <module> --switch <enable|disable> [--category <buzzer|sys-led|email>]'
-	print '            module: %s' % get_alarm_module()
-	print '            category: %s' % get_alarm_category()
-	print '       --alarm --get [--module <name>]'
 	print '       --update <file_path>'
 	sys.exit(-1)
 
@@ -73,7 +75,7 @@ def main():
 	_switch = None
 	_subject = None
 	_content = None
-	_email = email_conf()
+	_email = AlarmEmailConf()
 	_file_path = None
 
 	try:
@@ -99,10 +101,6 @@ def main():
 		elif opt == '--send':
 			_send_arg = True
 		elif opt == '--email':
-			# 加载旧配置
-			ret,conf = alarm_email_get()
-			if ret:
-				_email = conf
 			_email_arg = True
 		elif opt == '--receiver':
 			_email.receiver = arg
@@ -112,8 +110,6 @@ def main():
 			_email.smtp_port = arg
 		elif opt == '--with-ssl':
 			_email.ssl = arg
-		elif opt == '--with-auth':
-			_email.auth = arg
 		elif opt == '--auth-user':
 			_email.auth_user = arg
 		elif opt == '--auth-password':
@@ -139,46 +135,37 @@ def main():
 	elif _mode == '--alarm':
 		if _email_arg:
 			if _get_arg:
-				_ret,_msg = alarm_email_get()
-				if ret:
-					print json.dumps(__alarm_email_conf_todict(_msg))
-					sys.exit(0)
-				comm_exit(_ret, _msg)
+				alarm_email_output()
 			elif _set_arg:
-				_ret,_msg = alarm_email_set(_email)
-				comm_exit(_ret, _msg)
+				ret,msg = alarm_email_set(_email)
+				log_insert('SysConf', 'Auto', 'Info' if ret else 'Error', msg)
+				comm_exit(ret, msg)
 			elif _test_arg:
-				_ret,_msg = alarm_email_test()
-				comm_exit(_ret, _msg)
+				ret,msg = alarm_email_test()
+				log_insert('SysConf', 'Auto', 'Info' if ret else 'Error', msg)
+				comm_exit(ret, msg)
 			elif _send_arg:
 				if _subject == None:
-					_systemExit(False, '邮件主题不能为空!')
+					comm_exit(False, '邮件主题不能为空!')
 				if _content == None:
-					_systemExit(False, '邮件内容不能为空!')
+					comm_exit(False, '邮件内容不能为空!')
 
-				_ret,_msg = alarm_email_send(_subject, _content)
+				ret,msg = alarm_email_send(_subject, _content)
+				log_insert('SysConf', 'Auto', 'Info' if ret else 'Error', msg)
+				comm_exit(ret, msg)
 			else:
 				comm_exit(False, '请输入email的配置项')
-		elif _get_arg:
-			_ret,_msg = alarm_get(_module)
-			if _ret:
-				print json.dumps(sys_global(_msg))
-				sys.exit(0)
-			comm_exit(_ret, _msg)
-		elif _set_arg:
-			_ret,_msg = alarm_set(_set_arg, _switch, _category)
-			comm_exit(_ret, _msg)
 		else:
 			comm_exit(False, '请输入正确的告警参数!')
 
 	elif _set_arg:
-		_ret,_msg = sys_param_set(_set_arg, _value_arg)
-		comm_exit(_ret, _msg)
+		ret,msg = sys_param_set(_set_arg, _value_arg)
+		comm_exit(ret, msg)
 
 	elif _mode == '--update':
-		_ret,_msg = sys_update(_file_path)
-		log_insert('SysConf', 'Auto', 'Info' if _ret else 'Error', _msg)
-		comm_exit(_ret, _msg)
+		ret,msg = sys_update(_file_path)
+		log_insert('SysConf', 'Auto', 'Info' if ret else 'Error', msg)
+		comm_exit(ret, msg)
 
 	__system_usage()
 

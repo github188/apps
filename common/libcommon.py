@@ -5,7 +5,7 @@ import os, re, json, sys, fcntl
 import xml
 from xml.dom import minidom
 
-CONF_ROOT_DIR = '/opt/etc/'
+CONF_ROOT_DIR = '/opt/etc'
 
 def list2str(list=[], sep=','):
 	return sep.join([str(x) for x in list])
