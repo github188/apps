@@ -19,6 +19,14 @@ static const char *MOD_NAME(const char *mod)
 	return _not_found;
 }
 
+void alarm_email_send(const char *subject, const char *content)
+{
+	char cmd[512] = {0};
+	snprintf(cmd, sizeof(cmd)-1, "sys-manager system --alarm --email --send "
+			"--subject  --content %s", subject, content);
+	system(cmd);
+}
+
 #define CPU_TEMP_REBOOT		95
 #define CPU_TEMP_POWEROFF	100
 int _value_check_error(sys_capture_t *cap, char *msg)
@@ -82,12 +90,16 @@ void _capture(sys_capture_t *cap)
 		sprintf(log_msg, "监控模块%s告警: %s, 自动关闭系统",
 				MOD_NAME(cap->name), msg);
 		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		sprintf(msg, "监控模块%s告警", MOD_NAME(cap->name));
+		alarm_email_send(msg, log_msg);
 		system("poweroff&");
 		break;
 	case VAL_CRIT:
 		sprintf(log_msg, "监控模块%s告警: %s, 自动重启系统",
 				MOD_NAME(cap->name), msg);
 		LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+		sprintf(msg, "监控模块%s告警", MOD_NAME(cap->name));
+		alarm_email_send(msg, log_msg);
 		system("reboot&");
 		break;
 	case VAL_WARNING:
@@ -103,6 +115,8 @@ void _capture(sys_capture_t *cap)
 			sysmon_event("self_run", "env_exception_raise", cap->name, msg);
 			sprintf(log_msg, "监控模块%s告警: %s", MOD_NAME(cap->name), msg);
 			LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+			sprintf(msg, "监控模块%s告警", MOD_NAME(cap->name));
+			alarm_email_send(msg, log_msg);
 		}
 		break;
 	case VAL_NORMAL:
@@ -113,6 +127,7 @@ void _capture(sys_capture_t *cap)
 			cap->_error = VAL_NORMAL;
 			sprintf(log_msg, "监控模块%s告警解除", MOD_NAME(cap->name));
 			LogInsert(NULL, "SysMon", "Auto", "Error", log_msg);
+			alarm_email_send(log_msg, log_msg);
 		}
 	default:
 		break;

@@ -3,7 +3,7 @@
 
 import json
 import xml
-import os
+import os, commands
 import time
 import smtplib
 from email.mime.text import MIMEText
@@ -100,7 +100,7 @@ def alarm_email_send(subject, content):
 	msg = ''
 	alarm_email = alarm_email_get()
 	if 'off' == alarm_email.switch:
-		return False, "没有配置邮件告警"
+		return True, "没有配置邮件告警"
 
 	try:
 		smtp = smtplib.SMTP(timeout = 10)
@@ -120,9 +120,13 @@ def alarm_email_send(subject, content):
 		ret, msg = smtp.login(alarm_email.auth_user, alarm_email.auth_password)
 		if ret != 235:
 			raise Exception(msg)
+		
+		hostname = commands.getoutput('hostname')
+		ipaddr = commands.getoutput("ifconfig eth0 | grep 'inet addr:' | awk -F ':' '{print $2}' | awk '{print $1}'")
+		_content = '设备: %s %s\r\n事件: %s\r\n信息: %s' % (hostname, ipaddr, subject, content)
 	
 		to = alarm_email.receiver.split(';')
-		email_msg = MIMEText(content, 'html', 'utf-8')
+		email_msg = MIMEText(_content, 'plain', 'utf-8')
 		email_msg['From'] = Header(alarm_email.auth_user, 'utf-8')
 		email_msg['To'] = Header(alarm_email.receiver, 'utf-8')
 		email_msg['Subject'] = Header(subject, 'utf-8')

@@ -79,10 +79,13 @@ def handle_disk_remove_kicked(diskinfo, event):
 	mdattr = get_mdattr_by_disk(diskinfo.dev)
 	if mdattr == None:
 		vg_log('Error', msg)
+		alarm_email_send(msg, '')
 		return
 	
-	msg += ', 所属卷组 %s' % mdattr.name
+	subject = msg
+	msg += ', 所属卷组 %s, 卷组RAID级别: %s' % (mdattr.name, mdattr.raid_level)
 	vg_log('Error', msg)
+	alarm_email_send(subject, msg)
 
 	if mdattr.raid_level == '0' or mdattr.raid_level == 'JBOD':
 		tmpfs_remove_disk_from_md(mdattr.dev, disk_dev2slot(diskinfo.dev))
@@ -148,6 +151,7 @@ def handle_disk_remove_kicked(diskinfo, event):
 		vg_log('Error', msg)
 		sysmon_event('vg', 'fail',  mdattr.name, msg)
 		sysmon_event('disk', 'led_off', 'disks=%s' % list2str(mdattr.disk_list, ','), '')
+		alarm_email_send(msg, '')
 
 	# 热替换后, 源盘被踢出raid, 如果没有其他盘出错, raid状态正常
 

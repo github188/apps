@@ -6,6 +6,7 @@ import commands, re, os, time, copy
 from libsysmon import sysmon_event
 
 from libcommon import *
+from libsysalarm import alarm_email_send
 
 import sys
 reload(sys)
@@ -686,28 +687,36 @@ def md_rebuild(mdattr):
 		vg_log('Error', '系统异常: 文件 %s 加锁失败' % RAID_REBUILD_LOCK)
 		return
 
+	event = 'Error'
+	msg = ''
+	subject = '卷组%s启动重建失败' % mdattr.name
 	disk_type = 'Hot'
 	disk = get_hotrep_by_mduud(mdattr.raid_uuid)
 	if disk == {}:
 		disk = get_free_disk()
 		disk_type = 'Free'
 	if disk == {}:
-		vg_log('Error', '未找到热备盘和空闲盘重建卷组 %s' % mdattr.name)
-		unlock_file(f_lock)
-		return
-
-	slot = disk_serial2slot(disk['serial'])
-	diskdev = disk_slot2dev(slot)
-	if add_disk_to_md(mdattr.dev, diskdev) == 0:
-		vg_log('Info', '%s %s 加入卷组 %s 成功' % (disk['type'], slot, mdattr.name))
-		if disk_type != 'Free':
-			remove_hotrep_by_serial(disk['serial'])
-		
-		# 空闲盘也要及时更新状态, 防止状态未更新又被用来重建其他raid
-		disk_update_by_slots(slot)
+		msg = '未找到热备盘和空闲盘重建卷组 %s, 请尽快更换磁盘并尝试手动重建' % mdattr.name
 	else:
-		vg_log('Error', '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdattr.name))
+		slot = disk_serial2slot(disk['serial'])
+		diskdev = disk_slot2dev(slot)
+		if add_disk_to_md(mdattr.dev, diskdev) == 0:
+			event = 'Info'
+			msg = '%s %s 加入卷组 %s 成功' % (disk['type'], slot, mdattr.name)
+			subject = '卷组%s启动重建成功' % mdattr.name
+			
+			if disk_type != 'Free':
+				remove_hotrep_by_serial(disk['serial'])
+			
+			# 空闲盘也要及时更新状态, 防止状态未更新又被用来重建其他raid
+			disk_update_by_slots(slot)
+		else:
+			msg =  '%s %s 加入卷组 %s 失败, 请尽快更换磁盘并尝试手动重建' % (disk['type'], slot, mdattr.name)
+	
 	unlock_file(f_lock)
+	vg_log(event, msg)
+	alarm_email_send(subject, msg)
+	return
 
 def inc_md_rebuilder_cnt(md):
 	filepath = '%s/%s/rebuilder_cnt' % (RAID_DIR_BYMD, md)
@@ -869,12 +878,8 @@ def add_disk_to_md(mddev, diskdev):
 	
 	tmpfs_add_disk_to_md(mddev, disk_dev2slot(diskdev))
 	return ret
+	
 
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-	import sys
-
-	print get_mdattr_all()
-	print get_mdattr_by_name("abc")
-
 	sys.exit(0)
