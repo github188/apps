@@ -630,7 +630,7 @@ def Group_List(value):
 			for fileLine in fileList:
 				Grout_Cont = fileLine.split(':')
 				Grout_id = int(Grout_Cont[2])
-				if Grout_id >= 1000 and Grout_id < 29999:
+				if Grout_id >= 1000 and Grout_id < 19999:
 					group = Grout_Cont[0]
 					if search_check > 0:
 						search_check = len(group.split(search))
@@ -765,7 +765,7 @@ def __Check_System_Internal_User__(File, name):
 			fileList = open_conf.readlines()
 			for fileLine in fileList:
 				if fileLine.split(':')[0].lower() == name.lower():
-					if int(fileLine.split(':')[2]) < 1000 or int(fileLine.split(':')[2]) > 29999:
+					if int(fileLine.split(':')[2]) < 1000 or int(fileLine.split(':')[2]) > 19999:
 						Status = False
 					break
 			open_conf.close()
