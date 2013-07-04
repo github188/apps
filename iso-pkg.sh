@@ -44,12 +44,14 @@ make_default_conf()
 	rm -rf $USER_CONF_DIR/disk
 	rm -rf $USER_CONF_DIR/iscsi
 	rm -rf $USER_CONF_DIR/nas
+	rm -rf /mnt/*
 	
 	# defualt hostname
 	sysconfig --hosts JW-Linux
 	web --default
 	usermanage --default
 	nasconf --default
+	adminmanage --default
 
 	# clear log
 	find /var/log/ -type f -exec rm -f {} \;
@@ -90,8 +92,6 @@ pkg_root()
 	echo "mount rootfs OK! package start ..."
 	cd $PKG_STORE_DIR/sda1
 	
-	cp etc/fstab etc/fstab-
-	sed -i /"sda6"/d etc/fstab
 	rm -rf usr/local/*
 	mkdir usr/local/bin
 	mkdir usr/local/sbin
@@ -114,7 +114,6 @@ EOF
 
 	tar zcf $PKG_STORE_DIR/root.tgz ./
 	
-	mv etc/fstab- etc/fstab
 	rm bin/set_network_default
 	mv /tmp/.grub.bak* boot/grub/
 

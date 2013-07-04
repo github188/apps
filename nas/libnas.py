@@ -126,6 +126,7 @@ def nas_conf_remove(md_uuid, part_num):
 def nas_conf_update(md_uuid, part_num, state, filesystem):
 	f_lock = lock_file(NAS_CONF_LOCK)
 	
+	ret = False
 	update_conf = False
 	doc = xml_load(NAS_CONF_FILE)
 	if None == doc:
@@ -142,7 +143,7 @@ def nas_conf_update(md_uuid, part_num, state, filesystem):
 
 	if update_conf:
 		ret = xml_save(doc, NAS_CONF_FILE)
-	
+
 	unlock_file(f_lock)
 	return ret
 

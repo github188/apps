@@ -97,7 +97,6 @@ server string = %h
 security = user
 passdb backend = smbpasswd
 smb passwd file = /etc/samba/smbpasswd
-config file = /opt/etc/samba/smb.conf.%U
 encrypt passwords = yes
 guest account = guest
 load printers = no
