@@ -249,7 +249,8 @@ def nas_vol_mount(udv_dev, mount_dir):
 	if not os.path.exists(mount_dir):
 		os.mkdir(mount_dir)
 
-	ret,msg = commands.getstatusoutput('mount %s %s' % (udv_dev, mount_dir))
+	cmd = 'mount %s %s >/dev/null && mount -o remount,acl %s %s >/dev/null' % (udv_dev, mount_dir, udv_dev, mount_dir)
+	ret,msg = commands.getstatusoutput(cmd)
 	if ret != 0:
 		os.rmdir(mount_dir)
 		return False
