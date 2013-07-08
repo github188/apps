@@ -8,12 +8,13 @@
 #include <arpa/inet.h>
 
 #include "clog.h"
+#include "safe_popen.h"
+#include "script.h"
 #include "us_ev.h"
 #include "disk_utils.h"
 #include "vsd_warning.h"
 #include "us_prewarn.h"
 #include "../common/log.h"
-
 
 extern struct ev_loop *us_main_loop;
 
@@ -99,8 +100,7 @@ static int nl_read(int fd, void *data, int len, int wait)
 	return res;
 }
 
-#include "disk_utils.h"
-struct us_disk_pool us_dp;
+extern struct us_disk_pool us_dp;
 static void nl_io_cb(EV_P_ ev_io *w, int r)
 {
 	struct vsd_warning_info warning_info;
@@ -135,12 +135,21 @@ static void nl_io_cb(EV_P_ ev_io *w, int r)
 	dwi->mapped_cnt = warning_info.mapped_cnt;
 	/* 最大可修复扇区数不更新，磁盘上线时设置固定值 */
 
-	sprintf(msg, "磁盘预警: 0:%d 出现%s, 已修复扇区计数: %u"
+	sprintf(msg, "磁盘预警: 0:%d 出现%s, 已修复扇区计数: %u, "
 			"最大可修复扇区数: %u",	disk->slot,
 			(dwi->warning_area == (1<<WARNING_AREA_BAD_SECT)) ?
 			"新坏块" : "关键坏块", dwi->mapped_cnt,
 			dwi->max_map_cnt);
 	LogInsert(NULL, "DiskWarning", "Auto", "Error", msg);
+	
+	/* 启动热替换 */
+	if (dwi->mapped_cnt > dwi->max_map_cnt/2 || 
+		dwi->warning_area == (1<<WARNING_AREA_SUPER) ||
+		dwi->warning_area == (1<<WARNING_AREA_SECT_MAP)) {
+		char cmd[128];
+		sprintf(cmd, "%s %s hotrep", DISK_SCRIPT, dev);
+		safe_system(cmd);
+	}
 }
 
 ev_io nl_readable;
@@ -148,9 +157,7 @@ ev_io nl_readable;
 int us_prewarn_init(void)
 {
 	int nl_fd;
-	int warning_level = WARNING_LEVEL_3;
-
-	return 0;
+	int warning_level = WARNING_LEVEL_2;
 
 	if ((nl_fd = nl_open()) < 0) {
 		clog(CL_ERROR, "netlink open failed");

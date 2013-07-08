@@ -25,7 +25,7 @@ extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
 extern regex_t mv_disk_slot_regex;
 
-static struct us_disk_pool us_dp;
+struct us_disk_pool us_dp;
 
 static int is_md(const char *path)
 {

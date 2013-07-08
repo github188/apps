@@ -4,5 +4,5 @@ import os, sys
 if __name__ == '__main__':
 	importcmd = 'from %s import main' % os.path.basename(sys.argv[0])
 	exec importcmd
-	main()
+	sys.exit(main())
 

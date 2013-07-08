@@ -79,11 +79,11 @@ def handle_disk_remove_kicked(diskinfo, event):
 	mdattr = get_mdattr_by_disk(diskinfo.dev)
 	if mdattr == None:
 		vg_log('Error', msg)
-		alarm_email_send(msg, '')
+		alarm_email_send(msg, '请尽快更换磁盘')
 		return
 	
 	subject = msg
-	msg += ', 所属卷组 %s, 卷组RAID级别: %s' % (mdattr.name, mdattr.raid_level)
+	msg += ', 所属卷组 %s, 卷组RAID级别: %s, 请尽快更换磁盘' % (mdattr.name, mdattr.raid_level)
 	vg_log('Error', msg)
 	alarm_email_send(subject, msg)
 
@@ -157,6 +157,35 @@ def handle_disk_remove_kicked(diskinfo, event):
 
 	return
 
+def handle_disk_hotrep(diskinfo):
+	mdattr = get_mdattr_by_disk(diskinfo.dev)
+	if mdattr == None or mdattr.raid_level not in ('5', '6'):
+		return 0
+	
+	rebuilder_cn = inc_md_rebuilder_cnt(basename(mdattr.dev))
+	if rebuilder_cn > 1:
+		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		return 1
+	
+	sysdir = '/sys/block/%s/md/dev-%s/state' % (basename(mdattr.dev), basename(diskinfo.dev))
+	rd_state = fs_attr_read(sysdir)
+	if rd_state.find('want_replacement') >= 0:
+		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		return 0
+
+	mdattr = get_mdattr_by_disk(diskinfo.dev)
+	if mdattr.raid_state != 'normal':
+		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		return 1
+	
+	if md_rebuild(mdattr, diskinfo.slot):
+		fs_attr_write(sysdir, 'want_replacement')
+		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		return 0
+	
+	dec_md_rebuilder_cnt(basename(mdattr.dev))
+	return 1
+	
 # args [0]  - self
 #      [1]  - dev eg. /dev/sdb
 #      [2]  - action 'add', 'remove' ...
@@ -168,9 +197,11 @@ def main():
 	diskinfo = get_disk_info(sys.argv[1])  # argv[1] - disk_dev
 	event = sys.argv[2]
 	if event == 'add':
-		handle_disk_add(diskinfo)
+		return handle_disk_add(diskinfo)
+	elif event == 'hotrep':
+		return handle_disk_hotrep(diskinfo)
 	else:
-		handle_disk_remove_kicked(diskinfo, event)
+		return handle_disk_remove_kicked(diskinfo, event)
 
 if __name__ == "__main__":
 	main()

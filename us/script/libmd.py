@@ -680,13 +680,14 @@ def remove_hotrep_by_slot(slot):
 		return False
 
 RAID_REBUILD_LOCK = RAID_DIR_LOCK + '/raid_rebuild'
-def md_rebuild(mdattr):
+def md_rebuild(mdattr, hotrep_disk_slot = ''):
 	# 使用文件锁同步多个raid重建, 防止争抢全局热备盘和空闲盘
 	f_lock = lock_file(RAID_REBUILD_LOCK)
 	if None == f_lock:
 		vg_log('Error', '系统异常: 文件 %s 加锁失败' % RAID_REBUILD_LOCK)
 		return
 
+	rebuild_ok = False
 	event = 'Error'
 	msg = ''
 	subject = '卷组%s启动重建失败' % mdattr.name
@@ -696,12 +697,12 @@ def md_rebuild(mdattr):
 		disk = get_free_disk()
 		disk_type = 'Free'
 	if disk == {}:
-		msg = '未找到热备盘和空闲盘重建卷组 %s, 请尽快更换磁盘并尝试手动重建' % mdattr.name
+		msg = '未找到热备盘和空闲盘重建卷组 %s' % mdattr.name
 	else:
 		slot = disk_serial2slot(disk['serial'])
 		diskdev = disk_slot2dev(slot)
 		if add_disk_to_md(mdattr.dev, diskdev) == 0:
-			event = 'Info'
+			rebuild_ok = True
 			msg = '%s %s 加入卷组 %s 成功' % (disk['type'], slot, mdattr.name)
 			subject = '卷组%s启动重建成功' % mdattr.name
 			
@@ -711,12 +712,25 @@ def md_rebuild(mdattr):
 			# 空闲盘也要及时更新状态, 防止状态未更新又被用来重建其他raid
 			disk_update_by_slots(slot)
 		else:
-			msg =  '%s %s 加入卷组 %s 失败, 请尽快更换磁盘并尝试手动重建' % (disk['type'], slot, mdattr.name)
+			msg =  '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdattr.name)
 	
 	unlock_file(f_lock)
+	
+	if rebuild_ok:
+		event = 'Info'
+		if hotrep_disk_slot != '':
+			msg += ', 由磁盘 %s 坏块过多触发, 卷组存在降级风险, 预先使用源盘重建' % hotrep_disk_slot
+		else:
+			msg += ', 由卷组降级触发'
+	else:
+		if hotrep_disk_slot != '':
+			msg += ', 由磁盘 %s 坏块过多触发, 卷组存在降级风险, 请尽快添加或更换热备盘' % hotrep_disk_slot
+		else:
+			msg += ', 由卷组降级触发, 请尽快添加或更换热备盘, 并尝试手动重建'
+
 	vg_log(event, msg)
 	alarm_email_send(subject, msg)
-	return
+	return rebuild_ok
 
 def inc_md_rebuilder_cnt(md):
 	filepath = '%s/%s/rebuilder_cnt' % (RAID_DIR_BYMD, md)

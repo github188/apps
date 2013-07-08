@@ -105,7 +105,7 @@ static inline void
 disk_get_warning_info(const char *dev, struct disk_warning_info *wi)
 {
 	FILE *fp;
-	char path[128], buf[16];
+	char path[128], buf[16] = {0};
 	char dev_copy[32];
 	
 	strcpy(dev_copy, dev);
@@ -114,8 +114,8 @@ disk_get_warning_info(const char *dev, struct disk_warning_info *wi)
 	if (!fp)
 		return;
 
-	if (fread(buf, sizeof(buf)-1, 1, fp) == 1)
-		wi->mapped_cnt = atoi(buf);
+	fread(buf, sizeof(buf)-1, 1, fp);
+	wi->mapped_cnt = atoi(buf);
 
 	fclose(fp);
 }

@@ -85,7 +85,7 @@ def handle_md_syncdone(mddev):
 	if mdattr.raid_state == 'normal':
 		sysmon_event('vg', 'normal', mdattr.name, msg)
 	sysmon_event('disk', 'led_off', 'disks=%s' % list2str(mdattr.disk_list, ','), '')
-	if 'Error' == log_level:
+	if log_level != 'Info':
 		alarm_email_send(msg, '如果没有再次启动重建, 请尽快更换磁盘并尝试手动重建')
 	
 	# 降级 且 没有事件触发重建 时, 执行重建
