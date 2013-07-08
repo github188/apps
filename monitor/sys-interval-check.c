@@ -23,7 +23,7 @@ void alarm_email_send(const char *subject, const char *content)
 {
 	char cmd[512] = {0};
 	snprintf(cmd, sizeof(cmd)-1, "sys-manager system --alarm --email --send "
-			"--subject  --content %s", subject, content);
+			"--subject '%s' --content '%s' >/dev/null", subject, content);
 	system(cmd);
 }
 
