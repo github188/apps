@@ -269,6 +269,7 @@ class list_info():
 		self.nasallow = 'no'
 		self.NFS = 'no'
 		self.State = 'no'
+		self.son = 'disable'
 	
 def nas_list(value):
 	if value.name_set != '':
@@ -360,6 +361,9 @@ def __Share_List_out__(name):
 		out.Remain = get_nas_remain(deviant(name, "path"))
 		out.Catalog = SYSTEM_OUT('find '+Path+' -type d|wc -l')
 		out.State = 'yes'
+		pathStr = os.path.split(Path)
+		if SYSTEM_OUT("/bin/ls -l %s|grep -w %s|awk '{print $1}'|grep '+'|wc -l" % (pathStr[0], pathStr[1])) != '0':
+			out.son = 'enable'
 	out.nasallow = hosts
 	out.NFS = nfs_stat
 	return out
