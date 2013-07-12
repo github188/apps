@@ -179,15 +179,15 @@ struct mdp_superblock_1 {
 	__u8	pad3[64-32];	/* set to 0 when writing */
 
 	/* device state information. Indexed by dev_number.
-	 * 	 * 2 bytes per device
-	 * 	 	 * Note there are no per-device state flags. State information is rolled
-	 * 	 	 	 * into the 'roles' value.  If a device is spare or faulty, then it doesn't
-	 * 	 	 	 	 * have a meaningful role.
-	 * 	 	 	 	 	 */
+	 * 2 bytes per device
+	 * Note there are no per-device state flags. State information is rolled
+	 * into the 'roles' value.  If a device is spare or faulty, then it doesn't
+	 * have a meaningful role.
+	 */
 	__u16	dev_roles[0];	/* role in array, or 0xffff for a spare, or 0xfffe for faulty */
 };
 
-static inline const char *disk_get_raid_name(const char *dev_node)
+static inline const char *disk_get_raid_name(const struct us_disk *disk)
 {
 	int fd;
 	static struct mdp_superblock_1 info;
@@ -196,7 +196,10 @@ static inline const char *disk_get_raid_name(const char *dev_node)
 
 	strcpy(no_answer, "N/A");
 
-	fd = open(dev_node, O_RDONLY);
+	if (disk->ri.is_raid == 0)
+		return p;
+
+	fd = open(disk->dev_node, O_RDONLY);
 	if (fd<0)
 		return p;
 
