@@ -8,10 +8,7 @@
 #ifndef _LIB_UDV_H
 #define _lib_UDV_H
 
-//#define ALIGN_BEGIN_SECT 1024
-#define ALIGN_BEGIN_SECT 0
-
-#define PART_START_SECTOR	1024
+#define PART_START_SECTOR	409600	//reserve 200MB
 #define MIN_PART_SIZE		1953120	// 1000*1000*1000/512/8*8
 
 /* Error Code */

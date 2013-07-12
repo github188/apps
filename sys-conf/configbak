@@ -1,0 +1,198 @@
+#!/bin/bash
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+CONFIG_DIR="/opt/etc"
+CONFIG_BAK_ROOT="/tmp/.configbak"
+LOCAL_FINGERPRINT_FILE="$CONFIG_DIR/fingerprint"
+
+output_json()
+{
+	echo {\"status\": $1, \"msg\": \"$2\"}
+}
+
+usage()
+{
+	echo ""
+	echo "configbak --get-info"
+	echo "          --restore <id>"
+	echo "          --remove <id>"
+	echo ""
+}
+
+autobackup()
+{
+	if [ ! -f $LOCAL_FINGERPRINT_FILE ]; then
+		date "+%s-%N" > $LOCAL_FINGERPRINT_FILE
+	fi
+	
+	{ sleep 3; touch $LOCAL_FINGERPRINT_FILE; } &
+	inotifywait -rme close_write,delete,create,attrib,move $CONFIG_DIR \
+	| while read a
+	do
+		config_bak_dirs=`ls $CONFIG_BAK_ROOT`
+		for entry in $config_bak_dirs
+		do
+			if ! mount 2>/dev/null | grep -q $CONFIG_BAK_ROOT/$entry; then
+				continue
+			fi
+			bak_fingerprint_file="$CONFIG_BAK_ROOT/$entry/etc/fingerprint"
+			bak_ts_file="$CONFIG_BAK_ROOT/$entry/etc/timestamp"
+			if [ ! -f $bak_fingerprint_file ] || diff $LOCAL_FINGERPRINT_FILE $bak_fingerprint_file >/dev/null; then
+				rsync --delete-before -a $CONFIG_DIR $CONFIG_BAK_ROOT/$entry >/dev/null 2>&1
+				date "+%s-%N" > $bak_ts_file
+			fi
+		done
+	done
+}
+
+get_info()
+{
+	ECHO="echo"
+	indent="    "
+	if [ "x$SUDO_USER" = "xwww-data" -o "x$LOGNAME" = "xwww-data" ]; then
+		ECHO="echo -n"
+		indent=""
+	fi
+	
+	local total
+	local fingerprint
+	local ts
+	local hostname
+	local ip
+	let total=0
+	
+	$ECHO "{"
+	$ECHO "$indent\"rows\":"
+	$ECHO "$indent["
+
+	config_bak_dirs=`ls $CONFIG_BAK_ROOT 2>/dev/null`
+	for entry in $config_bak_dirs
+	do
+		if ! mount 2>/dev/null | grep -q $CONFIG_BAK_ROOT/$entry; then
+			continue
+		fi
+		bak_id_file="$CONFIG_BAK_ROOT/$entry/.id"
+		if [ ! -f $bak_id_file ]; then
+			continue
+		fi
+		
+		id=`cat $bak_id_file 2>/dev/null`
+		if [ -z $id ]; then
+			continue
+		fi
+		ts=`cat $CONFIG_BAK_ROOT/$entry/etc/timestamp 2>/dev/null`
+		sec=`echo $ts | awk -F'-' '{print $1}'`
+		nanosec=`echo $ts | awk -F'-' '{print $2}'`
+		ts="`date -d @$sec "+%Y/%m/%d %H:%M:%S" 2>/dev/null` $nanosec"
+		hostname=`cat $CONFIG_BAK_ROOT/$entry/etc/link/hostname 2>/dev/null`
+		ip=`cat $CONFIG_BAK_ROOT/$entry/etc/network/interfaces 2>/dev/null | grep address | head -n 1 | awk '{print $2}'`
+		
+		if [ $total -gt 0 ]; then
+			$ECHO ""
+		fi
+		# 此处不换行, 否则无法删除最后一个逗号
+		echo -n "$indent$indent{\"id\": \"$id\", \"hostname\": \"$hostname\", \"ip\": \"$ip\", \"timestamp\": \"$ts\"},"
+		let total+=1
+	done
+	
+	# 删掉最后一个逗号
+	echo -ne "\b"
+
+	$ECHO ""
+	$ECHO "$indent]"
+	$ECHO "$indent\"total\": $total"
+	echo "}"
+	
+	exit 0
+}
+
+restore()
+{
+	id=$1
+	if [ -z $id ]; then
+		msg="请输入id"
+		return
+	fi
+	
+	msg="配置文件备份 $id 不存在"
+	
+	config_bak_dirs=`ls $CONFIG_BAK_ROOT`
+	for entry in $config_bak_dirs
+	do
+		if ! mount 2>/dev/null | grep -q $CONFIG_BAK_ROOT/$entry; then
+			continue
+		fi
+		bak_id_file="$CONFIG_BAK_ROOT/$entry/.id"
+		if [ ! -f $bak_id_file ]; then
+			continue
+		fi
+		bak_id=`cat $bak_id_file 2>/dev/null`
+		if [ "x$id" = "x$bak_id" ]; then
+			/etc/init.d/jw-configbak stop >/dev/null 2>&1
+			rsync --delete-before -a $CONFIG_BAK_ROOT/$entry/etc/ $CONFIG_DIR/ >/dev/null 2>&1
+			/etc/init.d/jw-configbak start >/dev/null 2>&1
+			status="true"
+			msg="恢复配置文件备份 $id 成功"
+			break
+		fi
+	done
+}
+
+remove()
+{
+	id=$1
+	if [ -z $id ]; then
+		msg="请输入id"
+		return
+	fi
+	
+	msg="配置文件备份 $id 不存在"
+	
+	config_bak_dirs=`ls $CONFIG_BAK_ROOT`
+	for entry in $config_bak_dirs
+	do
+		if ! mount 2>/dev/null | grep -q $CONFIG_BAK_ROOT/$entry; then
+			continue
+		fi
+		bak_id_file="$CONFIG_BAK_ROOT/$entry/.id"
+		if [ ! -f $bak_id_file ]; then
+			continue
+		fi
+		bak_id=`cat $bak_id_file 2>/dev/null`
+		if [ "x$id" = "x$bak_id" ]; then
+			rm -rf $CONFIG_BAK_ROOT/$entry/*
+			status="true"
+			msg="删除配置文件备份 $id 成功"
+			
+			# 刷新配置, 触发自动备份
+			touch $LOCAL_FINGERPRINT_FILE
+			break
+		fi
+	done
+}
+
+############################# main 主程序开始 ##########################
+status="false"
+msg=""
+
+case "$1" in
+	--get-info)
+	get_info
+	;;
+	--restore)
+	restore $2
+	;;
+	--remove)
+	remove $2
+	;;
+	--autobackup)
+	autobackup
+	;;
+	*)
+	usage
+	exit 1
+	;;
+esac
+
+output_json "$status" "$msg"

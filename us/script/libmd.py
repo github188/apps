@@ -204,6 +204,57 @@ def get_mdattr_all():
 		mdattr_list.append(mdattr)
 	return mdattr_list
 
+CONFIG_BAK_ROOT = '/tmp/.configbak'
+MD_RESERVE_SECTORS = 204800
+MD_RESERVE_START = 1024
+def md_reserve_space_online(mddev):
+	if not os.path.isdir(CONFIG_BAK_ROOT):
+		os.mkdir(CONFIG_BAK_ROOT)
+
+	md = basename(mddev)
+	dmname = 'bak-%s' % md
+	dmdev = '/dev/mapper/%s' % dmname
+	cmd = 'cat /sys/block/%s/%sp*/start 2>/dev/null| sort -n | head -n 1' % (md, md)
+	part_start = commands.getoutput(cmd)
+	if part_start != '' and part_start.isdigit() and int(part_start) < MD_RESERVE_START+MD_RESERVE_SECTORS:
+		return
+
+	cmd = 'dmsetup create %s --table="0 %d linear %s %d" >/dev/null 2>&1' % (dmname, MD_RESERVE_SECTORS, mddev, MD_RESERVE_START)
+	if os.system(cmd) != 0:
+		return
+	
+	mountdir = CONFIG_BAK_ROOT + os.sep + dmname
+	if not os.path.isdir(mountdir):
+		os.mkdir(mountdir)
+
+	cmd = 'mount %s %s 2>/dev/null' % (dmdev, mountdir)
+	if os.system(cmd) != 0:
+		if os.system('mkfs.ext4 %s >/dev/null 2>&1' % dmdev) != 0:
+			os.system('dmsetup remove %s >/dev/null 2>&1' % dmname)
+			os.system('rm -rf %s' % mountdir)
+			return
+	
+		# 再次挂载
+		if os.system(cmd) != 0:
+			os.system('umount %s >/dev/null 2>&1' % mountdir)
+			os.system('dmsetup remove %s >/dev/null 2>&1' % dmname)
+			os.system('rm -rf %s' % mountdir)
+			return
+	
+	id_file = mountdir + '/.id'
+	if not os.path.isfile(id_file):
+		import uuid
+		fs_attr_write(id_file, str(uuid.uuid1())[:8])
+		os.system('touch %s/fingerprint' % CONF_ROOT_DIR)
+	return
+	
+def md_reserve_space_offline(mddev):
+	dmname = 'bak-%s' % basename(mddev)
+	mountdir = CONFIG_BAK_ROOT + os.sep + dmname
+	os.system('umount %s >/dev/null 2>&1' % mountdir)
+	os.system('rm -rf %s >/dev/null 2>&1' % mountdir)
+	os.system('dmsetup remove %s' % dmname)
+
 def tmpfs_add_md(mddev):
 	if '' == mddev or os.system('[ -b %s ]' % mddev) != 0:
 		return
@@ -261,6 +312,7 @@ def tmpfs_add_md(mddev):
 		sysmon_event('vg', 'fail', mdattr.name, msg)
 		vg_log('Error', msg)
 	
+	md_reserve_space_online(mddev)
 	return
 
 def tmpfs_remove_md(mddev):
@@ -432,6 +484,7 @@ def __md_del(raid_name):
 		md_uuid = mdattr.raid_uuid
 		if mdattr.raid_state != 'fail' and md_is_used(raid_name):
 			return False, '卷组存在未删除的用户数据卷'
+		md_reserve_space_offline(mddev)
 	except:
 		md_uuid = ''
 	dev_list = disks_slot2dev(mdattr.disk_list)
