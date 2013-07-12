@@ -173,15 +173,15 @@ def Setson(value):
 	if __Check__Name__(value.name_set):
 		path = deviant(value.name_set, "path")
 		if value.status_set == 'disable':
-			SYSTEM_OUT('chown -R root %s' % path)
+			SYSTEM_OUT('chown -R root.root %s' % path)
 			SYSTEM_OUT('chmod -R 777 %s' % path)
 			SYSTEM_OUT('setfacl -R -b %s' % path)
 			Export(True, '关闭子目录权限控制成功！')
 		else:
-			SYSTEM_OUT('chown -R admin %s' % path)
-			SYSTEM_OUT('setfacl -R -m other:- %s' % path)
-			SYSTEM_OUT('setfacl -d -R -m other:- %s' % path)
-			SYSTEM_OUT('nasconf --edit --access --name %s --write guest' % value.name_set)
+			SYSTEM_OUT('chown -R admin.users %s' % path)
+			SYSTEM_OUT('setfacl -R -m other:r-x %s' % path)
+			SYSTEM_OUT('setfacl -d -R -m other:r-x %s' % path)
+			SYSTEM_OUT('nasconf --edit --access --name %s --write guest,@users' % value.name_set)
 			Export(True, '开启子目录权限控制成功！')
 		
 	else:
