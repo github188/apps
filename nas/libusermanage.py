@@ -829,7 +829,7 @@ def __Read_Samba_User_pwd__(name, Row):
 #~###-验证是否是合法的SAMBA用户	__Check_Samba_User_licit__(name):
 def __Check_Samba_User_licit__(name):
 	Status = False
-	if __Samba_User_Check__(name) == False and name != 'root' and name != 'guest' and name != 'pw':
+	if __Samba_User_Check__(name) == False and name != 'root' and name != 'guest' and name != 'pw' and name != 'admin':
 		Status = True
 	return Status
 
