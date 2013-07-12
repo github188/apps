@@ -119,7 +119,6 @@ do
 	case "$1" in
 		--kernel)
 		pack_kernel=1
-		shift
 		;;
 		--web)
 		pack_web=1

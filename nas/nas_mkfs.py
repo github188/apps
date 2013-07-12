@@ -26,9 +26,12 @@ def nas_mkfs(udv_name, udv_dev, filesystem):
 	while True:
 		ret = sp.Popen.poll(p)
 		if ret == 0:	# 程序正常结束
+			if filesystem != 'xfs':
+				progress = nas_fmt_record_get(udv_name)
+				if '' == progress or float(progress) == 0.00:
+					return False
 			progress = 100.00
 			nas_fmt_record_set(udv_name, '%.2f' % progress)
-			log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化完成' % udv_name)
 			return True
 		elif ret is None:	# 程序正在运行
 			p.stdout.flush()
@@ -61,6 +64,8 @@ def do_run(udv_name, udv_dev, mount_dir, filesystem):
 		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 格式化失败' % udv_name)
 		nas_vol_remove(udv_name)
 		return
+	else:
+		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化完成' % udv_name)
 
 	# 挂载
 	if not nas_vol_mount(udv_dev, mount_dir):

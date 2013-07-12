@@ -49,6 +49,9 @@ def alarm_email_get():
 		return None
 
 	root = doc.documentElement
+	if not root.hasAttribute('switch'):
+		return alarm_email
+
 	alarm_email.switch = root.getAttribute('switch')
 	alarm_email.receiver = root.getAttribute('receiver')
 	alarm_email.smtp_host = root.getAttribute('smtp_host')

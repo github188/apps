@@ -229,15 +229,17 @@ def get_nasvol_list(volume_name = '', state = 'all', not_fail = False):
 			continue
 		if state != 'all' and state != vol_info.state:
 			continue
+		if 'fail' == mdattr.raid_state:
+			vol_info.state = 'fail'
 		vol_info.volume_name = get_udvname_bydev(vol_info.udv_dev)
 		vol_info.vg_name = mdattr.name
 		vol_info.path = MOUNT_ROOT + os.sep + vol_info.volume_name
+		vol_info.fmt_percent = 'N/A'
 		if vol_info.state == 'mounted':
-			vol_info.fmt_percent = 'N/A'
 			vol_info.capacity = get_nasvol_size(vol_info.path)
 			vol_info.occupancy = get_nasvol_used(vol_info.path)
 			vol_info.remain = get_nasvol_free(vol_info.path)
-		else:
+		elif vol_info.state == 'formatting':
 			vol_info.fmt_percent = nas_fmt_record_get(vol_info.volume_name)
 		
 		nasvol_list.append(vol_info)

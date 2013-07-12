@@ -218,7 +218,7 @@ void list_part(const char *vg_name)
 
 		start = udv_info->geom.start;
 		length = udv_info->geom.length;
-		if (start < PART_START_SECTOR) {
+		if (!udv_info->part_used && start < PART_START_SECTOR) {
 			length -= (PART_START_SECTOR - start);
 			start = PART_START_SECTOR;
 		}

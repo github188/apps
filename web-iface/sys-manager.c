@@ -17,6 +17,7 @@ struct cmd_map cmd_map[] = {
 	{"system", exec_new_cmd},
 	{"web", exec_new_cmd},
 	{"license", exec_new_cmd},
+	{"shareacl", exec_new_cmd},
 	{"", NULL}
 };
 
@@ -41,6 +42,7 @@ void usage()
 	printf("      sysconfig  - 配置系统参数\n");
 	printf("      system    - 系统信息、系统状态、系统参数、告警\n");
 	printf("      web	- WEB站点设置\n");
+	printf("      shareacl	- 共享目录权限配置\n");
 	printf("      version   - 查看版本号\n");
 	exit(0);
 }

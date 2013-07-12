@@ -1,0 +1,68 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          jw-configbak
+# Required-Start:    jw-md
+# Required-Stop:
+# Default-Start:     2
+# Default-Stop:      0 1 6
+# Short-Description: configbak
+# Description:       same with above.
+### END INIT INFO
+
+. /usr/local/lib/jw-functions
+
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
+DAEMON=/usr/local/bin/configbak
+NAME=configbak
+DESC="config backup daemon"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+DAEMON_OPTS="--autobackup"
+
+test -x $DAEMON || exit 0
+
+set -e
+
+. /lib/lsb/init-functions
+
+case "$1" in
+    start)
+        log_daemon_msg "Starting $DESC" $NAME
+        if [ -f $PIDFILE ]; then
+    		pid=`cat $PIDFILE`
+    		if kill -0 $pid 2>/dev/null; then
+    			log_end_msg 0
+    			exit 0
+    		fi
+    	fi
+        if ! start-stop-daemon --background --start --oknodo  \
+            --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
+        then
+            log_end_msg 1
+        else
+            log_end_msg 0
+        fi
+        ;;
+    stop)
+        log_daemon_msg "Stopping $DESC" $NAME
+        pid=`cat $PIDFILE` 
+        if kill `ps -ef | grep $pid | grep -v grep | awk '{print $2}'`
+        then
+            rm -f $PIDFILE
+            log_end_msg 0
+        else
+            log_end_msg 1
+        fi
+        ;;
+    status)
+        status_of_proc -p "$PIDFILE" "$DAEMON" configbak && exit 0 || exit $?
+        ;;
+    *)
+        echo "Usage: $SCRIPTNAME {start|stop|status}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
