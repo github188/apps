@@ -221,7 +221,7 @@ def iSCSI_SCST_cfg_restore():
 
 		uuid_list = re.findall('\w{8}:\w{8}:\w{8}:\w{8}', xx)
 		if len(uuid_list) == 0:
-			return
+			return SCST.CFG
 		for mdattr in get_mdattr_all():
 			if mdattr.raid_uuid in uuid_list:
 				xx = xx.replace(mdattr.raid_uuid, mdattr.dev)
