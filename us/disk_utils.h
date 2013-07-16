@@ -74,12 +74,13 @@ struct us_disk *find_disk(struct us_disk_pool *dp, const char *dev);
 
 static inline const char *disk_get_smart_status(const struct disk_info *info)
 {
-	//if (!info->is_smart_avail)
-	//	return "None";
-	if (!info->si.health_good)
+	if (!info->is_smart_avail || !info->si.health_good)
+		return "Bad";
+
+	if (info->si.pending_sectors || info->si.uncorrectable_sectors ||
+		info->wi.mapped_cnt)
 		return "LowHealth";
-	//if (info->si.pending_sectors || info->si.uncorrectable_sectors)
-	//	return "BAD Sectors";
+
 	return "Good";
 }
 
