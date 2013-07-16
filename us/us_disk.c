@@ -474,6 +474,11 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 
 	if (!disk->is_exist)
 		return;
+
+	/* get disk bad sector info first, make sure smart state correct */
+	disk_get_warning_info(disk->dev_node, 
+						(struct disk_warning_info *)&disk->di.wi);
+
 	pos += snprintf(pos, end - pos, "{ ");
 	pos += snprintf(pos, end - pos, "\"slot\":\"0:%u\"", disk->slot);
 	pos += snprintf(pos, end - pos, "%s\"model\":\"%s\"", delim,
@@ -518,8 +523,6 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
 		                delim);
-		disk_get_warning_info(disk->dev_node, 
-						(struct disk_warning_info *)&disk->di.wi);
 		pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
 		               	delim, di->wi.mapped_cnt);
 		pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"%u\"",

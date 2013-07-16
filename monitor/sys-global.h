@@ -49,9 +49,9 @@ extern sys_global_t gconf;
  *                           (注：告警文件内容为'good'表示正常，否则为告警信息)
  */
 
-void sys_global_init();
-void sys_mon_conf_check();
-void sys_mon_load_conf();
+void sys_global_init(void);
+void sys_mon_conf_check(void);
+void sys_mon_load_conf(void);
 
 int tmpfs_msg_count(const char *level);
 const char *tmpfs_msg_insert(const char *level, const char *msg);
@@ -61,6 +61,6 @@ ssize_t tmpfs_msg_sorted_unlink(const char *file);
 
 void tmpfs_write_alarm(const char *fname, const char *msg);
 
-void dump_sys_global();
+void dump_sys_global(void);
 
 #endif/*__SYS_GLOBAL_H__*/

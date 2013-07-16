@@ -8,12 +8,12 @@ endif
 all:
 	$(MAKE) -C common
 	$(MAKE) -C udv
-	$(MAKE) -C us
 	$(MAKE) -C nas
 	$(MAKE) -C us/md-auto-resume/mdscan
 	$(MAKE) -C web-iface
 	$(MAKE) -C pic_ctl
 	$(MAKE) -C monitor
+	$(MAKE) -C us
 	$(MAKE) -C sys-conf
 	$(MAKE) -C test-utils
 
