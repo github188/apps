@@ -14,7 +14,8 @@ output_json()
 usage()
 {
 	echo ""
-	echo "configbak --get-info"
+	echo "configbak --get-info [--external]"
+	echo "          # 获取配置文件备份信息, 默认获取所有备份, 指定 --external 时, 只获取外部备份"
 	echo "          --restore <id>"
 	echo "          --remove <id>"
 	echo ""
@@ -48,6 +49,11 @@ autobackup()
 
 get_info()
 {
+	external=0
+	if [ "$1" == "--external" ]; then
+		external=1
+	fi
+
 	ECHO="echo"
 	indent="    "
 	if [ "x$SUDO_USER" = "xwww-data" -o "x$LOGNAME" = "xwww-data" ]; then
@@ -81,6 +87,14 @@ get_info()
 		if [ -z $id ]; then
 			continue
 		fi
+		
+		if [ $external -eq 1 ]; then
+			bak_fingerprint_file="$CONFIG_BAK_ROOT/$entry/etc/fingerprint"
+			if [ ! -f $bak_fingerprint_file ] || diff $LOCAL_FINGERPRINT_FILE $bak_fingerprint_file >/dev/null; then
+				continue
+			fi
+		fi
+		
 		ts=`cat $CONFIG_BAK_ROOT/$entry/etc/timestamp 2>/dev/null`
 		sec=`echo $ts | awk -F'-' '{print $1}'`
 		nanosec=`echo $ts | awk -F'-' '{print $2}'`
@@ -97,7 +111,7 @@ get_info()
 	done
 
 	$ECHO ""
-	$ECHO "$indent]"
+	$ECHO "$indent],"
 	$ECHO "$indent\"total\": $total"
 	echo "}"
 	
@@ -114,6 +128,7 @@ restore()
 	
 	msg="配置文件备份 $id 不存在"
 	
+	old_fingerprint=`cat $LOCAL_FINGERPRINT_FILE 2>/dev/null`
 	config_bak_dirs=`ls $CONFIG_BAK_ROOT`
 	for entry in $config_bak_dirs
 	do
@@ -127,12 +142,35 @@ restore()
 		bak_id=`cat $bak_id_file 2>/dev/null`
 		if [ "x$id" = "x$bak_id" ]; then
 			/etc/init.d/jw-configbak stop >/dev/null 2>&1
-			rsync --delete-before -a $CONFIG_BAK_ROOT/$entry/etc/ $CONFIG_DIR/ >/dev/null 2>&1
+			
+			# 不还原网络配置, 删除网络配置文件
+			rsync --delete-before -a --exclude "interfaces*" $CONFIG_BAK_ROOT/$entry/etc/ $CONFIG_DIR/ >/dev/null 2>&1
+			
 			/etc/init.d/jw-configbak start >/dev/null 2>&1
 			status="true"
 			msg="恢复配置文件备份 $id 成功"
 			break
 		fi
+	done
+	
+	if [ "$status" != "true" ]; then
+		return
+	fi
+	
+	# 删除原系统的备份
+	for entry in $config_bak_dirs
+	do
+		if ! mount 2>/dev/null | grep -q $CONFIG_BAK_ROOT/$entry; then
+			continue
+		fi
+		
+		bak_fingerprint_file="$CONFIG_BAK_ROOT/$entry/etc/fingerprint"
+		bak_fingerprint=`cat $bak_fingerprint_file 2>/dev/null`
+		if [ "$bak_fingerprint" != $old_fingerprint ]; then
+			continue
+		fi
+		
+		rm -rf $CONFIG_BAK_ROOT/$entry/*
 	done
 }
 
@@ -175,7 +213,8 @@ msg=""
 
 case "$1" in
 	--get-info)
-	get_info
+	shift
+	get_info $@
 	;;
 	--restore)
 	restore $2
