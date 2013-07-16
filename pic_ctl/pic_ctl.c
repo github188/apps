@@ -110,3 +110,19 @@ int pic_stop_watchdog(void)
 	PIC_CHECK_INIT();
 	return __pic_write_reg(PIC_WDT, PIC_WDT_STOP);
 }
+
+int pic_reset_timer(int sec)
+{
+	PIC_CHECK_INIT();
+	return __pic_write_reg(PIC_HDD_RESET_TIMER, sec * HZ);
+}
+int pic_reset_hd(int idx)
+{
+	PIC_CHECK_INIT();
+	return __pic_write_reg(PIC_HDD_RESET_START + idx, 1);
+}
+int pic_clear_reset_hd(int idx)
+{
+	PIC_CHECK_INIT();
+	return __pic_write_reg(PIC_HDD_RESET_CLR_START + idx, 1);
+}
