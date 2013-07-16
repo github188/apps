@@ -75,7 +75,8 @@ def get_mdattr_by_mddev(mddev):
 	val = fs_attr_read(sysdir + '/size')
 	if val.isdigit():
 		mdattr.capacity = int(val)*512
-		
+		mdattr.capacity -= 209715200	# 减去保留区
+
 	mdattr.remain = mdattr.capacity
 	sts,output = commands.getstatusoutput('cat /sys/block/%s/%sp*/size' % (md, md))
 	if 0 == sts:
