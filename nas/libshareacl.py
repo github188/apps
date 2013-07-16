@@ -121,7 +121,7 @@ def P_List(value):
 			self.Purview = '---'
 	if os.path.lexists(value.path_set):
 		list = []
-		Other = '---' #~其它用户权限
+		Other = 'rwx' #~其它用户权限
 		Owner = '' #~拥有者
 		Flags = '0' #~其它用户是否允许删除
 		Inherit = '0' #~设置成默认权限
@@ -139,14 +139,21 @@ def P_List(value):
 			if x_name[0] == 'default':
 				Inherit = '1'
 			if len(x_name) == 4:
-				if len(x_name[1]) > 0 and x_name[0] != 'default':
-					#~ print x_name
-					out = Son_info()
-					out.name = x_name[1]
-					out.name_note = SYSTEM_OUT('cat /etc/passwd|grep "^'+x_name[1]+':"|cut -d ":" -f5')
-					out.name_type = x_name[0]
-					out.Purview = x_name[3]
-					list.append(out.__dict__)
+				if len(x_name[1]) > 0 and x_name[0] != 'default' and x_name[1] != 'users':
+					if not x_name[1].isdigit():
+						out = Son_info()
+						out.name = x_name[1]
+						out.name_note = SYSTEM_OUT('cat /etc/passwd|grep "^'+x_name[1]+':"|cut -d ":" -f5')
+						out.name_type = x_name[0]
+						out.Purview = x_name[3]
+						list.append(out.__dict__)
+					else:
+						if x_name[0] == 'user':
+							SYSTEM_OUT('setfacl -R -x u:%s %s' % (x_name[1], value.path_set))
+							SYSTEM_OUT('setfacl -R -d -x u:%s %s' % (x_name[1], value.path_set))
+						else:
+							SYSTEM_OUT('setfacl -R -x g:%s %s' % (x_name[1], value.path_set))
+							SYSTEM_OUT('setfacl -R -d -x g:%s %s' % (x_name[1], value.path_set))
 		if Owner == "root":
 			Owner = "admin"
 		json_info['rows'] = list
@@ -178,9 +185,10 @@ def Setson(value):
 			SYSTEM_OUT('setfacl -R -b %s' % path)
 			Export(True, '关闭子目录权限控制成功！')
 		else:
-			SYSTEM_OUT('chown -R admin.users %s' % path)
-			SYSTEM_OUT('setfacl -R -m other:r-x %s' % path)
-			SYSTEM_OUT('setfacl -d -R -m other:r-x %s' % path)
+			SYSTEM_OUT('chown -R admin.root %s' % path)
+			SYSTEM_OUT('chmod -R 750 %s' % path)
+			SYSTEM_OUT('setfacl -R -m g:users:r-x,other:r-x %s' % path)
+			SYSTEM_OUT('setfacl -d -R -m g:users:r-x %s,other:r-x' % path)
 			SYSTEM_OUT('nasconf --edit --access --name %s --write guest,@users' % value.name_set)
 			Export(True, '开启子目录权限控制成功！')
 		
@@ -189,9 +197,9 @@ def Setson(value):
 
 def Edit(value):
 	if len(value.purv_set) > 0:
-		value.purv_set = '%s,other:%s' % (value.purv_set,value.other_set)
+		value.purv_set = '%s,g:users:%s,other:%s' % (value.purv_set,value.other_set,value.other_set)
 	else:
-		value.purv_set = 'other:%s' % value.other_set		
+		value.purv_set = 'g:users:%s,other:%s' % (value.other_set,value.other_set)	
 	if os.path.lexists(value.path_set):
 		cover_com = ''
 		inherit_com = ''
