@@ -23,7 +23,7 @@ smtp_port="25" ssl="disable" auth_user="xxx@xxx.com" auth_password="xxx" />
 
 class AlarmEmailConf:
 	def __init__(self):
-		self.switch = 'off'
+		self.switch = 'disable'
 		self.receiver = None
 		self.smtp_host = None
 		self.smtp_port = 0
@@ -102,7 +102,7 @@ def alarm_email_send(subject, content):
 	ret = 900
 	msg = ''
 	alarm_email = alarm_email_get()
-	if 'off' == alarm_email.switch:
+	if 'disable' == alarm_email.switch:
 		return True, "没有配置邮件告警"
 
 	try:
@@ -119,7 +119,7 @@ def alarm_email_send(subject, content):
 			ret, msg = smtp.starttls()
 			if ret != 220:
 				raise Exception(msg)
-	
+		
 		ret, msg = smtp.login(alarm_email.auth_user, alarm_email.auth_password)
 		if ret != 235:
 			raise Exception(msg)
@@ -143,7 +143,7 @@ def alarm_email_send(subject, content):
 			smtp.quit()
 		except:
 			pass
-		return False, err_msg + "失败 " + e.args[0]
+		return False, err_msg + "失败 " + ",".join( str(x) for x in e.args)
 
 # send test mail
 def alarm_email_test():
