@@ -3,7 +3,7 @@ CROSS_COMPILE =
 CFLAGS += -Dclog_level=CL_NONE -DNDEBUG -Wstrict-aliasing=0 -I/usr/include/libxml2
 LDFLAGS =
 LDLIBS =
-uslibs = -lev -ludev -latasmart -lxml2  -L../common -llog -lsqlite3
+uslibs = -lev -ludev -latasmart -lxml2  -L../common -llog -lsqlite3 ../monitor/libsysmon.a -ljson
 #progs = us_d mon_test us_cmd
 progs = us_d us_cmd
 

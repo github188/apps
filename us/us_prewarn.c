@@ -11,6 +11,7 @@
 #include "safe_popen.h"
 #include "script.h"
 #include "us_ev.h"
+#include "../monitor/sys-mon.h"
 #include "disk_utils.h"
 #include "vsd_warning.h"
 #include "us_prewarn.h"
@@ -141,6 +142,8 @@ static void nl_io_cb(EV_P_ ev_io *w, int r)
 			"新坏块" : "关键坏块", dwi->mapped_cnt,
 			dwi->max_map_cnt);
 	LogInsert(NULL, "DiskWarning", "Auto", "Error", msg);
+	sprintf(msg, "disks=0:%d", disk->slot);
+	sysmon_event("disk", "led_blink2s1", msg, "");
 	
 	/* 启动热替换 */
 	if (dwi->mapped_cnt > dwi->max_map_cnt/2 || 
