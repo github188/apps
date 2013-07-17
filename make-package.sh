@@ -79,10 +79,25 @@ sysnc_web()
 {
 	local _target="$1"
 	local _source="$2" 
+	local git_version
+	local version
 	
 	echo "copy web ..."
+	
+	cd $_source
+	git_version=`git log 2>/dev/null | head -n 1`
+	if [ -z "$git_version" ]; then
+		while [ -z "$version" ]
+		do
+			read -p "input web version: " version
+		done
+	else
+		version=${git_version:0-6}
+	fi
+	
 	mkdir -p $_target/var
 	cp -fa $_source $_target/var/
+	echo $version > $_target/var/www/version
 }
 
 tar_pkg()

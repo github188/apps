@@ -145,14 +145,6 @@ def __get_lastrun(mod):
 		_item['value'] = ERROR_VALUE
 	return _item
 
-# 主板硬件版本
-def __mab_ver():
-	return '1.0'
-
-# 背板硬件版本
-def __bkp_ver():
-	return '01'
-
 # 单片机版本
 def __mcu_ver():
 	try:
@@ -165,7 +157,7 @@ def __mcu_ver():
 # 内核版本
 def __kernel_ver():
 	try:
-		ret,msg = commands.getstatusoutput('uname -rm | tr  \' \' \'.\'')
+		ret,msg = commands.getstatusoutput('uname -m | tr  \' \' \'.\'')
 		return msg
 	except:
 		pass
@@ -186,18 +178,19 @@ def __apps_ver():
 
 # web版本
 def __web_ver():
-	return '1.0'
-
-# 附加版本
-def __attch_ver():
-	return '0'
+	try:
+		ret,msg = commands.getstatusoutput('cat /var/www/version')
+		return msg
+	except:
+		pass
+	return 'web'
 
 # 编译日期
 def __build_date():
 	return read_file('/usr/local/bin/.build-date')[0:-1]
 
 def __get_sys_version():
-	return __mab_ver() + VER_SEP + __bkp_ver() + VER_SEP + __mcu_ver() + VER_SEP + __kernel_ver() + VER_SEP + __rootfs_ver() + VER_SEP + __apps_ver() + VER_SEP + __web_ver() + VER_SEP + __attch_ver() + '  ' + __build_date()
+	return __apps_ver() + VER_SEP + __kernel_ver() + VER_SEP + __mcu_ver() + VER_SEP + __web_ver() + ' ' + __build_date()
 
 def __get_version(mod):
 	_item = {}
