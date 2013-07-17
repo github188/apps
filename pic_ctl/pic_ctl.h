@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "pic_reg.h"
 
+#define HZ	(16)
+
 enum {
 	PERR_SUCCESS	= 0,	/* ok */
 	PERR_NODEV	= -1,	/* Can't open i2c-0 */

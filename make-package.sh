@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test test-utils/tools-test-led'
+DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset pic_ctl/test/dled_test test-utils/tools-test-led'
 UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
@@ -79,10 +79,25 @@ sysnc_web()
 {
 	local _target="$1"
 	local _source="$2" 
+	local git_version
+	local version
 	
 	echo "copy web ..."
+	
+	cd $_source
+	git_version=`git log 2>/dev/null | head -n 1`
+	if [ -z "$git_version" ]; then
+		while [ -z "$version" ]
+		do
+			read -p "input web version: " version
+		done
+	else
+		version=${git_version:0-6}
+	fi
+	
 	mkdir -p $_target/var
 	cp -fa $_source $_target/var/
+	echo $version > $_target/var/www/version
 }
 
 tar_pkg()

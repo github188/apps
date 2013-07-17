@@ -13,6 +13,10 @@ enum {
 
 	PIC_WDT		= 0x05,
 	PIC_LED_START	= 0x10,
+
+	PIC_HDD_RESET_TIMER	= 0x70,
+	PIC_HDD_RESET_START	= 0x80,
+	PIC_HDD_RESET_CLR_START = 0xa0,
 };
 
 #endif

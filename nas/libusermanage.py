@@ -53,7 +53,7 @@ libuuid:x:100:101::/var/lib/libuuid:/bin/sh
 sshd:x:101:65534::/var/run/sshd:/usr/sbin/nologin
 statd:x:102:65534::/var/lib/nfs:/bin/false
 messagebus:x:103:104::/var/run/dbus:/bin/false
-admin:x:997:0:admin:/home/admin:/bin/sh
+admin:x:997:100::/home/admin:/bin/sh
 guest:x:998:100::/home/guest:/bin/sh
 user:x:999:100::/home/user:/bin/sh
 """
@@ -310,6 +310,10 @@ admin:1013:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:7D891AB402CAF2E89CCDD33ED54333AC:[U 
 	except:
 		conf_file.close()
 
+	SYSTEM_OUT('setfacl -R -b /mnt/share')
+	SYSTEM_OUT('setfacl -R -d -b /mnt/share')
+	SYSTEM_OUT('chmod -R 777 /mnt/share')
+	SYSTEM_OUT('chown -R root.root /mnt/share')
 if os.path.exists(SMB_CONF_PATH) == False:
 	os.system('sys-manager nasconf --default')
 
@@ -508,22 +512,34 @@ def User_List(value):
 #~#### 删除用户主程序
 def User_Del(name_list):
 	if name_list != '':
+		adminstr = ''
 		name_list = name_list.split(',')
 		for name in name_list:
-			if __Check_Samba_User_licit__(name):
-				os.system('smbpasswd -x '+ name+' > /dev/null')
-				os.system('userdel '+ name+' > /dev/null')
-				xpath = SMB_CONF_PATH +'.'+ name
-				try:
-					os.remove(xpath)
-				except:
-					pass
-					
-				for share in OUT_Array:
-					__Conf_Share_Del_User__(name, share)	
+			if name != 'admin':
+				if __Check_Samba_User_licit__(name):
+					try:
+						SYSTEM_OUT('setfacl -R -x u:%s /mnt/share' % name)
+						SYSTEM_OUT('setfacl -R -d -x u:%s /mnt/share' % name)
+					except:
+						pass
+					os.system('smbpasswd -x '+ name+' > /dev/null')
+					os.system('userdel '+ name+' > /dev/null')
+					xpath = SMB_CONF_PATH +'.'+ name
+					try:
+						os.remove(xpath)
+					except:
+						pass
+						
+					for share in OUT_Array:
+						__Conf_Share_Del_User__(name, share)
+			else:
+				adminstr = 'admin是管理员，不能删除'
 		SYSTEM_OUT(RESTART_SMB)
 		Synchronous()
-		Export(True, '删除成功！')
+		if adminstr != '':
+			Export(True, adminstr)
+		else:
+			Export(True, '删除成功！')
 	Export(False, '删除失败，没有这个用户！')
 
 #~#### 修改用户共享权限主程序
@@ -687,6 +703,11 @@ def Group_Del(name_list):
 						if __Share_limits__(share, user, 'V'):
 							__Del_User_Share__(user, share)
 				try:
+					SYSTEM_OUT('setfacl -R -x g:%s /mnt/share' % group)
+					SYSTEM_OUT('setfacl -R -d -x g:%s /mnt/share' % group)
+				except:
+					pass
+				try:
 					os.system('groupdel '+ group+' > /dev/null')
 				except:
 					pass
@@ -829,7 +850,7 @@ def __Read_Samba_User_pwd__(name, Row):
 #~###-验证是否是合法的SAMBA用户	__Check_Samba_User_licit__(name):
 def __Check_Samba_User_licit__(name):
 	Status = False
-	if __Samba_User_Check__(name) == False and name != 'root' and name != 'guest' and name != 'pw' and name != 'admin':
+	if __Samba_User_Check__(name) == False and name != 'root' and name != 'guest' and name != 'pw':
 		Status = True
 	return Status
 
