@@ -1,26 +1,19 @@
 #! /bin/sh
-#
-# load jw apps
-
 ### BEGIN INIT INFO
-# Provides:          jw-apps
+# Provides:          jw-log
 # Required-Start:    jw-driver
-# Required-Stop:     jw-driver samba
+# Required-Stop:     jw-sysmon
 # Default-Start:     2
 # Default-Stop:      0 1 6
-# Short-Description: apps for jwele
+# Short-Description: jw log
 # Description:       same with above.
 ### END INIT INFO
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
-US_DAEMON="/usr/local/bin/us_d"
 LOG_DAEMON="/usr/local/bin/log-daemon"
-SYS_DAEMON="/usr/local/bin/sys-mon"
 
-US_PID="/var/run/us_d.pid"
 LOG_PID="/var/run/log-daemon.pid"
-SYS_PID="/var/run/sys-mon.pid"
 
 . /lib/lsb/init-functions
 
@@ -34,25 +27,19 @@ __start_daemon()
 	echo "$(basename "$_cmd") start fail! retcode: $?"
 }
 
-do_apps_start()
+do_start()
 {
 	__start_daemon $LOG_PID $LOG_DAEMON
-	__start_daemon $SYS_PID $SYS_DAEMON
-	__start_daemon $US_PID $US_DAEMON
 }
 
-do_apps_stop()
+do_stop()
 {
-	killproc -p $US_PID $(basename $US_DAEMON)
-	killproc -p $SYS_PID $(basename $SYS_DAEMON)
 	killproc -p $LOG_PID $(basename $LOG_DAEMON)
 }
 
-do_apps_status()
+do_status()
 {
-	status_of_proc -p $US_PID $US_DAEMON $(basename $US_DAEMON) $(basename $US_DAEMON)
 	status_of_proc -p $LOG_PID $LOG_DAEMON $(basename $LOG_DAEMON) $(basename $LOG_DAEMON)
-	status_of_proc -p $SYS_PID $SYS_DAEMON $(basename $SYS_DAEMON) $(basename $SYS_DAEMON)
 }
 
 apps_usage()
@@ -62,17 +49,17 @@ apps_usage()
 
 case "${1:-}" in
 	start)
-		do_apps_start
+		do_start
 	;;
 	stop)
-		do_apps_stop
+		do_stop
 	;;
 	restart)
 		$0 stop
 		$0 start
 	;;
 	status)
-		do_apps_status
+		do_status
 	;;
 	*)
 		apps_usage

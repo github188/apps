@@ -4,7 +4,7 @@
 
 ### BEGIN INIT INFO
 # Provides:          jw-checkpoweroff
-# Required-Start:    jw-apps
+# Required-Start:    jw-log
 # Required-Stop:     rsyslog
 # Default-Start:     2
 # Default-Stop:      0 1 6

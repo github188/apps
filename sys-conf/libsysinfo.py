@@ -149,7 +149,8 @@ def __get_lastrun(mod):
 def __mcu_ver():
 	try:
 		ret,msg = commands.getstatusoutput('/usr/local/bin/pic-version')
-		return msg
+		if 0 == ret:
+			return msg
 	except:
 		pass
 	return 'pic'
@@ -158,7 +159,8 @@ def __mcu_ver():
 def __kernel_ver():
 	try:
 		ret,msg = commands.getstatusoutput('uname -m | tr  \' \' \'.\'')
-		return msg
+		if 0 == ret:
+			return msg
 	except:
 		pass
 	return 'kernel'
@@ -171,7 +173,8 @@ def __rootfs_ver():
 def __apps_ver():
 	try:
 		ret,msg = commands.getstatusoutput('cat /etc/issue')
-		return msg.split()[2]
+		if 0 == ret:
+			return msg.split()[2]
 	except:
 		pass
 	return 'main'
@@ -180,7 +183,8 @@ def __apps_ver():
 def __web_ver():
 	try:
 		ret,msg = commands.getstatusoutput('cat /var/www/version')
-		return msg
+		if 0 == ret:
+			return msg
 	except:
 		pass
 	return 'web'

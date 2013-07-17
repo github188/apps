@@ -27,7 +27,9 @@ service_stop()
 	/etc/init.d/lighttpd stop
 	/etc/init.d/jw-iscsi stop
 	/etc/init.d/samba stop
-	/etc/init.d/jw-apps stop
+	/etc/init.d/jw-us stop
+	/etc/init.d/jw-sysmon stop
+	/etc/init.d/jw-log stop
 }
 
 service_start()
