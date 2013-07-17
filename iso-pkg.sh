@@ -46,6 +46,7 @@ make_default_conf()
 	rm -rf $USER_CONF_DIR/disk
 	rm -rf $USER_CONF_DIR/iscsi
 	rm -rf $USER_CONF_DIR/nas
+	rm -rf $USER_CONF_DIR/system
 	rm -rf /mnt/*
 	
 	# defualt hostname
