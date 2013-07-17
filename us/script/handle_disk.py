@@ -95,7 +95,7 @@ def handle_disk_remove_kicked(diskinfo, event):
 		if event == 'remove':
 			faulty_disk_in_md(mdattr.dev, diskinfo.dev)
 			# 磁盘强制重新上电, 检测是否真的掉线
-			os.system('disk_reset -i %s -d 5 >/dev/null 2>&1' % slot[2:])
+			os.system('disk_reset -i %s -d 5 >/dev/null 2>&1' % diskinfo.slot[2:])
 
 		# tmpfs下标示正在处理raid事件, 然后从md删除磁盘
 		rebuilder_cn = inc_md_rebuilder_cnt(basename(mdattr.dev))

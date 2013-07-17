@@ -59,6 +59,8 @@ make_default_conf()
 	find /var/log/ -type f -exec rm -f {} \;
 	mkdir -pv /opt/log
 	rm -f /opt/log/jw-log.db
+	
+	rm -f /opt/etc/fingerprint
 }
 
 pkg_root_preprocess()
