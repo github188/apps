@@ -43,19 +43,27 @@ def alarm_email_output():
 def __system_usage():
 	print 'system --get-info [--item <name>]'
 	print '            info item support: %s' % get_info_item()
+	print ''
 	print '       --get-status [--item <name>]'
 	print '            status item support: %s' % get_stat_item()
+	print ''
 	print '       --set <module> --value <module-dependent-value>'
 	print '            module: %s' % get_param_item()
-	print '       --alarm --email --set <enable|disable> [--receiver <email_list> --smtp-host <ip|domain> --smtp-port <xx> --with-ssl <enable|disable> --with-auth <enable|disable> [--auth-user <xx> --auth-password <xx>]]'
+	print ''
+	print '       --alarm --email --set enable|disable [--receiver <email_list> --smtp-host <ip|domain> --smtp-port <xx> --with-ssl enable|disable --with-auth enable|disable [--auth-user <xx> --auth-password <xx>]]'
 	print '       --alarm --email --get'
 	print '       --alarm --email --test'
 	print '       --alarm --email --send --subject <email subject> --content <email content>'
+	print ''
+	print '       --alarm --set <module> --switch enable|disable'
+	print '       --alarm --get [--module <name>]'
+	print '            module: %s' % get_alarm_module()
+	print ''
 	print '       --update <file_path>'
 	sys.exit(-1)
 
 OP_MODE = ['--get-info', '--get-status', '--alarm', '--update']
-system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email',
+system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email', 'switch='
 'receiver=', 'smtp-host=', 'smtp-port=', 'with-ssl=', 'with-auth=', 'auth-user=', 'auth-password=',
 'get', 'test', 'module=', 'category=', 'switch=', 'send', 'subject=', 'content=', 'update=']
 
@@ -116,6 +124,8 @@ def main():
 			_email.auth_password = arg
 		elif opt == '--module':
 			_module = arg
+		elif opt == '--switch':
+			_switch = arg
 		elif opt == '--category':
 			_category = arg
 		elif opt == '--subject':
@@ -155,6 +165,11 @@ def main():
 				comm_exit(ret, msg)
 			else:
 				comm_exit(False, '请输入email的配置项')
+		elif _get_arg:
+			CommOutput(alarm_get(_module), dict_dump)
+		elif _set_arg:
+			ret,msg = alarm_set(_set_arg, _switch)
+			comm_exit(ret, msg)
 		else:
 			comm_exit(False, '请输入正确的告警参数!')
 

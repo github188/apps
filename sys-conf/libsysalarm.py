@@ -11,6 +11,7 @@ from email.header import Header
 from xml.dom import minidom
 
 from libcommon import *
+from libsysinfo import __get_stat_disk, __get_stat_vg, __get_stat_buzzer, __get_stat_fan
 
 ALARM_EMAIL_CONF = CONF_ROOT_DIR + '/system/alarm-email-conf.xml'
 ALARM_EMAIL_CONF_DEF = """<?xml version="1.0" encoding="UTF-8"?>
@@ -154,6 +155,112 @@ def alarm_email_test():
 		return False, msg
 
 	return True, "发送测试邮件成功"
+
+# 设置不同模块告警开关
+_alarm_modules = ['power']
+
+def get_alarm_module():
+	return str(_alarm_modules)
+	
+ALARM_POWER_CONF = '/opt/jw-conf/system/sysmon-conf.xml'
+def alarm_power_get():
+	d = {}
+	d['module'] = 'power'
+	d['status'] = 'disable'
+	doc = xml_load(ALARM_POWER_CONF)
+	if None == doc:
+		return None
+
+	monitor_node = doc.documentElement
+	child_nodes = monitor_node.getElementsByTagName('global')
+	if 0 == len(child_nodes):
+		return None
+	global_node = child_nodes[0]
+	
+	child_nodes = global_node.getElementsByTagName('power')
+	if 0 == len(child_nodes):
+		return None
+	power_node = child_nodes[0]
+	
+	if not power_node.hasAttribute('config'):
+		return None
+	
+	if 'double' == power_node.getAttribute('config'):
+		d['status'] = 'enable'
+	
+	return d
+	
+def alarm_power_set(switch):
+	if switch == 'enable':
+		val = 'double'
+	else:
+		val = 'single'
+
+	doc = xml_load(ALARM_POWER_CONF)
+	if None == doc:
+		return False
+
+	monitor_node = doc.documentElement
+	child_nodes = monitor_node.getElementsByTagName('global')
+	if 0 == len(child_nodes):
+		return False
+	global_node = child_nodes[0]
+	
+	child_nodes = global_node.getElementsByTagName('power')
+	if 0 == len(child_nodes):
+		return False
+	power_node = child_nodes[0]
+	
+	if not power_node.hasAttribute('config'):
+		return False
+	
+	if val == power_node.getAttribute('config'):
+		return True
+
+	power_node.setAttribute('config', val)
+	if not xml_save(doc, ALARM_POWER_CONF):
+		return False
+	
+	if 'single' == val:
+		disk_status = __get_stat_disk('disk')['value']
+		vg_status = __get_stat_vg('vg')['value']
+		fan_status = __get_stat_fan('fan')['value']
+		buzzer_status = __get_stat_buzzer('buzzer')['value']
+		if buzzer_status != 'good' and 'good' == disk_status and 'good' == vg_status and 'good' == fan_status:
+			os.system('set-buzzer.sh off 2>/dev/null')
+	
+	os.system('/etc/init.d/jw-sysmon restart >/dev/null 2>&1')
+	return True
+
+def alarm_get(module):
+	module_status_list = []
+
+	if module is None:
+		modules = _alarm_modules
+	elif module in _alarm_modules:
+		modules = [module]
+	else:
+		return module_status_list
+
+	for module in modules:
+		func = 'alarm_' + module + '_get'
+		module_status = eval(func)()
+		if module_status != None:
+			module_status_list.append(module_status)
+
+	return module_status_list
+
+def alarm_set(module, switch):
+	err_msg = '设置告警模块 %s 开关' % module
+	if module not in _alarm_modules:
+		return False, err_msg + '失败, 不支持该模块'
+
+	func = 'alarm_' + module + '_set'
+	if not eval(func)(switch):
+		return False, err_msg + '失败, 配置文件错误'
+
+	return True, err_msg + '成功'
+
 
 if __name__ == '__main__':
 	sys.exit(0)
