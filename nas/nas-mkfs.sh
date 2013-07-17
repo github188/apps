@@ -10,12 +10,11 @@ if [ "$filesystem" = "xfs" ]; then
 	option="-f"
 fi
 
-ret=1
-error_log_file="/tmp/format_errlog.`basename $dev`"
-mkfs."$filesystem" $option $dev 2>$error_log_file | tr-simple
-sed -i /"mke2fs"/d $error_log_file
-if [ ! -s $error_log_file ]; then
-	ret=0
+ret_file="/tmp/format_ret.`basename $dev`"
+{ mkfs."$filesystem" $option $dev 2>/dev/null; echo $? >$ret_file; } | tr-simple
+ret=`cat $ret_file 2>/dev/null`
+rm -f $ret_file
+if [ "$ret" != "0" ]; then
+	exit 1
 fi
-rm -rf $error_log_file
-exit $ret
+exit 0
