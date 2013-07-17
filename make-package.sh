@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/test/dled_test test-utils/tools-test-led'
+DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset pic_ctl/test/dled_test test-utils/tools-test-led'
 UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
