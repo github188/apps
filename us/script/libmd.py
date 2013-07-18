@@ -38,7 +38,9 @@ class md_attr:
 		self.raid_level = ''
 		self.raid_state = ''	# raid0需要根据disk_cnt与disk_total关系计算
 		self.raid_strip = ''	# raid1需要特殊处理
-		self.raid_rebuild = ''
+		self.sync_percent = 0.0	# 初始化/重建进度百分比
+		self.sync_speed = 0		# 初始化/重建速度, 单位: KB/s
+		self.sync_finish = 0	# 初始化/重建完成时间, 按当前速度还需要的时间, 单位: min
 		self.capacity = 0
 		self.remain = 0		# 剩余空间
 		self.max_single = 0	# 最大连续空间
@@ -129,14 +131,15 @@ def get_mdattr_by_mddev(mddev):
 				mdattr.raid_state = 'fail'
 		
 		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state:
-			val = fs_attr_read(sysdir + '/md/sync_completed')
+			val = fs_attr_read(sysdir + '/md/sync_status')
 			if 'none' == val:
-				mdattr.raid_rebuild = '100.0'
+				mdattr.sync_percent = '100.0'
 			else:
-				list_tmp = val.split('/')
-				resync = float(list_tmp[0])
-				max_sectors = float(list_tmp[1])
-				mdattr.raid_rebuild = '%.1f' % (resync*100/max_sectors)
+				list_tmp = val.split(' ')
+				if 3 == len(list_tmp):
+					mdattr.sync_percent = list_tmp[0]
+					mdattr.sync_speed = list_tmp[1]
+					mdattr.sync_finish = list_tmp[2]
 
 	else:	# raid0, jbod
 		f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, basename(mdattr.dev)))
