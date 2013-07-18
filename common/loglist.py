@@ -205,12 +205,18 @@ def __List__(value):
 	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
 
 def __Del__(value):
+	total = 1000
 	cx = sqlite3.connect(LOG_FILE)
 	cu = cx.cursor()
-	cu.execute('delete from jwlog') 
-	cx.commit() 
-	cu.close()
-	Export(True, "清除日志成功！")
+	cu.execute('select count() from jwlog') 
+	count = cu.fetchall()[0][0]
+	if count < total:
+		Export(False, "删除失败，日志最少要保留1000条记录，方便故障分析！")
+	else:
+		cu.execute('delete from jwlog where rowid in (select rowid from jwlog order by date desc,id desc limit %s,%s)' % (total, count-total)) 
+		cx.commit() 
+		cu.close()
+		Export(True, "清除日志成功！")
 
 def __Out__(value):
 	cx = sqlite3.connect(LOG_FILE)
