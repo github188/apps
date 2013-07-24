@@ -123,11 +123,6 @@ static void nl_io_cb(EV_P_ ev_io *w, int r)
 		clog(CL_ERROR, "disk warning, cann't find %s slot!",
 			warning_info.disk_name);
 
-		sprintf(msg, "磁盘预警: %s 出现%s, 已修复扇区计数: %u",
-			warning_info.disk_name,
-			(warning_info.warning_area == (1<<WARNING_AREA_BAD_SECT)) ?
-			"新坏块" : "关键坏块", warning_info.mapped_cnt);
-		LogInsert(NULL, "DiskWarning", "Auto", "Error", msg);
 		return;
 	}
 	

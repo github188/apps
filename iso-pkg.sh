@@ -46,6 +46,7 @@ make_default_conf()
 	rm -rf $USER_CONF_DIR/disk
 	rm -rf $USER_CONF_DIR/iscsi
 	rm -rf $USER_CONF_DIR/nas
+	rm -rf $USER_CONF_DIR/system
 	rm -rf /mnt/*
 	
 	# defualt hostname
@@ -59,6 +60,8 @@ make_default_conf()
 	find /var/log/ -type f -exec rm -f {} \;
 	mkdir -pv /opt/log
 	rm -f /opt/log/jw-log.db
+	
+	rm -f /opt/etc/fingerprint
 }
 
 pkg_root_preprocess()

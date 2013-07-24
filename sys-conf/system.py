@@ -63,7 +63,7 @@ def __system_usage():
 	sys.exit(-1)
 
 OP_MODE = ['--get-info', '--get-status', '--alarm', '--update']
-system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email', 'switch='
+system_long_opt = ['get-info', 'item=', 'get-status', 'set=', 'value=', 'alarm', 'email', 'switch=',
 'receiver=', 'smtp-host=', 'smtp-port=', 'with-ssl=', 'with-auth=', 'auth-user=', 'auth-password=',
 'get', 'test', 'module=', 'category=', 'switch=', 'send', 'subject=', 'content=', 'update=']
 
