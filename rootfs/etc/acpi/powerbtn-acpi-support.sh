@@ -19,6 +19,10 @@ else
 	exit 0
 fi
 
+/usr/local/bin/tools-test-led -d blink -f fast
+sleep 0.5
+/usr/local/bin/tools-test-led -d off
+
 if [ -f /etc/acpi/events/powerbtn -o -f /etc/acpi/events/powerbtn.dpkg-bak ] ; then 
 	logger Acpi-support not handling power button, acpid handler exists at /etc/acpi/events/powerbtn or /etc/acpi/events/powerbtn.dpkg-bak.
 	exit 0
