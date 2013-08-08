@@ -212,6 +212,9 @@ CONFIG_BAK_ROOT = '/tmp/.configbak'
 MD_RESERVE_SECTORS = 204800
 MD_RESERVE_START = 1024
 def md_reserve_space_online(mddev):
+	if system_type() != SYSTYPE_IPSAN_NAS:
+		return
+
 	if not os.path.isdir(CONFIG_BAK_ROOT):
 		os.mkdir(CONFIG_BAK_ROOT)
 
@@ -253,6 +256,9 @@ def md_reserve_space_online(mddev):
 	return
 	
 def md_reserve_space_offline(mddev):
+	if system_type() != SYSTYPE_IPSAN_NAS:
+		return
+
 	dmname = 'bak-%s' % basename(mddev)
 	mountdir = CONFIG_BAK_ROOT + os.sep + dmname
 	os.system('umount %s >/dev/null 2>&1' % mountdir)
