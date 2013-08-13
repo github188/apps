@@ -69,6 +69,15 @@ compress.filetype           = ( "application/x-javascript", "text/css", "text/ht
 
 include_shell "/usr/share/lighttpd/create-mime.assign.pl"
 include_shell "/usr/share/lighttpd/include-conf-enabled.pl"
+
+fastcgi.server = ( ".php" =>
+                     ( "localhost" =>
+                         (
+                             "socket" => "/tmp/php.socket",
+                             "bin-path" => "/usr/bin/php5-cgi"
+                         )
+                     )
+                 )
 """
 
 OEM_LIG_CONF_FMT = """$SERVER["socket"] == ":%s" {
