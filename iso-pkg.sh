@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. /usr/local/lib/jw-functions
+. /usr/lib/jw-functions
 
 PKG_STORE_DIR=/home
 USER_CONF_DIR=/opt/etc
