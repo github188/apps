@@ -36,7 +36,7 @@ if [ -f $DEFAULTFILE ]; then
 fi
 
 . /lib/lsb/init-functions
-. /usr/local/lib/jw-functions
+. /usr/lib/jw-functions
 if [ `system_type` -ne $SYSTYPE_IPSAN_NAS ]; then
     exit 0
 fi

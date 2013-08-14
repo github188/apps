@@ -5,15 +5,17 @@ aptitude install lighttpd php5-cgi
 aptitude install libudev0 udev
 aptitude install libxml2
 aptitude install nfs-common nfs-kernel-server nfs-server nfs-client
-aptitude install libdevmapper libdevmapper-event1.02.1 libdevmapper1.02.1
 aptitude install libjson0
+aptitude install acl
+aptitude install inotify-tools
+aptitude install iperf
+aptitude install sysstat (32bit complie 10.1.5, depend on gettext)
+aptitude install samba
+aptitude install xfsprogs
 
 # for complie use
 aptitude install libatasmart-dev
 aptitude install libsqlite3-dev
 aptitude install libudev-dev
 aptitude install libxml2-dev
-aptitude install libdevmapper-dev
-aptitude install uuid-dev
-aptitude install libreadline-dev
 aptitude install libjson0-dev
