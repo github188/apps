@@ -29,7 +29,7 @@ unset TMPDIR
 test -x /usr/sbin/nmbd -a -x /usr/sbin/smbd || exit 0
 
 . /lib/lsb/init-functions
-. /usr/local/lib/jw-functions
+. /usr/lib/jw-functions
 if [ `system_type` -ne $SYSTYPE_IPSAN_NAS ]; then
     exit 0
 fi
