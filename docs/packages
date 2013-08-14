@@ -12,6 +12,8 @@ aptitude install iperf
 aptitude install sysstat (32bit complie 10.1.5, depend on gettext)
 aptitude install samba
 aptitude install xfsprogs
+aptitude install hdparm
+aptitude install sdparm
 
 # for complie use
 aptitude install libatasmart-dev

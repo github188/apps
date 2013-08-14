@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. /usr/local/lib/jw-functions
+
 PKG_STORE_DIR=/home
 USER_CONF_DIR=/opt/etc
 
@@ -55,6 +57,10 @@ make_default_conf()
 	usermanage --default
 	nasconf --default
 	adminmanage --default
+	
+	if [ `system_type` -eq $SYSTYPE_BASIC_PLATFORM ]; then
+    	echo -e "123456\n123456" | passwd root
+	fi
 
 	# clear log
 	find /var/log/ -type f -exec rm -f {} \;
