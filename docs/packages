@@ -14,6 +14,7 @@ aptitude install samba
 aptitude install xfsprogs
 aptitude install hdparm
 aptitude install sdparm
+aptitude install cryptsetup
 
 # for complie use
 aptitude install libatasmart-dev
