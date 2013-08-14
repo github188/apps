@@ -8,4 +8,13 @@ safe_exec()
 	[ $? -ne 0 ] && echo "RUN Command -->> $_cmd <<-- ERROR!" && exit 1
 }
 
-
+SYSTYPE_BASIC_PLATFORM=0
+SYSTYPE_IPSAN_NAS=1
+system_type()
+{
+	if [ "`arch 2>/dev/null`" != "x86_64" ]; then
+		echo $SYSTYPE_BASIC_PLATFORM
+	else
+		echo $SYSTYPE_IPSAN_NAS
+	fi
+}
