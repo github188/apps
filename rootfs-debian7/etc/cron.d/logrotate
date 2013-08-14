@@ -1,0 +1,2 @@
+# execute logrotate per 5 minutes
+*/5 * * * *	root	[ -x /usr/sbin/logrotate ] && sudo /usr/sbin/logrotate /etc/logrotate.conf

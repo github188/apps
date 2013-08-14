@@ -1,9 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 ### BEGIN INIT INFO
 # Provides:          nfs-kernel-server
 # Required-Start:    $remote_fs nfs-common $portmap $time
 # Required-Stop:     $remote_fs nfs-common $portmap $time
+# Should-Start:      $named
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Kernel NFS server support
@@ -37,7 +38,7 @@ fi
 . /lib/lsb/init-functions
 . /usr/local/lib/jw-functions
 if [ `system_type` -ne $SYSTYPE_IPSAN_NAS ]; then
-	exit 0
+    exit 0
 fi
 
 do_modprobe() {
@@ -63,7 +64,13 @@ do_mount() {
 # See how we were called.
 case "$1" in
   start)
-	if [ -f /etc/exports ]
+	export_files="/etc/exports"
+	for file in /etc/exports.d/*.exports ; do
+		if [ -f "$file" ]; then
+			export_files="$export_files $file"
+		fi
+	done
+	if [ -f /etc/exports ] && grep -q '^[[:space:]]*[^#]*/' $export_files
 	then
 		do_modprobe nfsd
 
@@ -85,6 +92,16 @@ case "$1" in
 
 		log_daemon_msg "Starting $DESC"
 		log_progress_msg "nfsd"
+		
+		# See if rpcbind is running
+		/usr/sbin/rpcinfo -p >/dev/null 2>&1
+		RET=$?
+		if [ $RET != 0 ]; then
+		    echo
+		    log_warning_msg "Not starting: portmapper is not running"
+		    exit 0
+		fi
+
 		start-stop-daemon --start --oknodo --quiet \
 		    --nicelevel $RPCNFSDPRIORITY \
 		    --exec $PREFIX/sbin/rpc.nfsd -- $RPCNFSDCOUNT

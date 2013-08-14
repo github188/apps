@@ -10,9 +10,6 @@
 ### END INIT INFO
 
 . /usr/local/lib/jw-functions
-if [ `system_type` -ne $SYSTYPE_IPSAN_NAS ]; then
-    exit 0
-fi
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
