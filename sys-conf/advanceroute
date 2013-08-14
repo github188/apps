@@ -8,7 +8,7 @@ do_set()
 	fi
 	
 	ip_segment=`ip route list table main proto kernel | grep "$NIC" | cut -d ' ' -f 1 | head -n 1`
-	ip rule del table $NIC
+	ip rule del table $NIC 2>/dev/null
 	ip route add $ip_segment dev $NIC src $IP table $NIC
 	ip rule add from $IP table $NIC
 }

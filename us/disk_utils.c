@@ -264,13 +264,14 @@ void disk_set_fail(const char *dev)
 
 int disk_get_fail(const char *dev)
 {
-	char buf[strlen(DISK_FAIL_FLAG)+1] = { '\0' };
+	char buf[strlen(DISK_FAIL_FLAG)+1];
 	FILE *fp;
 
 	fp = fopen(dev, "r");
 	if (!fp)
 		return 0;
 
+	memset(buf, 0x0, sizeof(buf));
 	fread(buf, strlen(DISK_FAIL_FLAG), 1, fp);
 	fclose(fp);
 

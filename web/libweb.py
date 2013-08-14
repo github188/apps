@@ -62,13 +62,22 @@ static-file.exclude-extensions = ( ".php", ".pl", ".fcgi" )
 include_shell "/usr/share/lighttpd/use-ipv6.pl"
 
 dir-listing.encoding        = "utf-8"
-server.dir-listing          = "enable"
+server.dir-listing          = "disable"
 
 compress.cache-dir          = "/var/cache/lighttpd/compress/"
 compress.filetype           = ( "application/x-javascript", "text/css", "text/html", "text/plain" )
 
 include_shell "/usr/share/lighttpd/create-mime.assign.pl"
 include_shell "/usr/share/lighttpd/include-conf-enabled.pl"
+
+fastcgi.server = ( ".php" =>
+                     ( "localhost" =>
+                         (
+                             "socket" => "/tmp/php.socket",
+                             "bin-path" => "/usr/bin/php5-cgi"
+                         )
+                     )
+                 )
 """
 
 OEM_LIG_CONF_FMT = """$SERVER["socket"] == ":%s" {

@@ -11,6 +11,8 @@ import ConfigParser
 import subprocess
 import codecs
 
+from libcommon import fs_attr_read
+
 reload(sys)
 sys.setdefaultencoding('utf8')
 
@@ -21,6 +23,7 @@ CONF_File_PATH=NET_PATH+CONF_File
 INTERFACESS_File_PATH = NET_PATH+INTERFACESS_File
 BOND_CONF = NET_PATH+'bond_conf.sh'
 DNS_CONFIG_PATH = '/opt/etc/resolv.conf'
+MAJOR_NIC = 'eth1'
 
 BOND_LIST = ['bond0', 'bond1']
 
@@ -155,8 +158,11 @@ iface lo inet loopback\n
 				bond_str = bond_str + 'ifconfig ' + name  + ' ' + deviant(name, 'address')  + ' netmask ' + deviant(name, 'netmask')  + ' up\n'
 				bond_str = bond_str + 'echo 100 > /sys/class/net/' + name  + '/bonding/miimon\n'
 				iflist = deviant(name, 'iflist').split(',')
+				bond_mac = ''
 				if len(iflist) > 0:
 					for i in iflist:
+						if MAJOR_NIC == i:
+							bond_mac = fs_attr_read('/sys/class/net/' + i + '/address')
 						bond_str = bond_str + 'ifdown ' + i + ' > /dev/null\n'
 						bond_str = bond_str + 'ip rule del table ' + i + '\n'
 						bond_str = bond_str + 'echo +' + i + ' > /sys/class/net/' + name  + '/bonding/slaves\n'
@@ -166,6 +172,10 @@ iface lo inet loopback\n
 						bond_str = bond_str + '	ip ro del $route_str\n'
 						bond_str = bond_str + 'fi\n'
 						bond_str = bond_str + 'ifconfig ' + i + ' 0.0.0.0 > /dev/null\n'
+					
+					if bond_mac != '':
+						bond_str = bond_str + 'ifconfig ' + name + ' hw ether ' + bond_mac + '\n'
+
 				bond_str = bond_str + '\n'
 				if deviant(name, 'gateway') != '':
 						bond_str = bond_str + 'route add default gw '+deviant(name, 'gateway')+' dev ' + name  + '\n\n'
@@ -462,8 +472,11 @@ def BOND_Set(value):
 				SYSTEM_OUT('ifconfig '+name+' '+ip+' netmask '+mask+' up')
 				os.system('advanceroute ' + name)
 				os.system('echo 100 > /sys/class/net/'+ name+'/bonding/miimon')
+				bond_mac = ''
 				for x in  Nic_Array:
 					if len(x) > 0:
+						if MAJOR_NIC == x:
+							bond_mac = fs_attr_read('/sys/class/net/' + x + '/address')
 						config.set(x, 'bond',  name)
 						os.system('ifdown '+x+' > /dev/null')
 						os.system('ip rule del table ' +x)
@@ -472,6 +485,10 @@ def BOND_Set(value):
 						if len(route_str) > 9:
 							SYSTEM_OUT('ip ro del '+route_str)
 						os.system('ifconfig '+x+' 0.0.0.0 > /dev/null')
+
+				if bond_mac != '':
+					os.system('ifconfig ' + name + ' hw ether ' + bond_mac)
+
 				for n in __NET_LIST__():
 					if n not in Nic_Array:
 						if __deviant__(n, 'bond') == name:

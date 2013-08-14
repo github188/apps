@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, re, json, sys, fcntl
+import os, re, json, sys, fcntl, commands
 import xml
 from xml.dom import minidom
 
@@ -189,6 +189,15 @@ def xml_save(doc, path):
 		return False
 
 	return True
+
+SYSTYPE_BASIC_PLATFORM = 0
+SYSTYPE_IPSAN_NAS = 1
+def system_type():
+	arch = commands.getoutput('arch 2>/dev/null')
+	if arch != 'x86_64':
+		return SYSTYPE_BASIC_PLATFORM
+	else:
+		return SYSTYPE_IPSAN_NAS
 
 if __name__ == '__main__':
 	log = initlog()

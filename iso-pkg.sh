@@ -101,6 +101,7 @@ pkg_root()
 	mkdir usr/local/bin
 	mkdir usr/local/sbin
 	cp /usr/local/bin/sys-manager usr/local/bin
+	cp /usr/local/bin/libcommon.pyc usr/local/bin
 	cp /usr/local/bin/*adminmanage* usr/local/bin
 	cp /usr/local/bin/*network* usr/local/bin
 	cp /usr/local/bin/license usr/local/bin
