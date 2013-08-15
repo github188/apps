@@ -1,0 +1,1 @@
+ACTION=="add", KERNEL=="sd*|md*", RUN+="/bin/chmod -t %N >/tmp/a 2>/tmp/b"
