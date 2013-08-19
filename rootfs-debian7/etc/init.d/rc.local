@@ -4,7 +4,7 @@
 # Required-Start:    $all
 # Required-Stop:
 # Default-Start:     2 3 4 5
-# Default-Stop:
+# Default-Stop:      0 1 6
 # Short-Description: Run /etc/rc.local if it exist
 ### END INIT INFO
 
@@ -41,7 +41,6 @@ do_start() {
 
 	echo_nic_ip
 
-	[ -x /opt/run.sh ] && /opt/run.sh >/dev/null 2>&1 &
 	if [ -x /etc/rc.local ]; then
 	        [ "$VERBOSE" != no ] && log_begin_msg "Running local boot scripts (/etc/rc.local)"
 		/etc/rc.local
@@ -50,16 +49,19 @@ do_start() {
 		return $ES
 	fi
 }
-
+set -x
+PARTNER_SCRIPT=/opt/run.sh
 case "$1" in
     start)
 	do_start
+	[ -x $PARTNER_SCRIPT ] && $PARTNER_SCRIPT start
         ;;
     restart|reload|force-reload)
         echo "Error: argument '$1' not supported" >&2
         exit 3
         ;;
     stop)
+	[ -x $PARTNER_SCRIPT ] && $PARTNER_SCRIPT stop
         ;;
     *)
         echo "Usage: $0 start|stop" >&2

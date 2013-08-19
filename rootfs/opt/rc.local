@@ -1,6 +1,0 @@
-#!/bin/sh
-
-export PATH=/usr/local/bin:$PATH
-
-# *** JW-NAS-CONF-START ***
-# *** JW-NAS-CONF-END ***
