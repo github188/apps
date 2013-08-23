@@ -16,6 +16,15 @@ PATH=/usr/local/bin:/usr/local/sbin:/sbin:/usr/sbin:/bin:/usr/bin
 
 echo_nic_ip()
 {
+	standard_output=`cat /sys/class/tty/console/active 2>/dev/null`
+	if [ "$standard_output" = "tty0" ]; then
+		stty -F /dev/ttyS0 115200
+		console="/dev/ttyS0"
+	else
+		console="/dev/tty0"
+	fi	
+	echo "" | tee $console
+
 	eths=`ls /sys/class/net | grep "eth[0-9]"`
 	bonds=`ls /sys/class/net | grep "bond[0-9]"`
 	
@@ -27,7 +36,7 @@ echo_nic_ip()
 		if [ -z "$ipconf" ]; then
 			continue
 		fi
-		echo "$nic $ipconf" | tee /dev/tty0
+		echo "$nic $ipconf" | tee $console
 	done
 	sync
 }
