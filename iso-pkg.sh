@@ -52,14 +52,18 @@ make_default_conf()
 	rm -rf /mnt/*
 	
 	# defualt hostname
-	sysconfig --hosts JW-Linux
+	hostname="JW-Linux"
+	if [ `system_type` -eq $SYSTYPE_IPSAN_NAS ]; then
+		hostname="JW-IPSAN"
+	fi
+	sysconfig --hosts $hostname
 	web --default
 	usermanage --default
 	nasconf --default
 	adminmanage --default
 	
 	if [ `system_type` -eq $SYSTYPE_BASIC_PLATFORM ]; then
-    	echo -e "123456\n123456" | passwd root
+		echo -e "123456\n123456" | passwd root
 	fi
 
 	# clear log
