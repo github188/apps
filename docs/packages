@@ -16,6 +16,7 @@ aptitude install hdparm
 aptitude install sdparm
 aptitude install cryptsetup
 aptitude install dos2unix
+aptitude install ntpdate
 
 # for complie use
 aptitude install libatasmart-dev
