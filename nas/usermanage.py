@@ -16,6 +16,7 @@ class IArgs:
 		self.list_set = False
 		self.del_set = False
 		self.default_set = False
+		self.logon_set = False
 		self.check_set = False
 		self.share_set = False
 		self.right_set = False
@@ -43,8 +44,8 @@ class IArgs:
 			print '##操作模式为唯一性，请选择 [ '+','.join(OP_MODE)+' ] 中的一种!参见如下命令格式：\n'
 			AUsage()
 
-OP_MODE = ['--user', '--group', '--userpwd', '--default']
-long_opt = ['user', 'group','add', 'edit', 'list', 'del', 'default', 'share', 'check', 'right', 'userpwd', 'name=','pwd=', 'note=', 'member=', 'page=', 'coun=', 'search=', 'write=', 'read=', 'newpwd=']
+OP_MODE = ['--user', '--group', '--userpwd', '--default', '--logon']
+long_opt = ['user', 'group','add', 'edit', 'list', 'del', 'default', 'logon', 'share', 'check', 'right', 'userpwd', 'name=','pwd=', 'note=', 'member=', 'page=', 'coun=', 'search=', 'write=', 'read=', 'newpwd=']
 
 def main():
 	try:
@@ -67,6 +68,8 @@ def main():
 			iArgs.del_set = True
 		elif opt == '--share':
 			iArgs.share_set = True
+		elif opt == '--logon':
+			iArgs.logon_set = True
 		elif opt == '--check':
 			iArgs.check_set = True
 		elif opt == '--right':
@@ -128,6 +131,8 @@ def main():
 			AUsage()
 	elif iArgs.mode == '--userpwd':
 		User_Edit_Pwd(iArgs)
+	elif iArgs.mode == '--logon':
+		User_Logon(iArgs)
 	elif iArgs.mode == '--default':
 		DEFAULT()
 	else:

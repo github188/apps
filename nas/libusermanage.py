@@ -386,6 +386,7 @@ usermanage --user --add  --name <user_name> --pwd <password> [ --note <Remark> -
 	   --group --del --name <group_name>		##删除组
 	   --group --check --name <group_name>		##组重名验证
 	   --userpwd --name <user_name>	--pwd <Original_password> --newpwd <New_password>	##用户修改密码
+	   --logon --name <user_name> --pwd <password> 	##用户密码验证
 """
 	sys.exit(-1)
 
@@ -782,6 +783,19 @@ def User_Edit_Pwd(value):
 				Synchronous()
 				Export(True, '密码修改成功')
 	Export(False, '用户名或原密码不正确！')
+
+#~#### 用户密码验证
+def User_Logon(value):
+	if __Check_Samba_User_licit__(value.name_set):
+		pwd = value.pwd_set.strip()
+		if __System_User_Check__('pw'):
+			os.system('useradd pw -N -M -u 996 > /dev/null')
+			os.system('(echo '+pwd+'; echo '+pwd+') | smbpasswd -s -a pw > /dev/null')
+		else:
+			os.system('(echo '+pwd+'; echo '+pwd+') | smbpasswd -s pw > /dev/null')
+		if __Read_Samba_User_pwd__('pw', 3) == __Read_Samba_User_pwd__(value.name_set, 3):
+			Export(True, '用户密码验证成功！')
+	Export(False, '用户密码验证失败！')
 
 #~###-验证是否是用户内置帐号和组	__Check_System_Internal_User__(File, name):
 def __Check_System_Internal_User__(File, name):
