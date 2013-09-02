@@ -74,12 +74,12 @@ kmem:x:15:
 dialout:x:20:
 fax:x:21:
 voice:x:22:
-cdrom:x:24:user1
-floppy:x:25:user1
+cdrom:x:24:user
+floppy:x:25:user
 tape:x:26:
 sudo:x:27:
-audio:x:29:user1
-dip:x:30:user1
+audio:x:29:user
+dip:x:30:user
 www-data:x:33:
 backup:x:34:
 operator:x:37:
@@ -89,9 +89,9 @@ src:x:40:
 gnats:x:41:
 shadow:x:42:
 utmp:x:43:
-video:x:44:user1
+video:x:44:user
 sasl:x:45:
-plugdev:x:46:user1
+plugdev:x:46:user
 staff:x:50:
 games:x:60:
 users:x:100:
@@ -101,6 +101,9 @@ crontab:x:102:
 ssh:x:103:
 messagebus:x:104:
 sambashare:x:105:
+mlocate:x:998:
+Debian-exim:x:999:
+utempter:x:106:
 """
 
 gshadow_CONF = """root:*::
@@ -383,6 +386,7 @@ usermanage --user --add  --name <user_name> --pwd <password> [ --note <Remark> -
 	   --group --del --name <group_name>		##删除组
 	   --group --check --name <group_name>		##组重名验证
 	   --userpwd --name <user_name>	--pwd <Original_password> --newpwd <New_password>	##用户修改密码
+	   --logon --name <user_name> --pwd <password> 	##用户密码验证
 """
 	sys.exit(-1)
 
@@ -779,6 +783,19 @@ def User_Edit_Pwd(value):
 				Synchronous()
 				Export(True, '密码修改成功')
 	Export(False, '用户名或原密码不正确！')
+
+#~#### 用户密码验证
+def User_Logon(value):
+	if __Check_Samba_User_licit__(value.name_set):
+		pwd = value.pwd_set.strip()
+		if __System_User_Check__('pw'):
+			os.system('useradd pw -N -M -u 996 > /dev/null')
+			os.system('(echo '+pwd+'; echo '+pwd+') | smbpasswd -s -a pw > /dev/null')
+		else:
+			os.system('(echo '+pwd+'; echo '+pwd+') | smbpasswd -s pw > /dev/null')
+		if __Read_Samba_User_pwd__('pw', 3) == __Read_Samba_User_pwd__(value.name_set, 3):
+			Export(True, '用户密码验证成功！')
+	Export(False, '用户密码验证失败！')
 
 #~###-验证是否是用户内置帐号和组	__Check_System_Internal_User__(File, name):
 def __Check_System_Internal_User__(File, name):

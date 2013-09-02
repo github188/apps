@@ -21,8 +21,7 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 os.chdir(os.path.dirname(sys.argv[0]))
-Out_Log_PATH = "/var/www/log"
-Out_Log_FILE = Out_Log_PATH+"/log.txt"
+#~ Out_Log_PATH = "/var/www/log"
 LOG_FILE = "/opt/log/jw-log.db"
 LOG_PATH = os.path.dirname(LOG_FILE)
 if os.path.exists(LOG_PATH) == False:
@@ -58,6 +57,7 @@ class IArgs:
 		self.search_set = ''
 		self.timeStart_set = ''
 		self.timeEnd_set = ''
+		self.Out_Log_PATH = '/var/www/log'
 
 def AUsage(err=""):
 	if err != "":
@@ -67,11 +67,11 @@ def AUsage(err=""):
 	print """
 	--list [ < --id <log_id> > | < --module <module> --category <category> --event <event> --page <int> --coun <int> --user <user_name>  --search <content> --start <timeStart> --end <timeEnd> >]		##输出查询列表
 	--del		##导出日志
-	--out		##导出日志
+	--out [ --path <Log_PATH >]		##导出日志
 """
 	sys.exit(-1)
 
-long_opt = ['list', 'del', 'out',  'id=', 'user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=']
+long_opt = ['list', 'del', 'out',  'id=', 'user=', 'module=', 'category=', 'event=', 'page=', 'coun=', 'search=', 'start=', 'end=', 'path=']
 
 def CleanDir( Dir ):
 	if os.path.isdir( Dir ):
@@ -124,6 +124,8 @@ def main():
 			iArgs.timeStart_set = arg
 		elif opt == '--end':
 			iArgs.timeEnd_set = arg
+		elif opt == '--path':
+			iArgs.Out_Log_PATH = arg
 
 	if iArgs.list_set == True:
 		__List__(iArgs)
@@ -223,15 +225,15 @@ def __Out__(value):
 	cu = cx.cursor()
 	cu.execute('select * from jwlog') 
 	res = cu.fetchall()
-	if os.path.exists(Out_Log_PATH) == False:
+	if os.path.exists(value.Out_Log_PATH) == False:
 		try:
-			os.makedirs(Out_Log_PATH)
+			os.makedirs(value.Out_Log_PATH)
 		except:
 			pass
 	else:
-		CleanDir( Out_Log_PATH )
+		CleanDir(value.Out_Log_PATH )
 
-	logwrite = open(Out_Log_FILE, 'w')
+	logwrite = open(value.Out_Log_PATH+"/log.txt", 'w')
 	try:
 		for line in res:
 			out = 'id:[%s], date:[%s], user:[%s], module:[%s], category:[%s], event:[%s], content:[%s]\r\n'%(line[0],line[1],line[2],line[3],line[4],line[5],line[6])
@@ -242,8 +244,8 @@ def __Out__(value):
 	cu.close()
 	tardate = time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))
 	tarfile = 'log'+tardate+'.tgz'
-	SYSTEM_OUT('cd /var; tar cfz /var/www/log/var.tgz log')
-	SYSTEM_OUT('cd /var/www/log; tar cfz '+tarfile+' var.tgz log.txt')
+	SYSTEM_OUT('cd /var; tar cfz '+value.Out_Log_PATH+'/var.tgz log')
+	SYSTEM_OUT('cd '+value.Out_Log_PATH+'; tar cfz '+tarfile+' var.tgz log.txt')
 	Export(True, tarfile)
 
 if __name__ == '__main__':

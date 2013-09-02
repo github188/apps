@@ -740,6 +740,8 @@ def edit(value):
 				Export(True, '共享NFS "'+value.name_set+'" 的安全策略修改成功！')
 			except:
 				operating.close()
+		if SYSTEM_OUT('/etc/init.d/nfs-kernel-server status|grep not|wc -l') != '0':
+			SYSTEM_OUT('/etc/init.d/nfs-kernel-server start')
 		SYSTEM_OUT('exportfs -r')
 		xix = open (NFS_CONF_PATH, 'r')
 		print xix.read()

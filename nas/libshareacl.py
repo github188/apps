@@ -1,3 +1,4 @@
+﻿#!/usr/bin/env python
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -11,7 +12,7 @@ import codecs
 import ConfigParser
 import subprocess
 import shutil
-#~ import os.path
+import os.path
 
 from os.path import join, getsize
 reload(sys)
@@ -30,6 +31,23 @@ def deviant(name, Field):
 			result = ''
 	return result
 
+def Export(ret = True, msg = ''):
+	ret_msg = {'status':True, 'msg':''}
+	ret_msg['status'] = ret
+	ret_msg['msg'] = msg
+	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	sys.exit(-1)
+
+def SYSTEM_OUT(com):
+	s = ''
+	try:
+		p = subprocess.Popen(com, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+		s = p.stdout.readline()
+		s = s.replace('\n','')
+	except:
+		pass
+	return s
+
 def censor(name):
 	if name == '':
 		Export(False, '共享名称不能为空！')
@@ -41,24 +59,6 @@ def __Check__Name__(name):
 	if name != '':
 		if config.has_section(name):
 			s = True
-	return s
-
-def Export(ret = True, msg = ''):
-	ret_msg = {'status':True, 'msg':''}
-	ret_msg['status'] = ret
-	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
-	sys.exit(-1)
-
-#~### 执行系统命令并输出结果
-def SYSTEM_OUT(com):
-	s = ''
-	try:
-		p = subprocess.Popen(com, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-		s = p.stdout.readline()
-		s = s.replace('\n','')
-	except:
-		pass
 	return s
 
 #~ 通过路径返回一个共享名
