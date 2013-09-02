@@ -74,12 +74,12 @@ kmem:x:15:
 dialout:x:20:
 fax:x:21:
 voice:x:22:
-cdrom:x:24:user1
-floppy:x:25:user1
+cdrom:x:24:user
+floppy:x:25:user
 tape:x:26:
 sudo:x:27:
-audio:x:29:user1
-dip:x:30:user1
+audio:x:29:user
+dip:x:30:user
 www-data:x:33:
 backup:x:34:
 operator:x:37:
@@ -89,9 +89,9 @@ src:x:40:
 gnats:x:41:
 shadow:x:42:
 utmp:x:43:
-video:x:44:user1
+video:x:44:user
 sasl:x:45:
-plugdev:x:46:user1
+plugdev:x:46:user
 staff:x:50:
 games:x:60:
 users:x:100:
@@ -101,6 +101,9 @@ crontab:x:102:
 ssh:x:103:
 messagebus:x:104:
 sambashare:x:105:
+mlocate:x:998:
+Debian-exim:x:999:
+utempter:x:106:
 """
 
 gshadow_CONF = """root:*::
