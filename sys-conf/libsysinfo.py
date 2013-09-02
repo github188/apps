@@ -22,18 +22,41 @@ def __get_cpu_info(mod):
 		_item['value'] = ERROR_VALUE
 	return _item
 
+CPU_UTIL_DIR = '/tmp/.cpu_util'
 def __get_cpu_util(mod):
 	_item = {}
 	_item['item'] = mod
+
 	try:
 		_cpu_stat = re.findall('cpu (.*)', read_file('/proc/stat'))[0].split()
 		_user = int(_cpu_stat[0])
 		_nice = int(_cpu_stat[1])
 		_system = int(_cpu_stat[2])
 		_idle = int(_cpu_stat[3])
+		_iowait = int(_cpu_stat[4])
 		_irq = int(_cpu_stat[5])
-		_cpu_ratio = 100 * (_user + _nice + _system) / (_user + _nice + _system + _idle)
-		_item['value'] = '%d%%' % _cpu_ratio
+		_softirq = int(_cpu_stat[6])
+		_total = _user + _nice + _system + _idle + _iowait + _irq + _softirq
+		
+		_last_total = 0
+		_last_idle = 0
+		if not os.path.isdir(CPU_UTIL_DIR):
+			os.mkdir(CPU_UTIL_DIR)
+			fs_attr_write(CPU_UTIL_DIR + '/total', '0')
+			fs_attr_write(CPU_UTIL_DIR + '/idle', '0')
+		else:
+			val = fs_attr_read(CPU_UTIL_DIR + '/total')
+			if val.isdigit():
+				_last_total = int(val)
+			val = fs_attr_read(CPU_UTIL_DIR + '/idle')
+			if val.isdigit():
+				_last_idle = int(val)
+			
+			fs_attr_write(CPU_UTIL_DIR + '/total', str(_total))
+			fs_attr_write(CPU_UTIL_DIR + '/idle', str(_idle))
+		
+		_cpu_ratio = 100 - 100 * float(_idle - _last_idle) / (_total - _last_total)
+		_item['value'] = '%.1f%%' % _cpu_ratio
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item
