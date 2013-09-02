@@ -156,29 +156,35 @@ int capture_power(char *msg)
 {
 	int fail_cnt = 0;
 	struct pmu_info info;
+	int check_temp = 0;
+	static time_t last_time = 0;
 
 	if (!msg)
 		return VAL_ERROR;
 
 	msg[0] = '\0';
 	memset(&info, 0x0, sizeof(info));
-	if (!pmu_get_info(PMU_DEV1, &info)) {
+	if (time(NULL)-last_time > 180)
+		check_temp = 1;
+	if (!pmu_get_info(PMU_DEV1, &info, check_temp)) {
 		if (_power_check(1, &info, msg) != 0)
 			fail_cnt++;
 	} else
 		fail_cnt++;
 
 	memset(&info, 0x0, sizeof(info));
-	if (!pmu_get_info(PMU_DEV2, &info)) {
+	if (!pmu_get_info(PMU_DEV2, &info,check_temp)) {
 		if (_power_check(2, &info, msg) != 0)
 			fail_cnt++;
 	} else
 		fail_cnt++;
+	
+	if (check_temp)
+		last_time = time(NULL);
 
 	if (fail_cnt > 0) {
 		/* 配置双电源, 缺一个即为错误; 配置单电源, 缺一个仅警告 */
 		if (2 == gconf.power_cnt) {
-			strcat(msg, "缺少电源模块!");
 			return VAL_ERROR;
 		} else
 			return VAL_WARNING;

@@ -17,6 +17,6 @@ struct pmu_info {
 		is_temp_fault : 1;
 };
 
-int pmu_get_info(const char *dev, struct pmu_info *info1);
+int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp);
 
 #endif/*_PMU_INFO_H*/
