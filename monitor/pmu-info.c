@@ -100,7 +100,6 @@ int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 #define POWER_TEMP_HI	45
 #define POWER_TEMP_MI	38
 #define POWER_TEMP_LO	32
-#define POWER_CHECK_INTERVAL	60
 	char buf[64] = { '\0' };
 	if (!check_temp)
 		return 0;

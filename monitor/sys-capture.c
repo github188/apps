@@ -152,6 +152,7 @@ int _power_check(int module_no, struct pmu_info *info, char *msg)
 		return 0;
 }
 
+#define POWER_TEMP_CHECK_INTERVAL	180
 int capture_power(char *msg)
 {
 	int fail_cnt = 0;
@@ -164,7 +165,7 @@ int capture_power(char *msg)
 
 	msg[0] = '\0';
 	memset(&info, 0x0, sizeof(info));
-	if (time(NULL)-last_time > 180)
+	if (time(NULL)-last_time > POWER_TEMP_CHECK_INTERVAL)
 		check_temp = 1;
 	if (!pmu_get_info(PMU_DEV1, &info, check_temp)) {
 		if (_power_check(1, &info, msg) != 0)
