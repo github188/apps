@@ -187,8 +187,8 @@ def Setson(value):
 		else:
 			SYSTEM_OUT('chown -R admin.root %s' % path)
 			SYSTEM_OUT('chmod -R 750 %s' % path)
-			SYSTEM_OUT('setfacl -R -m g:users:r-x,other:r-x %s' % path)
-			SYSTEM_OUT('setfacl -d -R -m g:users:r-x,other:r-x %s' % path)
+			SYSTEM_OUT('setfacl -R -m g:root:r-x,other:r-x %s' % path)
+			SYSTEM_OUT('setfacl -d -R -m g:root:r-x,other:r-x %s' % path)
 			SYSTEM_OUT('nasconf --edit --access --name %s --write guest,@users' % value.name_set)
 			Export(True, '开启子目录权限控制成功！')
 		
@@ -218,7 +218,7 @@ def Edit(value):
 			
 			
 		if value.owner_set != '':
-			SYSTEM_OUT('chown %s%s %s' % (cover_com, value.owner_set, value.path_set))
+			SYSTEM_OUT('chown %s%s:root %s' % (cover_com, value.owner_set, value.path_set))
 			
 		commstr = 	'%s-m %s %s' % (cover_com, value.purv_set, value.path_set)
 		SYSTEM_OUT('setfacl %s' % commstr)
