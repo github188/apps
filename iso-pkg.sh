@@ -62,6 +62,9 @@ make_default_conf()
 	nasconf --default
 	adminmanage --default
 	
+	# 使用本地时间
+	hwclock -w --localtime
+	
 	if [ `system_type` -eq $SYSTYPE_BASIC_PLATFORM ]; then
 		echo -e "123456\n123456" | passwd root
 	fi
