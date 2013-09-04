@@ -104,7 +104,11 @@ int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 	if (!check_temp)
 		return 0;
 
-	if (info1->temp > POWER_TEMP_HI)
+	if (info1->temp > 100)
+	{
+		/* 数据异常，不处理 */
+		return 0;
+	} else if (info1->temp > POWER_TEMP_HI)
 	{
 		strcpy(buf, "fan_speed set 100");
 	} else if (info1->temp > POWER_TEMP_MI) {
