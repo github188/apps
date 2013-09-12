@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. /usr/lib/jw-functions
+
 # individual modules
 DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset pic_ctl/test/dled_test test-utils/tools-test-led'
 UDV_BIN='udv/*'
@@ -16,8 +18,15 @@ BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COM
 LIB_LIST=""
 
 # 升级包
-PKG_TAR="/tmp/jwipsan-`uname -m`-upgrade-$(date +%Y%m%d).tar.bz2"
-PKG_BIN="/tmp/jwipsan-`uname -m`-upgrade-$(date +%Y%m%d).bin"
+if [ `system_type` -eq $SYSTYPE_BASIC_PLATFORM ]; then
+	pkg_prefix="jw-basic-platform"
+elif [ `system_type` -eq $SYSTYPE_IPSAN_NAS ]; then
+	pkg_prefix="jw-ipsan-nas"
+else
+	pkg_prefix="jwlinx"
+fi
+PKG_TAR="/tmp/${pkg_prefix}-upgrade-$(date +%Y%m%d).tar.bz2"
+PKG_BIN="/tmp/${pkg_prefix}-upgrade-$(date +%Y%m%d).bin"
 
 sync_apps()
 {
