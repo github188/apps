@@ -9,6 +9,8 @@ static PedExceptionOption libudv_exception_handler(PedException *e)
 	openlog("libudv", LOG_NDELAY|LOG_PID, LOG_USER);
 	syslog(LOG_ERR, "exception: %s\n", e->message);
 	closelog();
+	if (e->options & PED_EXCEPTION_FIX)
+		return PED_EXCEPTION_FIX;
 	return PED_EXCEPTION_CANCEL;
 }
 
