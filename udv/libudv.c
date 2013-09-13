@@ -5,13 +5,15 @@
 
 static PedExceptionOption libudv_exception_handler(PedException *e)
 {
-	// TODO: 记录日志
+	PedExceptionOption ret = PED_EXCEPTION_CANCEL;
 	openlog("libudv", LOG_NDELAY|LOG_PID, LOG_USER);
 	syslog(LOG_ERR, "exception: %s\n", e->message);
+	if (e->options & PED_EXCEPTION_FIX) {
+		syslog(LOG_ERR, "exception: Try to fix\n");
+		ret = PED_EXCEPTION_FIX;
+	}
 	closelog();
-	if (e->options & PED_EXCEPTION_FIX)
-		return PED_EXCEPTION_FIX;
-	return PED_EXCEPTION_CANCEL;
+	return ret;
 }
 
 void libudv_custom_init()
