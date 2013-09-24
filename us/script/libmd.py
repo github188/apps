@@ -63,6 +63,8 @@ def get_mdattr_by_mddev(mddev):
 	mdattr.raid_level = fs_attr_read(sysdir + '/md/array_level')
 	
 	val = fs_attr_read(sysdir + '/md/raid_disks')
+	if val.find(' ') > 0:
+		val = val.split()[0]
 	if val.isdigit():
 		mdattr.disk_total = int(val)
 
@@ -97,10 +99,12 @@ def get_mdattr_by_mddev(mddev):
 		elif '6' == mdattr.raid_level:
 			max_degraded = 2
 		else:	# raid1
-			max_degraded = mdattr.disk_total
+			max_degraded = mdattr.disk_total - 1
 
 		val = fs_attr_read(sysdir + '/md/sync_action')
-		if 'recover' == val:
+		if 'reshape' == val:
+			mdattr.raid_state = 'reshape'
+		elif 'recover' == val:
 			mdattr.raid_state = 'rebuild'
 		elif 'resync' == val:
 			mdattr.raid_state = 'initial'
@@ -130,7 +134,7 @@ def get_mdattr_by_mddev(mddev):
 			if fail:
 				mdattr.raid_state = 'fail'
 		
-		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state:
+		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state or 'reshape' == mdattr.raid_state:
 			val = fs_attr_read(sysdir + '/md/sync_status')
 			if 'none' == val:
 				mdattr.sync_percent = '100.0'
@@ -410,7 +414,7 @@ def __md_create(raid_name, level, chunk, slots):
 	
 	dev_list = disks_slot2dev(slots.split())
 	if len(dev_list) == 0:
-		return False, "没有磁盘"
+		return False, "没有输入磁盘"
 	devs = " ".join(dev_list)
 
 	# enable all disk bad sect redirection
@@ -514,6 +518,70 @@ def __md_del(raid_name):
 	sysmon_event('vg', 'remove', mdattr.name, '卷组 %s 删除成功' % mdattr.name)
 	sysmon_event('disk', 'led_off', 'disks=%s' % list2str(disks_dev2slot(dev_list), ','), '')
 	return True,"删除卷组成功"
+
+def md_expand(raid_name, slots):
+	f_lock = lock_file(RAID_REBUILD_LOCK)
+	ret,msg = __md_expand(raid_name, slots)
+	unlock_file(f_lock)
+	if ret:
+		vg_log('Info', '磁盘 %s 加入卷组 %s 成功, 启动卷组扩容' % (slots, raid_name))
+	else:
+		vg_log('Error', '使用磁盘 %s 扩容卷组 %s 失败. %s' % (slots, raid_name, msg))
+	return ret,msg
+
+def __md_expand(raid_name, slots):
+	# 检查raid是否符合扩容条件
+	mdattr = get_mdattr_by_name(raid_name)
+	if None == mdattr:
+		return False, "卷组 %s 不存在" % raid_name
+	
+	if mdattr.raid_level not in ('5', '6'):
+		return False, "卷组 %s 级别为 %s , 不支持扩容" % (raid_name, mdattr.raid_level)
+	
+	if mdattr.raid_state != 'normal':
+		return False, "卷组 %s 当前不是正常状态, 不支持扩容" % raid_name
+	
+	# 检查磁盘是否仍为空闲盘
+	slot_list = slots.split()
+	disk_info_list = json.loads(commands.getoutput('disk --list'))['rows']
+	for disk_info in disk_info_list:
+		if disk_info['slot'] in slot_list:
+			if disk_info['state'] != 'Free' and disk_info['state'] != 'Invalid':
+				return False, "磁盘 %s 不是空闲盘或无效RAID盘" % disk_info['slot']
+
+			slot_list.remove(disk_info['slot'])
+	
+	if len(slot_list) > 0:
+		return False, "未找到磁盘 %s, 可能已掉线" % slot_list[0]
+	
+	dev_list = disks_slot2dev(slots.split())
+	if len(dev_list) == 0:
+		return False, "没有输入磁盘"
+	devs = " ".join(dev_list)
+
+	# 将磁盘加入卷组
+	for dev in dev_list:
+		if add_disk_to_md(mdattr.dev, dev) != 0:
+			return False, "磁盘 %s 加入卷组失败, 磁盘损坏或容量较小"
+	
+	# 去掉bitmap
+	val = fs_attr_read('/sys/block/%s/md/bitmap/location' % basename(mdattr.dev))
+	if val != 'none':
+		cmd = 'mdadm --grow %s --bitmap=none 2>&1' % mdattr.dev
+		ret,msg = commands.getstatusoutput(cmd)
+		if ret != 0:
+			for dev in dev_list:
+				remove_disk_from_md(mdattr.dev, dev)
+			return False, "移除卷组的bitmap失败 %s" % msg
+	
+	# 启动扩容
+	mdattr = get_mdattr_by_mddev(mdattr.dev)
+	cmd = 'mdadm --grow %s --raid-devices=%d 2>&1' % (mdattr.dev, mdattr.disk_cnt)
+	ret,msg = commands.getstatusoutput(cmd)
+	if ret != 0:
+		return False, msg
+
+	return True, '卷组 %s 启动扩容成功' % raid_name
 
 def disk_serial2slot(serial):
 	try:
@@ -775,7 +843,7 @@ def md_rebuild(mdattr, hotrep_disk_slot = ''):
 			# 空闲盘也要及时更新状态, 防止状态未更新又被用来重建其他raid
 			disk_update_by_slots(slot)
 		else:
-			msg =  '%s %s 加入卷组 %s 失败' % (disk['type'], slot, mdattr.name)
+			msg =  '%s %s 加入卷组 %s 失败, 磁盘损坏或容量较小' % (disk['type'], slot, mdattr.name)
 	
 	unlock_file(f_lock)
 	
@@ -939,7 +1007,7 @@ def faulty_disk_in_md(mddev, diskdev):
 def remove_disk_from_md(mddev, diskdev):
 	retry_cnt = 10
 	while retry_cnt > 0:
-		cmd = 'mdadm --remove %s %s 2>&1' % (mddev, basename(diskdev))
+		cmd = 'mdadm --remove %s %s >/dev/null 2>&1' % (mddev, basename(diskdev))
 		if os.system(cmd) == 0:
 			break
 		time.sleep(0.5)

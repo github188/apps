@@ -41,6 +41,26 @@ def do_create(argv):
 		return False,"未指定磁盘槽位"
 	return md_create(name, level, strip, disks.replace(',', ' '))
 
+def do_expand(argv):
+	opts = ["name=", "disks="]
+	try:
+		pair = getopt.getopt(argv, '', opts)
+	except:
+		return False,"参数非法"
+	
+	name = None
+	disks = None
+	for opt,arg in pair[0]:
+		if opt == "--name":
+			name = arg
+		elif opt == "--disks":
+			disks = arg
+	if name == None:
+		return False,"未指定名称"
+	if disks == None:
+		return False,"未指定磁盘槽位"
+	return md_expand(name, disks.replace(',', ' '))
+
 def raid_name_list():
 	list = []
 	try:
@@ -134,19 +154,26 @@ def vg_main(argv):
 					if mdattr.raid_level in level_list:
 						mdattr_output.append(mdattr.__dict__)
 
+		elif len(argv) == 3 :
+			if argv[2] == '--not-fail':
+				for mdattr in get_mdattr_all():
+					if mdattr.raid_state != 'fail':
+						mdattr_output.append(mdattr.__dict__)
+			elif argv[2] == '--expandable':
+				for mdattr in get_mdattr_all():
+					if mdattr.raid_state == 'normal' and mdattr.raid_level in ('5', '6'):
+						mdattr_output.append(mdattr.__dict__)
+
 		else:
-			not_fail = False
-			if len(argv) == 3 and argv[2] == '--not-fail':
-				not_fail = True
 			for mdattr in get_mdattr_all():
-				if not_fail and mdattr.raid_state == 'fail':
-					continue
 				mdattr_output.append(mdattr.__dict__)
 
 		json_dump({"total": len(mdattr_output), "rows": mdattr_output})
 		res = None
 	elif cmd == "--create":
 		res = do_create(argv[2:])
+	elif cmd == "--expand":
+		res = do_expand(argv[2:])
 	elif cmd == "--delete":
 		if len(argv) < 3:
 			usage()
@@ -175,8 +202,9 @@ def usage():
 	help_str="""
 Usage:
 	--create --name <vg_name> --level <0|1|5|6> --strip <64|128|256|512|1024> --disk <slot1>[,<slot2>,<slot3>...]
+	--expand --name <vg_name> --disk <slot1>[,<slot2>,<slot3>...]
 	--delete <vg_name>
-	--list [--vg <vg_name> | --level <level1>[,<level2>,<level3>... | --not-fail]
+	--list [--vg <vg_name> | --level <level1>[,<level2>,<level3>... | --not-fail | --expandable]
 	--generate-name <suffix>
 	--duplicate-check <vg_name>
 	--set-sync-prio low|middle|high
