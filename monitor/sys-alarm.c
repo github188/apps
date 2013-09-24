@@ -8,8 +8,8 @@
 #include "../pic_ctl/pic_ctl.h"
 
 #define SHELL "/bin/sh"
-#define BUZZER_ON_CMD "/usr/local/bin/set-buzzer.sh on"
-#define BUZZER_OFF_CMD "/usr/local/bin/set-buzzer.sh off"
+#define BUZZER_ON_CMD "sys-manager system --set buzzer --value inc"
+#define BUZZER_OFF_CMD "sys-manager system --set buzzer --value dec"
 
 struct event_record
 {
@@ -72,7 +72,6 @@ void sys_alarm_default(void *event)
 //----------------------------------------------------------------------------
 
 static LIST_INIT(buzzer_list);
-static int buzzer_cnt = 0;
 
 void sys_alarm_buzzer_on(void *event)
 {
@@ -90,13 +89,7 @@ void sys_alarm_buzzer_on(void *event)
 	strcpy(er->param, ev->param);
 	list_add(&buzzer_list, &er->list_entry);
 
-	// aways open buzzer
-	if (1 || buzzer_cnt == 0)
-		_safe_system(BUZZER_ON_CMD);
-	buzzer_cnt++;
-#ifdef _DEBUG
-	printf("buzzer_cnt: %d\n", buzzer_cnt);
-#endif
+	_safe_system(BUZZER_ON_CMD);
 }
 
 void sys_alarm_buzzer_off(void *event)
@@ -111,13 +104,7 @@ void sys_alarm_buzzer_off(void *event)
 			list_del(&er->list_entry);
 			free(er);
 
-			if (buzzer_cnt > 0)
-				buzzer_cnt--;
-			if (buzzer_cnt == 0)
-				_safe_system(BUZZER_OFF_CMD);
-#ifdef _DEBUG
-			printf("buzzer_cnt: %d\n", buzzer_cnt);
-#endif
+			_safe_system(BUZZER_OFF_CMD);
 		}
 	}
 }

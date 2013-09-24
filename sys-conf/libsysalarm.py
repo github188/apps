@@ -226,8 +226,8 @@ def alarm_power_set(switch):
 		vg_status = __get_stat_vg('vg')['value']
 		fan_status = __get_stat_fan('fan')['value']
 		buzzer_status = __get_stat_buzzer('buzzer')['value']
-		if buzzer_status != 'good' and 'good' == disk_status and 'good' == vg_status and 'good' == fan_status:
-			os.system('set-buzzer.sh off 2>/dev/null')
+		
+		os.system('sys-manager system --set buzzer --value dec >/dev/null 2>&1')
 	
 	os.system('/etc/init.d/jw-sysmon restart >/dev/null 2>&1')
 	return True
