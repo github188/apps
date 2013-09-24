@@ -64,7 +64,7 @@ def do_expand(argv):
 def raid_name_list():
 	list = []
 	try:
-		sts,output = commands.getstatusoutput('cat /sys/block/md*/array_name')
+		sts,output = commands.getstatusoutput('cat /sys/block/md*/md/array_name')
 		if sts == 0:
 			list = output.split()
 	except:
