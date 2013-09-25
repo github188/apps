@@ -56,6 +56,7 @@ messagebus:x:103:104::/var/run/dbus:/bin/false
 admin:x:997:100::/home/admin:/bin/sh
 guest:x:998:100::/home/guest:/bin/sh
 user:x:999:100::/home/user:/bin/sh
+Debian-exim:x:1000:999::/home/Debian-exim:/bin/sh
 """
 GROUP_CONF = """root:x:0:
 daemon:x:1:
