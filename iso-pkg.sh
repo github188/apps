@@ -117,6 +117,7 @@ pkg_root()
 	cp /usr/local/bin/libcommon.pyc usr/local/bin
 	cp /usr/local/bin/*adminmanage* usr/local/bin
 	cp /usr/local/bin/*network* usr/local/bin
+	cp /usr/local/bin/advanceroute usr/local/bin
 	cp /usr/local/bin/license usr/local/bin
 	cp /usr/local/sbin/apply_license usr/local/sbin
 	cp /usr/local/sbin/generate_uuid usr/local/sbin
