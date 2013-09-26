@@ -11,8 +11,8 @@ usage()
 local_install()
 {
 	local _pkg="$1"
-	update_cmd="pkg-install.sh"
 	update_dir="/tmp/.update_dir"
+	custom_update_cmd="$update_dir/pkg-install-custom.sh"
 
 	rm -rf $update_dir
 	mkdir $update_dir
@@ -24,32 +24,32 @@ local_install()
 		rm -rf $update_dir
 		return 2
 	fi
-	
-	if [ -f $update_cmd ]; then
-		$update_cmd
+
+	if [ "x`uname -m`" = "xx86_64" ]; then
+		platform="64-bit"
+	else
+		platform="32-bit"
+	fi
+
+	if ! file usr/local/bin/sys-manager | grep -q $platform; then
+		cd /tmp
+		rm -rf $update_dir
+		return 3
+	fi
+
+	if [ -x $custom_update_cmd ]; then
+		$custom_update_cmd
 		ret=$?
 		if [ $ret -ne 0 ]; then
+			cd /tmp
 			rm -rf $update_dir
 			return $ret
 		fi
 	else
-		if [ "x`uname -m`" = "xx86_64" ]; then
-			platform="64-bit"
-		else
-			platform="32-bit"
-		fi
-		
-		if ! file usr/local/bin/sys-manager | grep -q $platform; then
-			cd /tmp
-			rm -rf $update_dir
-			return 3
-		fi
-		
 		cp -fa ./* /
-		cd /tmp
-		rm -rf $update_dir
 	fi
 
+	cd /tmp
 	rm -rf $update_dir
 	rm -f /usr/local/bin/*.py
 

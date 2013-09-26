@@ -177,5 +177,11 @@ fi
 if [ $pack_web -eq 1 ]; then
 	sysnc_web "$target" $web_dir
 fi
+
+# 定制化升级
+if [ -x ./pkg-install-custom.sh ]; then
+	cp ./pkg-install-custom.sh $target/
+fi
+
 tar_pkg "$target"
 encode_pkg
