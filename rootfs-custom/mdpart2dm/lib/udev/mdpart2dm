@@ -1,0 +1,48 @@
+#!/bin/bash
+
+usage()
+{
+	echo "Usage:"
+	echo -e "\t--create <part-node>"
+	echo -e "\t--remove <part-node>"
+}
+
+MDPART2DM_DIR="/tmp/.mdpart2dm"
+if [ ! -d $MDPART2DM_DIR ]; then
+	mkdir $MDPART2DM_DIR
+fi
+
+if [ "$1" = "--create" ]; then
+	part_node="$2"
+	if [ -z "$part_node" ]; then
+		exit 1
+	fi
+
+	md_node=`echo $part_node | cut -d 'p' -f 1`
+	name=`cat /sys/block/$md_node/$part_node/volname`
+	start=`cat /sys/block/$md_node/$part_node/start`
+	size=`cat /sys/block/$md_node/$part_node/size`
+	if [ -z "$name" -o -z "$start" -o -z "$size" ]; then
+		exit 2
+	fi
+
+	echo $name >$MDPART2DM_DIR/$part_node
+	dmsetup create $name --table="0 $size linear /dev/$md_node $start"
+elif [ "$1" = "--remove" ]; then
+	part_node="$2"
+	if [ -z "$part_node" ]; then
+		exit 1
+	fi
+
+	name=`cat $MDPART2DM_DIR/$part_node`
+	if [ -z "$name" ]; then
+		exit 1
+	fi
+	rm -f $MDPART2DM_DIR/$part_node
+	dmsetup remove $name
+else
+	usage
+	exit 1
+fi
+
+exit 0

@@ -1,0 +1,1 @@
+KERNEL=="md*p*", ACTION=="add", SUBSYSTEM=="block", RUN+="mdpart2dm --create $kernel"
