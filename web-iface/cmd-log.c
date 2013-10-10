@@ -54,7 +54,7 @@ static char g_ins_user[32] = {0};
 static char g_ins_module[128] = {0};
 static char g_ins_category[128] = {0};
 static char g_ins_event[128] = {0};
-static char g_ins_content[128] = {0};
+static char g_ins_content[256] = {0};
 
 // --get
 static uint64_t g_get_begin = -1;
