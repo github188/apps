@@ -76,11 +76,17 @@ int capture_env_temp(char *msg)
 	return val;
 }
 
+int global_case_temp = -1;
 int capture_case_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp18_input");
-	if (val > 0)
+	if (val > 0) {
+		global_case_temp = (int)(val/1000);
 		return (int)(val/1000);
+	} else {
+		global_case_temp = -1;
+	}
+
 	return val;
 }
 

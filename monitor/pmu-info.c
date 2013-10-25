@@ -44,6 +44,7 @@ static float pmu_linear_to_real(uint16_t v)
 	return (float)data * pow(2, (float)exp);
 }
 
+extern int global_case_temp;
 int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 {
 	FILE *fp;
@@ -93,28 +94,40 @@ int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 #endif
 
 	/* 根据温度调整风扇转速
-	 * 设定三个高中低温度值，超过最高值时全速运转，超过中间值时提高10%，
-	 * 降低到最低值以下时降低10%
+	 * 设定三个高中低温度值，超过最高值时全速运转，超过中间值时（不含）提高10%，
+	 * 降低到最低值（含）以下时降低10%
 	 * 由调用者确定是否检测
+	 * 温度的中、低值参考机箱温度
 	 */
-#define POWER_TEMP_HI	45
-#define POWER_TEMP_MI	38
-#define POWER_TEMP_LO	32
+#define POWER_TEMP_HI	50
+#define POWER_TEMP_MI	46
+#define POWER_TEMP_LO	40
+#define POWER_FAN_LO	8000
 	char buf[64] = { '\0' };
+	int power_temp_mi = POWER_TEMP_MI;
+	int power_temp_lo = POWER_TEMP_LO;
+
 	if (!check_temp)
 		return 0;
+
+	if (global_case_temp > POWER_TEMP_MI) {
+		power_temp_mi = global_case_temp;
+		power_temp_lo = global_case_temp - 2;
+	}
 
 	if (info1->temp > 100)
 	{
 		/* 数据异常，不处理 */
 		return 0;
-	} else if (info1->temp > POWER_TEMP_HI)
-	{
+	} else if (info1->temp > POWER_TEMP_HI) {
 		strcpy(buf, "fan_speed set 100");
-	} else if (info1->temp > POWER_TEMP_MI) {
-		strcpy(buf, "fan_speed inc 10");
-	} else if (info1->temp < POWER_TEMP_LO) {
+	} else if (info1->temp < POWER_TEMP_LO && info1->fan_speed < POWER_FAN_LO) {
+		/* POWER_TEMP_LO以下，转速较低，不处理；转速较高，判断是否降速 */
+		return 0;
+	} else if (info1->temp <= power_temp_lo) {
 		strcpy(buf, "fan_speed dec 10");
+	} else if (info1->temp > power_temp_mi) {
+		strcpy(buf, "fan_speed inc 10");
 	} else {
 		return 0;
 	}
