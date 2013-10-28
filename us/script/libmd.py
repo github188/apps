@@ -90,9 +90,19 @@ def get_mdattr_by_mddev(mddev):
 		mdattr.remain = 0
 
 	if mdattr.raid_level in ('1', '5', '6'):
-		val = list_dir(sysdir + '/slaves')
-		mdattr.disk_list = [disk_dev2slot('/dev/'+x) for x in val]
-		mdattr.disk_cnt = len(mdattr.disk_list)
+		slaves = list_dir(sysdir + '/slaves')
+		# raid扩容时掉盘，无法从raid中移除该盘，如果该槽位又有盘上线，
+		# 就不再为原来的设备节点保留槽位号了，所以转换槽位号时，
+		# 无法移除的盘就找不到槽位号了，用'null'代替
+		# mdattr.disk_list = [disk_dev2slot('/dev/'+x) for x in val]
+		# mdattr.disk_cnt = len(mdattr.disk_list)
+		mdattr.disk_cnt = len(slaves)
+		for slave in slaves:
+			slot = disk_dev2slot('/dev/'+slave)
+			if slot is None:
+				continue	
+			mdattr.disk_list.append(slot)
+		
 		
 		if '5' == mdattr.raid_level:
 			max_degraded = 1
@@ -360,6 +370,9 @@ def tmpfs_remove_md(mddev):
 	unlock_file(f_lock)
 
 def tmpfs_remove_disk_from_md(mddev, slot):
+	if slot is None:
+		return
+
 	f_lock = lock_file('%s/%s_tmpfs' % (RAID_DIR_LOCK, basename(mddev)))
 	# raid md dir
 	_file = '%s/%s/disk-list/%s' % (RAID_DIR_BYMD, basename(mddev), slot)
@@ -499,6 +512,10 @@ def __md_del(raid_name):
 		if mdattr.raid_state != 'fail' and md_is_used(raid_name):
 			return False, '卷组存在未删除的用户数据卷'
 		md_reserve_space_offline(mddev)
+		
+		if mdattr.raid_state == 'fail':
+			# 中兴力维需求：分区映射为dm设备，raid失效后，不能正常删除dm设备
+			os.system('dmsetup deps -o blkdevname | grep "(%s)" | awk -F \':\' \'{ system("dmsetup remove " $1) }\'' % md)
 	except:
 		md_uuid = ''
 	dev_list = disks_slot2dev(mdattr.disk_list)
