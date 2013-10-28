@@ -26,6 +26,14 @@ if [ "$1" = "--create" ]; then
 		exit 2
 	fi
 
+	custom_cmd=`which gdisk`
+	if [ -x "$custom_cmd" ]; then
+		uuid=`cat /sys/block/$md_node/$part_node/uuid`
+		if [ "$uuid" = "00000000000000000000000000000000" ]; then
+			$custom_cmd -o /dev/$part_node >/dev/null 2>&1
+		fi
+	fi
+
 	echo $name >$MDPART2DM_DIR/$part_node
 	dmsetup create $name --table="0 $size linear /dev/$md_node $start"
 elif [ "$1" = "--remove" ]; then
