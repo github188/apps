@@ -18,6 +18,7 @@ do_driver_start()
 {
 	modprobe nct6106
 	modprobe smbus-power
+	modprobe sio_watchdog
 }
 
 do_driver_stop()
@@ -27,7 +28,7 @@ do_driver_stop()
 
 driver_usage()
 {
-	echo "Usage: $(basename "$0")  {start|stop|restart}"
+	echo "Usage: $(basename "$0")  {start|stop}"
 }
 
 
@@ -37,10 +38,6 @@ case "${1:-}" in
 	;;
 	stop)
 		do_driver_stop
-	;;
-	restart)
-		do_driver_stop
-		do_driver_start
 	;;
 	*)
 		driver_usage
