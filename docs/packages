@@ -18,6 +18,8 @@ aptitude install cryptsetup
 aptitude install dos2unix
 aptitude install ntpdate
 aptitude install kpartx
+aptitude install smartmontools
+aptitude install ethtool
 
 # for complie use
 aptitude install libatasmart-dev

@@ -125,7 +125,7 @@ encode_pkg()
 	echo "encoding pkg ..."
 	openssl enc -des3 -salt -pass file:/sys/kernel/vendor -in $PKG_TAR -out $PKG_BIN
 	[ $? -eq 0 ] && echo "Package $PKG_BIN create ok"
-	#rm -f $PKG_TAR
+	rm -f $PKG_TAR
 }
 
 usage()
