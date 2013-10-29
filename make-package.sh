@@ -3,7 +3,7 @@
 . /usr/lib/jw-functions
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset pic_ctl/test/dled_test test-utils/tools-test-led'
+DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset pic_ctl/test/dled_test test-utils/tools-test-led watchdog/watchdog'
 UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
@@ -125,7 +125,7 @@ encode_pkg()
 	echo "encoding pkg ..."
 	openssl enc -des3 -salt -pass file:/sys/kernel/vendor -in $PKG_TAR -out $PKG_BIN
 	[ $? -eq 0 ] && echo "Package $PKG_BIN create ok"
-	rm -f $PKG_TAR
+	#rm -f $PKG_TAR
 }
 
 usage()

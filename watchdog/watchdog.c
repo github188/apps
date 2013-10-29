@@ -2,7 +2,7 @@
 #include "watchdog_lib.h"
 
 #define WATCHDOG_FEED_INTERVAL	10
-int main()
+int main(void)
 {
 	while (1) {
 		if (watchdog_enable() < 0) {

@@ -17,6 +17,7 @@ all:
 	$(MAKE) -C us
 	$(MAKE) -C sys-conf
 	$(MAKE) -C test-utils
+	$(MAKE) -C watchdog
 
 clean:
 	$(MAKE) -C udv clean
@@ -29,4 +30,5 @@ clean:
 	$(MAKE) -C pic_ctl clean
 	$(MAKE) -C sys-conf clean
 	$(MAKE) -C test-utils clean
+	$(MAKE) -C watchdog clean
 	find . -name '*.pyc' -delete
