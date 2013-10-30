@@ -164,28 +164,29 @@ def handle_disk_hotrep(diskinfo):
 	if mdattr == None or mdattr.raid_level not in ('5', '6'):
 		return 0
 	
-	rebuilder_cn = inc_md_rebuilder_cnt(basename(mdattr.dev))
+	md = basename(mdattr.dev)
+	rebuilder_cn = inc_md_rebuilder_cnt(md)
 	if rebuilder_cn > 1:
-		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		dec_md_rebuilder_cnt(md)
 		return 1
 	
-	sysdir = '/sys/block/%s/md/dev-%s/state' % (basename(mdattr.dev), basename(diskinfo.dev))
+	sysdir = '/sys/block/%s/md/dev-%s/state' % (md, basename(diskinfo.dev))
 	rd_state = fs_attr_read(sysdir)
 	if rd_state.find('want_replacement') >= 0:
-		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		dec_md_rebuilder_cnt(md)
 		return 0
 
 	mdattr = get_mdattr_by_disk(diskinfo.dev)
-	if mdattr.raid_state != 'normal':
-		dec_md_rebuilder_cnt(basename(mdattr.dev))
+	if None == mdattr or mdattr.raid_state != 'normal':
+		dec_md_rebuilder_cnt(md)
 		return 1
 	
 	if md_rebuild(mdattr, diskinfo.slot):
 		fs_attr_write(sysdir, 'want_replacement')
-		dec_md_rebuilder_cnt(basename(mdattr.dev))
+		dec_md_rebuilder_cnt(md)
 		return 0
 	
-	dec_md_rebuilder_cnt(basename(mdattr.dev))
+	dec_md_rebuilder_cnt(md)
 	return 1
 	
 # args [0]  - self

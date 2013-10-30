@@ -68,11 +68,6 @@ def handle_md_syncdone(mddev):
 		return None
 	
 	if sync_action == 'reshape':
-		if mdattr.raid_state != 'fail':
-			msg += ' 完成'
-			# 添加bitmap
-			cmd = 'mdadm --grow %s --bitmap=internal 2>&1' % mdattr.dev
-			os.system(cmd)
 		if mdattr.raid_state != 'normal':
 			update_mdattr = 0
 			dev_sdx_paths = commands.getoutput('ls -d /sys/block/%s/md/dev-sd* 2>/dev/null' % md)
@@ -84,6 +79,12 @@ def handle_md_syncdone(mddev):
 				 	remove_disk_from_md(mdattr.dev, '/dev/' + dev_sdx_path[i+1:])
 			if update_mdattr:
 				mdattr = get_mdattr_by_mddev(mddev)
+
+		if mdattr.raid_state != 'fail':
+			msg += ' 完成'
+			# 添加bitmap
+			cmd = 'mdadm --grow %s --bitmap=internal 2>&1' % mdattr.dev
+			os.system(cmd)
 		else:
 			log_level = 'Error'
 			msg += ' 失败'
