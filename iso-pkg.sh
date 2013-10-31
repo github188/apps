@@ -75,6 +75,9 @@ make_default_conf()
 	rm -f /opt/log/jw-log.db
 	
 	rm -f /opt/etc/fingerprint
+	
+	# 清除命令历史记录
+	echo >/root/.bash_history
 }
 
 pkg_root_preprocess()
