@@ -86,11 +86,21 @@ int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 		info1->is_fan_fault = 0;
 
 #ifdef _DEBUG
-	printf("module%c, sts: 0x%x, vin: %.1f(0x%x), vout: %.1f(0x%x), "
-			"fan_speed: %.1f(0x%x), temp_amb: %.1f(0x%x), temp_hs: %.1f(0x%x)\n",
-			dev[strlen(dev)-1], sts, info1->vin, vin, info1->vout, vout,
-			info1->fan_speed, fan, info1->temp, temp_amb,
-			pmu_linear_to_real(temp_hs), temp_hs);
+	time_t now_t = time(NULL);
+	struct tm now_tm;
+	localtime_r(&now_t, &now_tm);
+	printf("%d%02d%02d %02d%02d%02d, raw, "
+			"power-module%c, sts: 0x%x, vin: 0x%x, vout: 0x%x, "
+			"fan_speed: 0x%x, temp_amb: 0x%x, temp_hs: 0x%x\n",
+			now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
+			now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
+			dev[strlen(dev)-1], sts, vin, vout, fan, temp_amb, temp_hs);
+	printf("%d%02d%02d %02d%02d%02d, "
+			"power-module%c, 0x%x, %.1f, %.1f, %.1f, %.1f, %.1f\n",
+			now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
+			now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
+			dev[strlen(dev)-1], sts, info1->vin, info1->vout,
+			info1->fan_speed, info1->temp, pmu_linear_to_real(temp_hs));
 #endif
 
 	/* 根据温度调整风扇转速
