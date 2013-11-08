@@ -62,7 +62,7 @@ make_default_conf()
 	nasconf --default
 	adminmanage --default
 	
-	# 使用本地时间
+	# 浣跨敤鏈湴鏃堕棿
 	hwclock -w --localtime
 	
 	if [ `system_type` -eq $SYSTYPE_BASIC_PLATFORM ]; then
@@ -76,8 +76,11 @@ make_default_conf()
 	
 	rm -f /opt/etc/fingerprint
 	
-	# 清除命令历史记录
+	# 娓呴櫎鍛戒护鍘嗗彶璁板綍
 	echo >/root/.bash_history
+	
+	# 鍒犻櫎git閰嶇疆
+	rm -f /root/.gitconfig
 }
 
 pkg_root_preprocess()
