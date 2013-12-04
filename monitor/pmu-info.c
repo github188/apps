@@ -45,6 +45,9 @@ static float pmu_linear_to_real(uint16_t v)
 }
 
 extern int global_case_temp;
+extern int global_print_pmu_info;
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
 int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 {
 	FILE *fp;
@@ -85,23 +88,23 @@ int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 	if (info1->fan_speed > 4000.0)
 		info1->is_fan_fault = 0;
 
-#ifdef _DEBUG
-	time_t now_t = time(NULL);
-	struct tm now_tm;
-	localtime_r(&now_t, &now_tm);
-	printf("%d%02d%02d %02d%02d%02d, raw, "
-			"power-module%c, sts: 0x%x, vin: 0x%x, vout: 0x%x, "
-			"fan_speed: 0x%x, temp_amb: 0x%x, temp_hs: 0x%x\n",
-			now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
-			now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
-			dev[strlen(dev)-1], sts, vin, vout, fan, temp_amb, temp_hs);
-	printf("%d%02d%02d %02d%02d%02d, "
-			"power-module%c, 0x%x, %.1f, %.1f, %.1f, %.1f, %.1f\n",
-			now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
-			now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
-			dev[strlen(dev)-1], sts, info1->vin, info1->vout,
-			info1->fan_speed, info1->temp, pmu_linear_to_real(temp_hs));
-#endif
+	if (unlikely(global_print_pmu_info)) {
+		time_t now_t = time(NULL);
+		struct tm now_tm;
+		localtime_r(&now_t, &now_tm);
+		printf("%d%02d%02d %02d%02d%02d, raw, "
+				"power-module%c, sts: 0x%x, vin: 0x%x, vout: 0x%x, "
+				"fan_speed: 0x%x, temp_amb: 0x%x, temp_hs: 0x%x\n",
+				now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
+				now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
+				dev[strlen(dev)-1], sts, vin, vout, fan, temp_amb, temp_hs);
+		printf("%d%02d%02d %02d%02d%02d, "
+				"power-module%c, 0x%x, %.1f, %.1f, %.1f, %.1f, %.1f\n",
+				now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
+				now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
+				dev[strlen(dev)-1], sts, info1->vin, info1->vout,
+				info1->fan_speed, info1->temp, pmu_linear_to_real(temp_hs));
+	}
 
 	/* 根据温度调整风扇转速
 	 * 设定三个高中低温度值，超过最高值时全速运转，超过中间值时（不含）提高10%，
