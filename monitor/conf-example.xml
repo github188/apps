@@ -41,7 +41,7 @@
 
 	<self_run>
 		<item name="cpu-temp" interval="5" preset="true" min_threshold="5" max_threshold="85"/>
-		<item name="env-temp" interval="5" preset="true" min_threshold="5" max_threshold="55"/>
+		<!--item name="env-temp" interval="5" preset="true" min_threshold="5" max_threshold="55"/-->
 		<item name="case-temp" interval="5" preset="true" min_threshold="5" max_threshold="55"/>
 		<item name="case-fan1" interval="5" preset="true" min_threshold="500" max_threshold="6000"/>
 		<item name="case-fan2" interval="5" preset="true" min_threshold="500" max_threshold="6000"/>
