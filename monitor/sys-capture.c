@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#include "sys-mon.h"
 #include "sys-interval-check.h"
 #include "pmu-info.h"
 
@@ -63,6 +64,9 @@ int __read_int_value(const char *file)
 int capture_cpu_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp17_input");
+	if (unlikely(global_print_on)) {
+		printf("%d, ", val>0 ? val/1000 : -1);
+	}
 	if (val>0)
 		return (int)(val/1000);
 	return val;
@@ -80,6 +84,9 @@ int global_case_temp = -1;
 int capture_case_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp18_input");
+	if (unlikely(global_print_on)) {
+		printf("%d, ", val>0 ? val/1000 : -1);
+	}
 	if (val > 0) {
 		global_case_temp = (int)(val/1000);
 		return (int)(val/1000);
@@ -92,17 +99,29 @@ int capture_case_temp(char *msg)
 
 int capture_case_fan1(char *msg)
 {
-	return __read_int_value(NCT_ROOT"/fan1_input");
+	int val = __read_int_value(NCT_ROOT"/fan1_input");
+	if (unlikely(global_print_on)) {
+		printf("%d, ", val);
+	}
+	return val;
 }
 
 int capture_case_fan2(char *msg)
 {
-	return __read_int_value(NCT_ROOT"/fan3_input");
+	int val = __read_int_value(NCT_ROOT"/fan3_input");
+	if (unlikely(global_print_on)) {
+		printf("%d, ", val);
+	}
+	return val;
 }
 
 int capture_cpu_fan(char *msg)
 {
-	return __read_int_value(NCT_ROOT"/fan2_input");
+	int val = __read_int_value(NCT_ROOT"/fan2_input");
+	if (unlikely(global_print_on)) {
+		printf("%d, ", val);
+	}
+	return val;
 }
 
 int _power_check(int module_no, struct pmu_info *info, char *msg)

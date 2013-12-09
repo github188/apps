@@ -108,16 +108,16 @@ int mon_serv_create()
 
 void usage()
 {
-	fprintf(stderr, "sys-mon [--print-pmu-info]\n");
+	fprintf(stderr, "sys-mon [--print-on]\n");
 	exit(-1);
 }
 
-int global_print_pmu_info = 0;
+int global_print_on = 0;
 int main(int argc, char *argv[])
 {
 	if (argc > 1) {
-		if (strcmp(argv[1], "--print-pmu-info") == 0)
-			global_print_pmu_info = 1;
+		if (strcmp(argv[1], "--print-on") == 0)
+			global_print_on = 1;
 		else
 			usage();
 	}

@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <math.h>
 #include <strings.h>
-#include <time.h>
 #include <string.h>
+#include "sys-mon.h"
 #include "pmu-info.h"
 
 #define VOUT_EXP	(-9)
@@ -45,9 +45,6 @@ static float pmu_linear_to_real(uint16_t v)
 }
 
 extern int global_case_temp;
-extern int global_print_pmu_info;
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
 int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 {
 	FILE *fp;
@@ -88,22 +85,18 @@ int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 	if (info1->fan_speed > 4000.0)
 		info1->is_fan_fault = 0;
 
-	if (unlikely(global_print_pmu_info)) {
-		time_t now_t = time(NULL);
-		struct tm now_tm;
-		localtime_r(&now_t, &now_tm);
-		printf("%d%02d%02d %02d%02d%02d, raw, "
-				"power-module%c, sts: 0x%x, vin: 0x%x, vout: 0x%x, "
-				"fan_speed: 0x%x, temp_amb: 0x%x, temp_hs: 0x%x\n",
-				now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
-				now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
-				dev[strlen(dev)-1], sts, vin, vout, fan, temp_amb, temp_hs);
-		printf("%d%02d%02d %02d%02d%02d, "
-				"power-module%c, 0x%x, %.1f, %.1f, %.1f, %.1f, %.1f\n",
-				now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
-				now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
-				dev[strlen(dev)-1], sts, info1->vin, info1->vout,
-				info1->fan_speed, info1->temp, pmu_linear_to_real(temp_hs));
+#ifdef _DEBUG
+	printf( "power-module%c, sts: 0x%x, vin: %.1f(0x%x), vout: %.1f(0x%x), "
+			"fan_speed: %.1f(0x%x), temp_amb: %.1f(0x%x), temp_hs: %.1f(0x%x)\n",
+			dev[strlen(dev)-1], sts, info1->vin, vin, info1->vout, vout,
+			info1->fan_speed, fan, info1->temp, temp_amb,
+			pmu_linear_to_real(temp_hs), temp_hs);
+#endif
+
+	if (unlikely(global_print_on)) {
+		printf("0x%x, %.1f, %.1f, %.1f, %.1f, %.1f, ",
+				sts, info1->vin, info1->vout, info1->fan_speed,
+				info1->temp, pmu_linear_to_real(temp_hs));
 	}
 
 	/* 根据温度调整风扇转速
