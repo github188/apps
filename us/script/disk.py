@@ -34,6 +34,7 @@ def listORdetailProc(arg = diskArgs()):
 	if arg.list_mode:
 		cmd_us = "us_cmd disk --list %s" % arg.slot_id
 	elif arg.detail_mode:
+		os.system("us_cmd disk update %s smart" % arg.slot_id)
 		cmd_us = "us_cmd disk --get-detail %s" % arg.slot_id
 	sts,output = commands.getstatusoutput(cmd_us)
 	if (sts == 0):

@@ -8,8 +8,8 @@
 #include "../pic_ctl/pic_ctl.h"
 
 #define SHELL "/bin/sh"
-#define BUZZER_ON_CMD "sys-manager system --set buzzer --value inc"
-#define BUZZER_OFF_CMD "sys-manager system --set buzzer --value dec"
+#define BUZZER_ON_CMD "sys-manager system --set buzzer --value inc >/dev/null"
+#define BUZZER_OFF_CMD "sys-manager system --set buzzer --value dec >/dev/null"
 
 struct event_record
 {

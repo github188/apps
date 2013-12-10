@@ -82,9 +82,9 @@ def __get_temp(mod):
 		temp = __read_value(NCT_ROOT, 'temp18_input')
 		if temp != '':
 			_item['value'] = _item['value'] + ' [ 机箱温度: %d ]' % (int(temp)/1000)
-		temp = __read_value(NCT_ROOT, 'temp20_input')
-		if temp != '':
-			_item['value'] = _item['value'] + ' [ 环境温度: %d ]' % (int(temp)/1000)
+		#temp = __read_value(NCT_ROOT, 'temp20_input')
+		#if temp != '':
+		#	_item['value'] = _item['value'] + ' [ 环境温度: %d ]' % (int(temp)/1000)
 	except:
 		_item['value'] = ERROR_VALUE
 	return _item

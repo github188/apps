@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <time.h>
 #include "../common/log.h"
 #include "sys-mon.h"
 #include "sys-global.h"
@@ -143,12 +144,34 @@ void _check_interval()
 	printf("enter _check_interval()\n");
 #endif
 
+	if (unlikely(global_print_on)) {
+		static int print_header = 1;
+		time_t now_t = time(NULL);
+		struct tm now_tm;
+		localtime_r(&now_t, &now_tm);
+		if (print_header) {
+			printf("时间, cpu温度, 机箱温度, 机箱风扇1, 机箱风扇2, "
+				"电源1状态, 电源1输入电压, 电源1输出电压, 电源1风扇转速, "
+				"电源1环温, 电源1热点温度, "
+				"电源2状态, 电源2输入电压, 电源2输出电压, 电源2风扇转速, "
+				"电源2环温, 电源2热点温度\n");
+			print_header = 0;
+		}
+		printf("%d%02d%02d-%02d%02d%02d, ",
+				now_tm.tm_year+1900, now_tm.tm_mon+1, now_tm.tm_mday,
+				now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec);
+	}
+
 	list_iterate_safe(n, nt, &_g_capture) {
 		cap = list_struct_base(n, sys_capture_t, list);
 #ifdef _DEBUG
 		printf("capture: %s", cap->name);
 #endif
 		_capture(cap);
+	}
+
+	if (unlikely(global_print_on)) {
+		printf("\n");
 	}
 }
 

@@ -106,8 +106,22 @@ int mon_serv_create()
 	return sockfd;
 }
 
-int main()
+void usage()
 {
+	fprintf(stderr, "sys-mon [--print-on]\n");
+	exit(-1);
+}
+
+int global_print_on = 0;
+int main(int argc, char *argv[])
+{
+	if (argc > 1) {
+		if (strcmp(argv[1], "--print-on") == 0)
+			global_print_on = 1;
+		else
+			usage();
+	}
+
 	// set signal
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, mon_release);
