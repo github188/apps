@@ -97,4 +97,6 @@ pmu_ctl/test/pmu_test
 sys-conf/pic-version
 test-utils/tools-test-led
 pic_ctl/utils/disk_reset
-watchdog/watchdog
+Watchdog/watchdog
+uart_fix/uart_fix
+
