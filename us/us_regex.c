@@ -16,7 +16,7 @@
  * 其中target14:0:0即为槽位号
  */
 #define REG_MV_DISK_SLOT	\
-	"pci0000:00/0000:00:1c.[0-9]+/.*/target([0-9]+):.*/block/sd[a-z]$"
+	"pci0000:00/0000:00:1c.[0-9]+.*/ata([0-9]+)/.*/block/sd[a-z]$"
 /*
  * 处理电子盘的匹配，可以适用下面的设备信息
 
@@ -24,7 +24,7 @@
    S: disk/by-id/ata-SanDisk_SSD_P4_8GB_110338302186
    S: disk/by-id/scsi-SATA_SanDisk_SSD_P4_110338302186
 */
-#define REG_DOM_DISK	"host[01]/target[01]:0:0/.*/block/sd[a-z]+$"
+#define REG_DOM_DISK	"host0/target0:0:0/.*/block/sd[a-z]+$"
 
 
 regex_t udev_sd_regex;
