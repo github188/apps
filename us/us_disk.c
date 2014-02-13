@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+﻿#define _GNU_SOURCE
 #include <libudev.h>
 #include <stdint.h>
 #include <regex.h>
@@ -18,24 +18,6 @@
 #include "safe_popen.h"
 
 #define DISK_HOTREP_CONF "/opt/etc/disk/hotreplace.xml"
-#define MAP_SLOT_CONF	 "/opt/etc/disk/ata2slot.xml"
-
-struct us_disk {
-	int		ref;
-	int		slot;
-	int             is_exist :1;
-	int             is_raid : 1;
-	int		is_special : 1;	// 专用热备盘
-	int		is_global : 1;	// 全局热备盘
-	int             is_removed : 1;	// 供磁盘掉线后查询磁盘槽位号信息使用
-	char            dev_node[64];
-	struct disk_info di;
-	struct disk_md_info ri;
-};
-
-struct us_disk_pool {
-	struct us_disk disks[MAX_SLOT];
-};
 
 extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
@@ -43,7 +25,7 @@ extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
 extern regex_t mv_disk_slot_regex;
 
-static struct us_disk_pool us_dp;
+struct us_disk_pool us_dp;
 
 static int is_md(const char *path)
 {
@@ -73,15 +55,9 @@ static int is_dom_disk(const char *path)
 	return ret == 0;
 }
 
-static int is_test(const char *path)
-{
-	int ret;
-	ret = regexec(&mv_disk_slot_regex, path, 0, NULL, 0);
-	return ret == 0;
-}
 static int is_sata_sas(const char *path)
 {
-	return is_sd(path) && is_test(path);
+	return is_sd(path) && !is_usb(path) && !is_dom_disk(path);
 }
 
 static int to_int(const char *buf, int *v)
@@ -147,57 +123,19 @@ static int map_slot(int slot)
 
 	/**
 	 * Marvell sata槽位号映射：(AHCI启动方式)
-	 * 4    8    12    16
-	 * 5    9    13    17
 	 * 6    10   14    18
-	 * 7    11   15    19
+	 * 7    11   15    18
+	 * 8    12   16    20
+	 * 9    13   17    21
 	 */
-	/*
+
 	if (slot < _SLOT_START || slot >= _SLOT_END)
 		return -1;
 	slot -= _SLOT_START;
 	return (slot+1);
-	*/
-
-	xmlDocPtr doc;
-	xmlNodePtr node;
-	int ata_low, ata_up, slot_low;
-	xmlChar *xmlatalow, *xmlataup, *xmlslot;
-
-	if ((doc=xmlReadFile(MAP_SLOT_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL)
-		return -1;
-	if ((node=xmlDocGetRootElement(doc)) == NULL)
-		goto error_quit;
-
-	node = node->xmlChildrenNode;
-
-	while (node) {
-		if ( (!xmlStrcmp(node->name, (const xmlChar *)"map")) &&
-		 ((xmlatalow=xmlGetProp(node, (const xmlChar *)"ata_lower")) != NULL) &&
-		 ((xmlataup=xmlGetProp(node, (const xmlChar *)"ata_upper")) != NULL) &&
-		 ((xmlslot=xmlGetProp(node, (const xmlChar *)"slot_lower")) != NULL)
-		) {
-			ata_low = atoi((const char *)xmlatalow);
-			ata_up = atoi((const char *)xmlataup);
-			slot_low = atoi((const char *)xmlslot);
-
-			if (slot >= ata_low && slot <= ata_up) 
-				return (slot-ata_low+slot_low);
-			
-			xmlFree(xmlatalow);
-			xmlFree(xmlataup);
-			xmlFree(xmlslot);
-		}
-		node = node->next;
-	}
-
-error_quit:
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
-	return -1;
 }
 
-static int find_slot(struct us_disk_pool *dp, const char *dev, const char *path)
+static int find_slot(const char *path)
 {
 	int slot;
 	int cook_slot = -1;
@@ -234,7 +172,7 @@ static int find_free_slot(struct us_disk_pool *dp)
 }
 #endif
 
-static int find_disk(struct us_disk_pool *dp, const char *dev)
+struct us_disk *find_disk(struct us_disk_pool *dp, const char *dev)
 {
 	int i;
 
@@ -244,10 +182,10 @@ static int find_disk(struct us_disk_pool *dp, const char *dev)
 		if (!disk->is_exist)
 			continue;
 		if (strcmp(disk->dev_node, dev) == 0)
-			return i;
+			return &dp->disks[i];
 	}
 
-	return -1;
+	return NULL;
 }
 
 const char* __disk_get_hotrep(const char *serial, char *raid_name)
@@ -304,6 +242,8 @@ static void do_update_disk(struct us_disk *disk, int op)
 	if (!disk->is_exist)
 		return;
 
+	disk->is_fail = disk_get_fail(dev);
+
 	if (op & DISK_UPDATE_SMART) {
 		if (disk_get_info(dev, &disk->di) < 0) {
 			clog(LOG_ERR,
@@ -336,15 +276,13 @@ static void do_update_disk(struct us_disk *disk, int op)
 
 static void update_disk(struct us_disk_pool *dp, const char *dev)
 {
-	int slot = find_disk(dp, dev);
-	struct us_disk *disk;
-
-	if (slot < 0) {
+	struct us_disk *disk = find_disk(dp, dev);
+	if (!disk) {
 		clog(LOG_WARNING, "%s: update %s doesn't exist\n",
 		     __func__, dev);
 		return;
 	}
-	disk = &dp->disks[slot];
+
 	do_update_disk(disk, DISK_UPDATE_RAID);
 }
 
@@ -378,12 +316,12 @@ ssize_t disk_name2slot(const char *name, char *slot)
 
 static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 {
-	int slot;
+	int slot, i;
 	struct us_disk *disk;
 	size_t n;
 	extern int disk_get_size(const char *dev, uint64_t *sz);
 
-	slot = find_slot(dp, dev, path);
+	slot = find_slot(path);
 	if (slot < 0) {
 		clog(LOG_ERR, "%s: can't find slot for %s\n", __func__, path);
 		return;
@@ -397,21 +335,30 @@ static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 	disk->slot = slot;
 	disk->is_exist = 1;
 	disk->ref = 1;
+
+	for (i=0; i<ARRAY_SIZE(dp->disks); ++i) {
+		if (!strcmp(disk->dev_node, dp->disks[i].dev_node) &&
+			i != disk->slot) {
+			dp->disks[i].dev_node[0] = '\0';
+			break;
+		}
+	}
+
 	do_update_disk(disk, DISK_UPDATE_RAID | DISK_UPDATE_SMART | DISK_UPDATE_STATE);
 }
 
 static void remove_disk(struct us_disk_pool *dp, const char *dev)
 {
-	int slot = find_disk(dp, dev);
-	struct us_disk *disk;
-
-	if (slot < 0) {
+	int slot;
+	struct us_disk *disk = find_disk(dp, dev);
+	if (!disk) {
 		clog(LOG_WARNING, "%s: remove %s doesn't exist\n",
 		     __func__, dev);
 		return;
 	}
-	disk = &dp->disks[slot];
+
 	disk->ref--;
+	slot = disk->slot;
 	memset(disk, 0, sizeof(*disk));
 	// 供磁盘掉线查询磁盘槽位号使用
 	disk->is_removed = 1;
@@ -419,42 +366,41 @@ static void remove_disk(struct us_disk_pool *dp, const char *dev)
 	strcpy(disk->dev_node, dev);
 }
 
-static int us_disk_on_event(const char *path, const char *dev, int act)
+static int us_disk_on_event(const char *path, const char *dev, const char *act)
 {
-	/*
-	 * 目前仅处理md的add,remove事件，通过md_create()和md_del()函数处理
+	char cmd[128];
+	printf("%s: %s\n", dev, act);
 	if (is_md(path)) {
-		char cmd[128];
-
-		sprintf(cmd, "%s %s %s",
-		        MD_SCRIPT, dev,
-		        act == MA_ADD ? "add" :
-		        act == MA_REMOVE ? "remove" : "change");
-		safe_system(cmd);
+		if (strcmp(act, MA_CHANGE) != 0 && strcmp(act, MA_ADD) != 0) {
+			sprintf(cmd, "%s %s %s", MD_SCRIPT, dev, act);
+			safe_system(cmd);
+		}
 
 		return MA_HANDLED;
 	}
-	*/
 
 	if (!is_sata_sas(path))
 		return MA_NONE;
 
-	// 调用磁盘上下线处理脚本
-	char cmd[128];
-	sprintf(cmd, "%s %s %s",
-		DISK_SCRIPT, dev,
-		act == MA_ADD ? "add" :
-		act == MA_REMOVE ? "remove" : "change");
-	safe_system(cmd);
-
-	printf("%s: %d\n", dev, act);
-
-	if (act == MA_ADD)
+	if (strcmp(act, MA_ADD) == 0) {
 		add_disk(&us_dp, dev, path);
-	else if (act == MA_REMOVE)
+
+		sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, MA_ADD);
+		safe_system(cmd);
+	} else if (strcmp(act, MA_REMOVE) == 0) {
+		sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, MA_REMOVE);
+		safe_system(cmd);
+
 		remove_disk(&us_dp, dev);
-	else if (act == MA_CHANGE)
+	} else if (strcmp(act, MA_CHANGE) != 0) {
+		if (strcmp(act, MA_RDKICKED) == 0) {
+			sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, act);
+			safe_system(cmd);
+			disk_set_fail(dev);
+		}
+
 		update_disk(&us_dp, dev);
+	}
 
 	return MA_HANDLED;
 }
@@ -513,6 +459,8 @@ const char *disk_get_state(const struct us_disk *disk)
 		return "Special";
 	else if (disk->is_global)
 		return "Global";
+	else if (disk->is_fail)
+		return "Fail";
 	return disk_get_md_state(&(disk->ri));
 }
 
@@ -526,6 +474,11 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 
 	if (!disk->is_exist)
 		return;
+
+	/* get disk bad sector info first, make sure smart state correct */
+	disk_get_warning_info(disk->dev_node, 
+						(struct disk_warning_info *)&disk->di.wi);
+
 	pos += snprintf(pos, end - pos, "{ ");
 	pos += snprintf(pos, end - pos, "\"slot\":\"0:%u\"", disk->slot);
 	pos += snprintf(pos, end - pos, "%s\"model\":\"%s\"", delim,
@@ -540,7 +493,7 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 	const char *p_state = disk_get_state(disk);
 	pos += snprintf(pos, end - pos, "%s\"state\":\"%s\"", delim, p_state);
 
-	const char *raid_name = disk_get_raid_name(disk->dev_node);
+	const char *raid_name = disk_get_raid_name(disk);
 	char p_raid[128];
 	if (!strcmp(p_state, "Special") && !strcmp(raid_name, "N/A")) {
 		__disk_get_hotrep(disk->di.serial, p_raid);
@@ -551,7 +504,10 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 
 	pos += snprintf(pos, end - pos, "%s\"raid_name\":\"%s\"", delim, p_raid);
 
-	pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
+	if (!strcmp(p_state, "Fail"))
+		pos += snprintf(pos, end - pos, "%s\"SMART\":\"Bad\"", delim);
+	else
+		pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
 	                disk_get_smart_status(di));
 
 	if (is_detail) {
@@ -567,6 +523,10 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
 		                delim);
+		pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
+		               	delim, di->wi.mapped_cnt);
+		pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"%u\"",
+		               	delim, di->wi.max_map_cnt);
 		pos += snprintf(pos, end - pos, "%s\"smart_attr\":{", delim);
 		pos += snprintf(pos, end - pos, "\"read_err\":%llu",
 		                (unsigned long long)di->si.read_error);
@@ -663,18 +623,22 @@ void us_disk_slot_to_name(int fd, char *slots)
 void us_disk_name_to_slot(int fd, char *name)
 {
 	int i;
+	int slot = -1;
+	char s[16];
 
 	for (i = 0; i < ARRAY_SIZE(us_dp.disks); i++) {
 		struct us_disk *disk = &us_dp.disks[i];
 
-		if ((disk->is_removed || disk->is_exist) &&
-		    strcmp(disk->dev_node, name) == 0) {
-			char s[16];
-
-			sprintf(s, "0:%u\n", disk->slot);
-			write(fd, s, strlen(s));
-			break;
+		if (strcmp(disk->dev_node, name) == 0) {
+			slot = disk->slot;
+			if (disk->is_exist)
+				break;
 		}
+	}
+	
+	if (slot != -1) {
+		sprintf(s, "0:%u\n", slot);
+		write(fd, s, strlen(s));
 	}
 }
 
