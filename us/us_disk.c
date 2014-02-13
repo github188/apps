@@ -1,5 +1,6 @@
-﻿#define _GNU_SOURCE
+#define _GNU_SOURCE
 #include <libudev.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <regex.h>
 #include <errno.h>
@@ -16,16 +17,19 @@
 #include "us_mon.h"
 #include "script.h"
 #include "safe_popen.h"
+#include "list.h"
 
 #define DISK_HOTREP_CONF "/opt/etc/disk/hotreplace.xml"
+#define MAP_SLOT_CONF	 "/opt/etc/disk/ata2slot.xml"
 
 extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
 extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
-extern regex_t mv_disk_slot_regex;
+extern regex_t ds_disk_slot_regex;
 
 struct us_disk_pool us_dp;
+static slot_map_t slot_map;
 
 static int is_md(const char *path)
 {
@@ -55,9 +59,16 @@ static int is_dom_disk(const char *path)
 	return ret == 0;
 }
 
+static int is_ds_disk(const char *path)
+{
+	int ret;
+	ret = regexec(&ds_disk_slot_regex, path, 0, NULL, 0);
+	return ret == 0;
+}
+
 static int is_sata_sas(const char *path)
 {
-	return is_sd(path) && !is_usb(path) && !is_dom_disk(path);
+	return is_sd(path) && is_ds_disk(path);
 }
 
 static int to_int(const char *buf, int *v)
@@ -84,7 +95,7 @@ static int find_slot_from_path(const char *path)
 	regmatch_t pmatch[2];
 	char slot_digit[4];
 
-	if (regexec(&mv_disk_slot_regex, path,
+	if (regexec(&ds_disk_slot_regex, path,
 	            ARRAY_SIZE(pmatch), pmatch, 0) == 0) {
 		int l = pmatch[1].rm_eo - pmatch[1].rm_so;
 		int slot;
@@ -104,13 +115,67 @@ static int find_slot_from_path(const char *path)
 	}
 }
 
+#if 0
 #ifdef IDE_SLOT_MAP
 #define _SLOT_START 4
 #else
 #define _SLOT_START 6
 #endif
 #define _SLOT_END (_SLOT_START+16)
+#endif
+static void slot_map_release(void)
+{
+	 struct list *ptr;
+	 slot_map_t *slot_map_p;
+	 list_for_each(ptr, &slot_map.slot_map_list) {
+	 		slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
+	 		free(slot_map_p);		
+	 }
+}
+static int slot_map_init(void)
+{
+	xmlDocPtr doc;
+	xmlNodePtr node;
+	xmlChar *xmlatalower, *xmlataupper, *xmlslotlower;
+	slot_map_t *slot_map_p;
 
+	init_list(&slot_map.slot_map_list);
+
+	if ((doc=xmlReadFile(MAP_SLOT_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL)
+		return -1;
+	if ((node=xmlDocGetRootElement(doc)) == NULL)
+		goto error_quit;
+
+	node = node->xmlChildrenNode;
+
+	while (node) {
+		if ( (!xmlStrcmp(node->name, (const xmlChar *)"map")) &&
+		 ((xmlatalower=xmlGetProp(node, (const xmlChar *)"ata_lower")) != NULL) &&
+		 ((xmlataupper=xmlGetProp(node, (const xmlChar *)"ata_upper")) != NULL) &&
+		 ((xmlslotlower=xmlGetProp(node, (const xmlChar *)"slot_lower")) != NULL)
+		) {
+			slot_map_p = (slot_map_t *)malloc(sizeof(slot_map_t));
+			if (!slot_map_p) {
+				clog(LOG_ERR, "%s : init slot map list error.\n", __func__);
+				goto error_quit;
+			}
+			list_add(&slot_map_p->slot_map_list, &slot_map.slot_map_list);
+			slot_map_p->ata_lower = atoi((const char *)xmlatalower);
+			slot_map_p->ata_upper = atoi((const char *)xmlataupper);
+			slot_map_p->slot_lower = atoi((const char *)xmlslotlower);
+			
+			xmlFree(xmlatalower);
+			xmlFree(xmlataupper);
+			xmlFree(xmlslotlower);
+		}
+		node = node->next;
+	}
+error_quit:
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+	return -1;
+
+}
 static int map_slot(int slot)
 {
 	/**
@@ -129,10 +194,27 @@ static int map_slot(int slot)
 	 * 9    13   17    21
 	 */
 
-	if (slot < _SLOT_START || slot >= _SLOT_END)
-		return -1;
-	slot -= _SLOT_START;
-	return (slot+1);
+	/**
+	 * if (slot < _SLOT_START || slot >= _SLOT_END)
+	 *	return -1;
+	 *	slot -= _SLOT_START;
+	 *	return (slot+1);
+	 */
+	 struct list *ptr;
+	 slot_map_t *slot_map_p;
+	 int ret = -1;
+	 list_for_each(ptr, &slot_map.slot_map_list) {
+	 		slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
+	 		if (slot_map_p->ata_lower <= slot && 
+	 			slot_map_p->ata_upper >= slot) {
+	 			ret = slot-slot_map_p->ata_lower+
+	 				slot_map_p->slot_lower;
+	 			return ret;
+	 		}
+
+	 }
+	 return ret;
+
 }
 
 static int find_slot(const char *path)
@@ -411,6 +493,7 @@ static struct mon_node us_disk_mon_node = {
 
 int us_disk_init(void)
 {
+	slot_map_init();
 	memset(&us_dp, 0, sizeof(us_dp));
 	us_mon_register_notifier(&us_disk_mon_node);
 
@@ -419,6 +502,7 @@ int us_disk_init(void)
 
 void us_disk_release(void)
 {
+	slot_map_release();
 	us_mon_unregister_notifier(&us_disk_mon_node);
 	memset(&us_dp, 0, sizeof(us_dp));
 }
