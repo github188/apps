@@ -20,7 +20,7 @@
 #include "list.h"
 
 #define DISK_HOTREP_CONF "/opt/etc/disk/hotreplace.xml"
-#define MAP_SLOT_CONF	 "/opt/etc/disk/ata2slot.xml"
+#define MAP_SLOT_CONF	 "/opt/jw-conf/disk/ata2slot.xml"
 
 extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
@@ -123,15 +123,18 @@ static int find_slot_from_path(const char *path)
 #endif
 #define _SLOT_END (_SLOT_START+16)
 #endif
+
 static void slot_map_release(void)
 {
 	 struct list *ptr;
+	 struct list *n;
 	 slot_map_t *slot_map_p;
-	 list_for_each(ptr, &slot_map.slot_map_list) {
+	 list_for_each_safe(ptr, n, &slot_map.slot_map_list) {
 	 		slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
 	 		free(slot_map_p);		
 	 }
 }
+
 static int slot_map_init(void)
 {
 	xmlDocPtr doc;
