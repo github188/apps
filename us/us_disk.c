@@ -29,13 +29,15 @@ extern regex_t udev_dom_disk_regex;
 extern regex_t ds_disk_slot_regex;
 
 struct us_disk_pool us_dp;
-static slot_map_t slot_map;
+struct list _g_slot_map_list;
 
+static int find_slot(const char *path);
 static int is_md(const char *path)
 {
 	return regexec(&udev_md_regex, path, 0, NULL, 0) == 0;
 }
 
+#if 0
 static int is_usb(const char *path)
 {
 	int ret;
@@ -58,6 +60,7 @@ static int is_dom_disk(const char *path)
 	printf("ret = %d\n", ret);
 	return ret == 0;
 }
+#endif
 
 static int is_ds_disk(const char *path)
 {
@@ -68,7 +71,7 @@ static int is_ds_disk(const char *path)
 
 static int is_sata_sas(const char *path)
 {
-	return is_sd(path) && is_ds_disk(path);
+	return is_ds_disk(path) && (find_slot(path) > 0);
 }
 
 static int to_int(const char *buf, int *v)
@@ -129,8 +132,10 @@ static void slot_map_release(void)
 	 struct list *ptr;
 	 struct list *n;
 	 slot_map_t *slot_map_p;
-	 list_for_each_safe(ptr, n, &slot_map.slot_map_list) {
+
+	 list_for_each_safe(ptr, n, &_g_slot_map_list) {
 	 		slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
+	 		list_del(&slot_map_p->slot_map_list);
 	 		free(slot_map_p);		
 	 }
 }
@@ -141,13 +146,19 @@ static int slot_map_init(void)
 	xmlNodePtr node;
 	xmlChar *xmlatalower, *xmlataupper, *xmlslotlower;
 	slot_map_t *slot_map_p;
+	int ret = -1;
 
-	init_list(&slot_map.slot_map_list);
+	init_list(&_g_slot_map_list);
 
-	if ((doc=xmlReadFile(MAP_SLOT_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL)
+	if ((doc=xmlReadFile(MAP_SLOT_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL) {
+		clog(LOG_ERR, "%s: read config file %s error, file not found.\n", __func__, MAP_SLOT_CONF);
 		return -1;
-	if ((node=xmlDocGetRootElement(doc)) == NULL)
+	}
+	
+	if ((node=xmlDocGetRootElement(doc)) == NULL) { 	
+		clog(LOG_ERR, "%s: get xml root node error.\n", __func__);
 		goto error_quit;
+	}
 
 	node = node->xmlChildrenNode;
 
@@ -159,10 +170,10 @@ static int slot_map_init(void)
 		) {
 			slot_map_p = (slot_map_t *)malloc(sizeof(slot_map_t));
 			if (!slot_map_p) {
-				clog(LOG_ERR, "%s : init slot map list error.\n", __func__);
+				clog(LOG_ERR, "%s : init slot map list error, no more memory.\n", __func__);
 				goto error_quit;
 			}
-			list_add(&slot_map_p->slot_map_list, &slot_map.slot_map_list);
+			list_add(&slot_map_p->slot_map_list, &_g_slot_map_list);
 			slot_map_p->ata_lower = atoi((const char *)xmlatalower);
 			slot_map_p->ata_upper = atoi((const char *)xmlataupper);
 			slot_map_p->slot_lower = atoi((const char *)xmlslotlower);
@@ -173,12 +184,14 @@ static int slot_map_init(void)
 		}
 		node = node->next;
 	}
+	ret = 0;
+
 error_quit:
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
-	return -1;
-
+	return ret;
 }
+
 static int map_slot(int slot)
 {
 	/**
@@ -206,18 +219,16 @@ static int map_slot(int slot)
 	 struct list *ptr;
 	 slot_map_t *slot_map_p;
 	 int ret = -1;
-	 list_for_each(ptr, &slot_map.slot_map_list) {
-	 		slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
-	 		if (slot_map_p->ata_lower <= slot && 
-	 			slot_map_p->ata_upper >= slot) {
-	 			ret = slot-slot_map_p->ata_lower+
-	 				slot_map_p->slot_lower;
-	 			return ret;
-	 		}
 
+	 list_for_each(ptr, &_g_slot_map_list) {
+	 	slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
+	 	if (slot_map_p->ata_lower <= slot && 
+	 			slot_map_p->ata_upper >= slot) {
+	 		ret = slot-slot_map_p->ata_lower+slot_map_p->slot_lower;
+	 		return ret;
+	 	}
 	 }
 	 return ret;
-
 }
 
 static int find_slot(const char *path)
@@ -496,7 +507,8 @@ static struct mon_node us_disk_mon_node = {
 
 int us_disk_init(void)
 {
-	slot_map_init();
+	if (slot_map_init() < 0) 
+		return -1;
 	memset(&us_dp, 0, sizeof(us_dp));
 	us_mon_register_notifier(&us_disk_mon_node);
 
