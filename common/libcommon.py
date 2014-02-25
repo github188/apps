@@ -156,9 +156,9 @@ class CommOutput:
 		self.total = len(self.rows)
 
 		if os.environ.get('SUDO_USER') == 'www-data' or os.environ.get('LOGNAME') == 'www-data':
-			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False)
+			print json.dumps(self.__dict__, encoding="utf-8", ensure_ascii=False, sort_keys = False)
 		else:
-			print json.dumps(self.__dict__, encoding="UTF-8", ensure_ascii=False, sort_keys = False, indent=4)
+			print json.dumps(self.__dict__, encoding="utf-8", ensure_ascii=False, sort_keys = False, indent=4)
 		
 		sys.exit(0)
 
@@ -166,7 +166,7 @@ def comm_exit(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	if ret:
 		sys.exit(0)
 	sys.exit(-1)
