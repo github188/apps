@@ -64,6 +64,9 @@ int __read_int_value(const char *file)
 int capture_cpu_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp17_input");
+	if (0 == val) {
+		val = __read_int_value(NCT_ROOT"/temp19_input");
+	}
 	if (unlikely(global_print_on)) {
 		printf("%d, ", val>0 ? val/1000 : -1);
 	}

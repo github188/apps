@@ -77,6 +77,8 @@ def __get_temp(mod):
 	try:
 		_item['value'] = ''
 		temp = __read_value(NCT_ROOT, 'temp17_input')
+		if '0' == temp:
+			temp = __read_value(NCT_ROOT, 'temp19_input')
 		if temp != '':
 			_item['value'] = _item['value'] + '[ CPU温度: %d ]' % (int(temp)/1000)
 		temp = __read_value(NCT_ROOT, 'temp18_input')
@@ -176,7 +178,7 @@ def __mcu_ver():
 			return msg
 	except:
 		pass
-	return 'pic'
+	return 'nopic'
 
 # 内核版本
 def __kernel_ver():
