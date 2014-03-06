@@ -22,11 +22,19 @@
 #define DISK_HOTREP_CONF "/opt/etc/disk/hotreplace.xml"
 #define MAP_SLOT_CONF	 "/opt/jw-conf/disk/ata2slot.xml"
 
+typedef struct slot_map slot_map_t;
+struct slot_map {
+	struct list slot_map_list;
+	int ata_lower;
+	int ata_upper;
+	int slot_lower;
+};
+
 extern regex_t udev_sd_regex;
 extern regex_t udev_usb_regex;
 extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
-extern regex_t ds_disk_slot_regex;
+extern regex_t ata_disk_slot_regex;
 
 struct us_disk_pool us_dp;
 struct list _g_slot_map_list;
@@ -62,16 +70,16 @@ static int is_dom_disk(const char *path)
 }
 #endif
 
-static int is_ds_disk(const char *path)
+static int is_sata_sas(const char *path)
 {
 	int ret;
-	ret = regexec(&ds_disk_slot_regex, path, 0, NULL, 0);
+	ret = regexec(&ata_disk_slot_regex, path, 0, NULL, 0);
 	return ret == 0;
 }
 
-static int is_sata_sas(const char *path)
+static int is_ds_disk(const char *path)
 {
-	return is_ds_disk(path) && (find_slot(path) > 0);
+	return is_sata_sas(path) && (find_slot(path) > 0);
 }
 
 static int to_int(const char *buf, int *v)
@@ -98,7 +106,7 @@ static int find_slot_from_path(const char *path)
 	regmatch_t pmatch[2];
 	char slot_digit[4];
 
-	if (regexec(&ds_disk_slot_regex, path,
+	if (regexec(&ata_disk_slot_regex, path,
 	            ARRAY_SIZE(pmatch), pmatch, 0) == 0) {
 		int l = pmatch[1].rm_eo - pmatch[1].rm_so;
 		int slot;
@@ -117,15 +125,6 @@ static int find_slot_from_path(const char *path)
 		return -1;
 	}
 }
-
-#if 0
-#ifdef IDE_SLOT_MAP
-#define _SLOT_START 4
-#else
-#define _SLOT_START 6
-#endif
-#define _SLOT_END (_SLOT_START+16)
-#endif
 
 static void slot_map_release(void)
 {
@@ -194,28 +193,6 @@ error_quit:
 
 static int map_slot(int slot)
 {
-	/**
-	 * Marvell sata槽位号映射：(IDE启动方式)
-	 * 4    8    12    16
-	 * 5    9    13    17
-	 * 6    10   14    18
-	 * 7    11   15    19
-	 */
-
-	/**
-	 * Marvell sata槽位号映射：(AHCI启动方式)
-	 * 6    10   14    18
-	 * 7    11   15    18
-	 * 8    12   16    20
-	 * 9    13   17    21
-	 */
-
-	/**
-	 * if (slot < _SLOT_START || slot >= _SLOT_END)
-	 *	return -1;
-	 *	slot -= _SLOT_START;
-	 *	return (slot+1);
-	 */
 	 struct list *ptr;
 	 slot_map_t *slot_map_p;
 	 int ret = -1;
@@ -475,7 +452,7 @@ static int us_disk_on_event(const char *path, const char *dev, const char *act)
 		return MA_HANDLED;
 	}
 
-	if (!is_sata_sas(path))
+	if (!is_ds_disk(path))
 		return MA_NONE;
 
 	if (strcmp(act, MA_ADD) == 0) {

@@ -144,7 +144,9 @@ def alarm_email_send(subject, content):
 			smtp.quit()
 		except:
 			pass
-		return False, err_msg + "失败 " + ",".join( str(x) for x in e.args)
+		if e.args[0] == 550:
+			return False, err_msg + "失败" + ", 550 Error: connectiong refused."
+ 		return False, err_msg + "失败 " + ",".join( str(x) for x in e.args)
 
 # send test mail
 def alarm_email_test():
