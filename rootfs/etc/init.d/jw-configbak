@@ -9,12 +9,10 @@
 # Description:       same with above.
 ### END INIT INFO
 
-. /usr/lib/jw-functions
-if [ `system_type` -ne $SYSTYPE_IPSAN_NAS ]; then
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+if [ `swtype` != "IPSAN-NAS" ]; then
     exit 0
 fi
-
-export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 DAEMON=/usr/local/bin/configbak
 NAME=configbak

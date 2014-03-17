@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ata2slot>
+	<map ata_lower="7" ata_upper="18" slot_lower="1"/>
+	<map ata_lower="3" ata_upper="6" slot_lower="13"/>
+</ata2slot>

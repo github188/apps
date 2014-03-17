@@ -11,6 +11,10 @@
 # Short-Description: start Samba daemons (nmbd and smbd)
 ### END INIT INFO
 
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+if [ `swtype` != "IPSAN-NAS" ]; then
+    exit 0
+fi
 
 # Defaults
 RUN_MODE="daemons"
@@ -29,10 +33,6 @@ unset TMPDIR
 test -x /usr/sbin/nmbd -a -x /usr/sbin/smbd || exit 0
 
 . /lib/lsb/init-functions
-. /usr/lib/jw-functions
-if [ `system_type` -ne $SYSTYPE_IPSAN_NAS ]; then
-    exit 0
-fi
 
 case "$1" in
 	start)

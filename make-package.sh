@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-. /usr/lib/jw-functions
-
 # individual modules
 DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset pic_ctl/test/dled_test test-utils/tools-test-led watchdog/watchdog'
 UDV_BIN='udv/*'
@@ -18,15 +16,14 @@ BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COM
 LIB_LIST=""
 
 # 升级包
-if [ `system_type` -eq $SYSTYPE_BASIC_PLATFORM ]; then
-	pkg_prefix="jw-basic-platform"
-elif [ `system_type` -eq $SYSTYPE_IPSAN_NAS ]; then
-	pkg_prefix="jw-ipsan-nas"
+if [ `arch` = "x86_64" ]; then
+	ARCH="64bit"
 else
-	pkg_prefix="jwlinx"
+	ARCH="32bit"
 fi
-PKG_TAR="/tmp/${pkg_prefix}-upgrade-$(date +%Y%m%d).tar.bz2"
-PKG_BIN="/tmp/${pkg_prefix}-upgrade-$(date +%Y%m%d).bin"
+pkg_prefix="jw-linux"
+PKG_TAR="/tmp/${pkg_prefix}-upgrade-${ARCH}-$(date +%Y%m%d).tar.bz2"
+PKG_BIN="/tmp/${pkg_prefix}-upgrade-${ARCH}-$(date +%Y%m%d).bin"
 
 sync_apps()
 {
@@ -59,6 +56,7 @@ sync_rootfs()
 	
 	echo "copy rootfs ..."
 	cp -fa rootfs/* "$_target"/
+	cp -fa rootfs-debian7/* "$_target"/
 
 	chmod -f 440 $_target/etc/sudoers
 }
@@ -68,8 +66,11 @@ sync_conf()
 	local _target="$1"
 	
 	echo "copy conf ..."
-	mkdir -p $_target/opt/jw-conf/system/
+	mkdir -p $_target/opt/jw-conf/system
 	cp -fa monitor/conf-example.xml "$_target"/opt/jw-conf/system/sysmon-conf.xml
+	
+	mkdir -p $_target/opt/jw-conf/disk
+	cp -fa us/ata2slot.xml* $_target/opt/jw-conf/disk/
 }
 
 sysnc_kernel()

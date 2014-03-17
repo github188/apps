@@ -190,14 +190,23 @@ def xml_save(doc, path):
 
 	return True
 
-SYSTYPE_BASIC_PLATFORM = 0
-SYSTYPE_IPSAN_NAS = 1
-def system_type():
-	arch = commands.getoutput('arch 2>/dev/null')
-	if arch != 'x86_64':
-		return SYSTYPE_BASIC_PLATFORM
+HARDWARE_TYPE = ['3U16-STANDARD', '3U16-SIMPLE', '2U8-STANDARD', '2U8-ATOM']
+HARDWARE_TYPE_FILE = '/opt/jw-conf/system/hardware-type'
+def hardware_type():
+	val = fs_attr_read(HARDWARE_TYPE_FILE)
+	if val not in HARDWARE_TYPE:
+		print ''
 	else:
-		return SYSTYPE_IPSAN_NAS
+		print val
+
+SOFTWARE_TYPE =  ['BASIC-PLATFORM', 'IPSAN-NAS']
+SOFTWARE_TYPE_FILE = '/opt/jw-conf/system/software-type'
+def software_type():
+	val = fs_attr_read(SOFTWARE_TYPE_FILE)
+	if val not in SOFTWARE_TYPE:
+		print SOFTWARE_TYPE[0]
+	else:
+		print val
 
 if __name__ == '__main__':
 	log = initlog()

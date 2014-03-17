@@ -9,8 +9,6 @@
 # Description:       same with above.
 ### END INIT INFO
 
-. /usr/lib/jw-functions
-
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 _usage()

@@ -17,7 +17,9 @@ export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 do_driver_start()
 {
 	modprobe nct6106
-	modprobe smbus-power
+	if [ `hwtype` = "3U16-STANDARD" ]; then
+		modprobe smbus-power
+	fi
 	modprobe sio_watchdog
 }
 
