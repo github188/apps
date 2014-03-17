@@ -273,7 +273,7 @@ void sys_alarm_sysled_on(void *event)
 	
 	//printf("sys led on\n");
 	if (sysled_cnt == 0)
-		sb_gpio28_set(true);
+	       sb_gpio28_set(true);
 	sysled_cnt++;
 #ifdef _DEBUG
 	printf("sysled_cnt: %d\n", sysled_cnt);
