@@ -67,7 +67,7 @@ sync_conf()
 	
 	echo "copy conf ..."
 	mkdir -p $_target/opt/jw-conf/system
-	cp -fa monitor/conf-example.xml "$_target"/opt/jw-conf/system/sysmon-conf.xml
+	cp -fa monitor/sysmon-conf.xml* "$_target"/opt/jw-conf/system/
 	
 	mkdir -p $_target/opt/jw-conf/disk
 	cp -fa us/ata2slot.xml* $_target/opt/jw-conf/disk/
@@ -158,7 +158,7 @@ do
 	shift
 done
 
-if [ $pack_web -eq 1 ] && [ ! -d "$web_dir" ]; then
+if [ $pack_web -eq 1 ] && [ ! -f "$web_dir/index.html" ]; then
 	echo "web dir input error, please check"
 	exit 1
 fi
