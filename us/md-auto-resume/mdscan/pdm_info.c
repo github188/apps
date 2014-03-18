@@ -13,6 +13,8 @@ pdm_super_t * pdm_load_super(int fd, const char *name)
 	pdm_super_t *st;
 	u64 off;
 
+	return NULL;
+
 	st = xmalloc(PDM_BLK_SZ);
 	memset(st, 0, PDM_BLK_SZ);
 

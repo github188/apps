@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE
 #include <signal.h>
 #include <time.h>
 #include "../common/log.h"

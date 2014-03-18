@@ -1,7 +1,9 @@
 CFLAGS += -Wstrict-aliasing=0
 CFLAGS += -I/usr/include/libxml2
 CFLAGS += -std=c99
-#CFLAGS += -D_DEBUG
+ifdef debug
+CFLAGS += -D_DEBUG
+endif
 LDFLAGS += ../pic_ctl/libpic.a ../common/liblog.a libsysmon.a -lxml2 -ljson -lev -lsqlite3
 
 OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o util-gpio.o pmu-info.o

@@ -10,7 +10,7 @@
 #define _XML_NODE_NAME(node, name1) (!xmlStrcmp(node->name, BAD_CAST(name1)))
 #define _XML_ATTR_EQU(node, key, value) (!strcmp(_XML_STR_VAL(node, key), value))
 
-void _xml_module_event_parse(char *module, xmlNodePtr node)
+void _xml_module_event_parse(const char *module, xmlNodePtr node)
 {
 	while(node)
 	{
@@ -40,7 +40,7 @@ void _xml_module_parse(xmlNodePtr node)
 	}
 }
 
-void _xml_action_alarm_parse(char *action_name, xmlNodePtr node)
+void _xml_action_alarm_parse(const char *action_name, xmlNodePtr node)
 {
 	while(node)
 	{

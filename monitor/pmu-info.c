@@ -94,7 +94,7 @@ int pmu_get_info(const char *dev, struct pmu_info *info1, int check_temp)
 #endif
 
 	if (unlikely(global_print_on)) {
-		printf("0x%x, %.1f, %.1f, %.1f, %.1f, %.1f, ",
+		printf("0x%lx, %.1f, %.1f, %.1f, %.1f, %.1f, ",
 				sts, info1->vin, info1->vout, info1->fan_speed,
 				info1->temp, pmu_linear_to_real(temp_hs));
 	}
