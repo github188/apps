@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<monitor>
+	<global>
+		<tmpfs active="enable"/>
+		<msg_buff_size info="10" warning="10" error="10"/>
+		<!-- 电源配置 single/double -->
+		<power config="double"/>
+	</global>
+
+	<modules>
+		<disk>
+			<event name="led_off" level="info" action="disk_led_off"/>
+			<event name="led_on" level="info" action="disk_led_on"/>
+			<event name="led_blink2s1" level="info" action="disk_led_blink2s1"/>
+			<event name="led_blink1s1" level="info" action="disk_led_blink1s1"/>
+			<event name="led_blink1s4" level="info" action="disk_led_blink1s4"/>
+			<event name="buzzer_on" level="info" action="disk_buzzer_on"/>
+			<event name="buzzer_off" level="info" action="disk_buzzer_off"/>
+		</disk>
+
+		<vg>
+			<event name="normal" level="info" action="vg_normal"/>
+			<event name="remove" level="info" action="vg_remove"/>
+			<event name="degrade" level="warning" action="vg_degrade"/>
+			<event name="fail" level="error" action="vg_fail"/>
+			<event name="rebuild" level="info" action="vg_rebuild"/>
+		</vg>
+
+		<!--
+		<power>
+			<event name="fail" level="warning" action="power_fail"/>
+		</power>
+		-->
+
+		<self_run>
+			<event name="env_exception_raise" level="error" action="env_raise_exception"/>
+			<event name="env_exception_backout" level="error" action="env_backout_exception"/>
+		</self_run>
+	</modules>
+
+	<self_run>
+		<item name="cpu-temp" interval="5" preset="true" min_threshold="5" max_threshold="85"/>
+		<!--item name="env-temp" interval="5" preset="true" min_threshold="5" max_threshold="55"/-->
+		<item name="case-temp" interval="5" preset="true" min_threshold="5" max_threshold="55"/>
+		<item name="case-fan1" interval="5" preset="true" min_threshold="500" max_threshold="6000"/>
+		<item name="case-fan2" interval="5" preset="true" min_threshold="500" max_threshold="6000"/>
+		<!--item name="power" interval="5" preset="false"/-->
+		<!--<item name="cpu-fan" interval="60" min_threshold="500" max_threshold="6000"/>-->
+	</self_run>
+
+	<!-- 执行的动作，每个标签名字对应event的action属性 -->
+	<actions>
+		<!-- 每个动作下面的alarm标签对应内置的函数 -->
+		
+		<!-- 磁盘故障灯熄灭 -->
+		<disk_led_off>
+			<alarm name="disk-led-off"/>
+		</disk_led_off>
+	
+		<!-- 磁盘故障灯常亮 -->
+		<disk_led_on>
+			<alarm name="disk-led-on"/>
+		</disk_led_on>
+		
+		<!-- 磁盘故障灯正常闪烁，1秒闪1下 -->
+		<disk_led_blink1s1>
+			<alarm name="disk-led-blink1s1"/>
+		</disk_led_blink1s1>
+
+		<!-- 磁盘故障灯慢速闪烁，2秒闪1下 -->
+		<disk_led_blink2s1>
+			<alarm name="disk-led-blink2s1"/>
+		</disk_led_blink2s1>
+		
+		<!-- 磁盘故障灯快速闪烁，1秒闪4下 -->
+		<disk_led_blink1s4>
+			<alarm name="disk-led-blink1s4"/>
+		</disk_led_blink1s4>
+		
+		<!-- 磁盘故障报警音开启 -->
+		<disk_buzzer_on>
+			<alarm name="buzzer-on"/>
+		</disk_buzzer_on>
+		
+		<!-- 磁盘故障报警音关闭 -->
+		<disk_buzzer_off>
+			<alarm name="buzzer-off"/>
+		</disk_buzzer_off>
+
+		<!-- RAID恢复正常，把手故障灯关闭，蜂鸣器关闭 -->
+		<vg_normal>
+			<alarm name="sys-led-off"/>
+			<alarm name="buzzer-off"/>
+		</vg_normal>
+		
+		<!-- RAID删除，把手故障灯关闭，蜂鸣器关闭 -->
+		<vg_remove>
+			<alarm name="sys-led-off"/>
+			<alarm name="buzzer-off"/>
+		</vg_remove>
+		
+		<!-- RAID降级，把手故障灯常亮，蜂鸣器开启 -->
+		<vg_degrade>
+			<alarm name="sys-led-on"/>
+			<alarm name="buzzer-on"/>
+		</vg_degrade>
+		
+		<!-- RAID重建，把手故障灯关闭，蜂鸣器关闭 -->
+		<vg_rebuild>
+			<alarm name="sys-led-off"/>
+			<alarm name="buzzer-off"/>
+		</vg_rebuild>
+		
+		<!-- RAID失效，把手故障灯常亮，蜂鸣器开启 -->
+		<vg_fail>
+			<alarm name="sys-led-on"/>
+			<alarm name="buzzer-on"/>
+		</vg_fail>
+
+		<!-- 电源故障，把手告警灯为红色，特殊的告警声音 -->
+		<!--
+		<power_fail>
+			<alarm name="sys-led-on"/>
+		</power_fail>
+		-->
+
+		<!-- 环境监控告警，蜂鸣器 -->
+		<env_raise_exception>
+			<alarm name="buzzer-on"/>
+			<alarm name="sys-led-on"/>
+			<alarm name="notify-tmpfs"/>
+		</env_raise_exception>
+
+		<env_backout_exception>
+			<alarm name="buzzer-off"/>
+			<alarm name="sys-led-off"/>
+			<alarm name="notify-tmpfs"/>
+		</env_backout_exception>
+	</actions>
+</monitor>

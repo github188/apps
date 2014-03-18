@@ -40,9 +40,9 @@ stop_scst()
 		fi
 		sleep 1
 	done
-	rmmod scst_vdisk
-	rmmod iscsi-scst
-	rmmod scst
+	modprobe -r scst_vdisk
+	modprobe -r iscsi-scst
+	modprobe -r scst
 }
 
 case "${1:-}" in

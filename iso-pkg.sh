@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-. /usr/lib/jw-functions
-
 PKG_STORE_DIR=/home
 USER_CONF_DIR=/opt/etc
 
@@ -53,7 +51,7 @@ make_default_conf()
 	
 	# defualt hostname
 	hostname="JW-Linux"
-	if [ `system_type` -eq $SYSTYPE_IPSAN_NAS ]; then
+	if [ `swtype` = "IPSAN-NAS" ]; then
 		hostname="JW-IPSAN"
 	fi
 	sysconfig --hosts $hostname
@@ -65,7 +63,7 @@ make_default_conf()
 	# 使用本地时间
 	hwclock -w --localtime
 	
-	if [ `system_type` -eq $SYSTYPE_BASIC_PLATFORM ]; then
+	if [ `swtype` = "BASIC-PLATFORM" ]; then
 		echo -e "123456\n123456" | passwd root
 	fi
 
