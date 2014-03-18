@@ -18,7 +18,7 @@ all:
 	$(MAKE) -C sys-conf
 	$(MAKE) -C test-utils
 	$(MAKE) -C watchdog
-
+	$(MAKE) -C led-ctl
 clean:
 	$(MAKE) -C udv clean
 	$(MAKE) -C web-iface clean
@@ -31,4 +31,5 @@ clean:
 	$(MAKE) -C sys-conf clean
 	$(MAKE) -C test-utils clean
 	$(MAKE) -C watchdog clean
+	$(MAKE) -C led-ctl clean
 	find . -name '*.pyc' -delete

@@ -6,33 +6,64 @@
 #include <string.h>
 
 #include "../daemon/common.h"
-#include "../daemon/i2c_dev.h"
+#include "../daemon/sysled.h"
+#include "../../pic_ctl/pic_ctl.h"
 
-shm_t * get_systype(void)
+static shm_t *addr = (shm_t *)-1;
+static initalized;
+
+#define LED_CHECK_INIT()	do {			\
+		int ret = led_init();			\
+		if (ret == -1)				\
+			return -1;			\
+	} while (0)
+
+int led_init(void)
 {
+	if (initalized)
+		return 0;
+	
 	int shmid;
 	key_t shmkey;
-	shm_t *addr;
 
 	shmkey = ftok(SHMKEY, 0);
 	shmid = shmget(shmkey, 0, 0666);
 	if (shmid == -1) {
-		return (shm_t *)-1;
+		return -1;
 	}
-
+	
 	addr = (shm_t *)shmat(shmid, 0, 0);
 	if (addr == (shm_t *)-1) {
-		return (shm_t *)-1;
+		return -1;
 	}
-	return addr;
+	
+	if (addr->magic != MAGIC) {
+		return -1;
+	}
+
+	initalized = 1;
+	return 0;
+}
+
+void led_release(void)
+{
+	if (initalized)
+		addr = (shm_t *)-1;
+}
+
+int diskled_get_disknum(void)
+{
+	LED_CHECK_INIT();
+	if (addr->sys & SYS_3U || addr->sys & SYS_S3U) {
+		return DISK_NUM_3U;
+	} else if (addr->sys & SYS_2U) {
+		return DISK_NUM_2U;
+	}
+	return -1;
 }
 int diskled_on(int disk_id)
 {
-	shm_t *addr;
-
-	addr = get_systype();
-	if (addr == (shm_t *)-1)
-		return -1;
+	LED_CHECK_INIT();
 	if (addr->sys & SYS_3U) {
 		if (pic_set_led(disk_id-1, PIC_LED_ON, 0) < 0) {
 			return -1;
@@ -53,12 +84,7 @@ int diskled_on(int disk_id)
 
 int diskled_off(int disk_id)
 {
-	shm_t *addr;
-
-	addr = get_systype();
-	if (addr == (shm_t *)-1)
-		return -1;
-
+	LED_CHECK_INIT();
 	if (addr->sys & SYS_3U) {
 		if (pic_set_led(disk_id-1, PIC_LED_OFF, 0) < 0) {
 			return -1;
@@ -80,11 +106,7 @@ int diskled_off(int disk_id)
 
 int diskled_blink1s4(int disk_id)
 {
-	shm_t *addr;
-
-	addr = get_systype();
-	if (addr == (shm_t *)-1)
-		return -1;
+	LED_CHECK_INIT();
 	if (addr->sys & SYS_3U) {
 		if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST) < 0) {
 			return -1;
@@ -107,11 +129,7 @@ int diskled_blink1s4(int disk_id)
 
 int diskled_blink1s1(int disk_id)
 {
-	shm_t *addr;
-
-	addr = get_systype();
-	if (addr == (shm_t *)-1)
-		return -1;
+	LED_CHECK_INIT();
 	if (addr->sys & SYS_3U) {
 		if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_NORMAL) < 0) {
 			return -1;
@@ -134,11 +152,7 @@ int diskled_blink1s1(int disk_id)
 
 int diskled_blink2s1(int disk_id)
 {
-	shm_t *addr;
-
-	addr = get_systype();
-	if (addr == (shm_t *)-1)
-		return -1;
+	LED_CHECK_INIT();
 	if (addr->sys & SYS_3U) {
 		if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW) < 0) {
 			return -1;

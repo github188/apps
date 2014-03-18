@@ -45,13 +45,13 @@ struct led_task {
 typedef struct shm_head shm_head_t;
 struct shm_head {
 	char version[8];
-	unsigned int magic;
 	int disk_num;
 };
 
 typedef struct shm_struct shm_t;
 struct shm_struct {
 	int sys;
+	unsigned int magic;
 	shm_head_t shm_head;
 	led_task_t task[0];
 };

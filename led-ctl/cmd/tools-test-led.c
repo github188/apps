@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/ipc.h>
@@ -7,7 +8,8 @@
 #include <errno.h>
 
 #include "../daemon/common.h"
-#include "../../pic_ctl/pic_ctl.h"
+#include "libled.h"
+
 
 
 char *l_opt_arg;
@@ -125,108 +127,44 @@ int parse_args(void)
 	return 0;
 	
 }
-
-int _do_3U_sigle(int disk_id)
+void do_work(int i)
 {
-	int freq;
-
-	if (task.mode & MODE_ON){
-		if (pic_set_led(disk_id-1, PIC_LED_ON, 0) < 0) {
-			fprintf(stderr, "set led %d on failed.\n", disk_id);
-			return -1;
-		} 
+	if (task.mode & MODE_ON) {
+		if (diskled_on(i) < 0) {
+			fprintf(stderr, "led %d on failed.\n", i);
+		}
 	} else if (task.mode & MODE_OFF) {
-		if (pic_set_led(disk_id-1, PIC_LED_OFF, 0) < 0) {
-			fprintf(stderr, "set led %d off failed.\n", disk_id);
-			return -1;
+		if (diskled_off(i) < 0) {
+			fprintf(stderr, "led %d off failed.\n", i);
 		}
 	} else if (task.mode & MODE_BLINK) {
-		if (task.freq & FREQ_FAST)
-			freq = PIC_LED_FREQ_FAST;
-		else if (task.freq & FREQ_NORMAL)
-			freq = PIC_LED_FREQ_NORMAL;
-		else if (task.freq & FREQ_SLOW)
-			freq = PIC_LED_FREQ_SLOW;
-
-		if (pic_set_led(disk_id-1, PIC_LED_BLINK, freq) < 0) {
-			fprintf(stderr, "set led %d blink failed.\n", disk_id);
-			return -1;
-		}
- 	}
-	return 0;
-}
-
-/* 判断是否是所有灯 */
-int _do_3U(void)
-{
-	int i;
-	if (disk_id == DISK_ID_ALL) {
-		for (i = 1; i <= DISK_NUM_3U; i++) {
-			if (_do_3U_sigle(i) < 0) {
-				return -1;
+		if (task.freq & FREQ_FAST) {
+			if (diskled_blink1s4(i) < 0) {
+				fprintf(stderr, "led %d blink failed.\n", i);
+			}
+		} else if (task.freq & FREQ_NORMAL) {
+			if (diskled_blink1s1(i) < 0) {
+				fprintf(stderr, "led %d blink failed.\n", i);
+			}
+		} else if (task.freq & FREQ_SLOW) {
+			if (diskled_blink2s1(i) < 0) {
+				fprintf(stderr, "led %d blink failed.\n", i);
 			}
 		}
-	} else {
-		if (_do_3U_sigle(disk_id) < 0)
-			return -1;
 	}
-	return 0;
+
 }
 
-/* 调试完后关闭灯 */
-int _do_3U_stop(void)
-{
-	int i;
-	if (systask.mode & MODE_ON) {
-		sb_gpio28_set(0);
-	}
-	if (disk_id == DISK_ID_ALL) {
-		for (i = 1; i <= DISK_NUM_3U; i++){
-			pic_set_led(i-1, PIC_LED_OFF, 0);
-		}
-		return 0;
-	} else
-		return pic_set_led(disk_id-1, PIC_LED_OFF, 0);
-	       
-}
-
-
-
-int do_3U(void)
-{
-	/* 处理系统灯 */
-	if (systask.mode & MODE_ON) {
-		sb_gpio28_set(1);
-	} else if (systask.mode & MODE_OFF) {
-		sb_gpio28_set(0);
-	}
-	/* 处理时间 */
-	if (task.time != TIME_FOREVER) {
-		if (_do_3U() < 0) {
-			return -1;
-		} 
-		sleep(task.time);
-		_do_3U_stop();
-	} else {
-		if (_do_3U() < 0)
-			return -1;
-	}
-	return 0;
-	
-}
 
 int main(int argc, char *argv[])
 {
-	int shmid;
-	key_t shmkey;
-	shm_t *addr;
-	shm_head_t *head;
-	led_task_t *taskp;
+	int ret;
 	
 	if (argc < 3) {
 		print_help();
 		return -1;
 	}
+	systask.mode = MODE_NONE;
 	task.freq = FREQ_NONE;
 	task.mode = MODE_NONE;
 	task.time = TIME_FOREVER;
@@ -235,64 +173,47 @@ int main(int argc, char *argv[])
 		return -1;
 	if (parse_args() < 0)
 		return -1;
-	
-	shmkey = ftok(SHMKEY, 0);
-	shmid = shmget(shmkey, 0, 0666);
-	if (shmid == -1) {
-		printf("get shm failed: %s.\n", strerror(errno));
+
+	ret = led_init();
+	if (ret == -1) {
+		fprintf(stderr, "init led failed.\n");
+		return -1;
+	}
+
+	ret = diskled_get_disknum();
+	if (ret == -1) {
+		fprintf(stderr, "get disknum failed.\n");
 		return -1;
 	}
 	
-	addr = (shm_t *)shmat(shmid, 0, 0);
-	if (addr == (shm_t *)-1) {
-		printf("shmat failed.\n");
-		return -1;
+	if (systask.mode != MODE_NONE) {
+		if (systask.mode & MODE_ON)
+			sysled_on();
+		else if (systask.mode & MODE_OFF)
+			sysled_off();
 	}
-	if (addr->sys & SYS_3U) {
-		if (do_3U() < 0) {
-			return -1;
-		}
+	if (disk_id == DISK_ID_NONE )
 		return 0;
-	}
-
-	head = &addr->shm_head;
-	if (head->magic != MAGIC) {
-		printf("magic check failed.\n");
-		return -1;
-	}
 	
-	if ( disk_id > head->disk_num ||
-	     ((disk_id < 0) && (disk_id != DISK_ID_NONE) && (disk_id != DISK_ID_ALL))
-		) {
-		printf("disk id invalid.\n");
-		return -1;
-	}
-	
-	/*系统灯*/
-	taskp = &addr->task[0];
-	if (flags) {
-		taskp->mode = systask.mode;
-		taskp->time = TIME_FOREVER;
-		taskp->freq = FREQ_NONE;
-		taskp->count = 0;
-	}
-	
-	if (disk_id == DISK_ID_ALL){
+	if (disk_id == DISK_ID_ALL) {
 		int i;
-		for (i=1; i <= head->disk_num; i++){
-			taskp = &addr->task[i];
-			taskp->mode = task.mode;
-			taskp->time = task.time;
-			taskp->freq = task.freq;
-			taskp->count = task.count;
-		}
-	} else if (disk_id != DISK_ID_NONE){
-		taskp = &addr->task[disk_id];
-		taskp->mode = task.mode;
-		taskp->time = task.time;
-		taskp->freq = task.freq;
-		taskp->count = task.count;
-	}
+		for (i=0; i<= ret; i++)
+			do_work(i);
+	} else
+		do_work(disk_id);
 
+	
+	if (task.time == TIME_FOREVER)
+		return 0;
+	else {
+		sleep(task.time);
+		if (disk_id == DISK_ID_ALL) {
+			int i;
+			for (i=0; i <= ret; i++)
+				diskled_off(i);
+		} else
+			diskled_off(disk_id);
+	}
+	
 	return 0;
 }

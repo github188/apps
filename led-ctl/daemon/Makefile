@@ -1,18 +1,23 @@
-CC = gcc
-MAKE = make
-CFLAGS = -Wall -g
-LDFLAGS = -lev
-OBJECTS = led_shm.o led_worker.o  main.o i2c_dev.o
+CFLAGS += -Wstrict-aliasing=0
+CFLAGS += -std=c99
+ifdef debug
+CFLAGS += -D_DEBUG -g -Wall
+else
+CFLAGS += -O2 -Wall
+endif
+LDFLAGS += -lev
+OBJECTS = led_shm.o led_worker.o  main.o i2c_dev.o sysled.o
 
-all: led-ctl-daemon libi2c_dev.a
+all: led-ctl-daemon sysled.o
+ifneq ($(STRIP),)
+	$(STRIP) led-ctl-daemon
+endif
 
-led-ctl-daemon:$(OBJECTS) libi2c_dev.a
-	$(CC) -o led-ctl-daemon $(OBJECTS)  $(CFLAGS) $(LDFLAGS) -L./ -li2c_dev
+led-ctl-daemon:$(OBJECTS) sysled.o
+	$(CC) -o led-ctl-daemon $(OBJECTS)  $(CFLAGS) $(LDFLAGS) 
 
-libi2c_dev.a: i2c_dev.o
-	ar -rcs libi2c_dev.a i2c_dev.o
-i2c_dev.o:
-	gcc -c i2c_dev.c
+sysled.o:
+	gcc -c sysled.c
 
 clean:
 	rm -rf *.o led-ctl-daemon *.a

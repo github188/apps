@@ -1,8 +1,9 @@
 #ifndef LIBLED__H__
 #define LIBLED__H__
-#include "../daemon/common.h"
 
-shm_t *get_systype(void);
+int led_init(void);
+void led_release(void);
+int diskled_get_disknum(void);
 int diskled_on(int disk_id);
 int diskled_off(int disk_id);
 int diskled_blink1s4(int disk_id);

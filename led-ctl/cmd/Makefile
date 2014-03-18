@@ -1,20 +1,27 @@
-OBJECTS := tools-test-led.o libled.o ../daemon/i2c_dev.o
-LIBS := -L./ -lled
+CFLAGS += -Wstrict-aliasing=0
+CFLAGS += -std=c99
+ifdef debug
+CFLAGS += -D_DEBUG -g -Wall
+else
+CFLAGS += -O2 -Wall
+endif
+LDFLAGS += -L./ -lled
+OBJECTS := tools-test-led.o
 
 all: tools-test-led libled.a
 
 tools-test-led:$(OBJECTS) libled.a
-	gcc -o tools-test-led $(OBJECTS) $(LIBS)
+	gcc -o tools-test-led $(OBJECTS) $(LDFLAGS)
+ifneq ($(STRIP),)
+	$(STRIP) tools-test-led
+	$(STRIP) libled.a
+endif
 
-libled.a:libpic.a i2c_dev.o
-	cp ../../pic_ctl/libpic.a ./
-	ar x libpic.a
+libled.a:sysled.o 
+	ar x ../../pic_ctl/libpic.a
 	gcc -c libled.c
-	ar -rcs libled.a pic_ctl.o libled.o ../daemon/i2c_dev.o
-	rm -rf pic_ctl.o libpic.a
-libpic.a:
-	$(MAKE) -C ../../pic_ctl
-i2c_dev.o:
+	ar -rcs libled.a pic_ctl.o libled.o ../daemon/sysled.o
+sysled.o:
 	$(MAKE) -C ../daemon
 
 clean:

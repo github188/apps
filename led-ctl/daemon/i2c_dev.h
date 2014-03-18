@@ -36,6 +36,4 @@ int i2c_write_disk_2U(int disk_id, int v);
 int i2c_write_disk_3U(int disk_id, int v);
 int i2c_init_3U(void);
 int i2c_init_2U(void);
-bool sb_gpio28_set(bool);
-
 #endif

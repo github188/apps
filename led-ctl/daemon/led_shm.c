@@ -32,6 +32,7 @@ int shm_init()
 	}
 	if (disk_max_num == DISK_NUM_NONE) {
 		addr->sys = SYS_3U;
+		addr->magic = MAGIC;
 		return shmid;
 	}
 	if (disk_max_num == DISK_NUM_3U) {
@@ -39,8 +40,8 @@ int shm_init()
 	} else if (disk_max_num == DISK_NUM_2U){
 		addr->sys = SYS_2U;
 	}
+	addr->magic = MAGIC;
 	strcpy(addr->shm_head.version, VERSION);
-	addr->shm_head.magic = MAGIC;
 	addr->shm_head.disk_num = disk_max_num;
 
 

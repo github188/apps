@@ -3,7 +3,7 @@
 #include "common.h"
 #include "led_worker.h"
 #include "i2c_dev.h"
-
+#include "sysled.h"
 
 extern int disk_max_num;
 
@@ -24,10 +24,10 @@ static void timer_cb(EV_P_ ev_timer *w, int r)
 	/* 检查系统灯 */
 	if (taskp->mode & MODE_ON) {
 		//TODO点亮系统灯
-		sb_gpio28_set(1);
+		sb_gpio28_set(true);
 	} else if (taskp->mode & MODE_OFF) {
 		//TODO熄灭系统灯
-		sb_gpio28_set(0);
+		sb_gpio28_set(false);
 	}
 	for (i=0; i < disk_max_num; i++) {
 		taskp = &addr->task[i+1];
