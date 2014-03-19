@@ -1,10 +1,3 @@
-CFLAGS += -Wstrict-aliasing=0
-CFLAGS += -std=c99
-ifdef debug
-CFLAGS += -D_DEBUG -g -Wall
-else
-CFLAGS += -O2 -Wall
-endif
 LDFLAGS += -lev
 OBJECTS = led_shm.o led_worker.o  main.o i2c_dev.o sysled.o
 

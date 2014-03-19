@@ -118,9 +118,10 @@ int parse_args(void)
 			return -1;
 		}
 	}
+#ifdef _DEBUG	
 	printf("disk_id:%d, mode:%d, time:%ld, freq:%d, count:%d\n",
 	       disk_id, task.mode, task.time, task.freq, task.count);
-
+#endif
 	return 0;
 	
 }
