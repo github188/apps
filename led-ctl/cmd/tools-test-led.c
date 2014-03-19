@@ -17,14 +17,13 @@ char *const short_options = "i:s:d:h";
 led_task_t task;
 led_task_t systask;
 static int disk_id = DISK_ID_NONE;
-static int expire = TIME_FOREVER;
 static int flags = 0; 		/* 检查是否为设置系统灯 */
 struct option long_options[] = {
 	{"sysled", 1, NULL, 's'},
 	{"id", 1, NULL, 'i'},
 	{"diskled", 1, NULL, 'd'},
-	{"freq", 1, NULL, 0},
-	{"expire", 1,&expire , 1},
+	{"freq", 1, NULL, 'f'},
+	{"expire", 1, NULL , 'e'},
 	{"help", 1, NULL, 'h'},
 	{0, 0, 0, 0}
 };
@@ -33,8 +32,8 @@ void print_help(void)
 {
 	printf("tools-test-led:\n");
 	printf("\t[--sysled|-s on|off]\n");
-	printf("\t[--diskled|-d on|off|[blink --freq fast|normal|slow] [--id|-i <disk_id>|<all>]]\n");
-	printf("\t[--expire <seconds>]\n");
+	printf("\t[--diskled|-d on|off|[blink --freq|-f fast|normal|slow] [--id|-i <disk_id>|<all>]]\n");
+	printf("\t[--expire|-e <seconds>]\n");
 	printf("\t[--help|-h]\n");
 }
 
@@ -52,7 +51,7 @@ int my_getopt(int argc, char **argv)
 			} else if (!strcmp(optarg, "off")) {
 				systask.mode = MODE_OFF;
 			} else {
-				systask.mode = MODE_NONE;
+				systask.mode = MODE_OFF;
 			}
 			break;
 		case 'i':
@@ -81,11 +80,10 @@ int my_getopt(int argc, char **argv)
 		case 'h':
 			print_help();
 			return -1;
-		case 0:
-			if (expire != TIME_FOREVER) {
+		case 'e':
 				task.time = atol(optarg) * 1000;
 				break;
-			} else {
+		case 'f':
 				if (!strcmp(optarg, "fast")) {
 					task.freq = FREQ_FAST;
 					break;
@@ -98,9 +96,8 @@ int my_getopt(int argc, char **argv)
 					task.freq = FREQ_SLOW;
 					break;
 				}
-			}
-			print_help();
-			return -1;
+				fprintf(stderr, "freq arg invalid.\n");
+				return -1;
 		default:
 			break;
 		}
@@ -110,7 +107,7 @@ int my_getopt(int argc, char **argv)
 
 int parse_args(void)
 {
-	if (task.mode != MODE_NONE && disk_id == DISK_ID_NONE) {
+	if (flags == 0 && disk_id == DISK_ID_NONE) {
 		fprintf(stderr, "please input disk id.\n");
 		return -1;
 	}
@@ -130,24 +127,24 @@ int parse_args(void)
 void do_work(int i)
 {
 	if (task.mode & MODE_ON) {
-		if (diskled_on(i) < 0) {
+		if (diskled_set(i, LED_ON) < 0) {
 			fprintf(stderr, "led %d on failed.\n", i);
 		}
 	} else if (task.mode & MODE_OFF) {
-		if (diskled_off(i) < 0) {
+		if (diskled_set(i, LED_OFF) < 0) {
 			fprintf(stderr, "led %d off failed.\n", i);
 		}
 	} else if (task.mode & MODE_BLINK) {
 		if (task.freq & FREQ_FAST) {
-			if (diskled_blink1s4(i) < 0) {
+			if (diskled_set(i, LED_BLINK_FAST) < 0) {
 				fprintf(stderr, "led %d blink failed.\n", i);
 			}
 		} else if (task.freq & FREQ_NORMAL) {
-			if (diskled_blink1s1(i) < 0) {
+			if (diskled_set(i, LED_BLINK_NORMAL) < 0) {
 				fprintf(stderr, "led %d blink failed.\n", i);
 			}
 		} else if (task.freq & FREQ_SLOW) {
-			if (diskled_blink2s1(i) < 0) {
+			if (diskled_set(i, LED_BLINK_SLOW) < 0) {
 				fprintf(stderr, "led %d blink failed.\n", i);
 			}
 		}
@@ -164,9 +161,9 @@ int main(int argc, char *argv[])
 		print_help();
 		return -1;
 	}
-	systask.mode = MODE_NONE;
+	systask.mode = MODE_OFF;
 	task.freq = FREQ_NONE;
-	task.mode = MODE_NONE;
+	task.mode = MODE_OFF;
 	task.time = TIME_FOREVER;
 	
 	if (my_getopt(argc, argv))
@@ -180,26 +177,20 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	ret = diskled_get_disknum();
-	if (ret == -1) {
-		fprintf(stderr, "get disknum failed.\n");
-		return -1;
-	}
+
 	
-	if (systask.mode != MODE_NONE) {
-		if (systask.mode & MODE_ON)
-			sysled_on();
-		else if (systask.mode & MODE_OFF)
-			sysled_off();
-	}
+
+	if (systask.mode & MODE_ON)
+		sysled_set(LED_ON);
+	else if (systask.mode & MODE_OFF)
+		sysled_set(LED_OFF);
+
 	if (disk_id == DISK_ID_NONE )
 		return 0;
 	
-	if (disk_id == DISK_ID_ALL) {
-		int i;
-		for (i=0; i<= ret; i++)
-			do_work(i);
-	} else
+	if (disk_id == DISK_ID_ALL) 
+		do_work(0);
+	else
 		do_work(disk_id);
 
 	
@@ -208,11 +199,9 @@ int main(int argc, char *argv[])
 	else {
 		sleep(task.time);
 		if (disk_id == DISK_ID_ALL) {
-			int i;
-			for (i=0; i <= ret; i++)
-				diskled_off(i);
+			diskled_set(0, LED_OFF);
 		} else
-			diskled_off(disk_id);
+			diskled_set(disk_id, LED_OFF);
 	}
 	
 	return 0;

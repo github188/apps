@@ -16,6 +16,7 @@ struct option long_options[] = {
 };
 
 int disk_max_num;
+int flag = 0;
 int (*pic_write_disk_gen)(int, int);
 
 void print_help(void)
@@ -49,7 +50,8 @@ int main(int argc, char *argv[])
 				pic_write_disk_gen = i2c_write_disk_2U;
 				break;
 			} else if (!strcmp(optarg, "3U")) {
-				disk_max_num = DISK_NUM_NONE;
+				disk_max_num = DISK_NUM_3U;
+				flag = 1;
 				shmid = shm_init();
 				if (shmid < 0)
 					return -1;

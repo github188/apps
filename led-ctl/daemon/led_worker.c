@@ -18,31 +18,22 @@ static void timer_cb(EV_P_ ev_timer *w, int r)
 	led_task_t *taskp = NULL;
 	int i;
 
-	/* 跳过shm的头部 */
 	taskp = &addr->task[0];
-	
+#ifdef _DEBUG
+	printf("sysled mode: %d\n", taskp->mode);
+#endif // _DEBUG
 	/* 检查系统灯 */
 	if (taskp->mode & MODE_ON) {
-		//TODO点亮系统灯
 		sb_gpio28_set(true);
 	} else if (taskp->mode & MODE_OFF) {
-		//TODO熄灭系统灯
 		sb_gpio28_set(false);
 	}
 	for (i=0; i < disk_max_num; i++) {
 		taskp = &addr->task[i+1];
-		if (taskp == NULL) {
-			fprintf(stderr, "taskp is null\n");
-			continue;
-		}
-		if (taskp->mode == MODE_NONE) {
-			fprintf(stderr, "mode not set.\n");
-			continue;
-		}
-		if (taskp->time <= 0 && taskp->time != TIME_FOREVER) {
-			taskp->mode = MODE_NONE;
-			continue;
-		}
+#ifdef _DEBUG
+		printf("led: %d mode: %d freq: %d  time: %d count: %d",
+		       i+1, taskp->mode, taskp->freq, taskp->time, taskp->count);
+#endif // _DEBUG
 		if (taskp->mode & MODE_ON) {
 			if (pic_write_disk_gen(i, I2C_LED_ON) != 0) {
 				fprintf(stderr, "led on disk %d failed.\n", i);
@@ -72,11 +63,12 @@ static void timer_cb(EV_P_ ev_timer *w, int r)
 			 if (taskp->count > 0) 
 				 taskp->count--;
 		}
-		if (taskp->time != TIME_FOREVER)
+		if (taskp->time != TIME_FOREVER) {
 			taskp->time = taskp->time - WORKER_TIMER*1000;
-		if (taskp->time <= 0 && taskp->time != TIME_FOREVER) {
-			taskp->mode = MODE_NONE;
-			pic_write_disk_gen(i, I2C_LED_OFF);
+			if (taskp->time <= 0) {
+				taskp->mode = MODE_OFF;
+				pic_write_disk_gen(i, I2C_LED_OFF);
+			}
 		}
 	}
 }

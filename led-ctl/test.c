@@ -6,23 +6,30 @@
 * Description : 
 * *****************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "./cmd/libled.h"
 #include "./daemon/i2c_dev.h"
 
 int main(int argc, char *argv[])
 {
-	//unsigned long i;
-	//for (i=0; i<100000000; i++) {
-	diskled_on(1);
-	diskled_off(2);
-	diskled_blink1s4(3);
-	diskled_blink1s1(4);
-	diskled_blink2s1(5);
-	sysled_on();
-	//}
+	int a;
+	int *arr;
+	int num;
 
-	printf("done!\n");
-	sleep(10);
+	diskled_get(1, &a);
+	printf("led 1: %d\n", a);
+
+	num = diskled_get_num();
+	arr = (int *)malloc(sizeof(int) * num);
+	diskled_get_all(arr, num);
+
+	int i;
+	for(i=0; i<num; i++) {
+
+		printf("%d: %d\n", i+1, arr[i]);
+	}
+	printf("\n");
+	
 	return 0;
 }

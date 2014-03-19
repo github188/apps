@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include "libled.h"
 #include "../daemon/common.h"
 #include "../daemon/sysled.h"
 #include "../../pic_ctl/pic_ctl.h"
@@ -37,7 +38,7 @@ int led_init(void)
 		return -1;
 	}
 	
-	if (addr->magic != MAGIC) {
+	if (addr->shm_head.magic != MAGIC) {
 		return -1;
 	}
 
@@ -51,134 +52,183 @@ void led_release(void)
 		addr = (shm_t *)-1;
 }
 
-int diskled_get_disknum(void)
+int _diskled_set(int disk_id, int mode)
+{
+	if (addr->sys & SYS_3U) {
+		if (disk_id > DISK_NUM_3U)
+			return -1;
+		switch (mode) {
+		case LED_ON:
+			addr->task[disk_id].mode = MODE_ON;
+			if (pic_set_led(disk_id-1, PIC_LED_ON, 0) < 0)
+				return -1;
+			return 0;
+		case LED_OFF:
+			addr->task[disk_id].mode = MODE_OFF;
+			if (pic_set_led(disk_id-1, PIC_LED_OFF, 0) < 0)
+				return -1;
+			return 0;
+		case LED_BLINK_FAST:
+			addr->task[disk_id].mode = MODE_BLINK;
+			addr->task[disk_id].freq = FREQ_FAST;
+			addr->task[disk_id].count = COUNT_FAST;
+			if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST) < 0)
+				return -1;
+			return 0;
+		case LED_BLINK_NORMAL:
+			addr->task[disk_id].mode = MODE_BLINK;
+			addr->task[disk_id].freq = FREQ_NORMAL;
+			addr->task[disk_id].count = COUNT_NORMAL;
+			if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_NORMAL) < 0)
+				return -1;
+			return 0;
+		case LED_BLINK_SLOW:
+			addr->task[disk_id].mode = MODE_BLINK;
+			addr->task[disk_id].freq = FREQ_SLOW;
+			addr->task[disk_id].count = COUNT_SLOW;
+			if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW) < 0)
+				return -1;
+			return 0;
+		default:
+			return -1;
+		}
+	}
+	if (addr->sys & SYS_2U) {
+		if (disk_id > DISK_NUM_2U)
+			return -1;
+	}
+	if (addr->sys & SYS_S3U) {
+		if (disk_id > DISK_NUM_3U)
+			return -1;
+	}
+	switch (mode) {
+	case LED_ON:
+		addr->task[disk_id].mode = MODE_ON;
+		return 0;
+	case LED_OFF:
+		addr->task[disk_id].mode = MODE_OFF;
+		return 0;
+	case LED_BLINK_FAST:
+		addr->task[disk_id].mode = MODE_BLINK;
+		addr->task[disk_id].freq = FREQ_FAST;
+		addr->task[disk_id].count = COUNT_FAST;
+		return 0;
+	case LED_BLINK_NORMAL:
+		addr->task[disk_id].mode = MODE_BLINK;
+		addr->task[disk_id].freq = FREQ_NORMAL;
+		addr->task[disk_id].count = COUNT_NORMAL;
+		return 0;
+	case LED_BLINK_SLOW:
+		addr->task[disk_id].mode = MODE_BLINK;
+		addr->task[disk_id].freq = FREQ_SLOW;
+		addr->task[disk_id].count = COUNT_SLOW;
+		return 0;
+	default:
+		return -1;
+	}
+}
+
+int diskled_set(int disk_id, int mode)
 {
 	LED_CHECK_INIT();
-	if (addr->sys & SYS_3U || addr->sys & SYS_S3U) {
-		return DISK_NUM_3U;
-	} else if (addr->sys & SYS_2U) {
-		return DISK_NUM_2U;
+	
+	if (disk_id == 0) {
+		int i;
+		for (i=1; i <= addr->shm_head.disk_num; i++) {
+			if (_diskled_set(i, mode) < 0)
+				return -1;
+		}
+		return 0;
 	}
+
+	return _diskled_set(disk_id, mode);
+}
+
+int diskled_get_num(void)
+{
+	LED_CHECK_INIT();
+	return addr->shm_head.disk_num;
+}
+
+int diskled_get_all(int *arr, int size)
+{
+	if (!arr)
+		return -1;
+	LED_CHECK_INIT();
+	if (size < addr->shm_head.disk_num)
+		return -1;
+
+	int i;
+	for(i=1; i <= addr->shm_head.disk_num; i++) {
+		if (diskled_get(i, &arr[i-1]) < 0)
+			return -1;
+	}
+	return 0;
+}
+
+int diskled_get(int disk_id,  int *sts)
+{
+	if (!sts)
+		return -1;
+
+	LED_CHECK_INIT();
+	if (disk_id > addr->shm_head.disk_num)
+		return -1;
+	
+	switch (addr->task[disk_id].mode) {
+	case MODE_ON:
+		*sts = LED_ON;
+		return 0;
+	case MODE_OFF:
+		*sts = LED_OFF;
+		return 0;
+	case MODE_BLINK:
+		switch (addr->task[disk_id].freq) {
+		case FREQ_FAST:
+			*sts = LED_BLINK_FAST;
+			return 0;
+		case FREQ_NORMAL:
+			*sts = LED_BLINK_NORMAL;
+			return 0;
+		case FREQ_SLOW:
+			*sts = LED_BLINK_SLOW;
+			return 0;
+		default:
+			return -1;
+		}
+	default:
+		return -1;
+	}
+	
+}
+
+int sysled_set(int mode)
+{
+	LED_CHECK_INIT();
+	
+	if (mode == LED_ON) {
+		addr->task[0].mode = MODE_ON;
+		return sb_gpio28_set(true);
+	}
+	else if (mode == LED_OFF) {
+		addr->task[0].mode = MODE_OFF;
+		return sb_gpio28_set(false);
+	}
+
 	return -1;
 }
-int diskled_on(int disk_id)
+
+int sysled_get(int *sts)
 {
 	LED_CHECK_INIT();
-	if (addr->sys & SYS_3U) {
-		if (pic_set_led(disk_id-1, PIC_LED_ON, 0) < 0) {
-			return -1;
-		}
-		return 0;
-	} 
-	if (addr->sys & SYS_2U) {
-		if (disk_id > DISK_NUM_2U)
-			return -1;
-	}
-	if (addr->sys & SYS_S3U) {
-		if (disk_id > DISK_NUM_3U)
-			return -1;
-	}
-	addr->task[disk_id].mode = MODE_ON;
+
+	if (addr->task[0].mode & MODE_ON) 
+		*sts = LED_ON;
+	else if (addr->task[0].mode & MODE_OFF)
+		*sts = LED_OFF;
+	else
+		return -1;
+
 	return 0;
 }
 
-int diskled_off(int disk_id)
-{
-	LED_CHECK_INIT();
-	if (addr->sys & SYS_3U) {
-		if (pic_set_led(disk_id-1, PIC_LED_OFF, 0) < 0) {
-			return -1;
-		}
-		return 0;
-	}
-	if (addr->sys & SYS_2U) {
-		if (disk_id > DISK_NUM_2U)
-			return -1;
-
-	}
-	if (addr->sys & SYS_S3U) {
-		if (disk_id > DISK_NUM_3U)
-			return -1;
-	}
-	addr->task[disk_id].mode = MODE_OFF;
-	return 0;
-}
-
-int diskled_blink1s4(int disk_id)
-{
-	LED_CHECK_INIT();
-	if (addr->sys & SYS_3U) {
-		if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST) < 0) {
-			return -1;
-		}
-		return 0;
-	}
-	if (addr->sys & SYS_2U) {
-		if (disk_id > DISK_NUM_2U)
-			return -1;
-	}
-	if (addr->sys & SYS_S3U) {
-		if (disk_id > DISK_NUM_3U)
-			return -1;
-	}
-	addr->task[disk_id].mode = MODE_BLINK;
-	addr->task[disk_id].freq = FREQ_FAST;
-	addr->task[disk_id].count = COUNT_FAST;
-	return 0;
-}
-
-int diskled_blink1s1(int disk_id)
-{
-	LED_CHECK_INIT();
-	if (addr->sys & SYS_3U) {
-		if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_NORMAL) < 0) {
-			return -1;
-		}
-		return 0;
-	}
-	if (addr->sys & SYS_2U) {
-		if (disk_id > DISK_NUM_2U)
-			return -1;
-	}
-	if (addr->sys & SYS_S3U) {
-		if (disk_id > DISK_NUM_3U)
-			return -1;
-	}
-	addr->task[disk_id].mode = MODE_BLINK;
-	addr->task[disk_id].freq = FREQ_NORMAL;
-	addr->task[disk_id].count = COUNT_NORMAL;
-	return 0;
-}
-
-int diskled_blink2s1(int disk_id)
-{
-	LED_CHECK_INIT();
-	if (addr->sys & SYS_3U) {
-		if (pic_set_led(disk_id-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW) < 0) {
-			return -1;
-		}
-		return 0;
-	}
-	if (addr->sys & SYS_2U) {
-		if (disk_id > DISK_NUM_2U)
-			return -1;
-	}
-	if (addr->sys & SYS_S3U) {
-		if (disk_id > DISK_NUM_3U)
-			return -1;
-	}
-	addr->task[disk_id].mode = MODE_BLINK;
-	addr->task[disk_id].freq = FREQ_SLOW;
-	addr->task[disk_id].count = COUNT_SLOW;
-	return 0;
-}
-
-int sysled_on (void)
-{
-	return sb_gpio28_set(1);
-}
-
-int sysled_off(void)
-{
-	return sb_gpio28_set(0);
-}
