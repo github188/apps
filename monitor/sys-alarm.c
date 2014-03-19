@@ -5,7 +5,7 @@
 #include "sys-action.h"
 #include "sys-event.h"
 #include "sys-utils.h"
-#include "../pic_ctl/pic_ctl.h"
+#include "../led-ctl/cmd/libled.h"
 
 #define SHELL "/bin/sh"
 #define BUZZER_ON_CMD "sys-manager system --set buzzer --value inc >/dev/null"
@@ -175,7 +175,7 @@ void sys_alarm_diskled_on(void *event)
 		int enc,slot;
 		sscanf(p, "%d:%d", &enc, &slot);
 		//printf("led on: %d\n", slot);
-		pic_set_led(slot-1, PIC_LED_ON, 0);
+		diskled_set(slot, LED_ON);
 	}
 }
 
@@ -189,7 +189,7 @@ void sys_alarm_diskled_off(void *event)
 		int enc,slot;
 		sscanf(p, "%d:%d", &enc, &slot);
 		//printf("led off: %d\n", slot);
-		pic_set_led(slot-1, PIC_LED_OFF, 0);
+		diskled_set(slot, LED_OFF);
 	}
 }
 
@@ -209,7 +209,7 @@ void sys_alarm_diskled_blink1s1(void *event)
 		int enc,slot;
 		sscanf(p, "%d:%d", &enc, &slot);
 		//printf("disk led blink 1s1: %d\n", slot);
-		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_NORMAL);
+		diskled_set(slot, LED_BLINK_NORMAL);
 	}
 }
 
@@ -226,7 +226,7 @@ void sys_alarm_diskled_blink1s4(void *event)
 		int enc = -1, slot = -1;
 		sscanf(p, "%d:%d", &enc, &slot);
 		//printf("disk led blink 1s4: %d\n", slot);
-		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_FAST);
+		diskled_set(slot, LED_BLINK_FAST);
 	}
 }
 
@@ -243,7 +243,7 @@ void sys_alarm_diskled_blink2s1(void *event)
 		int enc = -1, slot = -1;
 		sscanf(p, "%d:%d", &enc, &slot);
 		//printf("disk led blink 2s1: %d\n", slot);
-		pic_set_led(slot-1, PIC_LED_BLINK, PIC_LED_FREQ_SLOW);
+		diskled_set(slot, LED_BLINK_SLOW);
 	}
 }
 
@@ -273,7 +273,7 @@ void sys_alarm_sysled_on(void *event)
 	
 	//printf("sys led on\n");
 	if (sysled_cnt == 0)
-	       sb_gpio28_set(true);
+		sysled_set(LED_ON);
 	sysled_cnt++;
 #ifdef _DEBUG
 	printf("sysled_cnt: %d\n", sysled_cnt);
@@ -295,7 +295,7 @@ void sys_alarm_sysled_off(void *event)
 			if (sysled_cnt > 0)
 				sysled_cnt--;
 			if (sysled_cnt == 0)
-				sb_gpio28_set(false);
+				sysled_set(LED_OFF);
 #ifdef _DEBUG
 			printf("sysled_cnt: %d\n", sysled_cnt);
 #endif
