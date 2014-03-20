@@ -9,7 +9,8 @@
 #define SYS_NONE	0
 #define SYS_3U		1
 #define SYS_2U		2
-#define SYS_S3U		4
+#define SYS_A2U		4
+#define SYS_S3U		8
 
 #define DISK_ID_NONE	-1
 #define DISK_ID_ALL	-2

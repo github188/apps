@@ -93,7 +93,7 @@ int _diskled_set(int disk_id, int mode)
 			return -1;
 		}
 	}
-	if (addr->sys & SYS_2U) {
+	if (addr->sys & SYS_2U || addr->sys & SYS_A2U) {
 		if (disk_id > DISK_NUM_2U)
 			return -1;
 	}
@@ -205,16 +205,25 @@ int diskled_get(int disk_id,  int *sts)
 int sysled_set(int mode)
 {
 	LED_CHECK_INIT();
-	
-	if (mode == LED_ON) {
-		addr->task[0].mode = MODE_ON;
-		return sb_gpio28_set(true);
+	if (addr->sys & SYS_A2U) {
+		if (mode == LED_ON) {
+			addr->task[0].mode = MODE_ON;
+			return sb_gpio28_set_atom(true);
+		}
+		if (mode == LED_OFF) {
+			addr->task[0].mode = MODE_OFF;
+			return sb_gpio28_set_atom(false);
+		}
+	} else {
+		if (mode == LED_ON) {
+			addr->task[0].mode = MODE_ON;
+			return sb_gpio28_set(true);
+		}
+		if (mode == LED_OFF) {
+			addr->task[0].mode = MODE_OFF;
+			return sb_gpio28_set(false);
+		}
 	}
-	else if (mode == LED_OFF) {
-		addr->task[0].mode = MODE_OFF;
-		return sb_gpio28_set(false);
-	}
-
 	return -1;
 }
 

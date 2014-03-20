@@ -1,19 +1,27 @@
 #include <stdio.h>
-#include <ev.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <signal.h>
 #include "common.h"
 #include "led_worker.h"
 #include "i2c_dev.h"
 #include "sysled.h"
 
-extern int disk_max_num;
 
 extern shm_t *addr;
+extern int disk_max_num;
 extern int (*pic_write_disk_gen)(int, int);
-static ev_timer worker_timer;
-static struct ev_loop *led_loop = NULL;
 static int sts[DISK_NUM_3U + 1];
+static volatile int go=0;
 
-static void timer_cb(EV_P_ ev_timer *w, int r)
+static void timer_cb(int signo)
+{
+	if (signo != SIGALRM)
+		return ;
+	go = 1;
+}
+
+void do_work(void)
 {
 	led_task_t *taskp = NULL;
 	int i;
@@ -47,7 +55,7 @@ static void timer_cb(EV_P_ ev_timer *w, int r)
 				fprintf(stderr, "disk %d freq not set.\n", i);
 				continue;
 			} 
-			 if (taskp->count == 0) {
+			if (taskp->count == 0) {
 				if (pic_write_disk_gen(i, sts[i+1]) != 0) {
 					fprintf(stderr, "blink disk %d failed.\n", i);
 				}
@@ -60,32 +68,40 @@ static void timer_cb(EV_P_ ev_timer *w, int r)
 					taskp->count = COUNT_SLOW;
 				}
 			}
-			 if (taskp->count > 0) 
-				 taskp->count--;
+			if (taskp->count > 0) 
+				taskp->count--;
 		}
 		if (taskp->time != TIME_FOREVER) {
-			taskp->time = taskp->time - WORKER_TIMER*1000;
+			taskp->time = taskp->time - WORKER_TIMER;
 			if (taskp->time <= 0) {
 				taskp->mode = MODE_OFF;
 				pic_write_disk_gen(i, I2C_LED_OFF);
 			}
 		}
 	}
+	go = 0;
 }
 
-void worker_init(void)
+int worker_init(void)
 {
-	led_loop = EV_DEFAULT;
-	
-	ev_timer_init(&worker_timer, timer_cb, 0., WORKER_TIMER);
-	ev_timer_again(led_loop, &worker_timer);
-	ev_timer_start(led_loop, &worker_timer);
+	struct itimerval value;
+	value.it_value.tv_sec = 0;
+	value.it_value.tv_usec = WORKER_TIMER;
+	value.it_interval.tv_sec = 0;
+	value.it_interval.tv_usec = WORKER_TIMER;
 
-	ev_run(led_loop, 0);
+	if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
+		fprintf(stderr, "Setitimer failed.\n");
+		return -1;
+	}
+	signal(SIGALRM, timer_cb);
+	while (1) {
+		pause();
+		do_work();
+	}
 }
 
 void worker_release(void)
 {
-	ev_timer_stop(led_loop, &worker_timer);
-	ev_break(led_loop, EVBREAK_ALL);
+	signal(SIGALRM, SIG_DFL);
 }

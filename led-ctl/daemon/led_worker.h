@@ -2,10 +2,10 @@
 #define LED_WORKER__H__
 
 #include "common.h"
-#define WORKER_TIMER .125
+#define WORKER_TIMER 125000
 
 
-void worker_init(void);
+int worker_init(void);
 void worker_release(void);
 
 

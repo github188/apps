@@ -7,22 +7,21 @@
 #include "i2c_dev.h"
 
 char *l_opt_arg;
-char *const short_options = "c:t:h";
+char *const short_options = "t:c:h";
 struct option long_options[] = {
-	{"clean", 0, NULL, 'c'},
 	{"type", 1, NULL, 't'},
+	{"clean", 0, NULL, 'c'},
 	{"help", 0, NULL, 'h'},
 	{0, 0, 0, 0}
 };
 
-int disk_max_num;
-int flag = 0;
+int systype;
 int (*pic_write_disk_gen)(int, int);
 
 void print_help(void)
 {
-	printf("led_server:\n");
-	printf("\t[--type|-t 2U|S3U|3U]\n");
+	printf("led-ctl-daemonls:\n");
+	printf("\t[--type|-t 2U8-STANDARD|2U8-ATOM|3U16-STANDARD|3U16-SIMPLE]\n");
 	printf("\t[--clean]\n");
 	printf("\t[--help|-h]\n");
 }
@@ -41,17 +40,20 @@ int main(int argc, char *argv[])
 				long_options, NULL)) != -1) {
 		switch (c){
 		case 't':
-			if (!strcmp(optarg, "S3U")){
-				disk_max_num = DISK_NUM_3U;
+			if (!strcmp(optarg, "3U16-SIMPLE")){
+				systype = SYS_S3U;
 				pic_write_disk_gen = i2c_write_disk_3U;
 				break;
-			} else if (!strcmp(optarg, "2U")) {
-				disk_max_num = DISK_NUM_2U;
+			} else if (!strcmp(optarg, "2U8-STANDARD")) {
+				systype = SYS_2U;
 				pic_write_disk_gen = i2c_write_disk_2U;
 				break;
-			} else if (!strcmp(optarg, "3U")) {
-				disk_max_num = DISK_NUM_3U;
-				flag = 1;
+			} else if (!strcmp(optarg, "2U8-ATOM")) {
+				systype = SYS_A2U;
+				pic_write_disk_gen = i2c_write_disk_2U;
+				break;
+			} else if (!strcmp(optarg, "3U16-STANDARD")) {
+				systype = SYS_3U;
 				shmid = shm_init();
 				if (shmid < 0)
 					return -1;
@@ -64,6 +66,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'c':
 			goto clean;
+		case 'h':
+			print_help();
+			return 0;
 		default:
 			print_help();
 			return -1;
@@ -73,7 +78,8 @@ int main(int argc, char *argv[])
 	shmid = shm_init();
 	if (shmid < 0)
 		return -1;
-	worker_init();
+	if (worker_init() < 0)
+		return -1;
 
 	worker_release();
 clean:	
