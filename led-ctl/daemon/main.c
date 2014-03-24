@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <syslog.h>
 #include <getopt.h>
 #include <string.h>
 #include "common.h"
@@ -59,7 +60,7 @@ int main(int argc, char *argv[])
 					return -1;
 				return 0;
 			} else {
-				fprintf(stderr, "invalid type %s\n", optarg);
+				syslog(LOG_ERR, "led_ctl: invalid type %s\n", optarg);
 				print_help();
 				return -1;
 			}

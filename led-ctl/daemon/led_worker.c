@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <syslog.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <signal.h>
@@ -44,20 +45,20 @@ void do_work(void)
 #endif // _DEBUG
 		if (taskp->mode & MODE_ON) {
 			if (pic_write_disk_gen(i, I2C_LED_ON) != 0) {
-				fprintf(stderr, "led on disk %d failed.\n", i);
+				syslog(LOG_ERR, "led_ctl: led on disk %d failed.\n", i);
 			}
 		} else if (taskp->mode & MODE_OFF) {
 			if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
-				fprintf(stderr, "led off disk %d failed.\n", i);
+				syslog(LOG_ERR, "led_ctl: led off disk %d failed.\n", i);
 			} 
 		} else if (taskp->mode & MODE_BLINK) {
 			if (taskp->freq == FREQ_NONE) {
-				fprintf(stderr, "disk %d freq not set.\n", i);
+				syslog(LOG_ERR, "led_ctl: disk %d freq not set.\n", i);
 				continue;
 			} 
 			if (taskp->count == 0) {
 				if (pic_write_disk_gen(i, sts[i+1]) != 0) {
-					fprintf(stderr, "blink disk %d failed.\n", i);
+					syslog(LOG_ERR, "led_ctl: blink disk %d failed.\n", i);
 				}
 				sts[i+1] = (sts[i+1] + 1) % 2;
 				if (taskp->freq  & FREQ_FAST) {
@@ -91,7 +92,7 @@ int worker_init(void)
 	value.it_interval.tv_usec = WORKER_TIMER;
 
 	if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
-		fprintf(stderr, "Setitimer failed.\n");
+		syslog(LOG_ERR, "led_ctl: Setitimer failed.\n");
 		return -1;
 	}
 	signal(SIGALRM, timer_cb);

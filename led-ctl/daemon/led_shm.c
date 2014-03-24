@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <syslog.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/ipc.h>
@@ -33,12 +34,12 @@ int shm_init()
 	size = (sizeof(led_task_t) * (disk_max_num + 1) + sizeof(shm_head_t) + sizeof(int));
 	shmid = shmget(shmkey, size,  0666|IPC_CREAT);
 	if (shmid == -1) {
-		fprintf(stderr, "create shm failed.\n");
+		syslog(LOG_ERR, "led_ctl: create shm failed.\n");
 		return -1;
 	}
 	addr = (shm_t *)shmat(shmid, 0, 0);
 	if (addr == (shm_t*)-1) {
-		fprintf(stderr, "shmat failed.\n");
+		syslog(LOG_ERR, "led_ctl: shmat failed.\n");
 		return -1;
 	}
 	
@@ -84,7 +85,7 @@ void shm_release(void)
 	shmid = shmget(shmkey, 0, 0666);
 	ret = shmctl(shmid, IPC_RMID, NULL);
 	if (ret == -1) {
-		fprintf(stderr, "release shm failed.\n");
+		syslog(LOG_NOTICE, "led_ctl: release shm failed.\n");
 		return;
 	}
 }
