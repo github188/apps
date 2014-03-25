@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset pic_ctl/test/dled_test test-utils/tools-test-led watchdog/watchdog'
+DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset'
 UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
@@ -10,9 +10,10 @@ SYSCONF_BIN='sys-conf/* sys-conf/.build-date'
 COMMON_BIN='common/*'
 MON_BIN='monitor/*'
 WEB_BIN='web/*'
+MISC_BIN='watchdog/watchdog led-ctl/daemon/led-ctl-daemon led-ctl/cmd/tools-test-led'
 
 # sync list
-BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN $WEB_BIN"
+BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN $WEB_BIN $MISC_BIN"
 LIB_LIST=""
 
 # 升级包
