@@ -119,7 +119,7 @@ static int find_slot_from_path(const char *path)
 		strncpy(slot_digit, &path[pmatch[1].rm_so], l);
 		slot_digit[l] = 0;
 		to_int(slot_digit, &slot);
-		return slot;
+		return slot+1;
 	} else {
 		clog(LOG_ERR, "%s: match %s failed\n", __func__, path);
 		return -1;
