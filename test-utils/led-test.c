@@ -5,7 +5,6 @@
 #include <time.h>
 #include <getopt.h>
 
-#include "../monitor/sys-utils.h"
 #include "../pic_ctl/pic_ctl.h"
 
 struct option longopts[] = {
