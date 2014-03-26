@@ -3,8 +3,14 @@ export STRIP = strip
 
 ifdef debug
 	STRIP =
-	CFLAGS = -Wall -g
+	CFLAGS = -Wall -g -DDEBUG
 endif
+
+ifdef isolated-storage
+	CFLAGS += -DISOLATED_STORAGE
+endif
+
+.PHONY: help clean
 
 all:
 	$(MAKE) -C common
@@ -33,3 +39,6 @@ clean:
 	$(MAKE) -C watchdog clean
 	$(MAKE) -C led-ctl clean
 	find . -name '*.pyc' -delete
+
+help:
+	@echo make [isolated-storage=1] [debug=1]

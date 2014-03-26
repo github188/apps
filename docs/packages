@@ -20,7 +20,6 @@ aptitude install ntpdate
 aptitude install kpartx
 aptitude install smartmontools
 aptitude install ethtool
-aptitude install irqbalance
 
 # for complie use
 aptitude install libatasmart-dev
