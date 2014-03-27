@@ -13,11 +13,10 @@
 
 
 char *l_opt_arg;
-char *const short_options = "b:d:e:h";
+char *const short_options = "b:d:h";
 buzzer_task_t systask;
 struct option long_options[] = {
 	{"buzzer", 1, NULL, 'b'},
-	{"expire", 1, NULL , 'e'},
 	{"help", 1, NULL, 'h'},
 	{0, 0, 0, 0}
 };
@@ -26,7 +25,6 @@ void print_help(void)
 {
 	printf("buzzer-ctl:\n");
 	printf("\t[--buzzer|-b on|off|foff]\n");
-	printf("\t[--expire|-e <seconds>]\n");
 	printf("\t[--help|-h]\n");
 }
 
@@ -48,9 +46,6 @@ int my_getopt(int argc, char **argv)
 					systask.mode = MODE_OFF;
 				}
 				break;
-			case 'e':
-				systask.time = atol(optarg);
-				break;
 			case 'h':
 				print_help();
 				return -1;
@@ -70,7 +65,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	systask.mode = MODE_OFF;
-	systask.time = TIME_FOREVER;
 	
 	if (my_getopt(argc, argv))
 		return -1;
@@ -87,12 +81,6 @@ int main(int argc, char *argv[])
 			buzzer_set(BUZZER_OFF);
 		else if (systask.mode & MODE_FORCE_OFF)
 			buzzer_set(BUZZER_FORCE_OFF);
-
-
-	if (systask.time != TIME_FOREVER)
-		buzzer_set_time(systask.time);
-	else 
-		buzzer_set_time(TIME_FOREVER);
 
 	return 0;
 }

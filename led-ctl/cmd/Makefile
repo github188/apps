@@ -1,10 +1,12 @@
 LDFLAGS += ./libled.a
 OBJECTS := led-ctl.o
-
+ifdef only-interface
+	CFLAGS += ONLY_INTERFACE
+endif
 all: led-ctl libled.a
 
 led-ctl: $(OBJECTS) libled.a
-	gcc -o led-ctl $(OBJECTS) $(LDFLAGS)
+	gcc -o led-ctl $(OBJECTS) $(CFLAGS) $(LDFLAGS)
 ifneq ($(STRIP),)
 	$(STRIP) led-ctl
 endif

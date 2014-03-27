@@ -89,18 +89,8 @@ void buzzer_release(void)
 		addr = (shm_t *)-1;
 }
 
-int buzzer_set_time(long time)
-{
-	BUZZER_CHECK_INIT();
-	b_p(semid);
-	addr->task.time = time;
-	b_v(semid);
-	return 0;
-}
-
 int buzzer_set(enum BUZZER_STATUS mode)
 {
-	int ret;
 
 	BUZZER_CHECK_INIT();
 	b_p(semid);

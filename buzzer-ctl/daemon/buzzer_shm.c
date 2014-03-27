@@ -43,7 +43,6 @@ int shm_init()
 		
 	addr->task.mode = MODE_OFF;
 	addr->task.count = 0;
-	addr->task.time = TIME_FOREVER;
 
 	return shmid;
 }

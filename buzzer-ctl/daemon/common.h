@@ -14,7 +14,6 @@
 typedef struct buzzer_task buzzer_task_t;
 struct buzzer_task {
 	int mode;
-	long time;
 	int count;
 };
 

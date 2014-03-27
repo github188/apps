@@ -18,17 +18,6 @@ void Stop( )
 	return;
 }  
 
-
-
-void play(unsigned int* freq ,unsigned int* time)  
-{  
-	int i;  
-	for(i=0;freq[i]!=0;i++)  
-	{  
-		speaker(freq[i] ,time[i]);  
-	}  
-}  
-
 int speaker(unsigned int freq,unsigned int delay)  
 { 
 	static int flag=0,bit;  
@@ -43,5 +32,15 @@ int speaker(unsigned int freq,unsigned int delay)
 	bit=inb(0x61);  
 	outb(3 | bit,0x61);  
 	usleep(10000*delay);  
-	outb(0xfc | bit,0x61);  
+	outb(0xfc | bit,0x61); 
+        return 0;	
+}
+
+void play(unsigned int* freq ,unsigned int* time)  
+{  
+	int i;  
+	for(i=0;freq[i]!=0;i++)  
+	{  
+		speaker(freq[i] ,time[i]);  
+	}  
 }

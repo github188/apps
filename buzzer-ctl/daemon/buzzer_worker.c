@@ -18,15 +18,7 @@ void worker_init(void)
 	};
 	while (1) {
 		if (taskp->mode & MODE_ON) {
-			if (taskp->time == TIME_FOREVER) {
-				play(freq_alert, time_alert);
-			} else {
-				int i;
-				for (i=0; i < taskp->time; i++)
-					play(freq_alert, time_alert);
-				taskp->time = 0;
-				Stop();
-			}
+			play(freq_alert, time_alert);
 		} else if (taskp->mode & MODE_OFF) {
 			Stop();
 		} else if (taskp->mode & MODE_FORCE_OFF) {
