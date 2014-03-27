@@ -1,10 +1,14 @@
 CFLAGS += -Wstrict-aliasing=0
 CFLAGS += -I/usr/include/libxml2
 CFLAGS += -std=c99
+<<<<<<< HEAD
 ifdef debug
 CFLAGS += -D_DEBUG
 endif
 LDFLAGS += ../led-ctl/cmd/libled.a  ../buzzer-ctl/cmd/libbuzzer.a ../common/liblog.a libsysmon.a -lxml2 -ljson -lev -lsqlite3 -lm
+=======
+LDFLAGS += ../led-ctl/cmd/libled.a ../common/liblog.a libsysmon.a -lxml2 -ljson -lev -lsqlite3 -lm
+>>>>>>> origin/develop
 
 OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o pmu-info.o
 
