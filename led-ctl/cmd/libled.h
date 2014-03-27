@@ -4,9 +4,10 @@
 enum {
 	LED_ON			= 0x01,
 	LED_OFF			= 0x02,
-	LED_BLINK_FAST	        = 0x03,
-	LED_BLINK_NORMAL	= 0x04,
-	LED_BLINK_SLOW		= 0x05,
+	LED_FORCE_OFF           = 0x03,
+	LED_BLINK_FAST	        = 0x04,
+	LED_BLINK_NORMAL	= 0x05,
+	LED_BLINK_SLOW		= 0x06,
 };
 
 int led_init(void);
@@ -19,6 +20,8 @@ int diskled_get_num(void);
 int diskled_get_all(int *arr, int size);
 /* 获取disk_id单个灯的状态，放到sts中 */
 int diskled_get(int disk_id, int *sts);
+/*设置系统灯状态，LED_ON打开并增加count计数，LED_OFF减少计数，如果计数小于等于0则关闭，
+ * LED_FORCE_OFF不更改计数，关闭灯  */
 int sysled_set(int mode);
 int sysled_get(int *sts);
 

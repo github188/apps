@@ -8,11 +8,11 @@
 #include "i2c_dev.h"
 #include "sysled.h"
 
-
 extern shm_t *addr;
 extern int disk_max_num;
 extern int (*pic_write_disk_gen)(int, int);
 static int sts[DISK_NUM_3U + 1];
+static int count[DISK_NUM_3U +1];
 static volatile int go=0;
 
 static void timer_cb(int signo)
@@ -26,23 +26,17 @@ void do_work(void)
 {
 	led_task_t *taskp = NULL;
 	int i;
-
-	taskp = &addr->task[0];
+	printf("do workd\n");
 #ifdef _DEBUG
 	printf("sysled mode: %d\n", taskp->mode);
-#endif // _DEBUG
-	/* 检查系统灯 */
-	if (taskp->mode & MODE_ON) {
-		sb_gpio28_set(true);
-	} else if (taskp->mode & MODE_OFF) {
-		sb_gpio28_set(false);
-	}
+#endif
+	
 	for (i=0; i < disk_max_num; i++) {
 		taskp = &addr->task[i+1];
 #ifdef _DEBUG
 		printf("led: %d mode: %d freq: %d  time: %d count: %d",
 		       i+1, taskp->mode, taskp->freq, taskp->time, taskp->count);
-#endif // _DEBUG
+#endif
 		if (taskp->mode & MODE_ON) {
 			if (pic_write_disk_gen(i, I2C_LED_ON) != 0) {
 				syslog(LOG_ERR, "led_ctl: led on disk %d failed.\n", i);
@@ -56,21 +50,15 @@ void do_work(void)
 				syslog(LOG_ERR, "led_ctl: disk %d freq not set.\n", i);
 				continue;
 			} 
-			if (taskp->count == 0) {
+			if (count[i+1] == 0) {
 				if (pic_write_disk_gen(i, sts[i+1]) != 0) {
 					syslog(LOG_ERR, "led_ctl: blink disk %d failed.\n", i);
 				}
 				sts[i+1] = (sts[i+1] + 1) % 2;
-				if (taskp->freq  & FREQ_FAST) {
-					taskp->count = COUNT_FAST;
-				} else if (taskp->freq & FREQ_NORMAL) {
-					taskp->count = COUNT_NORMAL;
-				} else if (taskp->freq & FREQ_SLOW) {
-					taskp->count = COUNT_SLOW;
-				}
+				count[i+1]=taskp->count;
 			}
-			if (taskp->count > 0) 
-				taskp->count--;
+			if (count[i+1] > 0) 
+				count[i+1]--;
 		}
 		if (taskp->time != TIME_FOREVER) {
 			taskp->time = taskp->time - WORKER_TIMER;

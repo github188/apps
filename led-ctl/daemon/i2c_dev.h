@@ -10,7 +10,7 @@
 
 enum {
 	I2C_ADDRESS_2U= (0x30 >> 1),
-	I2C_ADDRESS_3U1 = (0x3c >> 1),
+	I2C_ADDRESS_3U1 = (0x3C >> 1),
 	I2C_ADDRESS_3U2= (0x3E >> 1),
 };
 

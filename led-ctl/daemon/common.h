@@ -18,6 +18,7 @@
 #define MODE_ON		1
 #define MODE_OFF	2
 #define MODE_BLINK	4
+#define MODE_FORCE_OFF  8
 
 #define FREQ_NONE	0
 #define FREQ_FAST	1

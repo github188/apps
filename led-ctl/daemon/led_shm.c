@@ -4,12 +4,14 @@
 #include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 #include "common.h"
 #include "led_shm.h"
 
 extern int systype;
 int disk_max_num;
 shm_t *addr;
+int semid;
 
 int shm_init()
 {
@@ -19,6 +21,11 @@ int shm_init()
 
 	
 	shmkey = ftok(SHMKEY, 0);
+	semid = semget(shmkey, 1, 0666|IPC_CREAT);
+	if (semid == -1) {
+		syslog(LOG_ERR, "led_ctl: create sem failed.\n");
+		return -1;
+	}
 
 	switch(systype) {
 	case SYS_3U: case SYS_S3U:
@@ -78,14 +85,20 @@ int shm_init()
 void shm_release(void)
 {
 	int ret = -1;
-	int shmid;
+	int shmid, semid;
 	key_t shmkey;
 
 	shmkey = ftok(SHMKEY, 0);
+	semid = semget(shmkey, 0, 0666);
 	shmid = shmget(shmkey, 0, 0666);
 	ret = shmctl(shmid, IPC_RMID, NULL);
 	if (ret == -1) {
 		syslog(LOG_NOTICE, "led_ctl: release shm failed.\n");
+		return;
+	}
+	ret = semctl(semid, 0, IPC_RMID);
+	if (ret == -1) {
+		syslog(LOG_NOTICE, "led_ctl: release sem failed.\n");
 		return;
 	}
 }

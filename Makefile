@@ -14,6 +14,7 @@ all:
 	$(MAKE) -C web-iface
 	$(MAKE) -C pic_ctl
 	$(MAKE) -C led-ctl
+	$(MAKE) -C buzzer-ctl
 	$(MAKE) -C monitor
 	$(MAKE) -C us
 	$(MAKE) -C sys-conf
@@ -32,4 +33,5 @@ clean:
 	$(MAKE) -C test-utils clean
 	$(MAKE) -C watchdog clean
 	$(MAKE) -C led-ctl clean
+	$(MAKE) -C buzzer-ctl clean
 	find . -name '*.pyc' -delete

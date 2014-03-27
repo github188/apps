@@ -6,10 +6,8 @@
 #include "sys-event.h"
 #include "sys-utils.h"
 #include "../led-ctl/cmd/libled.h"
+#include "../buzzer-ctl/cmd/libbuzzer.h"
 
-#define SHELL "/bin/sh"
-#define BUZZER_ON_CMD "sys-manager system --set buzzer --value inc >/dev/null"
-#define BUZZER_OFF_CMD "sys-manager system --set buzzer --value dec >/dev/null"
 
 struct event_record
 {
@@ -17,20 +15,6 @@ struct event_record
 	struct list list_entry;
 };
 
-int _safe_system(const char *cmd)
-{
-	pid_t pid;
-
-	pid = fork();
-	if (pid < 0)
-		return -1;
-	if (pid == 0) {
-		execl(SHELL, "sh", "-c", cmd, NULL);
-		exit(127);
-	}
-
-	return 0;
-}
 
 int _gconf_level_count(const char *level)
 {
@@ -88,8 +72,8 @@ void sys_alarm_buzzer_on(void *event)
 	er = malloc(sizeof(*er));
 	strcpy(er->param, ev->param);
 	list_add(&buzzer_list, &er->list_entry);
-
-	_safe_system(BUZZER_ON_CMD);
+	
+	buzzer_set(BUZZER_ON);
 }
 
 void sys_alarm_buzzer_off(void *event)
@@ -104,7 +88,7 @@ void sys_alarm_buzzer_off(void *event)
 			list_del(&er->list_entry);
 			free(er);
 
-			_safe_system(BUZZER_OFF_CMD);
+			buzzer_set(BUZZER_OFF);
 		}
 	}
 }

@@ -17,8 +17,8 @@ int main(int argc, char *argv[])
 	int *arr;
 	int num;
 
-	diskled_get(1, &a);
-	printf("led 1: %d\n", a);
+	sysled_get(&a);
+	printf("sysled: %d\n", a);
 
 	num = diskled_get_num();
 	arr = (int *)malloc(sizeof(int) * num);

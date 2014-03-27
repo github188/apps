@@ -1,12 +1,12 @@
 LDFLAGS += ./libled.a
 OBJECTS := tools-test-led.o
 
-all: tools-test-led libled.a
+all: led-ctl libled.a
 
-tools-test-led:$(OBJECTS) libled.a
-	gcc -o tools-test-led $(OBJECTS) $(LDFLAGS)
+led-ctl:$(OBJECTS) libled.a
+	gcc -o led-ctl $(OBJECTS) $(LDFLAGS)
 ifneq ($(STRIP),)
-	$(STRIP) tools-test-led
+	$(STRIP) led-ctl
 endif
 
 libled.a:sysled.o 
@@ -17,4 +17,4 @@ sysled.o:
 	$(MAKE) -C ../daemon
 
 clean:
-	rm -rf *.o tools-test-led *.a
+	rm -rf *.o led-ctl *.a

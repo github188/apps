@@ -13,13 +13,14 @@
 
 
 char *l_opt_arg;
-char *const short_options = "s:i:d:f:e:h";
+char *const short_options = "s:S:i:d:f:e:h";
 led_task_t task;
 led_task_t systask;
 static int disk_id = DISK_ID_NONE;
 static int flags = 0; 		/* 检查是否为设置系统灯 */
 struct option long_options[] = {
 	{"sysled", 1, NULL, 's'},
+	{"sysled-force", 1, NULL, 'S'},
 	{"id", 1, NULL, 'i'},
 	{"diskled", 1, NULL, 'd'},
 	{"freq", 1, NULL, 'f'},
@@ -30,8 +31,8 @@ struct option long_options[] = {
 
 void print_help(void)
 {
-	printf("tools-test-led:\n");
-	printf("\t[--sysled|-s on|off]\n");
+	printf("led-ctl:\n");
+	printf("\t[--sysled|-s on|off|foff]\n");
 	printf("\t[--diskled|-d on|off|[blink --freq|-f fast|normal|slow] [--id|-i <disk_id>|<all>]]\n");
 	printf("\t[--expire|-e <seconds>]\n");
 	printf("\t[--help|-h]\n");
@@ -50,6 +51,8 @@ int my_getopt(int argc, char **argv)
 					systask.mode = MODE_ON;
 				} else if (!strcmp(optarg, "off")) {
 					systask.mode = MODE_OFF;
+				} else if (!strcmp(optarg, "foff")){
+					systask.mode = MODE_FORCE_OFF;
 				} else {
 					systask.mode = MODE_OFF;
 				}
@@ -185,6 +188,8 @@ int main(int argc, char *argv[])
 			sysled_set(LED_ON);
 		else if (systask.mode & MODE_OFF)
 			sysled_set(LED_OFF);
+		else if (systask.mode & MODE_FORCE_OFF)
+			sysled_set(LED_FORCE_OFF);
 	}
 	if (disk_id == DISK_ID_NONE )
 		return 0;
