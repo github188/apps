@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "common.h"
 #include "AlarmSW.h"
 
@@ -17,10 +18,10 @@ void worker_init(void)
 	};
 	while (1) {
 		if (taskp->mode & MODE_ON) {
-			int i;
 			if (taskp->time == TIME_FOREVER) {
 				play(freq_alert, time_alert);
 			} else {
+				int i;
 				for (i=0; i < taskp->time; i++)
 					play(freq_alert, time_alert);
 				taskp->time = 0;
@@ -31,6 +32,7 @@ void worker_init(void)
 		} else if (taskp->mode & MODE_FORCE_OFF) {
 			Stop();
 		}
+		usleep(10000);
 	}
 }
 
