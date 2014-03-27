@@ -1,5 +1,4 @@
-﻿#!/usr/bin/env python
-#!/usr/bin/env python
+﻿#!/usr/bin/env python2.6
 # -*- coding: utf-8 -*-
 
 #~ cat /opt/samba/conf/rd/libusermanage.py|grep ^#~###-|sed 's/#~###-/#~ /g'

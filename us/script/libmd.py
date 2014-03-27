@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 # -*- coding: utf-8 -*-
 
 import sys
@@ -226,7 +226,7 @@ CONFIG_BAK_ROOT = '/tmp/.configbak'
 MD_RESERVE_SECTORS = 204800
 MD_RESERVE_START = 1024
 def md_reserve_space_online(mddev):
-	if system_type() != SYSTYPE_IPSAN_NAS:
+	if software_type() != 'IPSAN-NAS':
 		return
 
 	if not os.path.isdir(CONFIG_BAK_ROOT):
@@ -270,7 +270,7 @@ def md_reserve_space_online(mddev):
 	return
 	
 def md_reserve_space_offline(mddev):
-	if system_type() != SYSTYPE_IPSAN_NAS:
+	if software_type() != 'IPSAN-NAS':
 		return
 
 	dmname = 'bak-%s' % basename(mddev)
@@ -841,11 +841,14 @@ def md_rebuild(mdattr, hotrep_disk_slot = ''):
 	subject = '卷组%s启动重建失败' % mdattr.name
 	disk_type = 'Hot'
 	disk = get_hotrep_by_mduud(mdattr.raid_uuid)
+	# 取消自动使用空闲盘重建
+	# 手动将空闲盘设置为热备盘后，会自动重建降级的卷组
+	#if disk == {}:
+	#	disk = get_free_disk()
+	#	disk_type = 'Free'
 	if disk == {}:
-		disk = get_free_disk()
-		disk_type = 'Free'
-	if disk == {}:
-		msg = '未找到热备盘和空闲盘重建卷组 %s' % mdattr.name
+		#msg = '未找到热备盘和空闲盘重建卷组 %s' % mdattr.name
+		msg = '未找到热备盘重建卷组 %s' % mdattr.name
 	else:
 		slot = disk_serial2slot(disk['serial'])
 		diskdev = disk_slot2dev(slot)

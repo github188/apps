@@ -91,7 +91,7 @@ void led_release(void)
 		addr = (shm_t *)-1;
 }
 
-int _diskled_set(int disk_id, int mode)
+int _diskled_set(int disk_id, enum LED_STATUS mode)
 {
 	p(semid);
 
@@ -175,7 +175,7 @@ error:
 	return -1;
 }
 
-int diskled_set(int disk_id, int mode)
+int diskled_set(int disk_id, enum LED_STATUS mode)
 {
 	LED_CHECK_INIT();
 	
@@ -198,7 +198,7 @@ int diskled_get_num(void)
 	return addr->shm_head.disk_num;
 }
 
-int diskled_get_all(int *arr, int size)
+int diskled_get_all(enum LED_STATUS *arr, int size)
 {
 
 	if (!arr)
@@ -215,7 +215,7 @@ int diskled_get_all(int *arr, int size)
 	return 0;
 }
 
-int diskled_get(int disk_id,  int *sts)
+int diskled_get(int disk_id,  enum LED_STATUS *sts)
 {
 	if (!sts)
 		return -1;
@@ -259,7 +259,7 @@ error:
 	
 }
 
-int sysled_set(int mode)
+int sysled_set(enum LED_STATUS mode)
 {
 	int ret;
 
@@ -321,7 +321,7 @@ error:
 	return -1;
 }
 
-int sysled_get(int *sts)
+int sysled_get(enum LED_STATUS *sts)
 {
 	LED_CHECK_INIT();
 	

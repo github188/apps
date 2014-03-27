@@ -1,5 +1,5 @@
 LDFLAGS += libbuzzer.a
-OBJECTS := tools-test-buzzer.o libbuzzer.o
+OBJECTS := buzzer-ctl.o libbuzzer.o
 
 all: buzzer-ctl libbuzzer.a
 

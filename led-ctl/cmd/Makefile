@@ -1,9 +1,9 @@
 LDFLAGS += ./libled.a
-OBJECTS := tools-test-led.o
+OBJECTS := led-ctl.o
 
 all: led-ctl libled.a
 
-led-ctl:$(OBJECTS) libled.a
+led-ctl: $(OBJECTS) libled.a
 	gcc -o led-ctl $(OBJECTS) $(LDFLAGS)
 ifneq ($(STRIP),)
 	$(STRIP) led-ctl

@@ -1,6 +1,9 @@
 CROSS_COMPILE =
 
 CFLAGS += -Dclog_level=CL_NONE -DNDEBUG -Wstrict-aliasing=0 -I/usr/include/libxml2
+ifdef no_disk_prewarn
+CFLAGS += -DNO_DISK_PREWARN
+endif
 LDFLAGS =
 LDLIBS =
 uslibs = -lev -ludev -latasmart -lxml2  -L../common -llog -lsqlite3 ../monitor/libsysmon.a -ljson

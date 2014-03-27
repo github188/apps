@@ -27,7 +27,9 @@ static struct module us_modules[] = {
 	MODULE(us_mon),
 	MODULE(us_disk),
 	MODULE(us_session),
+#ifndef NO_DISK_PREWARN
 	MODULE(us_prewarn),
+#endif
 };
 
 void us_mod_init(void)

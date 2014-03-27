@@ -5,24 +5,25 @@ sync_apps()
 {
 	echo "copy all app files ..."
 
-	DISK_BIN="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
+	local disk_bin="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
 			us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset"
-	UDV_BIN="udv/*"
-	WEBIFACE_BIN="web-iface/sys-manager"
-	SYSCONF_BIN="sys-conf/* sys-conf/.build-date"
-	COMMON_BIN="common/*"
-	MON_BIN="monitor/sys-mon"
-	MISC_BIN="led-ctl/daemon/led-ctl-daemon led-ctl/cmd/tools-test-led"
+	local udv_bin="udv/*"
+	local webiface_bin="web-iface/sys-manager"
+	local sysconf_bin="sys-conf/* sys-conf/.build-date"
+	local common_bin="common/*"
+	local mon_bin="monitor/sys-mon monitor/libsysmon.py"
+	local misc_bin="led-ctl/daemon/led-ctl-daemon led-ctl/cmd/led-ctl \
+			buzzer-ctl/daemon/buzzer-ctl-daemon buzzer-ctl/cmd/buzzer-ctl"
 	
 	# sync list
-	BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $SYSCONF_BIN $COMMON_BIN \
-			$MON_BIN $WEB_BIN $MISC_BIN"
+	local bin_list="$disk_bin $udv_bin $webiface_bin $sysconf_bin $common_bin \
+			$mon_bin $web_bin $misc_bin"
 
 	local target=$TARGET/usr/local/bin
 	mkdir -p $target
 
 	rsync -av --exclude Makefile --exclude *.h --exclude *.c --exclude *.a \
-			--exclude *.o $BIN_LIST  $target/
+			--exclude *.o $bin_list  $target/
 	
 	# 编译python脚本
 	echo "compile python source ..."
@@ -58,17 +59,30 @@ sync_init_script()
 {
 	echo "copy init script ..."
 
-	SCRIPT_LIST="/etc/init.d/jw-driver /etc/init.d/jw-log /etc/init.d/jw-md \
-		/etc/init.d/jw-sysmon /etc/init.d/jw-us"
+	local script_list="rootfs/etc/init.d/jw-driver rootfs/etc/init.d/jw-log \
+			 rootfs/etc/init.d/jw-led rootfs/etc/init.d/jw-buzzer \
+			 rootfs/etc/init.d/jw-sysmon rootfs/etc/init.d/jw-us \
+			 rootfs/etc/init.d/jw-md"
 
 	local target=$TARGET/etc/init.d
 	mkdir -p $target
-	cp -fa $SCRIPT_LIST $target/
+	cp -fa $script_list $target/
 }
 
-tar_pkg()
+sync_shared_lib()
 {
-	echo "pakaging ..."
+	echo "copy shared library ..."
+
+	local shared_lib="/usr/lib/libparted*so* /usr/lib/libev*so*"
+	local target=$TARGET/usr/lib
+	mkdir -p $target
+	
+	cp -fa $shared_lib $target/
+}
+
+pkg_isolated_storage()
+{
+	echo "packaging isolated storage ..."
 
 	cd "$TARGET"
 	chown -fR root:root ./*
@@ -76,10 +90,31 @@ tar_pkg()
 	rm -rf $TARGET
 }
 
+pkg_python()
+{
+	echo "packaging python2.6 ..."
+	
+	local python_pkg=/tmp/python2.6-${ARCH}.tar.bz2
+	local target=/tmp/.python2.6
+	local python_bin="/usr/bin/pydoc2.6 /usr/bin/pygettext2.6 /usr/bin/python2.6"
+	local python_lib="/usr/lib/python2.6"
+
+	rm -rf $target
+	mkdir -p $target/usr/bin
+	mkdir -p $target/usr/lib
+	
+	cp -fa $python_bin $target/usr/bin/
+	cp -fa $python_lib $target/usr/lib/
+
+	cd $target
+	tar jcf $python_pkg ./*
+	rm -rf $target
+}
+
 usage()
 {
 	echo "usage:"
-	echo "`basename $0` <version>"
+	echo "`basename $0` <version> [python]"
 	echo ""
 }
 
@@ -87,6 +122,11 @@ VERSION=$1
 if [ "$VERSION" = "" ]; then
 	usage
 	exit 1
+fi
+
+NEED_PYTHON=NO
+if [ "$2" == "python" ]; then
+	NEED_PYTHON=YES
 fi
 
 if [ `arch` = "x86_64" ]; then
@@ -103,8 +143,13 @@ mkdir $TARGET
 rm -f $PKG_TAR
 
 make clean
-make isolated-storage=1
+make isolated-storage=1 no_disk_prewarn=1
 sync_apps
 sync_conf
 sync_init_script
-tar_pkg
+sync_shared_lib
+pkg_isolated_storage
+
+if [ "$NEED_PYTHON" = "YES" ]; then
+	pkg_python
+fi

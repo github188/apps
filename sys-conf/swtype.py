@@ -1,5 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 from libcommon import software_type
 
 def main():
-	software_type()
+	print software_type()

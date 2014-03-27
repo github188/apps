@@ -1,7 +1,7 @@
 #ifndef LIBLED__H__
 #define LIBLED__H__
 
-enum {
+enum LED_STATUS {
 	LED_ON			= 0x01,
 	LED_OFF			= 0x02,
 	LED_FORCE_OFF           = 0x03,
@@ -12,17 +12,26 @@ enum {
 
 int led_init(void);
 void led_release(void);
-/* 如果disk_id为0，则设置所有灯 */
-int diskled_set(int disk_id, int mode);
+
 /* 返回硬盘灯的个数 */
 int diskled_get_num(void);
-/* 获取所有灯的状态，放到数组arr中， size必须大于等于硬盘灯个数 */
-int diskled_get_all(int *arr, int size);
+
+/* 如果disk_id为0，则设置所有灯 */
+int diskled_set(int disk_id, enum LED_STATUS sts);
+
 /* 获取disk_id单个灯的状态，放到sts中 */
-int diskled_get(int disk_id, int *sts);
-/*设置系统灯状态，LED_ON打开并增加count计数，LED_OFF减少计数，如果计数小于等于0则关闭，
- * LED_FORCE_OFF不更改计数，关闭灯  */
-int sysled_set(int mode);
-int sysled_get(int *sts);
+int diskled_get(int disk_id, enum LED_STATUS *sts);
+
+/* 获取所有灯的状态，放到数组sts_array中， size必须大于等于硬盘灯个数 */
+int diskled_get_all(enum LED_STATUS *sts_array, int size);
+
+/* 
+ * sysled系统灯
+ * LED_ON sysled计数增一，当计数大于0时打开sysled
+ * LED_OFF sysled计数减一，当计数减到0时关闭sysled
+ * LED_FORCE_OFF 不修改sysled计数，只关闭sysled
+ */
+int sysled_set(enum LED_STATUS sts);
+int sysled_get(enum LED_STATUS *sts);
 
 #endif // LIBLED__H__

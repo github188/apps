@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash2.6
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 

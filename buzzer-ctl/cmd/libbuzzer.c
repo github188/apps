@@ -98,7 +98,7 @@ int buzzer_set_time(long time)
 	return 0;
 }
 
-int buzzer_set(int mode)
+int buzzer_set(enum BUZZER_STATUS mode)
 {
 	int ret;
 
@@ -124,7 +124,7 @@ int buzzer_set(int mode)
 	return 0;
 }
 
-int buzzer_get(int *sts)
+int buzzer_get(enum BUZZER_STATUS *sts)
 {
 	BUZZER_CHECK_INIT();
 	b_p(semid);

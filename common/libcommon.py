@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 # -*- coding: utf-8 -*-
 
 import os, re, json, sys, fcntl, commands
@@ -195,18 +195,18 @@ HARDWARE_TYPE_FILE = '/opt/jw-conf/system/hardware-type'
 def hardware_type():
 	val = fs_attr_read(HARDWARE_TYPE_FILE)
 	if val not in HARDWARE_TYPE:
-		print ''
+		return ''
 	else:
-		print val
+		return val
 
 SOFTWARE_TYPE =  ['BASIC-PLATFORM', 'IPSAN-NAS']
 SOFTWARE_TYPE_FILE = '/opt/jw-conf/system/software-type'
 def software_type():
 	val = fs_attr_read(SOFTWARE_TYPE_FILE)
 	if val not in SOFTWARE_TYPE:
-		print SOFTWARE_TYPE[0]
+		return SOFTWARE_TYPE[0]
 	else:
-		print val
+		return val
 
 if __name__ == '__main__':
 	log = initlog()
