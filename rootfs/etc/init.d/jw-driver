@@ -16,6 +16,7 @@ export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 do_driver_start()
 {
+	modprobe i2c-dev
 	modprobe nct6106
 	if [ `hwtype` = "3U16-STANDARD" ]; then
 		modprobe smbus-power
