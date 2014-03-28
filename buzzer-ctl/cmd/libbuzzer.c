@@ -19,6 +19,30 @@ int semid;
 		if (ret == -1)				\
 			return -1;			\
 	} while (0)
+
+#ifdef ONLY_INTERFACE
+int buzzer_init(void)
+{
+	return 0;
+}
+
+void buzzer_release(void)
+{
+	return ;
+}
+
+int buzzer_get(enum BUZZER_STATUS *sts)
+{
+	return 0;
+}
+
+int buzzer_set(enum BUZZER_STATUS sts)
+{
+	return 0;
+}
+
+#else
+
 union semum 
 {
 	int val;
@@ -132,3 +156,4 @@ int buzzer_get(enum BUZZER_STATUS *sts)
 	return 0;
 }
 
+#endif

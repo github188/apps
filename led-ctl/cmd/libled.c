@@ -20,6 +20,50 @@ int semid;
 		if (ret == -1)				\
 			return -1;			\
 	} while (0)
+
+#ifdef ONLY_INTERFACE
+int led_init(void)
+{
+	return 0;
+}
+
+void led_release(void)
+{
+	return ;
+}
+
+int diskled_get_num(void)
+{
+	return 0;
+}
+
+int diskled_set(int disk_id, enum LED_STATUS sts)
+{
+	return 0;
+}
+
+int diskled_get(int disk_id, enum LED_STATUS *sts)
+{
+	return 0;
+}
+
+int diskled_get_all(enum LED_STATUS *sts_array, int size)
+{
+	return 0;
+}
+
+int sysled_set(enum LED_STATUS sts)
+{
+	return 0;
+}
+
+int sysled_get(enum LED_STATUS *sts)
+{
+	return 0;
+}
+
+#else
+
 union semum 
 {
 	int val;
@@ -83,12 +127,6 @@ int led_init(void)
 
 	initalized = 1;
 	return 0;
-}
-
-void led_release(void)
-{
-	if (initalized)
-		addr = (shm_t *)-1;
 }
 
 int _diskled_set(int disk_id, enum LED_STATUS mode)
@@ -215,7 +253,7 @@ int diskled_get_all(enum LED_STATUS *arr, int size)
 	return 0;
 }
 
-int diskled_get(int disk_id,  enum LED_STATUS *sts)
+int diskled_get(int disk_id, enum LED_STATUS *sts)
 {
 	if (!sts)
 		return -1;
@@ -339,4 +377,4 @@ int sysled_get(enum LED_STATUS *sts)
 	v(semid);
 	return 0;
 }
-
+#endif
