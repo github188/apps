@@ -1,7 +1,7 @@
 LDFLAGS += libbuzzer.a
 OBJECTS := buzzer-ctl.o libbuzzer.o
 ifdef only-interface
-	CFLAGS += ONLY_INTERFACE
+	CFLAGS += -DONLY_INTERFACE
 endif
 all: buzzer-ctl libbuzzer.a
 

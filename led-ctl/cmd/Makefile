@@ -1,7 +1,7 @@
 LDFLAGS += ./libled.a
 OBJECTS := led-ctl.o
 ifdef only-interface
-	CFLAGS += ONLY_INTERFACE
+	CFLAGS += -DONLY_INTERFACE
 endif
 all: led-ctl libled.a
 
