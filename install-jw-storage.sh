@@ -53,13 +53,19 @@ PKG_DIR=`pwd`
 
 # check python2.6
 echo "Check python2.6 ..."
-which python2.6 >/dev/null
-if [ $? -ne 0 ]; then
-	echo "Install python2.6 ..."
-	if ls python2.6-${ARCH}.tar.bz2 2>/dev/null; then
-		echo "Not found package python2.6-${ARCH}.tar.bz2"
-		exit 1
+if [ "`which python2.6`" = "" ]; then
+	if ! ls python2.6-${ARCH}.tar.bz2 2>/dev/null; then
+		echo -e "\033[0;33;1mNot found package python2.6-${ARCH}.tar.bz2\033[0m"
+		lcoal val
+		read -p "Continue? [y/n]: " val
+		if [ "$val" = "y" ]; then
+			return
+		else
+			exit 1
+		fi
 	fi
+	
+	echo "Install python2.6 ..."
 	python_tmp=/tmp/.python2.6
 	rm -rf $python_tmp
 	mkdir $python_tmp

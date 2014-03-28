@@ -16,7 +16,16 @@ export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 do_driver_start()
 {
+	modprobe i2c-i801
 	modprobe i2c-dev
+	sys_dir=`ls -d /sys/module/i2c_i801/drivers/pci\:i801_smbus/0000\:00\:*/i2c-* 2>/dev/null`
+	i2c_node=`basename $sys_dir`
+	if [ "$i2c_node" != "" ]; then
+		cd /dev
+		ln -sfn $i2c_node i2c-i801
+		cd - >/dev/null
+	fi
+
 	modprobe nct6106
 	if [ `hwtype` = "3U16-STANDARD" ]; then
 		modprobe smbus-power

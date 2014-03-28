@@ -13,7 +13,7 @@ endif
 
 libled.a:sysled.o 
 	ar x ../../pic_ctl/libpic.a
-	gcc -c libled.c
+	gcc -c libled.c $(CFLAGS)
 	ar -rcs libled.a pic_ctl.o libled.o ../daemon/sysled.o
 sysled.o:
 	$(MAKE) -C ../daemon
