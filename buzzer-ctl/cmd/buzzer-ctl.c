@@ -11,10 +11,12 @@
 #include "libbuzzer.h"
 
 
-char *const short_options = "b:h";
+char *const short_options = "s:gh";
 buzzer_task_t systask;
+int getflag=0;
 struct option long_options[] = {
-	{"buzzer", 1, NULL, 'b'},
+	{"set", 1, NULL, 's'},
+	{"get", 0, NULL, 'g'},
 	{"help", 0, NULL, 'h'},
 	{0, 0, 0, 0}
 };
@@ -22,7 +24,8 @@ struct option long_options[] = {
 void print_help(void)
 {
 	printf("buzzer-ctl:\n");
-	printf("\t[--buzzer|-b on|off|foff]\n");
+	printf("\t[--set|-s on|off|foff]\n");
+	printf("\t[--get|-g]\n");
 	printf("\t[--help|-h]\n");
 }
 
@@ -31,24 +34,28 @@ int buzzer_getopt(int argc, char **argv)
 	int c;
 
 	while ((c = getopt_long(argc, (char *const*)argv, short_options,
-					long_options, NULL)) != -1) {
+				long_options, NULL)) != -1) {
 		switch (c) {
-			case 'b':
-				if (!strcmp(optarg, "on")) {
-					systask.mode = MODE_ON;
-				} else if (!strcmp(optarg, "off")) {
-					systask.mode = MODE_OFF;
-				} else if (!strcmp(optarg, "foff")){
-					systask.mode = MODE_FORCE_OFF;
-				} else {
-					systask.mode = MODE_OFF;
-				}
-				break;
-			case 'h':
-				print_help();
-				return -1;
-			default:
-				return -1;
+		case 's':
+			if (!strcmp(optarg, "on")) {
+				systask.mode = MODE_ON;
+			} else if (!strcmp(optarg, "off")) {
+				systask.mode = MODE_OFF;
+			} else if (!strcmp(optarg, "foff")){
+				systask.mode = MODE_FORCE_OFF;
+			} else {
+				fprintf(stderr, "ivalid mode\n");
+				exit (-1);
+			}
+			break;
+		case 'g':
+			getflag = 1;
+			break;
+		case 'h':
+			print_help();
+			return -1;
+		default:
+			return -1;
 		}
 	}
 	return 0;
@@ -57,13 +64,12 @@ int buzzer_getopt(int argc, char **argv)
 int main(int argc, char *argv[])
 {
 	int ret;
-
+		
 	if (argc < 2) {
 		print_help();
 		return -1;
 	}
-	systask.mode = MODE_OFF;
-	
+
 	if (buzzer_getopt(argc, argv))
 		return -1;
 
@@ -73,12 +79,39 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-		if (systask.mode & MODE_ON)
-			buzzer_set(BUZZER_ON);
-		else if (systask.mode & MODE_OFF)
-			buzzer_set(BUZZER_OFF);
-		else if (systask.mode & MODE_FORCE_OFF)
-			buzzer_set(BUZZER_FORCE_OFF);
+	if (systask.mode & MODE_ON)
+		buzzer_set(BUZZER_ON);
+	else if (systask.mode & MODE_OFF)
+		buzzer_set(BUZZER_OFF);
+	else if (systask.mode & MODE_FORCE_OFF)
+		buzzer_set(BUZZER_FORCE_OFF);
+
+	if (getflag) {
+		enum BUZZER_STATUS sts;
+		int count;
+		ret = buzzer_get(&sts);
+		count = buzzer_get_count(&count);
+		if (ret < 0) {
+			fprintf(stderr, "get buzzer status failed.\n");
+			return -1;
+		}
+
+		switch (sts) {
+		case BUZZER_ON:
+			printf("buzzer status: on\ncount: %d\n", count);
+			break;
+		case BUZZER_OFF:
+			printf("buzzer status: off\ncount: %d\n", count);
+			break;
+		case BUZZER_FORCE_OFF:
+			printf("buzzer status: force off\ncount: %d\n", count);
+			break;
+		default:
+			printf("buzzer status: unknown\n");
+			break;
+		}
+
+	}
 
 	return 0;
 }

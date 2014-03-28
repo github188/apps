@@ -41,6 +41,11 @@ int buzzer_set(enum BUZZER_STATUS sts)
 	return 0;
 }
 
+int buzzer_get(int *count)
+{
+	return 0;
+}
+
 #else
 
 union semum 
@@ -156,4 +161,9 @@ int buzzer_get(enum BUZZER_STATUS *sts)
 	return 0;
 }
 
+int buzzer_get_count(int *count)
+{
+	BUZZER_CHECK_INIT();
+	return addr->task.count;
+}
 #endif

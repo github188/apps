@@ -85,7 +85,6 @@ int i2c_init_3U1(void)
 	if (g_config_reg_value == 255) {
 		return PERR_IOERR;
 	}
-	printf("init\n");
 	g_config_reg_value |= 0x80;
 	ret = i2c_smbus_write_byte_data(i2c_fd, I2C_CONF_3U, g_config_reg_value);
 	if (ret == -1)
