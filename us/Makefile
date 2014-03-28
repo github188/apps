@@ -1,7 +1,7 @@
 CROSS_COMPILE =
 
 CFLAGS += -Dclog_level=CL_NONE -DNDEBUG -Wstrict-aliasing=0 -I/usr/include/libxml2
-ifdef no_disk_prewarn
+ifdef no-disk-prewarn
 CFLAGS += -DNO_DISK_PREWARN
 endif
 LDFLAGS =

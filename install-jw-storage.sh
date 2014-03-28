@@ -31,6 +31,7 @@ if [ "$storage_pkg" = "" ]; then
 fi
 
 # check package
+echo "Check shared lib ..."
 DPKG_FILE=/tmp/dpkg
 dpkg -l >/tmp/dpkg
 pkgs="libatasmart4 libsqlite3 libudev0 libxml2 libjson0"
@@ -50,6 +51,8 @@ fi
 
 PKG_DIR=`pwd`
 
+# check python2.6
+echo "Check python2.6 ..."
 which python2.6 >/dev/null
 if [ $? -ne 0 ]; then
 	echo "Install python2.6 ..."
@@ -67,11 +70,12 @@ if [ $? -ne 0 ]; then
 	rm -rf $python_tmp
 fi
 
+echo "Install package: $storage_pkg ..."
 pkg_tmp=/tmp/.pkg
 rm -rf $pkg_tmp
 mkdir $pkg_tmp
 cd $pkg_tmp
-tar xfj $PKG_DIR/jw-storage-*-${ARCH}.tar.bz2
+tar xfj $PKG_DIR/$storage_pkg
 cp -fa * /
 cd $PKG_DIR
 rm -rf $pkg_tmp
@@ -102,6 +106,7 @@ elif [ "x$hw_no" = "x4"	]; then
 	hw_type="2U8-ATOM"
 fi
 
+echo "Store config file ..."
 cd /opt/jw-conf/system
 echo "BASIC-PLATFORM" >./software-type
 echo "$hw_type" >./hardware-type
@@ -110,6 +115,27 @@ ln -sfn sysmon-conf.xml.$hw_type sysmon-conf.xml
 cd /opt/jw-conf/disk
 ln -sfn ata2slot.xml.$hw_type ata2slot.xml
 
+# config init.d script
+echo "Config init.d script ..."
+cd /etc/init.d
+update-rc.d -f jw-driver remove >/dev/null 2>&1
+update-rc.d -f jw-log remove >/dev/null 2>&1
+update-rc.d -f jw-led remove >/dev/null 2>&1
+update-rc.d -f jw-buzzer remove >/dev/null 2>&1
+update-rc.d -f jw-sysmon remove >/dev/null 2>&1
+update-rc.d -f jw-us remove >/dev/null 2>&1
+update-rc.d -f jw-md remove >/dev/null 2>&1
+
+update-rc.d jw-driver defaults 01 20 >/dev/null 2>&1
+update-rc.d jw-log defaults 01 20 >/dev/null 2>&1
+update-rc.d jw-led defaults 01 20 >/dev/null 2>&1
+update-rc.d jw-buzzer defaults 01 20 >/dev/null 2>&1
+update-rc.d jw-sysmon defaults 02 19 >/dev/null 2>&1
+update-rc.d jw-us defaults 03 18 >/dev/null 2>&1
+update-rc.d jw-md defaults 04 17 >/dev/null 2>&1
+
 cd $PKG_DIR
 
-echo "Packge install OK, please reboot."
+echo ""
+echo -e "\033[0;35;1mPackge install OK, please reboot.\033[0m"
+echo ""

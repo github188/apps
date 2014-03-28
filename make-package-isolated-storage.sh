@@ -19,40 +19,40 @@ sync_apps()
 	local bin_list="$disk_bin $udv_bin $webiface_bin $sysconf_bin $common_bin \
 			$mon_bin $web_bin $misc_bin"
 
-	local target=$TARGET/usr/local/bin
-	mkdir -p $target
+	local tmp_dir=$TMP_DIR_STORAGE/usr/local/bin
+	mkdir -p $tmp_dir
 
 	rsync -av --exclude Makefile --exclude *.h --exclude *.c --exclude *.a \
-			--exclude *.o $bin_list  $target/
+			--exclude *.o $bin_list  $tmp_dir/
 	
 	# 编译python脚本
 	echo "compile python source ..."
-	./compile-python $target/ >/dev/null
+	./compile-python $tmp_dir/ >/dev/null
 	
 	# 删除程序源码, 中间文件, 配置文件
 	echo "remove source ..."
-	rm -f $target/*.py
-	chmod +x $target/*
-	chmod -x $target/*.pyc
+	rm -f $tmp_dir/*.py
+	chmod +x $tmp_dir/*
+	chmod -x $tmp_dir/*.pyc
 	
 	#  删除其他脚本
-	rm -f $target/*adminmanage*
-	rm -f $target/userconf
-	rm -f $target/license
-	rm -f $target/configbak
+	rm -f $tmp_dir/*adminmanage*
+	rm -f $tmp_dir/userconf
+	rm -f $tmp_dir/license
+	rm -f $tmp_dir/configbak
 }
 
 sync_conf()
 {
 	echo "copy conf ..."
 
-	local target=$TARGET/opt/jw-conf
+	local tmp_dir=$TMP_DIR_STORAGE/opt/jw-conf
 
-	mkdir -p $target/system
-	cp -fa monitor/sysmon-conf.xml* $target/system/
+	mkdir -p $tmp_dir/system
+	cp -fa monitor/sysmon-conf.xml* $tmp_dir/system/
 	
-	mkdir -p $target/disk
-	cp -fa us/ata2slot.xml* $target/disk/
+	mkdir -p $tmp_dir/disk
+	cp -fa us/ata2slot.xml* $tmp_dir/disk/
 }
 
 sync_init_script()
@@ -64,9 +64,9 @@ sync_init_script()
 			 rootfs/etc/init.d/jw-sysmon rootfs/etc/init.d/jw-us \
 			 rootfs/etc/init.d/jw-md"
 
-	local target=$TARGET/etc/init.d
-	mkdir -p $target
-	cp -fa $script_list $target/
+	local tmp_dir=$TMP_DIR_STORAGE/etc/init.d
+	mkdir -p $tmp_dir
+	cp -fa $script_list $tmp_dir/
 }
 
 sync_shared_lib()
@@ -74,47 +74,66 @@ sync_shared_lib()
 	echo "copy shared library ..."
 
 	local shared_lib="/usr/lib/libparted*so* /usr/lib/libev*so*"
-	local target=$TARGET/usr/lib
-	mkdir -p $target
+	local tmp_dir=$TMP_DIR_STORAGE/usr/lib
+	mkdir -p $tmp_dir
 	
-	cp -fa $shared_lib $target/
+	cp -fa $shared_lib $tmp_dir/
 }
 
 pkg_isolated_storage()
 {
 	echo "packaging isolated storage ..."
 
-	cd "$TARGET"
+	local pkg_dir=$PKG_DIR/usr
+	mkdir -p $pkg_dir
+	cp install-jw-storage.sh $pkg_dir/
+	chmod +x $pkg_dir/install-jw-storage.sh
+
+	cd "$TMP_DIR_STORAGE"
 	chown -fR root:root ./*
-	tar jcf $PKG_TAR ./*
-	rm -rf $TARGET
+	
+	tar jcf $pkg_dir/$PKG_STORAGE ./*
+	cd - >/dev/null
+	rm -rf $TMP_DIR_STORAGE
 }
 
 pkg_python()
 {
 	echo "packaging python2.6 ..."
 	
-	local python_pkg=/tmp/python2.6-${ARCH}.tar.bz2
-	local target=/tmp/.python2.6
+	if [ "`which python2.6`" = "" ]; then
+		echo -e "\033[0;33;1mWarning: Not found python2.6\033[0m"
+		local val
+		read -p "Continue? [y/n]: " val
+		if [ "val" != "y" ]; then
+			exit 1
+		else
+			return
+		fi
+	fi
+
+	local pkg_dir=$PKG_DIR/usr
+	mkdir -p $pkg_dir
+
 	local python_bin="/usr/bin/pydoc2.6 /usr/bin/pygettext2.6 /usr/bin/python2.6"
 	local python_lib="/usr/lib/python2.6"
 
-	rm -rf $target
-	mkdir -p $target/usr/bin
-	mkdir -p $target/usr/lib
+	mkdir -p $TMP_DIR_PYTHON/usr/bin
+	mkdir -p $TMP_DIR_PYTHON/usr/lib
 	
-	cp -fa $python_bin $target/usr/bin/
-	cp -fa $python_lib $target/usr/lib/
+	cp -fa $python_bin $TMP_DIR_PYTHON/usr/bin/
+	cp -fa $python_lib $TMP_DIR_PYTHON/usr/lib/
 
-	cd $target
-	tar jcf $python_pkg ./*
-	rm -rf $target
+	cd $TMP_DIR_PYTHON
+	tar jcf $pkg_dir/$PKG_PYTHON ./*
+	cd - >/dev/null
+	rm -rf $TMP_DIR_PYTHON
 }
 
 usage()
 {
 	echo "usage:"
-	echo "`basename $0` <version> [python]"
+	echo "`basename $0` <version>"
 	echo ""
 }
 
@@ -124,32 +143,33 @@ if [ "$VERSION" = "" ]; then
 	exit 1
 fi
 
-NEED_PYTHON=NO
-if [ "$2" == "python" ]; then
-	NEED_PYTHON=YES
-fi
-
 if [ `arch` = "x86_64" ]; then
 	ARCH="64bit"
 else
 	ARCH="32bit"
 fi
-PKG_PREFIX="jw-storage"
-PKG_TAR="/tmp/${PKG_PREFIX}-${VERSION}-${ARCH}.tar.bz2"
 
-TARGET="/tmp/.pkg"
-rm -fr $TARGET
-mkdir $TARGET
-rm -f $PKG_TAR
+PKG_STORAGE="jw-storage-${VERSION}-${ARCH}.tar.bz2"
+PKG_PYTHON="python2.6-${ARCH}.tar.bz2"
+
+PKG_DIR="/tmp/jw-storage"
+rm -fr $PKG_DIR
+mkdir $PKG_DIR
+
+TMP_DIR_STORAGE=/tmp/.storage
+rm -fr $TMP_DIR_STORAGE
+mkdir $TMP_DIR_STORAGE
+
+TMP_DIR_PYTHON=/tmp/.python
+rm -fr $TMP_DIR_PYTHON
+mkdir $TMP_DIR_PYTHON
 
 make clean
-make isolated-storage=1 no_disk_prewarn=1
+make isolated-storage=1 no-disk-prewarn=1
 sync_apps
 sync_conf
 sync_init_script
 sync_shared_lib
 pkg_isolated_storage
 
-if [ "$NEED_PYTHON" = "YES" ]; then
-	pkg_python
-fi
+pkg_python

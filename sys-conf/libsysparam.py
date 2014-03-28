@@ -58,21 +58,17 @@ def dec_buzzer_cnt():
 
 def __set_buzzer(value):
 	op = ''
-	if 'inc' == value:
-		inc_buzzer_cnt()
+	if 'inc' == value or 'on' == value:
 		op = 'on'
 	elif 'dec' == value:
-		if dec_buzzer_cnt() <= 0:
-			op = 'off'
-	elif 'on' == value:
-		op = 'on'
-	elif 'mute' == value or 'off' == value:
 		op = 'off'
+	elif 'mute' == value or 'off' == value:
+		op = foff
 	else:
 		return False, '设置蜂鸣器失败, 不支持 %s' % value
 	
 	if op != '':
-		ret = os.system('/usr/local/bin/set-buzzer.sh %s' % op)
+		ret = os.system('/usr/local/bin/buzzer-ctl -d %s' % op)
 	else:
 		ret = 0
 
