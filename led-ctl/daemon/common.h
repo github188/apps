@@ -2,6 +2,7 @@
 #define COMMON__H__
 
 #define SHMKEY		"/usr/local/bin"
+#define LOCK_FILE       "/tmp/.led-ctl-daemon.lock"
 
 #define DISK_NUM_3U	16
 #define DISK_NUM_2U	8

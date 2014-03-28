@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <syslog.h>
 #include <getopt.h>
 #include <string.h>
@@ -6,6 +10,7 @@
 #include "led_shm.h"
 #include "led_worker.h"
 #include "i2c_dev.h"
+
 
 char *l_opt_arg;
 char *const short_options = "t:c:h";
@@ -37,6 +42,17 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	
+	if (!access(LOCK_FILE, 0)) {
+		syslog(LOG_ERR, "led-ctl-daemon start failed. programe have running"
+				"try to remove /tmp/.led-ctl-daemon.lock.\n");
+		return -1;
+	}
+
+	if (open(LOCK_FILE, O_RDONLY|O_CREAT, 0644) < 0) {
+		syslog(LOG_INFO, "create lock file failed.\n");
+	}
+
+
 	while ((c = getopt_long(argc, (char *const*)argv, short_options,
 				long_options, NULL)) != -1) {
 		switch (c){
@@ -55,10 +71,7 @@ int main(int argc, char *argv[])
 				break;
 			} else if (!strcmp(optarg, "3U16-STANDARD")) {
 				systype = SYS_3U;
-				shmid = shm_init();
-				if (shmid < 0)
-					return -1;
-				return 0;
+				break;
 			} else {
 				syslog(LOG_ERR, "led_ctl: invalid type %s\n", optarg);
 				print_help();
@@ -76,14 +89,18 @@ int main(int argc, char *argv[])
 		}
 	}
 	
+
 	shmid = shm_init();
 	if (shmid < 0)
 		return -1;
+	if (systype == SYS_3U)
+		return 0;
 	if (worker_init() < 0)
 		return -1;
 
 	worker_release();
 clean:	
+	unlink(LOCK_FILE);
 	shm_release();
 	return 0;
 }

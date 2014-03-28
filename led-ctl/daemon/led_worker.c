@@ -13,29 +13,37 @@ extern int disk_max_num;
 extern int (*pic_write_disk_gen)(int, int);
 static int sts[DISK_NUM_3U + 1];
 static int count[DISK_NUM_3U +1];
-static volatile int go=0;
+static volatile int go = 0;
+static volatile int quit = 0;
 
 static void timer_cb(int signo)
 {
-	if (signo != SIGALRM)
-		return ;
-	go = 1;
+	if (signo == SIGALRM) {
+		go = 1;
+	}
+}
+
+static void sig_quit(int signo)
+{
+	if (signo == SIGTERM || signo == SIGINT) {
+		quit = 1;
+	}
 }
 
 void do_work(void)
 {
 	led_task_t *taskp = NULL;
 	int i;
-	printf("do workd\n");
+
 #ifdef _DEBUG
 	printf("sysled mode: %d\n", taskp->mode);
 #endif
-	
+
 	for (i=0; i < disk_max_num; i++) {
 		taskp = &addr->task[i+1];
 #ifdef _DEBUG
 		printf("led: %d mode: %d freq: %d  time: %d count: %d",
-		       i+1, taskp->mode, taskp->freq, taskp->time, taskp->count);
+				i+1, taskp->mode, taskp->freq, taskp->time, taskp->count);
 #endif
 		if (taskp->mode & MODE_ON) {
 			if (pic_write_disk_gen(i, I2C_LED_ON) != 0) {
@@ -84,9 +92,20 @@ int worker_init(void)
 		return -1;
 	}
 	signal(SIGALRM, timer_cb);
+	signal(SIGINT, sig_quit);
+	signal(SIGTERM, sig_quit);
 	while (1) {
 		pause();
 		do_work();
+		if (quit) {
+			int i;
+			for (i=0; i < disk_max_num; i++) {
+				if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
+					syslog(LOG_ERR, "led_ctl: led off disk %d failed.\n", i);
+				}
+			}
+			return 0;
+		}
 	}
 }
 
