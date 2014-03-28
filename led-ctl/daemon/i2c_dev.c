@@ -7,7 +7,7 @@
 #include "../../pic_ctl/i2c-dev.h"
 #include "i2c_dev.h"
 
-#define I2C_DEV "/dev/i2c-0"
+#define I2C_DEV "/dev/i2c-i801"
 
 
 

@@ -9,7 +9,7 @@
 # Description:          buzzer ctl daemon
 ### END INIT INFO
 
-export "PATH=/usr/local/bin"
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 LED_DAEMON="/usr/local/bin/buzzer-ctl-daemon"
 LED_PID="/var/run/buzzer-ctl-daemon.pid"
@@ -23,18 +23,18 @@ __start_daemon()
 
 	start-stop-daemon --make-pidfile --pidfile $_pid --background --start \
 		--exec $_cmd
-	[$?	-eq	0] && echo "$(basename "$_cmd")	started." && return
-	echo "$(basename "$_cmd") start	fail1 retcode: $?"
+	[ $? -eq 0 ] && echo "$(basename "$_cmd") started." && return
+	echo "$(basename "$_cmd") start fail! retcode: $?"
 }
 
 do_start()
 {
-	__start_daemon $LED_PID	$LED_DAEMON
+	__start_daemon $LED_PID $LED_DAEMON
 }
 
 do_stop()
 {
-	killproc -p	$LED_PID $(basename	$LED_DAEMON)
+	killproc -p $LED_PID $(basename $LED_DAEMON)
 }
 
 do_status()
@@ -44,7 +44,7 @@ do_status()
 
 apps_usage()
 {
-	echo "Usage: $(basename	"$0") {start|stop|restart|status}"
+	echo "Usage: $(basename "$0") {start|stop|restart|status}"
 }
 
 case "${1:-}" in

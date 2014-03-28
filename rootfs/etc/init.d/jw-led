@@ -9,7 +9,7 @@
 # Description:          led ctl daemon
 ### END INIT INFO
 
-export "PATH=/usr/local/bin"
+export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 LED_DAEMON="/usr/local/bin/led-ctl-daemon"
 LED_PID="/var/run/led-ctl-daemon.pid"
@@ -21,20 +21,25 @@ __start_daemon()
 	local _pid="$1"
 	local _cmd="$2"
 
+	HWTYPE=`hwtype 2>/dev/null`
+	if [ "$HWTYPE" = "" ]; then
+		echo "Get system hard type fail!"
+		return
+	fi
 	start-stop-daemon --make-pidfile --pidfile $_pid --background --start \
-		--exec $_cmd --	-t `hwtype`
-	[$?	-eq	0] && echo "$(basename "$_cmd")	started." && return
-	echo "$(basename "$_cmd") start	fail1 retcode: $?"
+		--exec $_cmd -- -t $HWTYPE
+	[ $? -eq 0 ] && echo "$(basename "$_cmd") started." && return
+	echo "$(basename "$_cmd") start fail! retcode: $?"
 }
 
 do_start()
 {
-	__start_daemon $LED_PID	$LED_DAEMON
+	__start_daemon $LED_PID $LED_DAEMON
 }
 
 do_stop()
 {
-	killproc -p	$LED_PID $(basename	$LED_DAEMON)
+	killproc -p $LED_PID $(basename $LED_DAEMON)
 }
 
 do_status()
@@ -44,7 +49,7 @@ do_status()
 
 apps_usage()
 {
-	echo "Usage: $(basename	"$0") {start|stop|restart|status}"
+	echo "Usage: $(basename "$0") {start|stop|restart|status}"
 }
 
 case "${1:-}" in

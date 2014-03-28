@@ -173,3 +173,7 @@ sync_shared_lib
 pkg_isolated_storage
 
 pkg_python
+
+echo ""
+echo -e "\033[0;35;1mPackaged completed successfully.\033[0m"
+echo ""

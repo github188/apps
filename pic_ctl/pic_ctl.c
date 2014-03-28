@@ -7,7 +7,7 @@
 #include "i2c-dev.h"
 #include "pic_ctl.h"
 
-#define I2C_DEV "/dev/i2c-0"
+#define I2C_DEV "/dev/i2c-i801"
 
 static int pic_is_initialized;
 static int pic_fd;

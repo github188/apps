@@ -68,7 +68,7 @@ def __set_buzzer(value):
 		return False, '设置蜂鸣器失败, 不支持 %s' % value
 	
 	if op != '':
-		ret = os.system('/usr/local/bin/buzzer-ctl -d %s' % op)
+		ret = os.system('/usr/local/bin/buzzer-ctl -b %s' % op)
 	else:
 		ret = 0
 
