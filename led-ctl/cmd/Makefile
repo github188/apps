@@ -14,10 +14,6 @@ endif
 
 libled.a: 
 	ar x ../../pic_ctl/libpic.a
-<<<<<<< HEAD
-=======
-	gcc -c libled.c $(CFLAGS)
->>>>>>> eeff30cb53ac9398a61c801d1c3b390153bee154
 	ar -rcs libled.a pic_ctl.o libled.o ../daemon/sysled.o
 
 clean:
