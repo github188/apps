@@ -10,8 +10,7 @@
 #include "buzzer_shm.h"
 #include "buzzer_worker.h"
 
-char *l_opt_arg;
-char *const short_options = "c:h";
+char *const short_options = "ch";
 struct option long_options[] = {
 	{"clean", 0, NULL, 'c'},
 	{"help", 0, NULL, 'h'},
@@ -28,17 +27,24 @@ void print_help(void)
 
 int main(int argc, char *argv[])
 {
-	int c;
+	int c, fd;
 	int shmid;
-	
-	if (!access(LOCK_FILE, 0)) {
-		syslog(LOG_ERR, "buzzer-ctl-daemon start failed. program have running," 
-				"try remove /tmp/.buzzer-ctl-daemon.lock.\n");
+	struct flock lock;
+	lock.l_type = F_WRLCK;
+	lock.l_start = 0;
+	lock.l_whence = SEEK_SET;
+	lock.l_len = 0;
+	lock.l_pid = getpid();
+
+	if ((fd = open(LOCK_FILE, O_RDWR|O_CREAT, 0644)) < 0) {
+		syslog(LOG_INFO, "create lock file failed.\n");
 		return -1;
 	}
-	
-	if (open(LOCK_FILE, O_RDONLY|O_CREAT, 0644) < 0) {
-		syslog(LOG_INFO, "create lock file failed.\n");
+
+	if ((fcntl(fd, F_SETLK, &lock)) < 0) {
+		syslog(LOG_ERR, "get file lock failed. exitting...\n");
+		fprintf(stderr, "get file lock failed. exitting...\n");
+		return -1;
 	}
 
 	while ((c = getopt_long(argc, (char *const*)argv, short_options,
@@ -50,11 +56,9 @@ int main(int argc, char *argv[])
 			print_help();
 			return 0;
 		default:
-			print_help();
 			return -1;
 		}
 	}
-	
 	
 	shmid = shm_init();
 	if (shmid < 0)
@@ -63,7 +67,9 @@ int main(int argc, char *argv[])
 	worker_init();
 
 clean:	
-	unlink(LOCK_FILE);
 	shm_release();
+	lock.l_type = F_UNLCK;
+	fcntl(fd, F_SETLK, &lock);
+	unlink(LOCK_FILE);
 	return 0;
 }

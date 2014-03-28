@@ -37,7 +37,6 @@ int shm_init()
 		return -1;
 	}
 	
-	
 	addr->shm_head.version = VERSION;
 	addr->shm_head.magic = MAGIC;
 		

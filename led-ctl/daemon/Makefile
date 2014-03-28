@@ -6,10 +6,7 @@ ifneq ($(STRIP),)
 endif
 
 led-ctl-daemon:$(OBJECTS) sysled.o
-	$(CC) -o led-ctl-daemon $(OBJECTS)  $(CFLAGS) $(LDFLAGS) 
-
-sysled.o:
-	gcc -c sysled.c
+	$(CC) -o led-ctl-daemon $(OBJECTS)  $(CFLAGS) 
 
 clean:
 	rm -rf *.o led-ctl-daemon *.a

@@ -13,7 +13,7 @@
 
 
 char *l_opt_arg;
-char *const short_options = "t:c:h";
+char *const short_options = "t:ch";
 struct option long_options[] = {
 	{"type", 1, NULL, 't'},
 	{"clean", 0, NULL, 'c'},
@@ -34,24 +34,30 @@ void print_help(void)
 
 int main(int argc, char *argv[])
 {
-	int c;
+	int c, fd;
 	int shmid;
-
+	struct flock lock;
+	lock.l_type = F_WRLCK;
+	lock.l_start = 0;
+	lock.l_whence = SEEK_SET;
+	lock.l_len = 0;
+	lock.l_pid = getpid();
+		
 	if (argc < 2) {
 		print_help();
 		return -1;
 	}
-	
-	if (!access(LOCK_FILE, 0)) {
-		syslog(LOG_ERR, "led-ctl-daemon start failed. programe have running"
-				"try to remove /tmp/.led-ctl-daemon.lock.\n");
+	if ((fd=open(LOCK_FILE, O_RDWR|O_CREAT, 0644)) < 0) {
+		syslog(LOG_INFO, "create lock file failed.\n");
 		return -1;
 	}
+	
 
-	if (open(LOCK_FILE, O_RDONLY|O_CREAT, 0644) < 0) {
-		syslog(LOG_INFO, "create lock file failed.\n");
+	if ((fcntl(fd, F_SETLK, &lock)) < 0) {
+		syslog(LOG_ERR, "get file lock failed. eixting...\n");
+		fprintf(stderr, "get file lock failed. exiting...\n");
+		return -1;
 	}
-
 
 	while ((c = getopt_long(argc, (char *const*)argv, short_options,
 				long_options, NULL)) != -1) {
@@ -89,7 +95,6 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-
 	shmid = shm_init();
 	if (shmid < 0)
 		return -1;
@@ -99,8 +104,10 @@ int main(int argc, char *argv[])
 		return -1;
 
 	worker_release();
-clean:	
-	unlink(LOCK_FILE);
+clean:
 	shm_release();
+	lock.l_type = F_UNLCK;
+	fcntl(fd, F_SETLK, &lock);
+	unlink(LOCK_FILE);
 	return 0;
 }

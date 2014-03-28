@@ -25,8 +25,10 @@ void worker_init(void)
 	unsigned int time_alert[]={  
 		20,40  
 	};
+
 	signal(SIGINT, sig_quit);
 	signal(SIGTERM, sig_quit);
+
 	while (1) {
 		if (quit) {
 			Stop();

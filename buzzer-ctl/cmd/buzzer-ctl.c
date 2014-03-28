@@ -11,13 +11,11 @@
 #include "libbuzzer.h"
 
 
-
-char *l_opt_arg;
-char *const short_options = "b:d:h";
+char *const short_options = "b:h";
 buzzer_task_t systask;
 struct option long_options[] = {
 	{"buzzer", 1, NULL, 'b'},
-	{"help", 1, NULL, 'h'},
+	{"help", 0, NULL, 'h'},
 	{0, 0, 0, 0}
 };
 
@@ -28,7 +26,7 @@ void print_help(void)
 	printf("\t[--help|-h]\n");
 }
 
-int my_getopt(int argc, char **argv)
+int buzzer_getopt(int argc, char **argv)
 {
 	int c;
 
@@ -50,7 +48,7 @@ int my_getopt(int argc, char **argv)
 				print_help();
 				return -1;
 			default:
-				break;
+				return -1;
 		}
 	}
 	return 0;
@@ -60,13 +58,13 @@ int main(int argc, char *argv[])
 {
 	int ret;
 
-	if (argc < 3) {
+	if (argc < 2) {
 		print_help();
 		return -1;
 	}
 	systask.mode = MODE_OFF;
 	
-	if (my_getopt(argc, argv))
+	if (buzzer_getopt(argc, argv))
 		return -1;
 
 	ret = buzzer_init();

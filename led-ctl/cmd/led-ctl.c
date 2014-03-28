@@ -12,7 +12,6 @@
 
 
 
-char *l_opt_arg;
 char *const short_options = "s:i:d:f:e:h";
 led_task_t task;
 led_task_t systask;
@@ -24,7 +23,7 @@ struct option long_options[] = {
 	{"diskled", 1, NULL, 'd'},
 	{"freq", 1, NULL, 'f'},
 	{"expire", 1, NULL , 'e'},
-	{"help", 1, NULL, 'h'},
+	{"help", 0, NULL, 'h'},
 	{0, 0, 0, 0}
 };
 
@@ -37,7 +36,7 @@ void print_help(void)
 	printf("\t[--help|-h]\n");
 }
 
-int my_getopt(int argc, char **argv)
+int led_getopt(int argc, char **argv)
 {
 	int c;
 
@@ -99,7 +98,8 @@ int my_getopt(int argc, char **argv)
 				print_help();
 				return -1;
 			default:
-				break;
+				print_help();
+				return -1;
 		}
 	}
 	return 0;
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 	task.mode = MODE_OFF;
 	task.time = TIME_FOREVER;
 
-	if (my_getopt(argc, argv))
+	if (led_getopt(argc, argv))
 		return -1;
 	if (parse_args() < 0)
 		return -1;
