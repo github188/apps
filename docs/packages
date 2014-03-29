@@ -27,4 +27,3 @@ aptitude install libsqlite3-dev
 aptitude install libudev-dev
 aptitude install libxml2-dev
 aptitude install libjson0-dev
-aptitude install libparted0-dev
