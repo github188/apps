@@ -109,5 +109,6 @@ clean:
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
+	syslog(LOG_INFO, "led_ctl: exited.\n");
 	return 0;
 }

@@ -43,24 +43,27 @@ void do_work(void)
 		taskp = &addr->task[i+1];
 #ifdef _DEBUG
 		printf("led: %d mode: %d freq: %d  time: %d count: %d",
-				i+1, taskp->mode, taskp->freq, taskp->time, taskp->count);
+		       i+1, taskp->mode, taskp->freq, taskp->time, taskp->count);
 #endif
 		if (taskp->mode & MODE_ON) {
 			if (pic_write_disk_gen(i, I2C_LED_ON) != 0) {
-				syslog(LOG_ERR, "led_ctl: led on disk %d failed.\n", i);
+				syslog(LOG_ERR, "led_ctl: led on disk %d failed.\n", i+1);
+				quit = 1;
 			}
 		} else if (taskp->mode & MODE_OFF) {
 			if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
-				syslog(LOG_ERR, "led_ctl: led off disk %d failed.\n", i);
+				syslog(LOG_ERR, "led_ctl: led off disk %d failed.\n", i+1);
+				quit = 1;
 			} 
 		} else if (taskp->mode & MODE_BLINK) {
 			if (taskp->freq == FREQ_NONE) {
-				syslog(LOG_ERR, "led_ctl: disk %d freq not set.\n", i);
+				syslog(LOG_ERR, "led_ctl: disk %d freq not set.\n", i+1);
 				continue;
 			} 
 			if (count[i+1] == 0) {
 				if (pic_write_disk_gen(i, sts[i+1]) != 0) {
-					syslog(LOG_ERR, "led_ctl: blink disk %d failed.\n", i);
+					syslog(LOG_ERR, "led_ctl: blink disk %d failed.\n", i+1);
+					quit = 1;
 				}
 				sts[i+1] = (sts[i+1] + 1) % 2;
 				count[i+1]=taskp->count;
@@ -72,7 +75,10 @@ void do_work(void)
 			taskp->time = taskp->time - WORKER_TIMER;
 			if (taskp->time <= 0) {
 				taskp->mode = MODE_OFF;
-				pic_write_disk_gen(i, I2C_LED_OFF);
+				if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
+					syslog(LOG_ERR, "led_ctl: reset diskled %d failed.\n", i+1);
+					quit = 1;
+				}
 			}
 		}
 	}
@@ -94,6 +100,7 @@ int worker_init(void)
 	signal(SIGALRM, timer_cb);
 	signal(SIGINT, sig_quit);
 	signal(SIGTERM, sig_quit);
+	syslog(LOG_INFO, "led_ctl:init done.\n");
 	while (1) {
 		pause();
 		do_work();
@@ -101,7 +108,7 @@ int worker_init(void)
 			int i;
 			for (i=0; i < disk_max_num; i++) {
 				if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
-					syslog(LOG_ERR, "led_ctl: led off disk %d failed.\n", i);
+					syslog(LOG_ERR, "led_ctl: exitting led off  disk %d failed.\n", i+1);
 				}
 			}
 			return 0;
