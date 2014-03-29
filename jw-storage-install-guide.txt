@@ -1,0 +1,18 @@
+                install guide for jw storage package
+
+1. Be sure login by user: "root", or other user with root Permission.
+
+2. Install jw kernel
+	Enter "kernel" directory, execute script: "install-jw-kernel.sh"
+	Installation is successful when output string:
+	    "jw kernel install OK, grub default boot the jw kernel. Please reboot."
+	Although the script modify file "/boot/grub/grub.cfg" automatically
+	to set default menuentry, but check file "/boot/grub/grub.cfg",
+	Make sure the default menuentry is jw kernel.
+	Then reboot the system.
+
+3. Install jw storage management package
+	Enter "user" directory, execute script: "install-jw-storage.sh"
+	Installation is successful when output string:
+	    "jw storage management package install OK, please reboot."
+	Then reboot the system.

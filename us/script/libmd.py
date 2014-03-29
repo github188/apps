@@ -395,6 +395,16 @@ def tmpfs_add_disk_to_md(mddev, slot):
 	fs_attr_write('%s/%s' % (RAID_DIR_BYDISK, slot), md)
 	unlock_file(f_lock)
 
+def raid_name_list():
+	list = []
+	try:
+		sts,output = commands.getstatusoutput('cat /sys/block/md*/md/array_name')
+		if sts == 0:
+			list = output.split()
+	except:
+		pass
+	return list
+	
 def md_create(raid_name, level, chunk, slots):
 	f_lock = lock_file(RAID_REBUILD_LOCK)
 	ret,msg = __md_create(raid_name, level, chunk, slots)
@@ -407,6 +417,9 @@ def md_create(raid_name, level, chunk, slots):
 
 def __md_create(raid_name, level, chunk, slots):
 	#create raid
+	if raid_name in raid_name_list():
+		return False, '卷组 %s 已经存在' % raid_name
+
 	md = get_free_md()
 	if md == None:
 		return False,"RIAD数达到最大限制"

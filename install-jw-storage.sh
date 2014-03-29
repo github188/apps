@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 set -e
 
+if [ "$LOGNAME" != "root" ]; then
+	echo -e "\033[0;31;1mNeed root Permission.\033[0m"
+	exit 1
+fi
+
 # check OS version
 LINUX_DISTRO=`lsb_release -si`
 
 if [ "$LINUX_DISTRO" != "Debian" -a "$LINUX_DISTRO" != "Ubuntu" ];	then
-	echo "Not support OS $LINUX_DISTRO"
+	echo -e "\033[0;31;1mNot support OS $LINUX_DISTRO\033[0m"
 	exit 1
 fi
 
 # check kernel version
 JW_FLAG=`uname -r | awk -F '-' '{ print $NF }'`
 if [ "$JW_FLAG" != "jwstor" ]; then
-	echo "Kernel version not match."
-	echo "Please install jwstor kernel, and reboot system, boot the jwstor kernel."
+	echo -e "\033[0;31;1mKernel version not match.\033[0m"
+	echo -e "\033[0;31;1mPlease install jwstor kernel, and reboot system, boot the jwstor kernel.\033[0m"
 	exit 1
 fi
 
@@ -26,7 +31,7 @@ fi
 
 storage_pkg=`ls jw-storage-*-${ARCH}.tar.bz2 2>/dev/null`
 if [ "$storage_pkg" = "" ]; then
-	echo "Not found $ARCH jw-storage package, please check OS platform."
+	echo -e "\033[0;31;1mNot found $ARCH jw-storage package, please check OS platform.\033[0m"
 	exit 1
 fi
 
@@ -44,8 +49,8 @@ do
 done
 
 if [ "$not_installed_pkgs" != "" ]; then
-	echo Packages: "$not_installed_pkgs" are not installed.
-	echo Please install them via "apt-get install <package>", then restart this installation script.
+	echo -e "\033[0;31;1mPackages: \"$not_installed_pkgs\" are not installed.\033[0m"
+	echo -e "\033[0;31;1mPlease install them via \"apt-get install <package>\", then restart this installation script.\033[0m"
 	exit 1
 fi
 
@@ -55,14 +60,8 @@ PKG_DIR=`pwd`
 echo "Check python2.6 ..."
 if [ "`which python2.6`" = "" ]; then
 	if ! ls python2.6-${ARCH}.tar.bz2 2>/dev/null; then
-		echo -e "\033[0;33;1mNot found package python2.6-${ARCH}.tar.bz2\033[0m"
-		lcoal val
-		read -p "Continue? [y/n]: " val
-		if [ "$val" = "y" ]; then
-			return
-		else
-			exit 1
-		fi
+		echo -e "\033[0;31;1mNot found package python2.6-${ARCH}.tar.bz2\033[0m"
+		exit 1
 	fi
 	
 	echo "Install python2.6 ..."

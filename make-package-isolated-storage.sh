@@ -7,7 +7,7 @@ sync_apps()
 
 	local disk_bin="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
 			us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset"
-	local udv_bin="udv/*"
+	local udv_bin="udv/* nas/libnas.py"
 	local webiface_bin="web-iface/sys-manager"
 	local sysconf_bin="sys-conf/* sys-conf/.build-date"
 	local common_bin="common/*"
@@ -22,7 +22,7 @@ sync_apps()
 	local tmp_dir=$TMP_DIR_STORAGE/usr/local/bin
 	mkdir -p $tmp_dir
 
-	rsync -av --exclude Makefile --exclude *.h --exclude *.c --exclude *.a \
+	rsync -a --exclude Makefile --exclude *.h --exclude *.c --exclude *.a \
 			--exclude *.o $bin_list  $tmp_dir/
 	
 	# 编译python脚本
@@ -130,10 +130,41 @@ pkg_python()
 	rm -rf $TMP_DIR_PYTHON
 }
 
+pkg_kernel()
+{
+	local pkg_dir=$PKG_DIR/kernel
+	mkdir -p $pkg_dir
+	cp install-jw-kernel.sh $pkg_dir/
+	chmod +x $pkg_dir/install-jw-kernel.sh
+	
+	local pkg_kernel=`ls /tmp/jw-kernel-*-${ARCH}.tar.bz2 2>/dev/null`
+	if [ "$pkg_kernel" = "" ]; then
+		echo -e "\033[0;31;1mNot found jw kernel package in /tmp dir.\033[0m"
+		exit 1
+	fi
+	
+	local val
+	read -p "Confirm kernel package: \"$pkg_kernel\" [y/n]: " val
+	if [ "$val" != "y" ]; then
+		exit 1
+	fi
+	
+	mv $pkg_kernel $pkg_dir/
+}
+
+pkg_all()
+{
+	echo "packging all ..."
+	cp jw-storage-install-guide.txt $PKG_DIR/
+	cd /tmp
+	tar jcf /tmp/$PKG_STORAGE ./jw-storage-${VERSION}
+	rm -fr ./jw-storage-${VERSION}
+}
+
 usage()
 {
 	echo "usage:"
-	echo "`basename $0` <version>"
+	echo "`basename $0` <version> [kernel]"
 	echo ""
 }
 
@@ -142,6 +173,8 @@ if [ "$VERSION" = "" ]; then
 	usage
 	exit 1
 fi
+
+KERNEL=$2
 
 if [ `arch` = "x86_64" ]; then
 	ARCH="64bit"
@@ -152,7 +185,7 @@ fi
 PKG_STORAGE="jw-storage-${VERSION}-${ARCH}.tar.bz2"
 PKG_PYTHON="python2.6-${ARCH}.tar.bz2"
 
-PKG_DIR="/tmp/jw-storage"
+PKG_DIR="/tmp/jw-storage-${VERSION}"
 rm -fr $PKG_DIR
 mkdir $PKG_DIR
 
@@ -171,8 +204,13 @@ sync_conf
 sync_init_script
 sync_shared_lib
 pkg_isolated_storage
-
 pkg_python
+
+if [ "$KERNEL" = "kernel" ]; then
+	pkg_kernel
+fi
+
+pkg_all
 
 echo ""
 echo -e "\033[0;35;1mPackaged completed successfully.\033[0m"

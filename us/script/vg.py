@@ -61,16 +61,6 @@ def do_expand(argv):
 		return False,"未指定磁盘槽位"
 	return md_expand(name, disks.replace(',', ' '))
 
-def raid_name_list():
-	list = []
-	try:
-		sts,output = commands.getstatusoutput('cat /sys/block/md*/md/array_name')
-		if sts == 0:
-			list = output.split()
-	except:
-		pass
-	return list
-
 def do_generate_name(suffix):
 	if suffix == '':
 		return False, '请输入获取卷组名称的前缀'
