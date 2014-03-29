@@ -14,6 +14,6 @@ int buzzer_init(void);
 void buzzer_release(void);
 int buzzer_get(enum BUZZER_STATUS *sts);
 int buzzer_set(enum BUZZER_STATUS sts);
-int buzzer_get_count(int *count);
+int buzzer_get_count(void);
 #endif
 

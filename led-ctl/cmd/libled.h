@@ -33,5 +33,5 @@ int diskled_get_all(enum LED_STATUS *sts_array, int size);
  */
 int sysled_set(enum LED_STATUS sts);
 int sysled_get(enum LED_STATUS *sts);
-
+int sysled_get_count(void);
 #endif // LIBLED__H__

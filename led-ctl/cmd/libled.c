@@ -62,6 +62,11 @@ int sysled_get(enum LED_STATUS *sts)
 	return 0;
 }
 
+int sysled_get_count(void)
+{
+	return 0;
+}
+
 #else
 
 union semum 
@@ -376,5 +381,11 @@ int sysled_get(enum LED_STATUS *sts)
 	}
 	v(semid);
 	return 0;
+}
+
+int sysled_get_count(void)
+{
+	LED_CHECK_INIT();
+	return addr->task[0].count;
 }
 #endif

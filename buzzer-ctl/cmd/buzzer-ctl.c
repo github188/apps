@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		enum BUZZER_STATUS sts;
 		int count;
 		ret = buzzer_get(&sts);
-		count = buzzer_get_count(&count);
+		count = buzzer_get_count();
 		if (ret < 0) {
 			fprintf(stderr, "get buzzer status failed.\n");
 			return -1;
