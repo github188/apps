@@ -22,7 +22,7 @@ struct option long_options[] = {
 };
 
 int systype;
-int (*pic_write_disk_gen)(int, int);
+hw_t hw;
 
 void print_help(void)
 {
@@ -65,15 +65,18 @@ int main(int argc, char *argv[])
 		case 't':
 			if (!strcmp(optarg, "3U16-SIMPLE")){
 				systype = SYS_S3U;
-				pic_write_disk_gen = i2c_write_disk_3U;
+				hw.init = i2c_init_3U;
+				hw.set = i2c_write_disk_3U;
 				break;
 			} else if (!strcmp(optarg, "2U8-STANDARD")) {
 				systype = SYS_2U;
-				pic_write_disk_gen = i2c_write_disk_2U;
+				hw.init = i2c_init_2U;
+				hw.set = i2c_write_disk_2U;
 				break;
 			} else if (!strcmp(optarg, "2U8-ATOM")) {
 				systype = SYS_A2U;
-				pic_write_disk_gen = i2c_write_disk_2U;
+				hw.init = i2c_init_2U;
+				hw.set = i2c_write_disk_2U;
 				break;
 			} else if (!strcmp(optarg, "3U16-STANDARD")) {
 				systype = SYS_3U;
@@ -100,6 +103,7 @@ int main(int argc, char *argv[])
 		return -1;
 	if (systype == SYS_3U)
 		return 0;
+	hw.init();
 	if (worker_init() < 0)
 		return -1;
 

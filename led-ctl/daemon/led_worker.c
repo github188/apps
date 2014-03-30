@@ -10,7 +10,7 @@
 
 extern shm_t *addr;
 extern int disk_max_num;
-extern int (*pic_write_disk_gen)(int, int);
+extern hw_t hw;
 static int sts[DISK_NUM_3U + 1];
 static int count[DISK_NUM_3U +1];
 static volatile int go = 0;
@@ -40,12 +40,12 @@ void do_work(void)
 	for (i=0; i < disk_max_num; i++) {
 		taskp = &addr->task[i+1];
 		if (taskp->mode & MODE_ON) {
-			if (pic_write_disk_gen(i, I2C_LED_ON) != 0) {
+			if (hw.set(i, I2C_LED_ON) != 0) {
 				syslog(LOG_ERR, "led_ctl: led on disk %d failed.\n", i+1);
 				quit = 1;
 			}
 		} else if (taskp->mode & MODE_OFF) {
-			if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
+			if (hw.set(i, I2C_LED_OFF) != 0) {
 				syslog(LOG_ERR, "led_ctl: led off disk %d failed.\n", i+1);
 				quit = 1;
 			} 
@@ -63,7 +63,7 @@ void do_work(void)
 					count[i+1] = count[i+1] - 8;
 			}
 			if (count[i+1] <= 0) {
-				if (pic_write_disk_gen(i, sts[i+1]) != 0) {
+				if (hw.set(i, sts[i+1]) != 0) {
 					syslog(LOG_ERR, "led_ctl: blink disk %d failed.\n", i+1);
 					quit = 1;
 				}
@@ -82,7 +82,7 @@ void do_work(void)
 				taskp->time = taskp->time - WORKER_TIMER * 8;
 			if (taskp->time <= 0) {
 				taskp->mode = MODE_OFF;
-				if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
+				if (hw.set(i, I2C_LED_OFF) != 0) {
 					syslog(LOG_ERR, "led_ctl: reset diskled %d failed.\n", i+1);
 					quit = 1;
 				}
@@ -152,7 +152,7 @@ int worker_init(void)
 		if (quit) {
 			int i;
 			for (i=0; i < disk_max_num; i++) {
-				if (pic_write_disk_gen(i, I2C_LED_OFF) != 0) {
+				if (hw.set(i, I2C_LED_OFF) != 0) {
 					syslog(LOG_ERR, "led_ctl: exitting led off  disk %d failed.\n", i+1);
 				}
 			}

@@ -35,6 +35,11 @@
 #define VERSION	0x101
 #define MAGIC   0x01234567
 
+typedef struct hw_style {
+	int (*init)(void);
+	int (*set)(int, int);
+	void (*release) (void);
+}hw_t;
 typedef struct led_task led_task_t;
 struct led_task {
 	int mode;
