@@ -348,8 +348,14 @@ def __get_stat_buzzer(mod):
 	_stat = {}
 	_stat['item'] = mod
 	_stat['value'] = 'good'
-	if os.path.isfile('%s/buzzer' % ALARM_DIR):
-		_stat['value'] = '蜂鸣器告警'
+	ret,msg = commands.getstatusoutput('buzzer-ctl -g')
+	if ret == 0:
+		if 'on' in msg:
+			_stat['value'] = '蜂鸣器告警'
+		elif 'force off' in msg:
+			_stat['value'] = '蜂鸣器告警, 声音已关闭'
+	else:
+		_stat['value'] = '蜂鸣器状态获取失败'
 	return _stat
 
 _stat_list = {'disk': __get_stat_disk,

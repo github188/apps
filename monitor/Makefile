@@ -27,4 +27,4 @@ test1: $(OBJS)
 	gcc -o test1 test1.c $(OBJS) $(LDFLAGS)
 
 clean:
-	rm -fr sys-mon core $(OBJS)  libsysmon.a test buzzer test1
+	rm -fr sys-mon core $(OBJS)  libsysmon.a test test1

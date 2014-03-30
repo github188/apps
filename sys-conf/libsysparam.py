@@ -60,15 +60,15 @@ def __set_buzzer(value):
 	op = ''
 	if 'inc' == value or 'on' == value:
 		op = 'on'
-	elif 'dec' == value:
+	elif 'dec' == value or 'off' == value:
 		op = 'off'
-	elif 'mute' == value or 'off' == value:
-		op = foff
+	elif 'mute' == value:
+		op = 'foff'
 	else:
 		return False, '设置蜂鸣器失败, 不支持 %s' % value
 	
 	if op != '':
-		ret = os.system('/usr/local/bin/buzzer-ctl -b %s' % op)
+		ret = os.system('buzzer-ctl -s %s' % op)
 	else:
 		ret = 0
 
