@@ -90,6 +90,7 @@ int buzzer_init(void)
 	
 	int shmid;
 	key_t shmkey;
+	struct shmid_ds ds;
 
 	shmkey = ftok(SHMKEY, 0);
 	semid = semget(shmkey, 0, 0666);
@@ -109,6 +110,14 @@ int buzzer_init(void)
 		return -1;
 	}
 	
+	if (shmctl(shmid, IPC_STAT, &ds) < 0) {
+		return -1;
+	}
+
+	if (ds.shm_nattch <= 1) {
+		return -1;
+	}
+
 	if (addr->shm_head.magic != MAGIC) {
 		return -1;
 	}
