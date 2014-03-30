@@ -89,7 +89,7 @@ def get_mdattr_by_mddev(mddev):
 	if mdattr.remain < 100*1024*1024:
 		mdattr.remain = 0
 
-	if mdattr.raid_level in ('1', '5', '6'):
+	if mdattr.raid_level in ('1', '5', '6', '10'):
 		slaves = list_dir(sysdir + '/slaves')
 		# raid扩容时掉盘，无法从raid中移除该盘，如果该槽位又有盘上线，
 		# 就不再为原来的设备节点保留槽位号了，所以转换槽位号时，
@@ -108,6 +108,8 @@ def get_mdattr_by_mddev(mddev):
 			max_degraded = 1
 		elif '6' == mdattr.raid_level:
 			max_degraded = 2
+		elif '10' == mdattr.raid_level:
+			max_degraded = mdattr.disk_total / 2
 		else:	# raid1
 			max_degraded = mdattr.disk_total - 1
 
@@ -453,9 +455,9 @@ def __md_create(raid_name, level, chunk, slots):
 	cmd = "2>&1 mdadm -CR %s -l %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, len(dev_list), devs, raid_name)
 	if level != 'linear':
 		cmd += ' -c %s' % chunk
-	if level in ('5', '6'):
+	if level in ('5', '6', '10'):
 		cmd += " --bitmap=internal"
-	if level in ('1', '5', '6'):
+	if level in ('1', '5', '6', '10'):
 		sts,size = commands.getstatusoutput('head -n 1 /tmp/disk_use_size')
 		if sts != 0:
 			size = '0'

@@ -191,7 +191,7 @@ def main():
 def usage():
 	help_str="""
 Usage:
-	--create --name <vg_name> --level <0|1|5|6> --strip <64|128|256|512|1024> --disk <slot1>[,<slot2>,<slot3>...]
+	--create --name <vg_name> --level <0|1|5|6|10> --strip <64|128|256|512|1024> --disk <slot1>[,<slot2>,<slot3>...]
 	--expand --name <vg_name> --disk <slot1>[,<slot2>,<slot3>...]
 	--delete <vg_name>
 	--list [--vg <vg_name> | --level <level1>[,<level2>,<level3>... | --not-fail | --expandable]
