@@ -116,10 +116,12 @@ int i2c_read_disk_3U(int disk_id, int *v)
 	if (disk_id >= I2C_LED_NUMBER_3U)
 		return PERR_INVAL;
 	if (disk_id < I2C_LED_NUMBER_3U / 2) {
-		i2c_init_3U1();
+		if (i2c_init_3U1() < 0)
+			return PERR_IOERR;
 	}
 	else {
-		i2c_init_3U2();
+		if (i2c_init_3U2() < 0)
+			return PERR_IOERR;
 	}
 
 	if (disk_id < I2C_LED_NUMBER_3U/4 || 
