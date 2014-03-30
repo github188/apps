@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	shmid = shm_init();
 	if (shmid < 0)
 		return -1;
-	
+	syslog(LOG_INFO, "buzzer-ctl-daemon: init done.\n");
 	worker_init();
 
 clean:	
@@ -71,5 +71,6 @@ clean:
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
+	syslog(LOG_INFO, "buzzer-ctl-daemon exited.\n");
 	return 0;
 }

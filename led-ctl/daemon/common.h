@@ -22,9 +22,9 @@
 #define MODE_FORCE_OFF  8
 
 #define FREQ_NONE	0
-#define FREQ_FAST	1
+#define FREQ_FAST	8
 #define FREQ_NORMAL	2
-#define FREQ_SLOW	4
+#define FREQ_SLOW	1
 
 #define COUNT_FAST	1
 #define COUNT_NORMAL	4

@@ -12,7 +12,7 @@ ifneq ($(STRIP),)
 	$(STRIP) led-ctl
 endif
 
-libled.a: 
+libled.a: libled.o 
 	ar x ../../pic_ctl/libpic.a
 	ar -rcs libled.a pic_ctl.o libled.o ../daemon/sysled.o
 

@@ -11,7 +11,7 @@ ifneq ($(STRIP),)
 	$(STRIP) buzzer-ctl
 endif
 
-libbuzzer.a:
+libbuzzer.a: libbuzzer.o
 	ar -rcs libbuzzer.a libbuzzer.o
 
 clean:
