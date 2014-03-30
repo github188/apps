@@ -8,6 +8,7 @@
 
 extern shm_t *addr;
 static volatile int quit = 0;
+static volatile int flag = 0;
 
 static void sig_quit(int signo)
 {
@@ -35,11 +36,23 @@ void worker_init(void)
 			return ;
 		}
 		if (taskp->mode & MODE_ON) {
+			flag = 1;
 			play(freq_alert, time_alert);
 		} else if (taskp->mode & MODE_OFF) {
-			Stop();
+			if (flag) {
+				Stop();
+				flag = 0;
+			} else {
+				sleep(1);
+			}
+
 		} else if (taskp->mode & MODE_FORCE_OFF) {
-			Stop();
+			if (flag) {
+				Stop();
+				flag = 0;
+			} else {
+				sleep(1);
+			}
 		}
 		usleep(10000);
 	}
