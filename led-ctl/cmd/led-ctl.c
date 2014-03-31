@@ -32,7 +32,7 @@ struct option long_options[] = {
 void print_help(void)
 {
 	printf("led-ctl\n");
-	printf("\t[--sysled|-s on|off]\n");
+	printf("\t[--sysled|-s on|off|foff]\n");
 	printf("\t[--get|-g]\n");
 	printf("\t[--diskled|-d on|off|[blink --freq|-f fast|normal|slow] [--id|-i <disk_id>|<all>]]\n");
 	printf("\t[--expire|-e <seconds>]\n");
@@ -52,6 +52,8 @@ int led_getopt(int argc, char **argv)
 				systask.mode = MODE_ON;
 			} else if (!strcmp(optarg, "off")) {
 				systask.mode = MODE_OFF;
+			} else if (!strcmp(optarg, "foff")) {
+				systask.mode = MODE_FORCE_OFF;
 			} else {
 				fprintf(stderr, "sysled mode invalid.\n");
 			}
@@ -163,7 +165,6 @@ void do_get_work(int id)
 {
 	int i, j, count;
 	enum LED_STATUS *sts;
-	
 	if (id == 0) {
 		j = diskled_get_num();
 	} else {
@@ -180,11 +181,11 @@ void do_get_work(int id)
 			return ;
 		}
 		count = sysled_get_count();
-		if (sts[0] & LED_ON) {
+		if (sts[0] == LED_ON) {
 			printf("sysled mode: on\ncount: %d\n", count);
-		} else if(sts[0] & LED_OFF) {
+		} else if(sts[0] == LED_OFF) {
 			printf("sysled mode: off\ncount: %d\n", count);
-		} else if (sts[0] & LED_FORCE_OFF) {
+		} else if (sts[0] == LED_FORCE_OFF) {
 			printf("sysled mode: force off\ncount: %d\n", count);
 		}else {
 			printf("sysled mode:unknown\ncount: %d\n", count);
@@ -255,6 +256,8 @@ int main(int argc, char *argv[])
 			sysled_set(LED_ON);
 		else if (systask.mode & MODE_OFF)
 			sysled_set(LED_OFF);
+		else if (sysled.mode & MODE_FORCE_OFF)
+			sysled_set(LED_FORCE_OFF);
 	}
 	
 
