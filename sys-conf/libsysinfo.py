@@ -197,12 +197,12 @@ def __rootfs_ver():
 # 存储软件版本
 def __apps_ver():
 	try:
-		ret,msg = commands.getstatusoutput('cat /etc/issue')
+		ret,msg = commands.getstatusoutput('sys-manager version')
 		if 0 == ret:
-			return msg.split()[2]
+			return msg.split(':')[1].strip()
 	except:
 		pass
-	return 'main'
+	return 'apps'
 
 # web版本
 def __web_ver():
@@ -212,7 +212,7 @@ def __web_ver():
 			return msg
 	except:
 		pass
-	return 'web'
+	return 'noweb'
 
 # 编译日期
 def __build_date():

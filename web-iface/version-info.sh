@@ -1,9 +1,15 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 clean="$1"
 
 VERSION_TEMP="version-template.c"
 VERSION_FILE="version.c"
+VERSION=""
+
+get_version()
+{
+	echo $VERSION
+}
 
 get_hostname()
 {
@@ -77,6 +83,15 @@ if [ ! -f "$VERSION_TEMP" ]; then
 	exit 1
 fi
 
+echo ""
+echo -ne "\033[0;33;1mEnter version: \033[0m"
+read VERSION
+if [ `echo $VERSION | awk -F'.' '{print NF}'` -ne 3 ]; then
+	echo -e "\033[0;31;1mversion: \"$VERSION\" invalid\033[0m"
+	exit 1
+fi
+
+[ $(check_key "VERSION") != "exist" ] && error_exist "VERSION"
 [ $(check_key "HOST") != "exist" ] && error_exist "HOST"
 [ $(check_key "IPADDR") != "exist" ] && error_exist "IPADDR"
 [ $(check_key "GIT_BRANCH") != "exist" ] && error_exist "GIT_BRANCH"
@@ -85,6 +100,7 @@ fi
 
 rm -f "$VERSION_FILE"
 
+update_key "VERSION" "$(get_version)"
 update_key "HOST" "$(get_hostname)"
 update_key "IPADDR" "$(get_ipaddr)"
 update_key "GIT_BRANCH" "$(get_git_branch)"

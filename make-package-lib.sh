@@ -3,12 +3,12 @@ set -e
 
 cd led-ctl
 make clean
-make only-interface=1
+make
 cd - >/dev/null
 
 cd buzzer-ctl
 make clean
-make only-interface=1
+make
 cd - >/dev/null
 
 if [ `arch` = "x86_64" ]; then
