@@ -67,16 +67,19 @@ int main(int argc, char *argv[])
 				systype = SYS_S3U;
 				hw.init = i2c_init_3U;
 				hw.set = i2c_write_disk_3U;
+				hw.release = i2c_release_3U;
 				break;
 			} else if (!strcmp(optarg, "2U8-STANDARD")) {
 				systype = SYS_2U;
 				hw.init = i2c_init_2U;
 				hw.set = i2c_write_disk_2U;
+				hw.release = i2c_release_2U;
 				break;
 			} else if (!strcmp(optarg, "2U8-ATOM")) {
 				systype = SYS_A2U;
 				hw.init = i2c_init_2U;
 				hw.set = i2c_write_disk_2U;
+				hw.release = i2c_release_2U;
 				break;
 			} else if (!strcmp(optarg, "3U16-STANDARD")) {
 				systype = SYS_3U;
@@ -104,23 +107,28 @@ int main(int argc, char *argv[])
 	if (systype == SYS_3U)
 		return 0;
 	if (hw.init() < 0) {
-		syslog(LOG_ERR, "led_ctl: i2c init failed.\n");
+		syslog(LOG_ERR, "led_ctl: init i2c failed.\n");
 		goto quit;
-	}
+	}	
 	if (worker_init() < 0)
 		goto quit;
 	worker_release();
-quit:
-	shm_release();
-	lock.l_type = F_UNLCK;
-	fcntl(fd, F_SETLK, &lock);
-	unlink(LOCK_FILE);
-	return -1;
+
+	
 clean:
 	shm_release();
+	hw.release();
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
 	syslog(LOG_INFO, "led_ctl: exited.\n");
 	return 0;
+quit:
+	shm_release();
+	hw.release();
+	lock.l_type = F_UNLCK;
+	fcntl(fd, F_SETLK, &lock);
+	unlink(LOCK_FILE);
+	syslog(LOG_INFO, "led_ctl:error quit.\n");
+	return -1;
 }

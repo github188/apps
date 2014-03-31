@@ -66,10 +66,12 @@ enum {
 	I2C_LED_DISK_MASK_3U	= 0x3,
 };
 
-int i2c_write_disk_2U(int disk_id, int v);
-int i2c_write_disk_3U(int disk_id, int v);
+int i2c_write_disk_2U(int v);
+int i2c_write_disk_3U(int v);
 int i2c_init_3U(void);
+void i2c_release_3U(void);
 int i2c_init_2U(void);
+void i2c_release_2U(void);
 
 /* -- i2c.h -- */
 

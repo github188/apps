@@ -16,8 +16,8 @@
 #define DISK_ID_NONE	-1
 #define DISK_ID_ALL	-2
 
-#define MODE_ON		1
-#define MODE_OFF	2
+#define MODE_OFF	1
+#define MODE_ON		2
 #define MODE_BLINK	4
 #define MODE_FORCE_OFF  8
 
@@ -37,9 +37,10 @@
 
 typedef struct hw_style {
 	int (*init)(void);
-	int (*set)(int, int);
+	int (*set)(int);
 	void (*release) (void);
 }hw_t;
+
 typedef struct led_task led_task_t;
 struct led_task {
 	int mode;

@@ -197,9 +197,11 @@ int _diskled_set(int disk_id, enum LED_STATUS mode)
 	switch (mode) {
 	case LED_ON:
 		addr->task[disk_id].mode = MODE_ON;
+		addr->task[disk_id].count = 0;
 		goto quit;
 	case LED_OFF:
 		addr->task[disk_id].mode = MODE_OFF;
+		addr->task[disk_id].count = 0;
 		goto quit;
 	case LED_BLINK_FAST:
 		addr->task[disk_id].mode = MODE_BLINK;
@@ -261,8 +263,9 @@ int diskled_get_all(enum LED_STATUS *arr, int size)
 
 	int i;
 	for(i=1; i <= addr->shm_head.disk_num; i++) {
-		if (diskled_get(i, &arr[i-1]) < 0)
+		if (diskled_get(i, &arr[i-1]) < 0) {
 			return -1;
+		}
 	}
 	return 0;
 }
