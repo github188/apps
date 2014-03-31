@@ -71,8 +71,8 @@ void do_work(void)
 				count[i+1]=taskp->count;
 			} 
 #ifdef _DEBUG			
-		printf("led: %d mode: %d freq: %d  time: %d count: %d\n",
-		       i+1, taskp->mode, taskp->freq, taskp->time, count[i+1]);
+			printf("led: %d mode: %d freq: %d  time: %d count: %d\n",
+					i+1, taskp->mode, taskp->freq, taskp->time, count[i+1]);
 #endif
 		}
 		if (taskp->time != TIME_FOREVER) {
@@ -112,43 +112,45 @@ int worker_init(void)
 	syslog(LOG_INFO, "led_ctl:init done.\n");
 	while (1) {
 		pause();
-		do_work();
-		if (freq != j) {
-			value.it_value.tv_sec = 0;
-			value.it_value.tv_usec = 0;
-			value.it_interval.tv_usec = 0;
-			value.it_interval.tv_sec = 0;
-			if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
-				syslog(LOG_ERR, "led_ctl:clean timer failed.\n");
-				return -1;
+		if (go) {
+			do_work();
+			if (freq != j) {
+				value.it_value.tv_sec = 0;
+				value.it_value.tv_usec = 0;
+				value.it_interval.tv_usec = 0;
+				value.it_interval.tv_sec = 0;
+				if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
+					syslog(LOG_ERR, "led_ctl:clean timer failed.\n");
+					return -1;
+				}
+
+				switch (j) {
+					case FREQ_NORMAL:
+						value.it_value.tv_usec = WORKER_TIMER * 4;
+						value.it_interval.tv_usec = WORKER_TIMER * 4;
+						break;
+					case FREQ_NONE: 
+					case FREQ_SLOW: 
+						value.it_value.tv_sec = 1;
+						value.it_interval.tv_sec = 1;
+						break;
+					default:
+						value.it_value.tv_usec = WORKER_TIMER;
+						value.it_interval.tv_usec = WORKER_TIMER;
+						break;
+				}
+				if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
+					syslog(LOG_ERR, "led_ctl: reset setitimer failed.\n");
+					return -1;
+				}
+
+				freq = j;
 			}
-			
-			switch (j) {
-			case FREQ_NORMAL:
-				value.it_value.tv_usec = WORKER_TIMER * 4;
-				value.it_interval.tv_usec = WORKER_TIMER * 4;
-				break;
-			case FREQ_NONE: 
-			case FREQ_SLOW: 
-				value.it_value.tv_sec = 1;
-				value.it_interval.tv_sec = 1;
-				break;
-		        default:
-				value.it_value.tv_usec = WORKER_TIMER;
-				value.it_interval.tv_usec = WORKER_TIMER;
-				break;
-			}
-			if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
-				syslog(LOG_ERR, "led_ctl: reset setitimer failed.\n");
-				return -1;
-			}
-			
-			freq = j;
-		}
 #ifdef _DEBUG
-		printf("now timer tv_sec: %d tv_usec: %d freq: %d\n", (int)value.it_interval.tv_sec,
-		       (int)value.it_interval.tv_usec, freq);
+			printf("now timer tv_sec: %d tv_usec: %d freq: %d\n", (int)value.it_interval.tv_sec,
+					(int)value.it_interval.tv_usec, freq);
 #endif		
+		}
 		if (quit) {
 			int i;
 			for (i=0; i < disk_max_num; i++) {

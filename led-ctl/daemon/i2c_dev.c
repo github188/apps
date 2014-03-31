@@ -44,7 +44,7 @@ int i2c_write_disk_3U(int disk_id, int mode)
 		}
 
 	} else {
-		if (ioctl(i2c_fd, I2C_SLAVE_FORCE, I2C_ADDRESS_3U1) < 0) {
+		if (ioctl(i2c_fd, I2C_SLAVE_FORCE, I2C_ADDRESS_3U2) < 0) {
 			return PERR_NODEV;
 		}
 	}
@@ -101,14 +101,14 @@ int do_init_3U(int fd)
 	 value = i2c_smbus_read_byte_data(fd, I2C_GP1_MODE2);
 	 if (value == -1)
 		 return PERR_IOERR;
-	 value &= 0xf0;
+	 value &= 0xff;
 	 ret = i2c_smbus_write_byte_data(fd, I2C_GP1_MODE2, value);
 	 if (ret == -1)
 		 return PERR_IOERR;
 	 value = i2c_smbus_read_byte_data(fd, I2C_GP2_MODE2);
 	 if (value == -1)
 		 return PERR_IOERR;
-	 value &= 0xf0;
+	 value &= 0xff;
 	 ret = i2c_smbus_write_byte_data(fd, I2C_GP2_MODE2, value);
 	 if (ret == -1)
 		 return PERR_IOERR;

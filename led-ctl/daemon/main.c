@@ -100,14 +100,22 @@ int main(int argc, char *argv[])
 	
 	shmid = shm_init();
 	if (shmid < 0)
-		return -1;
+		goto quit;
 	if (systype == SYS_3U)
 		return 0;
-	hw.init();
+	if (hw.init() < 0) {
+		syslog(LOG_ERR, "led_ctl: i2c init failed.\n");
+		goto quit;
+	}
 	if (worker_init() < 0)
-		return -1;
-
+		goto quit;
 	worker_release();
+quit:
+	shm_release();
+	lock.l_type = F_UNLCK;
+	fcntl(fd, F_SETLK, &lock);
+	unlink(LOCK_FILE);
+	return -1;
 clean:
 	shm_release();
 	lock.l_type = F_UNLCK;
