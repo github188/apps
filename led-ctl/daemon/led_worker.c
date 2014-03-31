@@ -43,18 +43,26 @@ void do_work(void)
 	for (i=0; i < disk_max_num; i++) {
 		taskp = &addr->task[i+1];
 		if (taskp->mode & MODE_ON) {
-			if (sts[i+1].mode & MODE_ON)
+			if (sts[i+1].mode & MODE_ON) {
+				count[i+1] = 0;
 				continue;
+			}
 			else {
 				flag = 1;
 				mode = mode & ~(1 << i);
+				sts[i+1].mode = MODE_ON;
+				sts[i+1].now_mode = MODE_OFF;
+				count[i+1] = 0;
 			}
 		} else if (taskp->mode & MODE_OFF) {
-			if (sts[i+1].mode & MODE_OFF)
+			if (sts[i+1].mode & MODE_OFF) {
+				count[i+1] = 0;
 				continue;
-			else {
+			} else {
 				flag = 1;
 				mode = mode | (1 << i);
+				sts[i+1].mode = MODE_OFF;
+				sts[i+1].now_mode = MODE_OFF;
 				count[i+1] = 0;
 			}
 		} else if (taskp->mode & MODE_BLINK) {
@@ -64,6 +72,7 @@ void do_work(void)
 				syslog(LOG_ERR, "led_ctl: disk %d freq not set.\n", i+1);
 				continue;
 			}
+			sts[i+1].mode = MODE_BLINK;
 			if (count[i+1] > 0)  {
 				if (j)
 					count[i+1] = count[i+1] - 8/j;
@@ -71,12 +80,12 @@ void do_work(void)
 					count[i+1] = count[i+1] - 8;
 			}
 			if (count[i+1] <= 0) {
-				if (sts[i+1].mode & MODE_ON) {
-					sts[i+1].mode = MODE_OFF;
+				if (sts[i+1].now_mode & MODE_ON) {
+					sts[i+1].now_mode = MODE_OFF;
 					flag = 1;
 					mode = mode | (1 << i);
 				} else {
-					sts[i+1].mode = MODE_ON;
+					sts[i+1].now_mode = MODE_ON;
 					flag = 1;
 					mode = mode & ~(1 << i);
 				}
@@ -95,6 +104,8 @@ void do_work(void)
 				taskp->time = taskp->time - WORKER_TIMER * 8;
 			if (taskp->time <= 0) {
 				sts[i+1].mode = MODE_OFF;
+				sts[i+1].now_mode = MODE_OFF;
+				count[i+1] = 0;
 				flag = 1;
 				mode = mode | (1 << i);
 			}
