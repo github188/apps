@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
 			sysled_set(LED_ON);
 		else if (systask.mode & MODE_OFF)
 			sysled_set(LED_OFF);
-		else if (sysled.mode & MODE_FORCE_OFF)
+		else if (systask.mode & MODE_FORCE_OFF)
 			sysled_set(LED_FORCE_OFF);
 	}
 	
