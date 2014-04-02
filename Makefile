@@ -40,6 +40,9 @@ clean:
 	$(MAKE) -C led clean
 	$(MAKE) -C buzzer clean
 	$(MAKE) -C diskpower clean
+	$(MAKE) -C led-ctl clean
+	$(MAKE) -C diskpw clean
+	$(MAKE) -C buzzer-ctl clean
 	find . -name '*.pyc' -delete
 
 help:
