@@ -55,10 +55,12 @@ if [ "$not_installed_pkgs" != "" ]; then
 fi
 
 if [ "`which mdadm`" != "" ]; then
-	echo -e "\033[0;33;1mOriginal \"mdadm\" must be removed. \
-		If you install mdadm via apt-get, please execute \"apt-get purge mdadm\". \
-		Then restart this installation script.\033[0m"
-	exit 1
+	if ! mdadm -V | grep -q "jwstor"; then
+		echo -e "\033[0;33;1mOriginal \"mdadm\" must be removed."\
+			"If you install mdadm via apt-get, please execute \"apt-get purge mdadm\"."\
+			"Then restart this installation script.\033[0m"
+		exit 1
+	fi
 fi
 
 PKG_DIR=`pwd`

@@ -14,7 +14,8 @@
 3. Install jw storage management package
 	Enter "user" directory, execute script: "install-jw-storage.sh"
 	During installation, you may need to install the necessary packages
-	that script prompts, then execute script again. 
+	that script prompts, then execute script again. And if you have installed
+	the mdadm package, please remove it.
 	Installation is successful when output string:
 	    "jw storage management package install OK, please reboot."
 	Then reboot the system.
