@@ -1,21 +1,24 @@
-CROSS_COMPILE =
+all: watchdog libwatchdog.a libwatchdog.so
 
-all: libwatchdog.a
+%.o : %.c
+	gcc $(CFLAGS) -c $<
 
-progs = watchdog
-lib-objs := watchdog_lib.o
-watchdog-objs = watchdog.o
-watchdog-libs = libwatchdog.a
+watchdog: watchdog.o libwatchdog.a
+	gcc -o $@ $^
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
 
--include config.mk
+libwatchdog.so: libwatchdog.c
+	gcc $(CFLAGS) -fPIC -shared -o $@ $^
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
 
-libwatchdog.a: $(call to-progs,$(lib-objs))
-	$(QUIET_AR)
+libwatchdog.a: libwatchdog.o
+	ar rcs $@ $^
 
-$(OBJS) : %.o : %.c
-	$(QUIET_CC)
-
-.PHONY: clean test utils
+.PHONY: clean
 
 clean::
-	$(call QUIET_RM,*.o *.a *.so)
+	rm -f *.o *.a *.so watchdog

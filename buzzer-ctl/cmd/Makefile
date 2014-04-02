@@ -3,16 +3,22 @@ OBJECTS := buzzer-ctl.o libbuzzer.o
 ifdef only-interface
 	CFLAGS += -DONLY_INTERFACE
 endif
-all: buzzer-ctl libbuzzer.a
+all: buzzer-ctl libbuzzer.a libbuzzer.so
 
 buzzer-ctl:$(OBJECTS) libbuzzer.a
-	gcc -o buzzer-ctl buzzer-ctl.o $(CFLAGS) $(LIBBUZZER)
+	gcc $(CFLAGS) -o $@ $^
 ifneq ($(STRIP),)
-	$(STRIP) buzzer-ctl
+	$(STRIP) $@
+endif
+
+libbuzzer.so: libbuzzer.c
+	gcc $(CFLAGS) -fPIC -shared -o $@ $^
+ifneq ($(STRIP),)
+	$(STRIP) $@
 endif
 
 libbuzzer.a: libbuzzer.o
-	ar -rcs libbuzzer.a libbuzzer.o
+	ar -rcs $@ $^
 
 clean:
-	rm -rf *.o buzzer-ctl *.a
+	rm -rf *.o buzzer-ctl *.a *.so

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "watchdog_lib.h"
+#include "libwatchdog.h"
 
 //#include "sio_watchdog.h"
 

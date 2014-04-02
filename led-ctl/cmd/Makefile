@@ -4,17 +4,23 @@ ifdef only-interface
 	CFLAGS += -DONLY_INTERFACE
 endif
 
-all: led-ctl libled.a
+all: led-ctl libled.a libled.so
 
 led-ctl: $(OBJECTS) libled.a
-	$(CC) -o led-ctl led-ctl.c $(CFLAGS) $(LIBLED)
+	$(CC) $(CFLAGS) -o $@ $^
 ifneq ($(STRIP),)
-	$(STRIP) led-ctl
+	$(STRIP) $@
 endif
 
-libled.a: libled.o 
+libled.so: libled.c ../daemon/sysled.c ../../pic_ctl/pic_ctl.c
+	$(CC) $(CFLAGS) -fPIC -shared -o $@ $^
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
+
+libled.a: libled.o ../daemon/sysled.o
 	ar x ../../pic_ctl/libpic.a
-	ar -rcs libled.a pic_ctl.o libled.o ../daemon/sysled.o
+	ar -rcs $@ $^ pic_ctl.o
 
 clean:
-	rm -rf *.o led-ctl *.a
+	rm -rf *.o led-ctl *.a *.so
