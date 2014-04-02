@@ -95,7 +95,10 @@ def handle_disk_remove_kicked(diskinfo, event):
 		if event == 'remove':
 			faulty_disk_in_md(mdattr.dev, diskinfo.dev)
 			# 磁盘强制重新上电, 检测是否真的掉线
-			os.system('disk_reset -i %s -d 5 >/dev/null 2>&1' % diskinfo.slot[2:])
+			if hardware_type() == '3U16-STANDARD':
+				os.system('disk_reset -i %s -d 5 >/dev/null 2>&1' % diskinfo.slot[2:])
+			elif hardware_type() == '3U16-SIMPLE':
+				os.system('diskpower-ctl -i %s -r 5 >/dev/null 2>&1' % diskinfo.slot[2:])
 
 		# tmpfs下标示正在处理raid事件, 然后从md删除磁盘
 		rebuilder_cn = inc_md_rebuilder_cnt(basename(mdattr.dev))
@@ -129,7 +132,7 @@ def handle_disk_remove_kicked(diskinfo, event):
 		
 		# 掉盘后等待5分钟, 如果磁盘重新上线可快速重建RAID, 不需要使用热备盘重建
 		# 等待后重新获取状态, 如果不再是degrade状态, 则不需要处理
-		if event == 'remove':
+		if event == 'remove' and (hardware_type() == '3U16-STANDARD' or hardware_type() == '3U16-SIMPLE'):
 			sts,seconds = commands.getstatusoutput('head -n 1 /tmp/disk_remove_sleep')
 			if sts != 0:
 				seconds = 300

@@ -4,7 +4,7 @@ CFLAGS += -std=c99
 ifdef debug
 CFLAGS += -D_DEBUG
 endif
-LDFLAGS += ../led-ctl/cmd/libled.a  ../buzzer-ctl/cmd/libbuzzer.a ../common/liblog.a libsysmon.a -lxml2 -ljson -lev -lsqlite3 -lm
+LDFLAGS += ../led/cmd/libled.a  ../buzzer/cmd/libbuzzer.a ../common/liblog.a libsysmon.a -lxml2 -ljson -lev -lsqlite3 -lm
 
 OBJS=sys-tmpfs.o sys-global.o sys-module.o sys-action.o sys-alarm.o sys-conf.o sys-event.o list.o sys-interval-check.o sys-capture.o pmu-info.o
 

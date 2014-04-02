@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
-#include "diskpw.h"
+#include "diskpower.h"
 
 
 #define I2C_DEV		"/dev/i2c-i801"

@@ -98,9 +98,10 @@ test-utils/tools-test-led
 pic_ctl/utils/disk_reset
 Watchdog/watchdog
 uart_fix/uart_fix
-led-ctl/cmd/led-ctl
-led-ctl/daemon/led-ctl-daemon
+led/cmd/led-ctl
+led/daemon/led-ctl-daemon
 watchdog/watchdog
-buzzer-ctl/cmd/buzzer-ctl
-buzzer-ctl/daemon/buzzer-ctl-daemon
+buzzer/cmd/buzzer-ctl
+buzzer/daemon/buzzer-ctl-daemon
+diskpower/diskpower-ctl
 

@@ -19,13 +19,13 @@ all:
 	$(MAKE) -C us/md-auto-resume/mdscan
 	$(MAKE) -C web-iface
 	$(MAKE) -C pic_ctl
-	$(MAKE) -C led-ctl
-	$(MAKE) -C buzzer-ctl
+	$(MAKE) -C led
+	$(MAKE) -C buzzer
 	$(MAKE) -C monitor
 	$(MAKE) -C us
 	$(MAKE) -C sys-conf
-	$(MAKE) -C test-utils
 	$(MAKE) -C watchdog
+	$(MAKE) -C diskpower
 clean:
 	$(MAKE) -C udv clean
 	$(MAKE) -C web-iface clean
@@ -36,10 +36,10 @@ clean:
 	$(MAKE) -C monitor clean
 	$(MAKE) -C pic_ctl clean
 	$(MAKE) -C sys-conf clean
-	$(MAKE) -C test-utils clean
 	$(MAKE) -C watchdog clean
-	$(MAKE) -C led-ctl clean
-	$(MAKE) -C buzzer-ctl clean
+	$(MAKE) -C led clean
+	$(MAKE) -C buzzer clean
+	$(MAKE) -C diskpower clean
 	find . -name '*.pyc' -delete
 
 help:

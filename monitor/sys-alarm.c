@@ -5,8 +5,8 @@
 #include "sys-action.h"
 #include "sys-event.h"
 #include "sys-utils.h"
-#include "../led-ctl/cmd/libled.h"
-#include "../buzzer-ctl/cmd/libbuzzer.h"
+#include "../led/cmd/libled.h"
+#include "../buzzer/cmd/libbuzzer.h"
 
 
 struct event_record

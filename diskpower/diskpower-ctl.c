@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
-#include "diskpw.h"
+#include "diskpower.h"
 
 
 static int id;
@@ -20,10 +20,10 @@ struct option long_options[] = {
 
 void print_help(void)
 {
-	printf("diskpw-ctl:\n");
-	printf("--id|-i <1-16> --mode|-m <on|off>\n");
-	printf("--id|-i <1-16> --reset|-r <delayTimer>\n");
-	printf("--help|-h\n");
+	fprintf(stderr, "diskpower-ctl:\n");
+	fprintf(stderr, "\t--id|-i <1-16> --mode|-m on|off\n");
+	fprintf(stderr, "\t--id|-i <1-16> --reset|-r <delayTimer>\n");
+	fprintf(stderr, "\t--help|-h\n");
 }
 int parse_args(int argc, char **argv)
 {
