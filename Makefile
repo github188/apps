@@ -25,6 +25,7 @@ all:
 	$(MAKE) -C us
 	$(MAKE) -C sys-conf
 	$(MAKE) -C test-utils
+	$(MAKE) -C diskpw
 	$(MAKE) -C watchdog
 clean:
 	$(MAKE) -C udv clean
@@ -39,6 +40,7 @@ clean:
 	$(MAKE) -C test-utils clean
 	$(MAKE) -C watchdog clean
 	$(MAKE) -C led-ctl clean
+	$(MAKE) -C diskpw clean
 	$(MAKE) -C buzzer-ctl clean
 	find . -name '*.pyc' -delete
 
