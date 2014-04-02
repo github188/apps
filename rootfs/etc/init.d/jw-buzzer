@@ -11,8 +11,8 @@
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
-LED_DAEMON="/usr/local/bin/buzzer-ctl-daemon"
-LED_PID="/var/run/buzzer-ctl-daemon.pid"
+BUZZER_DAEMON="/usr/local/bin/buzzer-ctl-daemon"
+BUZZER_PID="/var/run/buzzer-ctl-daemon.pid"
 
 . /lib/lsb/init-functions
 
@@ -29,17 +29,17 @@ __start_daemon()
 
 do_start()
 {
-	__start_daemon $LED_PID $LED_DAEMON
+	__start_daemon $BUZZER_PID $BUZZER_DAEMON
 }
 
 do_stop()
 {
-	killproc -p $LED_PID $(basename $LED_DAEMON)
+	killproc -p $BUZZER_PID $(basename $BUZZER_DAEMON)
 }
 
 do_status()
 {
-	status_of_proc -p $LED_PID $LED_DAEMON $(basename $LED_DAEMON) $(basename $LED_DAEMON)
+	status_of_proc -p $BUZZER_PID $BUZZER_DAEMON $(basename $BUZZER_DAEMON) $(basename $BUZZER_DAEMON)
 }
 
 apps_usage()
@@ -56,6 +56,7 @@ case "${1:-}" in
 		;;
 	restart)
 		$0 stop
+		sleep 1
 		$0 start
 		;;
 	status)

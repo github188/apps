@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include "watchdog_lib.h"
+#include "libwatchdog.h"
 
 #define WATCHDOG_FEED_INTERVAL	10
 int main(void)

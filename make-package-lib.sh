@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-cd led-ctl
 make clean
 make
-cd - >/dev/null
-
-cd buzzer-ctl
-make clean
-make
-cd - >/dev/null
 
 if [ `arch` = "x86_64" ]; then
 	ARCH="64bit"
@@ -27,12 +20,17 @@ mkdir -p $TMP_DIR
 TMP_DIR_LED=$TMP_DIR/jw-lib/led-ctl
 rm -fr $TMP_DIR_LED
 mkdir -p $TMP_DIR_LED
-cp led-ctl/cmd/libled.h led-ctl/cmd/libled.a $TMP_DIR_LED/
+cp led-ctl/cmd/libled.[has]* $TMP_DIR_LED/
 
 TMP_DIR_BUZZER=$TMP_DIR/jw-lib/buzzer-ctl
 rm -fr $TMP_DIR_BUZZER
 mkdir -p $TMP_DIR_BUZZER
-cp buzzer-ctl/cmd/libbuzzer.h buzzer-ctl/cmd/libbuzzer.a $TMP_DIR_BUZZER/
+cp buzzer-ctl/cmd/libbuzzer.[has]* $TMP_DIR_BUZZER/
+
+TMP_DIR_WATCHDOG=$TMP_DIR/jw-lib/watchdog
+rm -fr $TMP_DIR_WATCHDOG
+mkdir -p $TMP_DIR_WATCHDOG
+cp watchdog/libwatchdog.[has]*  $TMP_DIR_WATCHDOG/
 
 cd $TMP_DIR
 tar jcf $PKG ./*

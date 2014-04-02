@@ -40,6 +40,9 @@ sync_apps()
 	rm -f $tmp_dir/userconf
 	rm -f $tmp_dir/license
 	rm -f $tmp_dir/configbak
+	
+	mkdir $TMP_DIR_STORAGE/usr/local/sbin
+	cp /tmp/mdadm $TMP_DIR_STORAGE/usr/local/sbin
 }
 
 sync_conf()

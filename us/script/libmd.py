@@ -449,10 +449,17 @@ def __md_create(raid_name, level, chunk, slots):
 	for dev in dev_list:
 		disk_bad_sect_remap_enable(basename(dev))
 
+	dev_cnt = len(dev_list)
 	if level.lower() == 'jbod':
 		level = 'linear'
+	elif '5' == level and dev_cnt < 3:
+		return False, "RAID5至少需要3块磁盘"
+	elif '6' == level and dev_cnt < 4:
+		return False, "RAID6至少需要4块磁盘"
+	elif '10' == level and dev_cnt < 4:
+		return False, "RAID10至少需要4块磁盘"
 
-	cmd = "2>&1 mdadm -CR %s -l %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, len(dev_list), devs, raid_name)
+	cmd = "2>&1 mdadm -CR %s -l %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, dev_cnt, devs, raid_name)
 	if level != 'linear':
 		cmd += ' -c %s' % chunk
 	if level in ('5', '6', '10'):
