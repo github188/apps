@@ -94,17 +94,29 @@ int do_init_3U(int fd)
 	ret = i2c_smbus_write_byte_data(fd, I2C_CONF_3U, g_config_reg_value);
 	if (ret == -1)
 		return PERR_IOERR;
+
+	value = i2c_smbus_read_byte_data(fd, I2C_GP1_MODE1);
+	value |= 0x0f;
+	ret = i2c_smbus_write_byte_data(fd, I2C_GP1_MODE1, value);
+	if (ret == -1)
+		return PERR_IOERR;
 	value = i2c_smbus_read_byte_data(fd, I2C_GP1_MODE2);
 	if (value == -1)
 		return PERR_IOERR;
-	value &= 0xff;
+	value &= 0xf0;
 	ret = i2c_smbus_write_byte_data(fd, I2C_GP1_MODE2, value);
+	if (ret == -1)
+		return PERR_IOERR;
+
+	value = i2c_smbus_read_byte_data(fd, I2C_GP2_MODE1);
+	value |= 0x0f;
+	ret = i2c_smbus_write_byte_data(fd, I2C_GP2_MODE1, value);
 	if (ret == -1)
 		return PERR_IOERR;
 	value = i2c_smbus_read_byte_data(fd, I2C_GP2_MODE2);
 	if (value == -1)
 		return PERR_IOERR;
-	value &= 0xff;
+	value &= 0xf0;
 	ret = i2c_smbus_write_byte_data(fd, I2C_GP2_MODE2, value);
 	if (ret == -1)
 		return PERR_IOERR;
@@ -227,11 +239,22 @@ int i2c_init_2U(void)
 	if (ret == -1)
 		return PERR_IOERR;
 
+	value = i2c_smbus_read_byte_data(fd, I2C_GP1_MODE1);
+	value |= 0x0f;
+	ret = i2c_smbus_write_byte_data(fd, I2C_GP1_MODE1, value);
+	if (ret == -1)
+		return PERR_IOERR;
 	value = i2c_smbus_read_byte_data(fd, I2C_GP1_MODE2);
 	if (value == -1)
 		return PERR_IOERR;
 	value &= 0xf0;
 	ret = i2c_smbus_write_byte_data(fd, I2C_GP1_MODE2, value);
+	if (ret == -1)
+		return PERR_IOERR;
+
+	value = i2c_smbus_read_byte_data(fd, I2C_GP2_MODE1);
+	value |= 0x0f;
+	ret = i2c_smbus_write_byte_data(fd, I2C_GP2_MODE1, value);
 	if (ret == -1)
 		return PERR_IOERR;
 	value = i2c_smbus_read_byte_data(fd, I2C_GP2_MODE2);
