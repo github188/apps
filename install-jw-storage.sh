@@ -54,6 +54,13 @@ if [ "$not_installed_pkgs" != "" ]; then
 	exit 1
 fi
 
+if [ "`which mdadm`" != "" ]; then
+	echo -e "\033[0;33;1mOriginal \"mdadm\" must be removed. \
+		If you install mdadm via apt-get, please execute \"apt-get purge mdadm\". \
+		Then restart this installation script.\033[0m"
+	exit 1
+fi
+
 PKG_DIR=`pwd`
 
 # check python2.6
