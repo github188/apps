@@ -25,6 +25,15 @@ int shm_init()
 		return -1;
 	}
 
+	if((shmid = shmget(shmkey, 0, 0666)) >= 0) {
+		addr = (shm_t *)shmat(shmid, 0, 0);
+		if (addr == (shm_t *)-1) {
+			syslog(LOG_ERR, "buzzer-ctl: shmat failed.\n");
+			return -1;
+		}
+		return shmid;
+	}
+	
 	size = sizeof(shm_t);
 	shmid = shmget(shmkey, size,  0666|IPC_CREAT);
 	if (shmid == -1) {
