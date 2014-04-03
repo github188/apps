@@ -201,6 +201,15 @@ TMP_DIR_PYTHON=/tmp/.python
 rm -fr $TMP_DIR_PYTHON
 mkdir $TMP_DIR_PYTHON
 
+if [ "$KERNEL" = "kernel" ]; then
+	pkg_kernel
+fi
+
+if [ ! -x /tmp/mdadm ]; then
+	echo -e "\033[0;31;1m/tmp/mdadm dose not exist or is not executable.\033[0m"
+	exit 1
+fi
+
 make clean
 make isolated-storage=1 no-disk-prewarn=1
 sync_apps
@@ -209,10 +218,6 @@ sync_init_script
 sync_shared_lib
 pkg_isolated_storage
 pkg_python
-
-if [ "$KERNEL" = "kernel" ]; then
-	pkg_kernel
-fi
 
 pkg_all
 
