@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "web-iface.h"
 #include "common.h"
@@ -152,7 +153,7 @@ int get_vgdev_byname(const char *vg_name, char *vg_dev)
 {
 	FILE *fp;
 	char tmp_path[256];
-	char buf[32] = { 0 };
+	char buf[32] = { '\0' };
 
 	sprintf(tmp_path, "%s/%s", RAID_DIR_BYNAME, vg_name);
 	fp = fopen(tmp_path, "r");
@@ -162,6 +163,24 @@ int get_vgdev_byname(const char *vg_name, char *vg_dev)
 	fgets(buf, 32, fp);
 	fclose(fp);
 	sprintf(vg_dev, "/dev/%s", buf);
+	return E_OK;
+}
+
+int get_vgname_bydev(const char *vg_dev, char *vg_name)
+{
+	FILE *fp;
+	char tmp_path[256];
+
+	sprintf(tmp_path, "/sys/block/%s/md/array_name", strrchr(vg_dev, '/')+1);
+	fp = fopen(tmp_path, "r");
+	if (!fp)
+		return E_VG_NONEXIST;
+
+	fgets(vg_name, 32, fp);
+	fclose(fp);
+	if ('\n' == vg_name[strlen(vg_name)-1])
+		vg_name[strlen(vg_name)-1] = '\0';
+
 	return E_OK;
 }
 
@@ -253,6 +272,8 @@ void get_vg_remain(const char *vg_dev)
 
 	uint64_t max_remain = 0, max_single = 0;
 	char err_msg[256];
+
+	get_vgname_bydev(vg_dev, vg_name);
 
 	list_init(&list);
 	n = udv_get_part_list(vg_dev, &list, UDV_PARTITION_FREE);
