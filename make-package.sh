@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+set -e
 
 # individual modules
-DISK_BIN='us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset'
+DISK_BIN="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
+		us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset \
+		diskpower/diskpower-ctl"
 UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
@@ -10,7 +13,8 @@ SYSCONF_BIN='sys-conf/* sys-conf/.build-date'
 COMMON_BIN='common/*'
 MON_BIN='monitor/*'
 WEB_BIN='web/*'
-MISC_BIN='watchdog/watchdog led-ctl/daemon/led-ctl-daemon led-ctl/cmd/tools-test-led'
+MISC_BIN="watchdog/watchdog led/daemon/led-ctl-daemon led/cmd/led-ctl \
+		buzzer/daemon/buzzer-ctl-daemon buzzer/cmd/buzzer-ctl"
 
 # sync list
 BIN_LIST="$DISK_BIN $UDV_BIN $WEBIFACE_BIN $ISCSI_BIN $NAS_BIN $SYSCONF_BIN $COMMON_BIN $MON_BIN $WEB_BIN $MISC_BIN"
@@ -32,7 +36,8 @@ sync_apps()
 	mkdir -p $_target/usr/local/bin
 
 	echo "copy all app files ..."
-	cp -fa $BIN_LIST  "$_target"/usr/local/bin/
+	rsync -a --exclude Makefile --exclude *.h --exclude *.c --exclude *.a \
+			--exclude *.o $BIN_LIST  "$_target"/usr/local/bin/
 	
 	# 编译python脚本
 	echo "compile python source ..."
@@ -126,7 +131,7 @@ encode_pkg()
 {
 	echo "encoding pkg ..."
 	openssl enc -des3 -salt -pass file:/sys/kernel/vendor -in $PKG_TAR -out $PKG_BIN
-	[ $? -eq 0 ] && echo "Package $PKG_BIN create ok"
+	[ $? -eq 0 ] && echo -e "\033[0;35;1mPackage $PKG_BIN create ok.\033[0m"
 	rm -f $PKG_TAR
 }
 
@@ -170,6 +175,8 @@ mkdir $target
 rm -f $PKG_TAR
 rm -f $PKG_BIN
 
+make clean
+make
 sync_apps "$target"
 sync_rootfs "$target"
 sync_conf "$target"

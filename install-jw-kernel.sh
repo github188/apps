@@ -39,7 +39,9 @@ cp /etc/default/grub /etc/default/grub.bak
 echo -e "\033[0;35;1mOriginal /etc/default/grub backup to /etc/default/grub.bak\033[0m"
 echo -e "\033[0;35;1mset /etc/default/grub default boot the jw kernel\033[0m"
 sed -i '/GRUB_DEFAULT/d' /etc/default/grub
-if grep -q "Previous Linux versions" /boot/grub/grub.cfg; then
+if grep "menuentry" /boot/grub/grub.cfg | head -n 1 | grep -q "${jw_kernel_version}\-jwstor"; then
+	echo "GRUB_DEFAULT=\"$grub_default\"" >> /etc/default/grub
+elif grep -q "Previous Linux versions" /boot/grub/grub.cfg; then
 	echo "GRUB_DEFAULT=\"Previous Linux versions>$grub_default\"" >> /etc/default/grub
 else
 	echo "GRUB_DEFAULT=\"$grub_default\"" >> /etc/default/grub
