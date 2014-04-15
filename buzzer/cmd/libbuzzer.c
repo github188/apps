@@ -102,9 +102,6 @@ int buzzer_init(void)
 		return -1;
 	}
 	
-	sem_u.val = 1;
-	semctl(semid, 0, SETVAL, sem_u);
-
 	addr = (shm_t *)shmat(shmid, 0, 0);
 	if (addr == (shm_t *)-1) {
 		return -1;
@@ -141,15 +138,13 @@ int buzzer_set(enum BUZZER_STATUS mode)
 		if (mode == BUZZER_ON) {
 			addr->task.mode = MODE_ON;
 			addr->task.count++;
-		}
-		if (mode == BUZZER_OFF) {
+		} else if (mode == BUZZER_OFF) {
 			addr->task.count--;
 			if (addr->task.count <= 0) {
 				addr->task.count = 0;
 				addr->task.mode = MODE_OFF;
 			}
-		}
-		if (mode == BUZZER_FORCE_OFF) {
+		} else if (mode == BUZZER_FORCE_OFF) {
 			addr->task.mode = MODE_FORCE_OFF;
 		}
 

@@ -35,7 +35,7 @@ void print_help(void)
 int main(int argc, char *argv[])
 {
 	int c, fd;
-	int shmid;
+	int shmid, semid;
 	struct flock lock;
 	lock.l_type = F_WRLCK;
 	lock.l_start = 0;
@@ -101,6 +101,9 @@ int main(int argc, char *argv[])
 		}
 	}
 	
+	semid = sem_init();
+	if (semid < 0)
+		goto quit;
 	shmid = shm_init();
 	if (shmid < 0)
 		goto quit;

@@ -11,7 +11,33 @@
 extern int systype;
 int disk_max_num;
 shm_t *addr;
-int semid;
+
+int sem_init()
+{
+	int semid;
+	key_t semkey;
+
+	semkey = ftok(SHMKEY, 0);
+	if ((semid = semget(semkey, 0, 0666)) >= 0) {
+		return semid;
+	}
+
+	semid = semget(semkey, 1, 0666|IPC_CREAT);
+	if (semid == -1) {
+		syslog(LOG_ERR, "led-ctl: create sem failed.\n");
+		return -1;
+	}
+
+	union semum {
+		int val;
+		struct semid_ds *buf;
+		ushort *array;
+	}sem_u;
+
+	sem_u.val = 1;
+	semctl(semid, 0, SETVAL, sem_u);
+	return semid;
+}
 
 int shm_init()
 {
@@ -21,11 +47,6 @@ int shm_init()
 
 	
 	shmkey = ftok(SHMKEY, 0);
-	semid = semget(shmkey, 1, 0666|IPC_CREAT);
-	if (semid == -1) {
-		syslog(LOG_ERR, "led_ctl: create sem failed.\n");
-		return -1;
-	}
 	
 	switch(systype) {
 	case SYS_3U: case SYS_S3U:

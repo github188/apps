@@ -9,7 +9,34 @@
 #include "buzzer_shm.h"
 
 shm_t *addr;
-int semid;
+
+int sem_init()
+{
+	int semid;
+	key_t semkey;
+
+	semkey = ftok(SHMKEY, 0);
+
+	if ((semid = semget(semkey, 0, 0666)) >= 0) {
+		return semid;
+	}
+
+	semid = semget(semkey, 1, 0666|IPC_CREAT);
+	if (semid == -1) {
+		syslog(LOG_ERR, "buzzer-ctl: create sem failed.\n");
+		return -1;
+	}
+	
+	union semum {
+		int val;
+		struct semid_ds *buf;
+		ushort *array;
+	}sem_u;
+
+	sem_u.val = 1;
+	semctl(semid, 0, SETVAL, sem_u);
+	return semid;
+}
 
 int shm_init()
 {
@@ -19,11 +46,6 @@ int shm_init()
 
 	
 	shmkey = ftok(SHMKEY, 0);
-	semid = semget(shmkey, 1, 0666|IPC_CREAT);
-	if (semid == -1) {
-		syslog(LOG_ERR, "buzzer-ctl: create sem failed.\n");
-		return -1;
-	}
 
 	if((shmid = shmget(shmkey, 0, 0666)) >= 0) {
 		addr = (shm_t *)shmat(shmid, 0, 0);

@@ -119,9 +119,6 @@ int led_init(void)
 		return -1;
 	}
 	
-	sem_u.val = 1;
-	semctl(semid, 0, SETVAL, sem_u);
-
 	addr = (shm_t *)shmat(shmid, 0, 0);
 	if (addr == (shm_t *)-1) {
 		return -1;
@@ -327,8 +324,7 @@ int sysled_set(enum LED_STATUS mode)
 			ret = sb_gpio28_set_atom(true);
 			if (ret < 0)
 				goto error;
-		}
-		if (mode == LED_OFF) {
+		} else if (mode == LED_OFF) {
 			addr->task[0].count--;
 			if (addr->task[0].count <= 0) {
 				addr->task[0].count = 0;
@@ -337,8 +333,7 @@ int sysled_set(enum LED_STATUS mode)
 				if (ret < 0)
 					goto error;
 			}
-		}
-		if (mode == LED_FORCE_OFF) {
+		} else if (mode == LED_FORCE_OFF) {
 			addr->task[0].mode = MODE_FORCE_OFF;
 			ret = sb_gpio28_set_atom(false);
 			if (ret < 0)
@@ -351,8 +346,7 @@ int sysled_set(enum LED_STATUS mode)
 			ret = sb_gpio28_set(true);
 			if (ret < 0)
 				goto error;
-		}
-		if (mode == LED_OFF) {
+		} else if (mode == LED_OFF) {
 			addr->task[0].count--;
 			if (addr->task[0].count <= 0) {
 				addr->task[0].count = 0;
@@ -361,8 +355,7 @@ int sysled_set(enum LED_STATUS mode)
 				if (ret < 0)
 					goto error;
 			}
-		}
-		if (mode == LED_FORCE_OFF) {
+		} else if (mode == LED_FORCE_OFF) {
 			addr->task[0].mode = MODE_FORCE_OFF;
 			ret = sb_gpio28_set(false);
 			if (ret < 0)
