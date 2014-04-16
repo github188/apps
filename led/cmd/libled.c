@@ -140,6 +140,15 @@ int led_init(void)
 	return 0;
 }
 
+void led_release(void)
+{
+	if (initalized) {
+		shmdt(addr);
+		addr = (shm_t *)-1;
+		initalized = 0;
+	}
+}
+
 int _diskled_set(int disk_id, enum LED_STATUS mode)
 {
 	p(semid);

@@ -125,8 +125,11 @@ int buzzer_init(void)
 
 void buzzer_release(void)
 {
-	if (initalized)
+	if (initalized) {
+		shmdt(addr);
 		addr = (shm_t *)-1;
+		initalized = 0;
+	}
 }
 
 int buzzer_set(enum BUZZER_STATUS mode)
