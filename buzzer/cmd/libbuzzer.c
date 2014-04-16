@@ -12,7 +12,7 @@
 
 static shm_t *addr = (shm_t *)-1;
 static int initalized;
-int semid;
+static int semid;
 
 #define BUZZER_CHECK_INIT()	do {			\
 		int ret = buzzer_init();		\
@@ -52,13 +52,6 @@ int buzzer_get_count(void)
 }
 
 #else
-
-union semum 
-{
-	int val;
-	struct semid_ds *buf;
-	ushort *array;
-}sem_u;
 
 int b_p(int semid)
 {

@@ -13,7 +13,7 @@
 
 static shm_t *addr = (shm_t *)-1;
 static int initalized;
-int semid;
+static int semid;
 
 #define LED_CHECK_INIT()	do {			\
 		int ret = led_init();			\
@@ -69,12 +69,6 @@ int sysled_get_count(void)
 
 #else
 
-union semum 
-{
-	int val;
-	struct semid_ds *buf;
-	ushort *array;
-}sem_u;
 
 int p(int semid)
 {
