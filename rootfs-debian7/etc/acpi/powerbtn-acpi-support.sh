@@ -19,9 +19,9 @@ else
 	exit 0
 fi
 
-/usr/local/bin/led-ctl -d blink -f fast
-sleep 0.5
-/usr/local/bin/led-ctl -d off
+/usr/local/bin/led-ctl -d on -i all
+sleep 1
+/usr/local/bin/led-ctl -d off -i all
 
 if [ -f /etc/acpi/events/powerbtn -o -f /etc/acpi/events/powerbtn.dpkg-bak ] ; then 
 	logger Acpi-support not handling power button, acpid handler exists at /etc/acpi/events/powerbtn or /etc/acpi/events/powerbtn.dpkg-bak.

@@ -51,7 +51,7 @@ sync_apps()
 	rm -f "$_target"/usr/local/bin/*.h
 	rm -f "$_target"/usr/local/bin/*.o
 	rm -f "$_target"/usr/local/bin/*.a
-	rm -f "$_target"/usr/local/bin/*.xml
+	rm -f "$_target"/usr/local/bin/*.xml*
 	chmod +x "$_target"/usr/local/bin/*
 	chmod -x "$_target"/usr/local/bin/*.pyc
 }
