@@ -679,7 +679,8 @@ def disk_set_type(slot, disk_type, raid_name=''):
 
 	if slot == '':
 		return False, '请输入磁盘槽位号'
-
+    if disk_type == '':
+        return False, '请输入要更改为的类型'
 	state = disk_get_state(slot)
 	if state == 'N/A':
 		return False, '无法获取槽位号为 %s 的磁盘状态' % slot
