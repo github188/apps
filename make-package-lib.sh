@@ -17,15 +17,15 @@ TMP_DIR=/tmp/.jw-lib
 rm -fr $TMP_DIR
 mkdir -p $TMP_DIR
 
-TMP_DIR_LED=$TMP_DIR/jw-lib/led-ctl
+TMP_DIR_LED=$TMP_DIR/jw-lib/led
 rm -fr $TMP_DIR_LED
 mkdir -p $TMP_DIR_LED
-cp led-ctl/cmd/libled.[has]* $TMP_DIR_LED/
+cp led/cmd/libled.[has]* $TMP_DIR_LED/
 
-TMP_DIR_BUZZER=$TMP_DIR/jw-lib/buzzer-ctl
+TMP_DIR_BUZZER=$TMP_DIR/jw-lib/buzzer
 rm -fr $TMP_DIR_BUZZER
 mkdir -p $TMP_DIR_BUZZER
-cp buzzer-ctl/cmd/libbuzzer.[has]* $TMP_DIR_BUZZER/
+cp buzzer/cmd/libbuzzer.[has]* $TMP_DIR_BUZZER/
 
 TMP_DIR_WATCHDOG=$TMP_DIR/jw-lib/watchdog
 rm -fr $TMP_DIR_WATCHDOG
