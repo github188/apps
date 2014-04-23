@@ -25,7 +25,7 @@ class UniOutput:
 		self.rows = dump(row_list)
 		self.total = len(self.rows)
 
-		print json.dumps(self.__dict__, encoding="utf-8", ensure_ascii=False, sort_keys = false)
+		print json.dumps(self.__dict__, encoding="utf-8", ensure_ascii=False, sort_keys = False)
 		sys.exit(0)
 
 def web_service_exit(ret = True, msg = ''):
