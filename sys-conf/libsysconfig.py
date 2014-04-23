@@ -65,7 +65,7 @@ def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	sys.exit(-1)
 
 #~ 执行系统命令并输出结果
@@ -159,7 +159,7 @@ def date(value):
 			json_info = {}
 			json_info['this'] = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
 			json_info['Week'] = time.strftime('%w',time.localtime(time.time()))
-			print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+			print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 		else:
 			ntp = ''
 			interval = ''
@@ -178,7 +178,7 @@ def date(value):
 			json_info['ntp'] = ntp
 			json_info['interval'] = interval
 			json_info['unit'] = unit
-			print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+			print json.dumps(json_info, encoding="utf-8", ensure_ascii=false)
 	elif value.config_set:
 		if value.ntp_state:
 			if value.ntp_set !='' and value.interval_set != '' and value.unit_set != '':

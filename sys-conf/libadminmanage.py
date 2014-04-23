@@ -37,7 +37,7 @@ def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=false)
 	sys.exit(-1)
 
 #~ 执行系统命令并输出结果
@@ -133,7 +133,7 @@ def Admin_list(value):
 		json_info['total'] = inti
 		json_info['rows'] = list
 
-	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(json_info, encoding="utf-8", ensure_ascii=false)
 
 #~#### 增加管理员主程序
 def Admin_add(value):

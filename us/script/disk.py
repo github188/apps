@@ -24,7 +24,7 @@ def diskExit(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	if ret:
 		sys.exit(0)
 	sys.exit(-1)

@@ -31,7 +31,7 @@ def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	sys.exit(-1)
 
 #~ eth接口列表
@@ -335,7 +335,7 @@ def NIC_List(value):
 			json_info['Network_Gateway'] = __deviant__(name, 'gateway')
 		json_info['Network_Bond'] = __deviant__(name, 'bond')
 		json_info['Network_Iflist'] = __deviant__(name, 'iflist')
-		print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+		print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 	elif value.intbond_set == True:
 		list = []
 		for name in __NET_LIST__():
@@ -397,7 +397,7 @@ def NIC_List(value):
 				inti += 1
 		json_info['total'] = inti
 		json_info['rows'] = list
-		print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+		print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 
 #~#### IP设置
 def NIC_Set(value):
@@ -531,7 +531,7 @@ def DNS_Set(value):
 		Export(True, '设置成功！')
 	else:
 		dns_out = {'dns':__deviant__('dns', 'address')}
-		print json.dumps(dns_out, encoding="UTF-8", ensure_ascii=False)
+		print json.dumps(dns_out, encoding="utf-8", ensure_ascii=False)
 
 #~#### 网络接口状态列表输出字段
 class net_info():
@@ -560,5 +560,5 @@ def NIC_Status_List():
 		list.append(out.__dict__)
 	json_info['total'] = len(net_list)
 	json_info['rows'] = list
-	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 

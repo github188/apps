@@ -31,7 +31,7 @@ def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	sys.exit(-1)
 
 #~ 执行系统命令并输出结果
@@ -204,7 +204,7 @@ def __List__(value):
 		json_info['total'] = count
 		json_info['rows'] = list
 	cu.close()
-	print json.dumps(json_info, encoding="UTF-8", ensure_ascii=False)
+	print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 
 def __Del__(value):
 	total = 1000
