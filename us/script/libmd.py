@@ -146,6 +146,14 @@ def get_mdattr_by_mddev(mddev):
 			if fail:
 				mdattr.raid_state = 'fail'
 		
+		if '10' == mdattr.raid_level:
+			copies = mdattr.disk_cnt/2 - 1
+			while copies >= 0:
+				if not os.path.islink(sysdir + '/md/rd' + str(copies*2)) and not os.path.islink(sysdir + '/md/rd' + str(copies*2+1)):
+					mdattr.raid_state = 'fail'
+					break
+				copies -= 1
+		
 		if 'initial' == mdattr.raid_state or 'rebuild' == mdattr.raid_state or 'reshape' == mdattr.raid_state:
 			val = fs_attr_read(sysdir + '/md/sync_status')
 			if 'none' == val:
@@ -679,8 +687,10 @@ def disk_set_type(slot, disk_type, raid_name=''):
 
 	if slot == '':
 		return False, '请输入磁盘槽位号'
-    if disk_type == '':
-        return False, '请输入要更改为的类型'
+	
+	if not DISK_TYPE_MAP.has_key(disk_type):
+		return False, '请输入正确的磁盘类型：%s' % '|'.join(DISK_TYPE_MAP.keys())
+
 	state = disk_get_state(slot)
 	if state == 'N/A':
 		return False, '无法获取槽位号为 %s 的磁盘状态' % slot
