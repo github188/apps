@@ -97,7 +97,7 @@ def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=false)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	sys.exit(-1)
 
 def deviant(config, name, field):

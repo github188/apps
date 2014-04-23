@@ -34,7 +34,7 @@ def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=false)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	sys.exit(-1)
 
 def SYSTEM_OUT(com):
@@ -103,11 +103,11 @@ def Tree_List(value):
 				out.id = Folder_path
 				out.text = x_name
 				list.append(out.__dict__)
-		print json.dumps(list, encoding="utf-8", ensure_ascii=false)
+		print json.dumps(list, encoding="utf-8", ensure_ascii=False)
 	else:
 		if __Check__Name__(value.name_set):
 			json_info = [{'id':deviant(value.name_set, "path"), 'text':value.name_set, 'checked':True, 'state':'closed'}]
-			print json.dumps(json_info, encoding="utf-8", ensure_ascii=false)
+			print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 		else:
 			Export(False, '路径不能为空，请输入参数！')
 
@@ -160,7 +160,7 @@ def P_List(value):
 		json_info['Owner'] = Owner
 		json_info['Flags'] = Flags
 		json_info['Inherit'] = Inherit
-		print json.dumps(json_info, encoding="utf-8", ensure_ascii=false)
+		print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 	else:
 		Export(False, '路径不能为空，请输入参数！')
 def Son(value):

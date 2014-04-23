@@ -156,7 +156,7 @@ def Export(ret = True, msg = ''):
 	ret_msg = {'status':True, 'msg':''}
 	ret_msg['status'] = ret
 	ret_msg['msg'] = msg
-	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=false)
+	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	sys.exit(-1)
 
 #~ 执行系统命令并输出结果
@@ -344,7 +344,7 @@ def nas_list(value):
 		json_info['total'] = inti
 		json_info['rows'] = list
 		
-	print json.dumps(json_info, encoding="utf-8", ensure_ascii=false)
+	print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 
 #~ 共享列表输出函数
 #~ name为共享名称
@@ -871,7 +871,7 @@ def get_high(value):
 			json_info['privacy'] = 'yes'
 		else:
 			json_info['privacy'] = 'no'
-		print json.dumps(json_info, encoding="utf-8", ensure_ascii=false)
+		print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 
 #~ 验证是否是系统用和组
 def __System_User_Check__(User_array):

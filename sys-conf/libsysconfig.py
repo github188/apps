@@ -178,7 +178,7 @@ def date(value):
 			json_info['ntp'] = ntp
 			json_info['interval'] = interval
 			json_info['unit'] = unit
-			print json.dumps(json_info, encoding="utf-8", ensure_ascii=false)
+			print json.dumps(json_info, encoding="utf-8", ensure_ascii=False)
 	elif value.config_set:
 		if value.ntp_state:
 			if value.ntp_set !='' and value.interval_set != '' and value.unit_set != '':
