@@ -464,8 +464,8 @@ def __md_create(raid_name, level, chunk, slots):
 		return False, "RAID5至少需要3块磁盘"
 	elif '6' == level and dev_cnt < 4:
 		return False, "RAID6至少需要4块磁盘"
-	elif '10' == level and dev_cnt < 4:
-		return False, "RAID10至少需要4块磁盘"
+	elif '10' == level and (dev_cnt < 4 or dev_cnt%2 != 0):
+		return False, "RAID10至少需要4块磁盘，并且盘数为偶数"
 
 	cmd = "2>&1 mdadm -CR %s -l %s -n %u %s --metadata=1.2 --homehost=%s -f" % (mddev, level, dev_cnt, devs, raid_name)
 	if level != 'linear':
