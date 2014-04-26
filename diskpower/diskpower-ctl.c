@@ -7,7 +7,7 @@
 #include <string.h>
 #include "diskpower.h"
 
-#define SEM_FILE "/usr/local/bin/diskpower-ctl"
+#define SEM_FILE "/var/run/diskpower.semkey"
 
 static int id;
 static int mode;
@@ -28,7 +28,7 @@ int d_p(int semid)
 	sem_p.sem_num = 0;
 	sem_p.sem_op = -1;
 	if (semop(semid, &sem_p, 1) == -1) {
-		fprintf(stderr, "p failed.\n");
+	//	fprintf(stderr, "p failed.\n");
 		return -1;
 	}
 	return 0;
@@ -40,7 +40,7 @@ int d_v(int semid)
 	sem_v.sem_num = 0;
 	sem_v.sem_op = 1;
 	if (semop(semid, &sem_v, 1) == -1) {
-		fprintf(stderr, "v failed.\n");
+	//	fprintf(stderr, "v failed.\n");
 		return -1;
 	}
 	return 0;
@@ -204,5 +204,5 @@ int main(int argc, char *argv[])
 		d_v(semid);
 		return 0;
 	}
-
+	return 0;
 }

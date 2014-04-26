@@ -58,7 +58,10 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "get file lock failed. exiting...\n");
 		return -1;
 	}
-
+	if (open(SHMKEY, O_RDWR|O_CREAT, 0644) < 0) {
+		syslog(LOG_ERR, "create shmkey file %s failed.\n", SHMKEY);
+		return -1;
+	}
 	while ((c = getopt_long(argc, (char *const*)argv, short_options,
 				long_options, NULL)) != -1) {
 		switch (c){

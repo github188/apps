@@ -1,7 +1,7 @@
 #ifndef COMMON__H__
 #define COMMON__H__
 
-#define SHMKEY		"/usr/local"
+#define SHMKEY		"/var/run/buzzer.shmkey"
 #define LOCK_FILE       "/tmp/.buzzer-ctl-daemon.lock"
 
 #define MODE_ON		1
