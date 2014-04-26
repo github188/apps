@@ -27,7 +27,7 @@ do_driver_start()
 	fi
 
 	modprobe nct6106
-	make -p /opt/jw-conf/system
+	mkdir -p /opt/jw-conf/system
 	if [ `hwtype` = "2U8-ATOM" ]; then
 		ln -sfn /sys/devices/platform/nct6106.656/temp19_input /opt/jw-conf/system/temp_cpu
 	else
