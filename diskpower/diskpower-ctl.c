@@ -10,12 +10,14 @@
 #define SEM_FILE "/var/run/diskpower.semkey"
 
 static int id;
+static int col;
 static int mode;
 static int time;
 static int flag = 0;
-char *const short_options = "i:m:r:h";
+char *const short_options = "i:c:m:r:h";
 struct option long_options[] = {
 	{"id", 1, NULL, 'i'},
+	{"col", 1, NULL, 'c'},
 	{"mode", 1, NULL, 'm'},
 	{"reset", 1, NULL, 'r'},
 	{"help", 0, NULL, 'h'},
@@ -49,19 +51,23 @@ int d_v(int semid)
 void print_help(void)
 {
 	fprintf(stderr, "diskpower-ctl:\n");
-	fprintf(stderr, "\t--id|-i <1-16> --mode|-m on|off\n");
-	fprintf(stderr, "\t--id|-i <1-16> --reset|-r <delayTimer>\n");
+	fprintf(stderr, "\t--id |-i <1-16> --mode|-m on|off\n");
+	fprintf(stderr, "\t--col|-c <1-4>  --mode|-m on|off\n");
+	fprintf(stderr, "\t--id |-i <1-16> --reset|-r <delayTimer>\n");
 	fprintf(stderr, "\t--help|-h\n");
 }
 int parse_args(int argc, char **argv)
 {
 	int c;
-
+	
 	while ((c = getopt_long(argc, (char *const *)argv,  short_options,
 					long_options, NULL)) != -1) {
 		switch (c) {
 			case 'i':
 				id = atoi(optarg);
+				break;
+			case 'c':
+				col = atoi(optarg);
 				break;
 			case 'm':
 				flag = 1;
@@ -104,8 +110,8 @@ int main(int argc, char *argv[])
 	if (parse_args(argc, argv) < 0) {
 		return -1;
 	}	
-	if (id <= 0 || id > 16 ) {
-		print_help();
+	if ((id <= 0 || id > 16) && (col <= 0 || col > 4))  {
+		fprintf(stderr, "invalid input\n");
 		return -1;
 	}
 
@@ -148,11 +154,18 @@ int main(int argc, char *argv[])
 			return -1;
 		}
 
-		if (mode == I2C_DISKPW_ON)
-			new = old | (1 << (id-1));
-		else
-			new = old & ~(1 << (id-1));
-
+		if (mode == I2C_DISKPW_ON) {
+			if (col)
+				new = old | (0xf << ((col-1)*4)) ;
+			else
+				new = old | (1 << (id-1));
+		
+		} else {
+			if (col)
+				new = old & ~(0xf << (col-1)*4);
+			else
+				new = old & ~(1 << (id-1));
+		}
 		if (i2c_write_diskpw(new) < 0) {
 			fprintf(stderr, "i2c write failed.\n");
 			d_v(semid);
