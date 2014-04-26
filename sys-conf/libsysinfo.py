@@ -12,6 +12,7 @@ from libcommon import *
 ERROR_VALUE = 'error-occurs'
 VER_SEP = ':'
 NCT_ROOT = '/sys/devices/platform/nct6106.656'
+NCT_LINK = '/opt/jw-conf/system'
 
 def __get_cpu_info(mod):
 	_item = {}
@@ -76,9 +77,7 @@ def __get_temp(mod):
 	_item['item'] = mod
 	try:
 		_item['value'] = ''
-		temp = __read_value(NCT_ROOT, 'temp17_input')
-		if '0' == temp:
-			temp = __read_value(NCT_ROOT, 'temp19_input')
+		temp = __read_value(NCT_LINK, 'temp_cpu')
 		if temp != '':
 			_item['value'] = _item['value'] + '[ CPU温度: %d ]' % (int(temp)/1000)
 		temp = __read_value(NCT_ROOT, 'temp18_input')

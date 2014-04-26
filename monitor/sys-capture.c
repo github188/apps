@@ -8,6 +8,7 @@
 #include "pmu-info.h"
 
 #define NCT_ROOT "/sys/devices/platform/nct6106.656"
+#define NCT_LINK "/opt/jw-conf/system"
 
 const char *mod_cap_list[] = {"cpu-temp", "env-temp", "case-temp", "case-fan1", "case-fan2", "cpu-fan", "power", NULL};
 const char *mod_ch_name[] = {"CPU温度", "环境温度", "机箱温度", "机箱风扇1", "机箱风扇2", "CPU风扇", "电源", NULL};
@@ -48,7 +49,7 @@ const char *__read_file_line(const char *file)
 
 int __atoi(const char *p)
 {
-	int tmp = -1;
+	int tmp = 0xEFFFFFFF;
 
 	if (p)
 		tmp = atoi(p);
@@ -63,24 +64,18 @@ int __read_int_value(const char *file)
 
 int capture_cpu_temp(char *msg)
 {
-	int val = __read_int_value(NCT_ROOT"/temp17_input");
-	if (0 == val) {
-		val = __read_int_value(NCT_ROOT"/temp19_input");
-	}
+	int val = __read_int_value(NCT_LINK"/temp_cpu");
 	if (unlikely(global_print_on)) {
-		printf("%d, ", val>0 ? val/1000 : -1);
+		printf("%d, ", val/1000);
 	}
-	if (val>0)
-		return (int)(val/1000);
-	return val;
+
+	return val/1000;
 }
 
 int capture_env_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp20_input");
-	if (val > 0)
-		return (int)(val/1000);
-	return val;
+	return val/1000;
 }
 
 int global_case_temp = -1;
@@ -88,16 +83,11 @@ int capture_case_temp(char *msg)
 {
 	int val = __read_int_value(NCT_ROOT"/temp18_input");
 	if (unlikely(global_print_on)) {
-		printf("%d, ", val>0 ? val/1000 : -1);
+		printf("%d, ", val/1000);
 	}
-	if (val > 0) {
-		global_case_temp = (int)(val/1000);
-		return (int)(val/1000);
-	} else {
-		global_case_temp = -1;
-	}
-
-	return val;
+	
+	global_case_temp = val/1000;
+	return val/1000;
 }
 
 int capture_case_fan1(char *msg)
