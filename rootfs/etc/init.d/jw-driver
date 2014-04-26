@@ -38,6 +38,16 @@ do_driver_start()
 		modprobe smbus-power
 	fi
 	modprobe sio_watchdog
+	
+	if [ `hwtype` = "3U16-SIMPLE" ]; then
+		for i in `seq 4`
+		do
+			diskpower-ctl -c $i -m on
+			if [ $i -lt 4 ]; then
+				sleep 1
+			fi
+		done
+	fi
 }
 
 do_driver_stop()
