@@ -85,6 +85,63 @@ int pic_get_version(uint32_t *version)
 	return 0;
 }
 
+int pic_get_scm_id ( uint32_t *scm_id )
+{
+	uint8_t id_low, id_mid, id_high;
+	int ret;
+
+	PIC_CHECK_INIT ();
+
+	ret = __pic_read_reg ( PIC_FM_GIT_VER_LOW, &id_low );
+	if ( ret < 0 ) {
+		return ret;
+	}
+
+	ret = __pic_read_reg ( PIC_FM_GIT_VER_MID, &id_mid );
+	if ( ret < 0 ) {
+		return ret;
+	}
+
+	ret = __pic_read_reg ( PIC_FM_GIT_VER_HIGH, &id_high );
+	if ( ret < 0 ) {
+		return ret;
+	}
+
+	*scm_id = ( id_high << 16 ) | ( id_mid << 8 ) | id_low;
+
+	return 0; 
+}
+
+int pic_get_build_date ( uint32_t *build_date )
+{
+	uint8_t year, month, day;
+	int ret;
+
+	PIC_CHECK_INIT();
+	ret = __pic_read_reg ( PIC_FM_BUILD_YEAR, &year );
+	if ( ret < 0 ) {
+		return ret;
+	}
+
+	ret = __pic_read_reg ( PIC_FM_BUILD_MONTH, &month );
+	if ( ret < 0 ) {
+		return ret;
+	}
+
+	ret = __pic_read_reg ( PIC_FM_BUILD_DAY, &day );
+	if ( ret < 0 ) {
+		return ret;
+	}
+
+	if ( year != 0 ) {
+		*build_date = ( 20 << 24) | ( year << 16 ) | ( month << 8 ) | day;
+	} else {
+		*build_date = 0;
+	}
+
+	return 0;
+}
+
 int pic_set_led(uint8_t led, uint8_t sts, uint8_t freq)
 {
 	uint8_t v;

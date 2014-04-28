@@ -39,6 +39,8 @@ enum {
 int pic_init(void);
 void pic_release(void);
 int pic_get_version(uint32_t *version);
+int pic_get_scm_id ( uint32_t *scm_id );
+int pic_get_build_date ( uint32_t *build_date );
 int pic_set_led(uint8_t led, uint8_t sts, uint8_t freq);
 int pic_start_watchdog(void);
 int pic_stop_watchdog(void);
