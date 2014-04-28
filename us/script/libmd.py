@@ -147,7 +147,7 @@ def get_mdattr_by_mddev(mddev):
 				mdattr.raid_state = 'fail'
 		
 		if '10' == mdattr.raid_level:
-			copies = mdattr.disk_cnt/2 - 1
+			copies = mdattr.disk_total/2 - 1
 			while copies >= 0:
 				if not os.path.islink(sysdir + '/md/rd' + str(copies*2)) and not os.path.islink(sysdir + '/md/rd' + str(copies*2+1)):
 					mdattr.raid_state = 'fail'
