@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 #include "../pic_ctl/pic_ctl.h"
 
 struct pic_ver
