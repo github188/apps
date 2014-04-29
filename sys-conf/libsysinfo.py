@@ -181,13 +181,8 @@ def __mcu_ver():
 
 # 内核版本
 def __kernel_ver():
-	try:
-		ret,msg = commands.getstatusoutput('uname -m | tr  \' \' \'.\'')
-		if 0 == ret:
-			return msg
-	except:
-		pass
-	return 'kernel'
+	import platform
+	return platform.uname()[2] + '-' + platform.machine()
 
 # rootfs版本
 def __rootfs_ver():
@@ -215,7 +210,13 @@ def __web_ver():
 
 # 编译日期
 def __build_date():
-	return read_file('/usr/local/bin/.build-date')[0:-1]
+	try:
+		ret,msg = commands.getstatusoutput('sys-manager version -d')
+		if 0 == ret:
+			return msg.split('\n')[-1]
+	except:
+		pass
+	return ''
 
 def __get_sys_version():
 	return __apps_ver() + VER_SEP + __kernel_ver() + VER_SEP + __mcu_ver() + VER_SEP + __web_ver() + ' ' + __build_date()

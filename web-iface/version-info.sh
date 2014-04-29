@@ -8,7 +8,8 @@ VERSION=""
 
 get_version()
 {
-	echo $VERSION
+	first_line=$(git log -n 1 2>/dev/null | head -n 1)
+	echo $VERSION.${first_line:0-6}
 }
 
 get_hostname()
@@ -28,12 +29,13 @@ get_git_branch()
 
 get_git_commid()
 {
-	echo "$(git log | col -b | head -n 1 | awk '{print $NF}' | tr '\n' '\0')"
+	git log -n 1 2>/dev/null | head -n 1 | awk '{ print $2 }'
+
 }
 
 get_datetime()
 {
-	echo "$(date | tr '\n' '\0')"
+	date "+%Y-%m-%d %H:%M:%S"
 }
 
 check_key()

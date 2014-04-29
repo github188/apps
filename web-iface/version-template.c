@@ -26,7 +26,8 @@ int version_main(int argc, char *argv[])
 		(strcmp(argv[1], "--detail") == 0 ||
 		strcmp(argv[1], "-d") == 0)) {
 		printf("System: %s(%s)\n", HOST, IPADDR);
-		printf("GIT branch: %s, commit id: %s\n", GIT_BRANCH, GIT_COMMID);
+		printf("GIT branch: %s\n", GIT_BRANCH);
+		printf("GIT commit id: %s\n", GIT_COMMID);
 		printf("Build Date: %s\n", DATETIME);
 	}
 
