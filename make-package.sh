@@ -86,9 +86,11 @@ sysnc_kernel()
 	echo "copy kernel ..."
 	mkdir -p $_target/boot/grub
 	mkdir -p $_target/lib/modules/
+	mkdir -p $_target/usr/src/
 	cp -f /boot/*`uname -r` $_target/boot/
 	cp -f /boot/grub/grub.cfg $_target/boot/grub/
 	cp -fa /lib/modules/`uname -r` $_target/lib/modules/
+	cp -fa /usr/src/linux-headers-`uname -r` $_target/usr/src/
 }
 
 sysnc_web()
