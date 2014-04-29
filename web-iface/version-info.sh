@@ -9,7 +9,11 @@ VERSION=""
 get_version()
 {
 	first_line=$(git log -n 1 2>/dev/null | head -n 1)
-	echo $VERSION.${first_line:0-6}
+	VERSION=$VERSION.${first_line:0-6}
+	if [ "`git status -s`" != "" ]; then
+		VERSION=$VERSION+
+	fi
+	echo $VERSION
 }
 
 get_hostname()
@@ -29,7 +33,11 @@ get_git_branch()
 
 get_git_commid()
 {
-	git log -n 1 2>/dev/null | head -n 1 | awk '{ print $2 }'
+	id=`git log -n 1 2>/dev/null | head -n 1 | awk '{ print $2 }'`
+	if [ "`git status -s`" != "" ]; then
+		id=$id+
+	fi
+	echo $id
 
 }
 

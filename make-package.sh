@@ -111,6 +111,9 @@ sysnc_web()
 		done
 	else
 		version=${git_version:0-6}
+		if [ "`git status -s`" != "" ]; then
+			version=$version+
+		fi
 	fi
 	
 	mkdir -p $_target/var
@@ -143,6 +146,14 @@ usage()
 	echo "    make-package.sh [--kernel] [--web <web_dir>]"
 	echo ""
 }
+
+if [ "`git status -s`" != "" ]; then
+	git status -s
+	read -p "Continue?[y/n]: " val
+	if [ "$val" != "y" ]; then
+		exit
+	fi
+fi
 
 pack_kernel=0
 pack_web=0

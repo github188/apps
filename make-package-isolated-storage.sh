@@ -180,6 +180,14 @@ fi
 
 KERNEL=$2
 
+if [ "`git status -s`" != "" ]; then
+	git status -s
+	read -p "Continue?[y/n]: " val
+	if [ "$val" != "y" ]; then
+		exit
+	fi
+fi
+
 if [ `arch` = "x86_64" ]; then
 	ARCH="64bit"
 else
