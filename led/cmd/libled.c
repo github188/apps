@@ -75,6 +75,7 @@ int p(int semid)
 	struct sembuf sem_p;
 	sem_p.sem_num = 0;
 	sem_p.sem_op = -1;
+	sem_p.sem_flg = SEM_UNDO;
 	if (semop(semid, &sem_p, 1) == -1) {
 		return -1;
 	}
@@ -86,6 +87,7 @@ int v(int semid)
 	struct sembuf sem_v;
 	sem_v.sem_num = 0;
 	sem_v.sem_op = 1;
+	sem_v.sem_flg = SEM_UNDO;
 	if (semop(semid, &sem_v, 1) == -1){
 		return -1;
 	}
@@ -231,8 +233,9 @@ error:
 
 int diskled_set(int disk_id, enum LED_STATUS mode)
 {
+	if (disk_id < 0)
+		return -1;
 	LED_CHECK_INIT();
-	
 	if (disk_id == 0) {
 		int i;
 		for (i=1; i <= addr->shm_head.disk_num; i++) {
@@ -274,7 +277,8 @@ int diskled_get(int disk_id, enum LED_STATUS *sts)
 {
 	if (!sts)
 		return -1;
-
+	if (disk_id < 0)
+		return -1;
 	LED_CHECK_INIT();
 	
 	if (disk_id > addr->shm_head.disk_num)

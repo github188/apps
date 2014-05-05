@@ -49,14 +49,17 @@ int led_getopt(int argc, char **argv)
 				flags = 1;
 				if (!strcmp(optarg, "on")) {
 					systask = LED_ON;
+					break;
 				} else if (!strcmp(optarg, "off")) {
 					systask = LED_OFF;
+					break;
 				} else if (!strcmp(optarg, "foff")) {
 					systask = LED_FORCE_OFF;
+					break;
 				} else {
 					fprintf(stderr, "sysled mode invalid.\n");
+					return -1;
 				}
-				break;
 			case 'g':
 				getflag = 1;
 				break;
@@ -70,12 +73,11 @@ int led_getopt(int argc, char **argv)
 				if (!strcmp(optarg, "on")) {
 					task = LED_ON;
 					break;
-				}
-				if (!strcmp(optarg, "off")) {
+				} else if (!strcmp(optarg, "off")) {
 					task = LED_OFF;
 					break;
-				}
-				if (!strcmp(optarg, "blink")) {
+				} else if (!strcmp(optarg, "blink")) {
+					task = 0;
 					break;
 				}
 
@@ -86,12 +88,10 @@ int led_getopt(int argc, char **argv)
 				if (!strcmp(optarg, "fast")) {
 					task = LED_BLINK_FAST;
 					break;
-				}
-				if (!strcmp(optarg, "normal")) {
+				} else if (!strcmp(optarg, "normal")) {
 					task = LED_BLINK_NORMAL;
 					break;
-				}
-				if (!strcmp(optarg, "slow")) {
+				} else if (!strcmp(optarg, "slow")) {
 					task = LED_BLINK_SLOW;
 					break;
 				}
@@ -216,14 +216,12 @@ int main(int argc, char *argv[])
 	}
 
 	if (flags) {
-	
 		if (sysled_set(systask) < 0) {
 			fprintf(stderr, "set sysled failed.\n");
 		}
 	}
 
 	if (task != -1) {
-		printf("task: %d\n", task);	
 		if (disk_id == -2)  {
 			diskled_set(0, task);
 		} else if (disk_id != -1){

@@ -29,6 +29,7 @@ int d_p(int semid)
 	struct sembuf sem_p;
 	sem_p.sem_num = 0;
 	sem_p.sem_op = -1;
+	sem_p.sem_flg = SEM_UNDO;
 	if (semop(semid, &sem_p, 1) == -1) {
 	//	fprintf(stderr, "p failed.\n");
 		return -1;
@@ -41,6 +42,7 @@ int d_v(int semid)
 	struct sembuf sem_v;
 	sem_v.sem_num = 0;
 	sem_v.sem_op = 1;
+	sem_v.sem_flg = SEM_UNDO;
 	if (semop(semid, &sem_v, 1) == -1) {
 	//	fprintf(stderr, "v failed.\n");
 		return -1;
