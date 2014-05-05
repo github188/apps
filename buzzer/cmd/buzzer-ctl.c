@@ -7,12 +7,11 @@
 #include <sys/shm.h>
 #include <errno.h>
 
-#include "../daemon/common.h"
 #include "libbuzzer.h"
 
 
 char *const short_options = "s:gh";
-buzzer_task_t systask;
+enum BUZZER_STATUS systask;
 int getflag=0;
 struct option long_options[] = {
 	{"set", 1, NULL, 's'},
@@ -38,11 +37,11 @@ int buzzer_getopt(int argc, char **argv)
 		switch (c) {
 		case 's':
 			if (!strcmp(optarg, "on")) {
-				systask.mode = MODE_ON;
+				systask = BUZZER_ON;
 			} else if (!strcmp(optarg, "off")) {
-				systask.mode = MODE_OFF;
+				systask = BUZZER_OFF;
 			} else if (!strcmp(optarg, "foff")){
-				systask.mode = MODE_FORCE_OFF;
+				systask = BUZZER_FORCE_OFF;
 			} else {
 				fprintf(stderr, "ivalid mode\n");
 				exit (-1);
@@ -78,13 +77,13 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "init buzzer failed.\n");
 		return -1;
 	}
-
-	if (systask.mode & MODE_ON)
-		buzzer_set(BUZZER_ON);
-	else if (systask.mode & MODE_OFF)
-		buzzer_set(BUZZER_OFF);
-	else if (systask.mode & MODE_FORCE_OFF)
-		buzzer_set(BUZZER_FORCE_OFF);
+	buzzer_set(systask);
+	/* if (systask.mode & BUZZER_ON) */
+	/* 	buzzer_set(BUZZER_ON); */
+	/* else if (systask.mode & BUZZER_OFF) */
+	/* 	buzzer_set(BUZZER_OFF); */
+	/* else if (systask.mode & BUZZER_FORCE_OFF) */
+	/* 	buzzer_set(BUZZER_FORCE_OFF); */
 
 	if (getflag) {
 		enum BUZZER_STATUS sts;

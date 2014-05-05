@@ -7,15 +7,14 @@
 #include <sys/shm.h>
 #include <errno.h>
 
-#include "../daemon/common.h"
 #include "libled.h"
 
-
-
 char *const short_options = "s:gi:d:f:e:h";
-led_task_t task;
-led_task_t systask;
-static int disk_id = DISK_ID_NONE;
+
+enum LED_STATUS task;
+enum LED_STATUS systask;
+static int time;
+static int disk_id = -1;
 static int flags = 0; 		/* 检查是否为设置系统灯 */
 static int getflag = 0;
 struct option long_options[] = {
@@ -44,70 +43,69 @@ int led_getopt(int argc, char **argv)
 	int c;
 
 	while ((c = getopt_long(argc, (char *const*)argv, short_options,
-				long_options, NULL)) != -1) {
+					long_options, NULL)) != -1) {
 		switch (c) {
-		case 's':
-			flags = 1;
-			if (!strcmp(optarg, "on")) {
-				systask.mode = MODE_ON;
-			} else if (!strcmp(optarg, "off")) {
-				systask.mode = MODE_OFF;
-			} else if (!strcmp(optarg, "foff")) {
-				systask.mode = MODE_FORCE_OFF;
-			} else {
-				fprintf(stderr, "sysled mode invalid.\n");
-			}
-			break;
-		case 'g':
-			getflag = 1;
-			break;
-		case 'i':
-			if (!strcmp(optarg, "all")) {
-				disk_id = DISK_ID_ALL;
-			} else 
-				disk_id = atoi(optarg);
-			break;
-		case 'd':
-			if (!strcmp(optarg, "on")) {
-				task.mode = MODE_ON;
+			case 's':
+				flags = 1;
+				if (!strcmp(optarg, "on")) {
+					systask = LED_ON;
+				} else if (!strcmp(optarg, "off")) {
+					systask = LED_OFF;
+				} else if (!strcmp(optarg, "foff")) {
+					systask = LED_FORCE_OFF;
+				} else {
+					fprintf(stderr, "sysled mode invalid.\n");
+				}
 				break;
-			}
-			if (!strcmp(optarg, "off")) {
-				task.mode = MODE_OFF;
+			case 'g':
+				getflag = 1;
 				break;
-			}
-			if (!strcmp(optarg, "blink")) {
-				task.mode = MODE_BLINK;
+			case 'i':
+				if (!strcmp(optarg, "all")) {
+					disk_id = -2;
+				} else 
+					disk_id = atoi(optarg);
 				break;
-			}
+			case 'd':
+				if (!strcmp(optarg, "on")) {
+					task = LED_ON;
+					break;
+				}
+				if (!strcmp(optarg, "off")) {
+					task = LED_OFF;
+					break;
+				}
+				if (!strcmp(optarg, "blink")) {
+					break;
+				}
 
-			fprintf(stderr, "diskled mode invalid.\n");
-			print_help();
-			return -1;
-		case 'f':
-			if (!strcmp(optarg, "fast")) {
-				task.freq = FREQ_FAST;
+				fprintf(stderr, "diskled mode invalid.\n");
+				print_help();
+				return -1;
+			case 'f':
+				if (!strcmp(optarg, "fast")) {
+					task = LED_BLINK_FAST;
+					break;
+				}
+				if (!strcmp(optarg, "normal")) {
+					task = LED_BLINK_NORMAL;
+					break;
+				}
+				if (!strcmp(optarg, "slow")) {
+					task = LED_BLINK_SLOW;
+					break;
+				}
+				fprintf(stderr, "freq arg invalid.\n");
+				return -1;
+			case 'e':
+				time = atoi(optarg);
 				break;
-			}
-			if (!strcmp(optarg, "normal")) {
-				task.freq = FREQ_NORMAL;
-				break;
-			}
-			if (!strcmp(optarg, "slow")) {
-				task.freq = FREQ_SLOW;
-				break;
-			}
-			fprintf(stderr, "freq arg invalid.\n");
-			return -1;
-		case 'e':
-			task.time = atol(optarg) * 1000;
-			break;
-		case 'h':
-			print_help();
-			return -1;
-		default:
-			print_help();
-			return -1;
+			case 'h':
+				print_help();
+				return -1;
+			default:
+				print_help();
+				return -1;
 		}
 	}
 	return 0;
@@ -115,51 +113,18 @@ int led_getopt(int argc, char **argv)
 
 int parse_args(void)
 {
-	if (task.mode != -1 && disk_id == DISK_ID_NONE) {
+	if (task != -1 && disk_id == -1) {
 		fprintf(stderr, "diskid is null.\n");
 		return -1;
 	}
-	if (task.mode == MODE_BLINK) {
-		if (task.freq != FREQ_FAST && task.freq != FREQ_NORMAL
-		    && task.freq != FREQ_SLOW) {
-			fprintf(stderr, "blink freq invalid.\n");
-			return -1;
-		}
+	if (task == 0) {
+		fprintf(stderr, "blink freq invalid.\n");
+		return -1;
 	}
-#ifdef _DEBUG	
-	printf("disk_id:%d, mode:%d, time:%ld, freq:%d, count:%d\n",
-	       disk_id, task.mode, task.time, task.freq, task.count);
-#endif
 	return 0;
-
 }
-void do_work(int i)
-{
-	if (task.mode & MODE_ON) {
-		if (diskled_set(i, LED_ON) < 0) {
-			fprintf(stderr, "led %d on failed.\n", i);
-		}
-	} else if (task.mode & MODE_OFF) {
-		if (diskled_set(i, LED_OFF) < 0) {
-			fprintf(stderr, "led %d off failed.\n", i);
-		}
-	} else if (task.mode & MODE_BLINK) {
-		if (task.freq & FREQ_FAST) {
-			if (diskled_set(i, LED_BLINK_FAST) < 0) {
-				fprintf(stderr, "led %d blink failed.\n", i);
-			}
-		} else if (task.freq & FREQ_NORMAL) {
-			if (diskled_set(i, LED_BLINK_NORMAL) < 0) {
-				fprintf(stderr, "led %d blink failed.\n", i);
-			}
-		} else if (task.freq & FREQ_SLOW) {
-			if (diskled_set(i, LED_BLINK_SLOW) < 0) {
-				fprintf(stderr, "led %d blink failed.\n", i);
-			}
-		}
-	}
 
-}
+
 
 void do_get_work(int id)
 {
@@ -170,41 +135,41 @@ void do_get_work(int id)
 	} else {
 		j = 1;
 	}
-		sts = (enum LED_STATUS *)malloc(sizeof(enum LED_STATUS) * j);
-	
-		if (sts == NULL) {
-			fprintf(stderr, "get status malloc failed.\n");
+	sts = (enum LED_STATUS *)malloc(sizeof(enum LED_STATUS) * j);
+
+	if (sts == NULL) {
+		fprintf(stderr, "get status malloc failed.\n");
+		return;
+	}
+	if (sysled_get(sts) < 0) {
+		fprintf(stderr, "get sysled status failed.\n");
+		return ;
+	}
+	count = sysled_get_count();
+	if (sts[0] == LED_ON) {
+		printf("sysled mode: on\ncount: %d\n", count);
+	} else if(sts[0] == LED_OFF) {
+		printf("sysled mode: off\ncount: %d\n", count);
+	} else if (sts[0] == LED_FORCE_OFF) {
+		printf("sysled mode: force off\ncount: %d\n", count);
+	}else {
+		printf("sysled mode:unknown\ncount: %d\n", count);
+	}
+
+	if (id == 0) {
+		if (diskled_get_all(sts, j) < 0) {
+			fprintf(stderr, "get diskled all status failed.\n");
 			return;
 		}
-		if (sysled_get(sts) < 0) {
-			fprintf(stderr, "get sysled status failed.\n");
-			return ;
+	} else {
+		if (diskled_get(id, sts) < 0) {
+			fprintf(stderr, "get diskled %d status failed.\n", id);
+			return;
 		}
-		count = sysled_get_count();
-		if (sts[0] == LED_ON) {
-			printf("sysled mode: on\ncount: %d\n", count);
-		} else if(sts[0] == LED_OFF) {
-			printf("sysled mode: off\ncount: %d\n", count);
-		} else if (sts[0] == LED_FORCE_OFF) {
-			printf("sysled mode: force off\ncount: %d\n", count);
-		}else {
-			printf("sysled mode:unknown\ncount: %d\n", count);
-		}
+	}
 
-		if (id == 0) {
-			if (diskled_get_all(sts, j) < 0) {
-				fprintf(stderr, "get diskled all status failed.\n");
-				return;
-			}
-		} else {
-			if (diskled_get(id, sts) < 0) {
-				fprintf(stderr, "get diskled %d status failed.\n", id);
-				return;
-			}
-		}
-			
-		for (i=0; i < j; i++) {
-			switch (sts[i]) {
+	for (i=0; i < j; i++) {
+		switch (sts[i]) {
 			case LED_ON:
 				printf("diskled %d mode: on\n", i+1);
 				break;
@@ -223,9 +188,9 @@ void do_get_work(int id)
 			default:
 				printf("diskled %d mode: unknown\n", i+1);
 				break;
-			}
- 		}
-	
+		}
+	}
+
 }
 
 int main(int argc, char *argv[])
@@ -236,9 +201,8 @@ int main(int argc, char *argv[])
 		print_help();
 		return -1;
 	}
-	task.mode = -1;
-	task.freq = FREQ_NONE;
-	task.time = TIME_FOREVER;
+	task = -1;
+	time = 0;
 
 	if (led_getopt(argc, argv))
 		return -1;
@@ -252,29 +216,29 @@ int main(int argc, char *argv[])
 	}
 
 	if (flags) {
-		if (systask.mode & MODE_ON)
-			sysled_set(LED_ON);
-		else if (systask.mode & MODE_OFF)
-			sysled_set(LED_OFF);
-		else if (systask.mode & MODE_FORCE_OFF)
-			sysled_set(LED_FORCE_OFF);
-	}
 	
+		if (sysled_set(systask) < 0) {
+			fprintf(stderr, "set sysled failed.\n");
+		}
+	}
 
-	if (disk_id == DISK_ID_ALL)  {
-		do_work(0);
-	} else if (disk_id != DISK_ID_NONE){
-		do_work(disk_id);
+	if (task != -1) {
+		printf("task: %d\n", task);	
+		if (disk_id == -2)  {
+			diskled_set(0, task);
+		} else if (disk_id != -1){
+			diskled_set(disk_id, task);
+		}
 	}
 	if (getflag) {
 		do_get_work(0);
 	}
 
-	if (task.time == TIME_FOREVER)
+	if (time == 0)
 		return 0;
 	else {
-		sleep(task.time/1000);
-		if (disk_id == DISK_ID_ALL) {
+		sleep(time);
+		if (disk_id == -2) {
 			diskled_set(0, LED_OFF);
 		} else
 			diskled_set(disk_id, LED_OFF);
