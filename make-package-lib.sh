@@ -20,17 +20,19 @@ mkdir -p $TMP_DIR
 TMP_DIR_LED=$TMP_DIR/jw-lib/led
 rm -fr $TMP_DIR_LED
 mkdir -p $TMP_DIR_LED
-cp led/cmd/libled.[has]* $TMP_DIR_LED/
+cp led/cmd/libled.[has]* led/cmd/led-ctl.c led/daemon/led-ctl-daemon \
+led/readme.txt $TMP_DIR_LED/
 
 TMP_DIR_BUZZER=$TMP_DIR/jw-lib/buzzer
 rm -fr $TMP_DIR_BUZZER
 mkdir -p $TMP_DIR_BUZZER
-cp buzzer/cmd/libbuzzer.[has]* $TMP_DIR_BUZZER/
+cp buzzer/cmd/libbuzzer.[has]* buzzer/cmd/buzzer-ctl.c buzzer/daemon/buzzer-ctl-daemon \
+buzzer/readme.txt $TMP_DIR_BUZZER/
 
 TMP_DIR_WATCHDOG=$TMP_DIR/jw-lib/watchdog
 rm -fr $TMP_DIR_WATCHDOG
 mkdir -p $TMP_DIR_WATCHDOG
-cp watchdog/libwatchdog.[has]*  $TMP_DIR_WATCHDOG/
+cp watchdog/libwatchdog.[has]* watchdog/watchdog.c watchdog/readme.txt $TMP_DIR_WATCHDOG/
 
 cd $TMP_DIR
 tar jcf $PKG ./*
