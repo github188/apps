@@ -33,7 +33,7 @@ extern sys_global_t gconf;
 
 /*
  * tmpfs:
- *  /tmp/.sys-mon/message
+ *  /var/run/sys-mon/message
  *           |       |------/info/          记录info类型事件，上限sys_global.recent.info
  *           |       |------/warning/       记录warning类型事件，上限sys_global.recent.warning
  *           |       |------/error/         记录error类型事件，上限sys_global.recent.error

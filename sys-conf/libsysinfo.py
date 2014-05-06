@@ -23,7 +23,7 @@ def __get_cpu_info(mod):
 		_item['value'] = ERROR_VALUE
 	return _item
 
-CPU_UTIL_DIR = '/tmp/.cpu_util'
+CPU_UTIL_DIR = '/var/run/cpu_util'
 def __get_cpu_util(mod):
 	_item = {}
 	_item['item'] = mod

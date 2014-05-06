@@ -23,39 +23,6 @@ def __set_fan_speed(value):
 def __set_http_port(value):
 	return False, '暂时不支持设置http端口操作'
 
-BUZZER_DIR = '/tmp/.buzzer'
-BUZZER_CNT = BUZZER_DIR + '/counter'
-BUZZER_LOCK = BUZZER_DIR + '/lock'
-def inc_buzzer_cnt():
-	if not os.path.isdir(BUZZER_DIR):
-		os.mkdir(BUZZER_DIR)
-
-	cnt = 1
-	f_lock = lock_file(BUZZER_LOCK)
-	if os.path.isfile(BUZZER_CNT):
-		val = fs_attr_read(BUZZER_CNT)
-		if val.isdigit():
-			cnt = int(val) + 1
-	
-	fs_attr_write(BUZZER_CNT, str(cnt))
-	unlock_file(f_lock)
-	return cnt
-
-def dec_buzzer_cnt():
-	if not os.path.isdir(BUZZER_DIR):
-		os.mkdir(BUZZER_DIR)
-
-	cnt = 0
-	f_lock = lock_file(BUZZER_LOCK)
-	if os.path.isfile(BUZZER_CNT):
-		val = fs_attr_read(BUZZER_CNT)
-		if val.isdigit() and int(val) > 0:
-			cnt = int(val) - 1
-	
-	fs_attr_write(BUZZER_CNT, str(cnt))
-	unlock_file(f_lock)
-	return cnt
-
 def __set_buzzer(value):
 	op = ''
 	if 'inc' == value or 'on' == value:

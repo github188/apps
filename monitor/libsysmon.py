@@ -4,7 +4,7 @@
 import socket
 import json
 
-SYSMON_ADDR = "/tmp/.sys-mon-socket-do-not-remove"
+SYSMON_ADDR = "/var/run/sys-mon.socket"
 
 class ev:
 	def __init__(self):

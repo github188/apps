@@ -232,7 +232,7 @@ def get_mdattr_all():
 		mdattr_list.append(mdattr)
 	return mdattr_list
 
-CONFIG_BAK_ROOT = '/tmp/.configbak'
+CONFIG_BAK_ROOT = '/var/run/configbak'
 MD_RESERVE_SECTORS = 204800
 MD_RESERVE_START = 1024
 def md_reserve_space_online(mddev):

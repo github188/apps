@@ -148,7 +148,7 @@ void probe_all_vg()
 	all_vg_dev[i][0] = '\0';
 }
 
-#define RAID_DIR_BYNAME "/tmp/.raid-info/by-name"
+#define RAID_DIR_BYNAME "/var/run/raid-info/by-name"
 int get_vgdev_byname(const char *vg_name, char *vg_dev)
 {
 	FILE *fp;

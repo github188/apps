@@ -1,9 +1,9 @@
-#!/bin/bash2.6
+#!/bin/bash
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
 CONFIG_DIR="/opt/etc"
-CONFIG_BAK_ROOT="/tmp/.configbak"
+CONFIG_BAK_ROOT="/var/run/configbak"
 LOCAL_FINGERPRINT_FILE="$CONFIG_DIR/fingerprint"
 
 output_json()
