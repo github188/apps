@@ -2,7 +2,7 @@
 #define COMMON__H__
 
 #define SHMKEY		"/var/run/led.shmkey"
-#define LOCK_FILE       "/tmp/.led-ctl-daemon.lock"
+#define LOCK_FILE       "/var/run/led-ctl-daemon.lock"
 
 #define DISK_NUM_3U	16
 #define DISK_NUM_2U	8
