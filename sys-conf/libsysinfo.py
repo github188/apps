@@ -255,7 +255,7 @@ def get_sys_info(item=None):
 
 #------------------------------------------------------------------------------
 
-ALARM_DIR='/tmp/.sys-mon/alarm'
+ALARM_DIR='/var/run/sys-mon/alarm'
 
 def AttrRead(dir_path, attr_name):
 	value = ''

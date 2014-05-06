@@ -11,7 +11,7 @@
 #define LOG_INVALID_ARG -1
 #define LOG_FILE "/opt/log/jw-log.db"
 #define LOG_TABLE "jwlog"
-#define LOCAL_ADDR "/tmp/.log_socket_do_not_remove"
+#define LOCAL_ADDR "/var/run/jw-log.socket"
 
 
 extern const char *_mod_name[];

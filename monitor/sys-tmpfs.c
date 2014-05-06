@@ -12,9 +12,9 @@
 #include "sys-global.h"
 #include "../common/jw-unistd.h"
 
-#define TMPFS_MSG_ROOT "/tmp/.sys-mon/message"
+#define TMPFS_MSG_ROOT "/var/run/sys-mon/message"
 #define _SORTED_ROOT TMPFS_MSG_ROOT"/sorted-all/"
-#define TMPFS_ALARM_ROOT "/tmp/.sys-mon/alarm/"
+#define TMPFS_ALARM_ROOT "/var/run/sys-mon/alarm/"
 
 
 #define DIRPTR _ptr

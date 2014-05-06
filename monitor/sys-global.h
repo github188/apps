@@ -10,7 +10,7 @@
 #define __SYS_GLOBAL_H__
 
 #define SYSMON_CONF "/opt/jw-conf/system/sysmon-conf.xml"
-#define SYSMON_ADDR "/tmp/.sys-mon-socket-do-not-remove"
+#define SYSMON_ADDR "/var/run/sys-mon.socket"
 
 #define _LOG_OPT (LOG_CONS)
 #define log_init() openlog("sys-mon", _LOG_OPT, LOG_DAEMON)

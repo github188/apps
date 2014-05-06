@@ -18,7 +18,7 @@ _usage()
 
 start_md()
 {
-	RAID_DIR="/tmp/.raid-info"
+	RAID_DIR="/var/run/raid-info"
 	RAID_DIR_LOCK="${RAID_DIR}/lock"
 	RAID_DIR_BYMD="${RAID_DIR}/by-md"
 	RAID_DIR_BYNAME="${RAID_DIR}/by-name"

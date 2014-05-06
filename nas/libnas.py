@@ -15,7 +15,7 @@ sys.setdefaultencoding('utf8')
 
 NAS_CONF_DIR = CONF_ROOT_DIR + '/nas'
 NAS_CONF_FILE = NAS_CONF_DIR + '/nas.conf'
-NAS_DIR = '/tmp/.nas-info'
+NAS_DIR = '/var/run/nas-info'
 NAS_CONF_LOCK = NAS_DIR + '/.lock_conf'
 MOUNT_ROOT = '/mnt/share'
 

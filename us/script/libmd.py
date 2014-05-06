@@ -20,7 +20,7 @@ DISK_HOTREP_DFT_CONTENT="""<?xml version="1.0" encoding="UTF-8"?>
 
 DISK_TYPE_MAP = {'Free':'空闲盘', 'Special':'专用热备盘', 'Global':'全局热备盘'}
 
-RAID_DIR = '/tmp/.raid-info'
+RAID_DIR = '/var/run/raid-info'
 RAID_DIR_LOCK = RAID_DIR + '/lock'
 RAID_DIR_BYMD = RAID_DIR + '/by-md'
 RAID_DIR_BYNAME = RAID_DIR + '/by-name'
