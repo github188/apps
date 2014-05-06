@@ -178,7 +178,7 @@ def get_mdattr_by_mddev(mddev):
 	return mdattr
 
 def md_list():
-	cmd = 'ls /sys/block/ | grep md[0-9]'
+	cmd = 'ls /sys/block/ | grep "md[0-9]"'
 	sts,output = commands.getstatusoutput(cmd)
 	if sts != 0:
 		return []
