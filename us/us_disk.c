@@ -586,6 +586,9 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		pos += snprintf(pos, end - pos, "%s\"SMART\":\"%s\"", delim,
 	                disk_get_smart_status(di));
 
+	pos += snprintf(pos, end - pos, "%s\"dev\":\"%.*s\"", delim, 9,
+					disk->dev_node);
+
 	if (is_detail) {
 		pos += snprintf(pos, end - pos, "%s\"bus_type\": \"SATA\"",
 		                delim);
