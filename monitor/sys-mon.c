@@ -52,7 +52,7 @@ static void mon_io_cb(EV_P_ ev_io *w, int r)
 	}
 	buff[n] = '\0';
 
-	syslog(LOG_NOTICE, "ev: get msg from socket!");
+	//syslog(LOG_NOTICE, "ev: get msg from socket!");
 
 	sys_event_zero(&ev);
 	obj = json_tokener_parse( buff );

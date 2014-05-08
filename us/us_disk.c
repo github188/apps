@@ -45,7 +45,6 @@ static int is_md(const char *path)
 	return regexec(&udev_md_regex, path, 0, NULL, 0) == 0;
 }
 
-#if 0
 static int is_usb(const char *path)
 {
 	int ret;
@@ -68,7 +67,6 @@ static int is_dom_disk(const char *path)
 	printf("ret = %d\n", ret);
 	return ret == 0;
 }
-#endif
 
 static int is_sata_sas(const char *path)
 {
@@ -79,7 +77,7 @@ static int is_sata_sas(const char *path)
 
 static int is_ds_disk(const char *path)
 {
-	return is_sata_sas(path) && (find_slot(path) > 0);
+	return  is_sata_sas(path) && !is_usb(path) && (find_slot(path) > 0);
 }
 
 static int to_int(const char *buf, int *v)
@@ -101,11 +99,15 @@ static int to_int(const char *buf, int *v)
 	return 0;
 }
 
-static int find_slot_from_path(const char *path)
+static int find_ata_slot_from_path(const char *path)
 {
 	regmatch_t pmatch[2];
 	char slot_digit[4];
 
+	/*
+	 * path: ../devices/pci0000:00/0000:00:1f.2/ata3/host2/target2:0:0/2:0:0:0/block/sdb
+	 * not exisit ataX before kernel 3.4, so use hostX+1
+	 */
 	if (regexec(&ata_disk_slot_regex, path,
 	            ARRAY_SIZE(pmatch), pmatch, 0) == 0) {
 		int l = pmatch[1].rm_eo - pmatch[1].rm_so;
@@ -210,23 +212,18 @@ static int map_slot(int slot)
 
 static int find_slot(const char *path)
 {
-	int slot;
+	int ata_slot;
 	int cook_slot = -1;
 
-	 /**
+	/*
 	 * 槽位号在/sys/block/sd[b-z]的链接里面
 	 */
-	slot = find_slot_from_path(path);
-	if (slot < 0) {
-		clog(LOG_ERR, "%s: can't find slot from %s\n", __func__, path);
+	ata_slot = find_ata_slot_from_path(path);
+	if (ata_slot < 0) {
 		return -1;
 	}
-	cook_slot = map_slot(slot);
-	if (cook_slot < 0) {
-		clog(LOG_ERR, "%s: can't map slot %d\n", __func__, slot);
-	}
 
-	return cook_slot;
+	return map_slot(ata_slot);
 }
 
 #if 0
