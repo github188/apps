@@ -91,7 +91,8 @@ def handle_md_syncdone(mddev):
 	else:
 		# 如果raid6坏2块盘, 第一块盘重建完后, 第二快盘开始重建, 
 		# 如果没有启动第二块盘重建, 则认为重建失败
-		if mdattr.raid_level == '6':
+		# raid10类似raid6
+		if mdattr.raid_level == '6' or mdattr.raid_level == '10':
 			if mdattr.raid_state == 'normal':
 				msg += ' 完成'
 			elif mdattr.raid_state == 'degrade':

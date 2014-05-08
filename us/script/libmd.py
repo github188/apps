@@ -1058,7 +1058,7 @@ def faulty_disk_in_md(mddev, diskdev):
 
 # 从指定卷组删除磁盘
 def remove_disk_from_md(mddev, diskdev):
-	retry_cnt = 10
+	retry_cnt = 600
 	while retry_cnt > 0:
 		cmd = 'mdadm --remove %s %s >/dev/null 2>&1' % (mddev, basename(diskdev))
 		if os.system(cmd) == 0:
