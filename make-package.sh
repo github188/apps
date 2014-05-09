@@ -119,6 +119,7 @@ sysnc_web()
 	mkdir -p $_target/var
 	cp -fa $_source $_target/var/
 	echo $version > $_target/var/www/version
+	cd - >/dev/null
 }
 
 tar_pkg()
@@ -188,6 +189,11 @@ mkdir $target
 rm -f $PKG_TAR
 rm -f $PKG_BIN
 
+# 定制化升级
+if [ -x ./pkg-install-custom.sh ]; then
+	cp ./pkg-install-custom.sh $target/
+fi
+
 make clean
 make
 sync_apps "$target"
@@ -198,11 +204,6 @@ if [ $pack_kernel -eq 1 ]; then
 fi
 if [ $pack_web -eq 1 ]; then
 	sysnc_web "$target" $web_dir
-fi
-
-# 定制化升级
-if [ -x ./pkg-install-custom.sh ]; then
-	cp ./pkg-install-custom.sh $target/
 fi
 
 tar_pkg "$target"
