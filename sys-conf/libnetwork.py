@@ -551,10 +551,11 @@ def NIC_Status_List():
 		out = net_info()
 		out.Interface_Name = inc_name
 		out.Interface_MAC =  SYSTEM_OUT('cat /sys/class/net/%s/address' % inc_name)
-		Speed = SYSTEM_OUT('cat /sys/class/net/%s/speed' % inc_name);
-		if int(Speed) > 100000:
+		Carrier = SYSTEM_OUT('cat /sys/class/net/%s/carrier' % inc_name);
+		if Carrier != '1':
 			out.Interface_Velocity = '0 Mbps'
 		else:
+			Speed = SYSTEM_OUT('cat /sys/class/net/%s/speed' % inc_name);
 			out.Interface_Velocity = Speed+' Mbps'
 		out.Interface_Status =  SYSTEM_OUT('cat /sys/class/net/%s/operstate' % inc_name)
 		list.append(out.__dict__)
