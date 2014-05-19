@@ -103,7 +103,6 @@ def get_mdattr_by_mddev(mddev):
 				continue	
 			mdattr.disk_list.append(slot)
 		
-		
 		if '5' == mdattr.raid_level:
 			max_degraded = 1
 		elif '6' == mdattr.raid_level:
@@ -312,13 +311,12 @@ def tmpfs_add_md(mddev):
 	val = list_dir('/sys/block/%s/slaves' % md)
 	disk_list = [disk_dev2slot('/dev/'+x) for x in val]
 
-	if raid_level == '0' or raid_level == 'JBOD':
-		disks_list_dir = raid_dir_bymd + '/disk-list'
-		if not os.path.exists(disks_list_dir):
-			os.makedirs(disks_list_dir)
+	disks_list_dir = raid_dir_bymd + '/disk-list'
+	if not os.path.exists(disks_list_dir):
+		os.makedirs(disks_list_dir)
 
-		for disk in disk_list:
-			fs_attr_write(disks_list_dir + os.sep + disk, disk)
+	for disk in disk_list:
+		fs_attr_write(disks_list_dir + os.sep + disk, disk)
 	
 	# raid name dir
 	fs_attr_write(RAID_DIR_BYNAME + os.sep + raid_name, md)
@@ -1058,9 +1056,9 @@ def faulty_disk_in_md(mddev, diskdev):
 
 # 从指定卷组删除磁盘
 def remove_disk_from_md(mddev, diskdev):
-	retry_cnt = 600
+	retry_cnt = 10
 	while retry_cnt > 0:
-		cmd = 'mdadm --remove %s %s >/dev/null 2>&1' % (mddev, basename(diskdev))
+		cmd = 'mdadm --remove %s %s 2>&1' % (mddev, basename(diskdev))
 		if os.system(cmd) == 0:
 			break
 		time.sleep(0.5)
