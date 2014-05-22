@@ -124,7 +124,7 @@ int led_init(void)
 		return -1;
 	}
 	
-	if (ds.shm_nattch <= 1) {
+	if (ds.shm_nattch <= 0) {
 		return -1;
 	}
 
