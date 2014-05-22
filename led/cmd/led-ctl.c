@@ -236,6 +236,9 @@ int main(int argc, char *argv[])
 		return 0;
 	else {
 		sleep(time);
+		if (flags) {
+			sysled_set(LED_OFF);
+		} 
 		if (disk_id == -2) {
 			diskled_set(0, LED_OFF);
 		} else

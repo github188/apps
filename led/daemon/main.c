@@ -28,7 +28,7 @@ void print_help(void)
 {
 	printf("led-ctl-daemonls:\n");
 	printf("\t[--type|-t 2U8-STANDARD|2U8-ATOM|3U16-STANDARD|3U16-SIMPLE]\n");
-	printf("\t[--clean]\n");
+	printf("\t[--clean|-c]\n");
 	printf("\t[--help|-h]\n");
 }
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	
 clean:
 	shm_release();
-	hw.release();
+	//hw.release();
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
@@ -131,7 +131,7 @@ clean:
 	return 0;
 quit:
 	shm_release();
-	hw.release();
+	//hw.release();
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
