@@ -124,9 +124,6 @@ int led_init(void)
 		return -1;
 	}
 	
-	if (ds.shm_nattch <= 0) {
-		return -1;
-	}
 
 	if (addr->shm_head.magic != MAGIC) {
 		return -1;
