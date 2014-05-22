@@ -162,7 +162,7 @@ int i2c_init_3U(void)
 
 void i2c_release_3U(void)
 {
-	i2c_fd = 0;
+	close(i2c_fd);
 	i2c_is_initialized = 0;
 
 }
@@ -272,6 +272,6 @@ int i2c_init_2U(void)
 
 void i2c_release_2U(void)
 {
-	i2c_fd = 0;
+	close(i2c_fd);
 	i2c_is_initialized = 0;
 }

@@ -11,7 +11,7 @@
 
 extern shm_t *addr;
 extern int disk_max_num;
-extern hw_t hw;
+extern hw_t hw_op;
 static sts_t sts[DISK_NUM_3U + 1];
 static int count[DISK_NUM_3U +1];
 static volatile int go = 0;
@@ -113,7 +113,7 @@ void do_work(void)
 		    
 	}
 	if (flag) {
-		if (hw.set(mode) < 0) {
+		if (hw_op.set(mode) < 0) {
 			syslog(LOG_ERR, "led_ctl: set mode failed'\n");
 			quit = 1;
 		}
@@ -181,7 +181,7 @@ int worker_init(void)
 #endif		
 		}
 		if (quit) {
-			if (hw.set(0xffff) != 0) {
+			if (hw_op.set(0xffff) != 0) {
 				syslog(LOG_ERR, "led_ctl: exitting led off  disk failed.\n");
 			}
 			return 0;

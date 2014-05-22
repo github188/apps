@@ -22,7 +22,7 @@ struct option long_options[] = {
 };
 
 int systype;
-hw_t hw;
+hw_t hw_op;
 
 void print_help(void)
 {
@@ -68,24 +68,27 @@ int main(int argc, char *argv[])
 		case 't':
 			if (!strcmp(optarg, "3U16-SIMPLE")){
 				systype = SYS_S3U;
-				hw.init = i2c_init_3U;
-				hw.set = i2c_write_disk_3U;
-				hw.release = i2c_release_3U;
+				hw_op.init = i2c_init_3U;
+				hw_op.set = i2c_write_disk_3U;
+				hw_op.release = i2c_release_3U;
 				break;
 			} else if (!strcmp(optarg, "2U8-STANDARD")) {
 				systype = SYS_2U;
-				hw.init = i2c_init_2U;
-				hw.set = i2c_write_disk_2U;
-				hw.release = i2c_release_2U;
+				hw_op.init = i2c_init_2U;
+				hw_op.set = i2c_write_disk_2U;
+				hw_op.release = i2c_release_2U;
 				break;
 			} else if (!strcmp(optarg, "2U8-ATOM")) {
 				systype = SYS_A2U;
-				hw.init = i2c_init_2U;
-				hw.set = i2c_write_disk_2U;
-				hw.release = i2c_release_2U;
+				hw_op.init = i2c_init_2U;
+				hw_op.set = i2c_write_disk_2U;
+				hw_op.release = i2c_release_2U;
 				break;
 			} else if (!strcmp(optarg, "3U16-STANDARD")) {
 				systype = SYS_3U;
+				hw_op.init = NULL;
+				hw_op.set = NULL;
+				hw_op.release = NULL;
 				break;
 			} else {
 				syslog(LOG_ERR, "led_ctl: invalid type %s\n", optarg);
@@ -112,7 +115,7 @@ int main(int argc, char *argv[])
 		goto quit;
 	if (systype == SYS_3U)
 		return 0;
-	if (hw.init() < 0) {
+	if (hw_op.init() < 0) {
 		syslog(LOG_ERR, "led_ctl: init i2c failed.\n");
 		goto quit;
 	}	
@@ -123,7 +126,8 @@ int main(int argc, char *argv[])
 	
 clean:
 	shm_release();
-	//hw.release();
+	if (hw_op.release)
+		hw_op.release();
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
@@ -131,7 +135,8 @@ clean:
 	return 0;
 quit:
 	shm_release();
-	//hw.release();
+	if (hw_op.release)
+		hw_op.release();
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
