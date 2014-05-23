@@ -93,9 +93,11 @@ sysconfig --switch <reboot|poweroff|check>		##系统重启，关机，验证状�
 #~#### 系统重启、关机、验证状态主程序
 def switch(value):
 	if value.switch_set == 'reboot':
+		SYSTEM_OUT('[ -x /etc/init.d/jw-watchdog ] && /etc/init.d/jw-watchdog stop')
 		SYSTEM_OUT('reboot')
 		Export(True, '系统正在重启中，请等待。。。。')
 	elif value.switch_set == 'poweroff':
+		SYSTEM_OUT('[ -x /etc/init.d/jw-watchdog ] && /etc/init.d/jw-watchdog stop')
 		SYSTEM_OUT('poweroff')
 		Export(True, '关机命令执行成功！')
 	elif value.switch_set == 'check':
