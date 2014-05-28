@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 	lock.l_len = 0;
 	lock.l_pid = getpid();
 
+	openlog("buzzer-ctl-daemon", LOG_NDELAY|LOG_PID|LOG_CONS|LOG_PERROR, LOG_DAEMON);
 	if ((fd = open(LOCK_FILE, O_RDWR|O_CREAT, 0644)) < 0) {
 		syslog(LOG_INFO, "create lock file failed.\n");
 		return -1;
@@ -43,7 +44,7 @@ int main(int argc, char *argv[])
 
 	if ((fcntl(fd, F_SETLK, &lock)) < 0) {
 		syslog(LOG_ERR, "get file lock failed. exitting...\n");
-		fprintf(stderr, "get file lock failed. exitting...\n");
+		//fprintf(stderr, "get file lock failed. exitting...\n");
 		return -1;
 	}
 	if (open(SHMKEY, O_RDWR|O_CREAT, 0644) < 0) {
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
 	shmid = shm_init();
 	if (shmid < 0)
 		return -1;
-	syslog(LOG_INFO, "buzzer-ctl-daemon: init done.\n");
+	syslog(LOG_INFO, "init done.\n");
 	worker_init();
 
 clean:	
@@ -76,6 +77,6 @@ clean:
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
-	syslog(LOG_INFO, "buzzer-ctl-daemon exited.\n");
+	syslog(LOG_INFO, "exited.\n");
 	return 0;
 }

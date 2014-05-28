@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 		print_help();
 		return -1;
 	}
+	openlog("led_ctl", LOG_NDELAY|LOG_PID|LOG_CONS|LOG_PERROR, LOG_DAEMON);
 	if ((fd=open(LOCK_FILE, O_RDWR|O_CREAT, 0644)) < 0) {
 		syslog(LOG_INFO, "create lock file failed.\n");
 		return -1;
@@ -91,7 +92,7 @@ int main(int argc, char *argv[])
 				hw_op.release = NULL;
 				break;
 			} else {
-				syslog(LOG_ERR, "led_ctl: invalid type %s\n", optarg);
+				syslog(LOG_ERR, "invalid type %s\n", optarg);
 				print_help();
 				return -1;
 			}
@@ -116,7 +117,6 @@ int main(int argc, char *argv[])
 	if (systype == SYS_3U)
 		return 0;
 	if (hw_op.init() < 0) {
-		syslog(LOG_ERR, "led_ctl: init i2c failed.\n");
 		goto quit;
 	}	
 	if (worker_init() < 0)
@@ -131,7 +131,7 @@ clean:
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
-	syslog(LOG_INFO, "led_ctl: exited.\n");
+	syslog(LOG_INFO, "clean shm successed.\n");
 	return 0;
 quit:
 	shm_release();
@@ -140,6 +140,6 @@ quit:
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
-	syslog(LOG_INFO, "led_ctl:error quit.\n");
+	syslog(LOG_INFO, "error quit.\n");
 	return -1;
 }

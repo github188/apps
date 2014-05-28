@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <syslog.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -131,29 +132,35 @@ int i2c_init_3U(void)
 	if (i2c_is_initialized)
 		return 0;
 	fd = open(I2C_DEV, O_RDWR);
-	if (fd < 0)
+	if (fd < 0) {
+		syslog(LOG_ERR,"open device failed: %s\n", I2C_DEV);
 		return PERR_NODEV;
-
+	}
 	if (ioctl(fd, I2C_SLAVE_FORCE, I2C_ADDRESS_3U1) < 0) {
 		close(fd);
+		syslog(LOG_ERR, "ioctl I2C_ADDRESS_3U1 failed\n");
 		return PERR_NODEV;
 	}
 
 	if (do_init_3U(fd) < 0) {
 		close(fd);
+		syslog(LOG_ERR, "init 3U1 reg failed\n");
 		return PERR_IOERR;
 	}
 
 	if (ioctl(fd, I2C_SLAVE_FORCE, I2C_ADDRESS_3U2) < 0) {
 		close(fd);
+		syslog(LOG_ERR, "ioctl I2C_ADDRESS_3U2 failed\n");
 		return PERR_IOERR;
 	}
 
 	if (do_init_3U(fd) < 0) {
 		close(fd);
+		syslog(LOG_ERR, "init 3U2 reg failed\n");
 		return PERR_IOERR;
 	}
 
+	
 	i2c_is_initialized = 1;
 	i2c_fd = fd;
 	return 0;
@@ -213,22 +220,11 @@ int i2c_write_disk_2U(int mode)
 	return PERR_SUCCESS;
 }
 
-int i2c_init_2U(void)
+int do_init_2U(int fd)
 {
-	int fd, ret;
+	int ret;
 	uint8_t g_config_reg_value;
 	int value;
-
-	if (i2c_is_initialized)
-		return 0;
-	fd = open(I2C_DEV, O_RDWR);
-	if (fd < 0)
-		return PERR_NODEV;
-
-	if (ioctl(fd, I2C_SLAVE_FORCE, I2C_ADDRESS_2U) < 0) {
-		close(fd);
-		return PERR_NODEV;
-	}
 
 	g_config_reg_value = i2c_smbus_read_byte_data(fd, I2C_CONF_2U);
 	if (g_config_reg_value == 255) {
@@ -264,6 +260,34 @@ int i2c_init_2U(void)
 	ret = i2c_smbus_write_byte_data(fd, I2C_GP2_MODE2, value);
 	if (ret == -1)
 		return PERR_IOERR;
+
+
+	return 0;
+}
+int i2c_init_2U(void)
+{
+	int fd, ret;
+	uint8_t g_config_reg_value;
+	int value;
+
+	if (i2c_is_initialized)
+		return 0;
+	fd = open(I2C_DEV, O_RDWR);
+	if (fd < 0) {
+		syslog(LOG_ERR, "open device failed: %s\n", I2C_DEV);
+		return PERR_NODEV;
+	}
+	if (ioctl(fd, I2C_SLAVE_FORCE, I2C_ADDRESS_2U) < 0) {
+		close(fd);
+		syslog(LOG_ERR, "ioctl I2C_ADDRESS_2U failed\n");
+		return PERR_NODEV;
+	}
+
+	if (do_init_2U(fd) < 0) {
+		close(fd);
+		syslog(LOG_ERR, "init 2U reg failed\n");
+		return PERR_IOERR;
+	}
 
 	i2c_is_initialized = 1;
 	i2c_fd = fd;
