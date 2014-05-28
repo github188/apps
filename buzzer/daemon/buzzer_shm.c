@@ -87,13 +87,16 @@ void shm_release(void)
 	semid = semget(shmkey, 0, 0666);
 	shmid = shmget(shmkey, 0, 0666);
 	ret = shmctl(shmid, IPC_RMID, NULL);
-	if (ret == -1) {
-		syslog(LOG_NOTICE, "buzzer_ctl: release shm failed.\n");
-		return;
+	if (ret < 0) {
+		syslog(LOG_NOTICE, "release shm failed.\n");
+	} else {
+		syslog(LOG_NOTICE, "release shm successed.\n");
 	}
+
 	ret = semctl(semid, 0, IPC_RMID);
-	if (ret == -1) {
-		syslog(LOG_NOTICE, "buzzer_ctl: release sem failed.\n");
-		return;
+	if (ret < 0) {
+		syslog(LOG_NOTICE, "release sem failed.\n");
+	} else {
+		syslog(LOG_NOTICE, "release sem successed.\n");
 	}
 }

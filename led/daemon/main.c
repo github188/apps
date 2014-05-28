@@ -131,7 +131,7 @@ clean:
 	lock.l_type = F_UNLCK;
 	fcntl(fd, F_SETLK, &lock);
 	unlink(LOCK_FILE);
-	syslog(LOG_INFO, "clean shm successed.\n");
+	syslog(LOG_INFO, "exited.\n");
 	return 0;
 quit:
 	shm_release();
