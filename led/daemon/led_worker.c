@@ -69,7 +69,7 @@ void do_work(void)
 			if (taskp->freq > n)
 				n = taskp->freq;
 			if (taskp->freq == FREQ_NONE) {
-				syslog(LOG_ERR, "led_ctl: disk %d freq not set.\n", i+1);
+				syslog(LOG_ERR, "disk %d freq not set.\n", i+1);
 				continue;
 			}
 			sts[i+1].mode = MODE_BLINK;
@@ -114,7 +114,7 @@ void do_work(void)
 	}
 	if (flag) {
 		if (hw_op.set(mode) < 0) {
-			syslog(LOG_ERR, "led_ctl: set mode failed'\n");
+			syslog(LOG_ERR, "set mode failed'\n");
 			quit = 1;
 		}
 	}
@@ -132,13 +132,13 @@ int worker_init(void)
 	value.it_interval.tv_usec = 0 ;
 
 	if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
-		syslog(LOG_ERR, "led_ctl: Setitimer failed.\n");
+		syslog(LOG_ERR, "Setitimer failed.\n");
 		return -1;
 	}
 	signal(SIGALRM, timer_cb);
 	signal(SIGINT, sig_quit);
 	signal(SIGTERM, sig_quit);
-	syslog(LOG_INFO, "led_ctl:init done.\n");
+	syslog(LOG_INFO, "init done.\n");
 	while (1) {
 		pause();
 		if (go) {
@@ -149,7 +149,7 @@ int worker_init(void)
 				value.it_interval.tv_usec = 0;
 				value.it_interval.tv_sec = 0;
 				if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
-					syslog(LOG_ERR, "led_ctl:clean timer failed.\n");
+					syslog(LOG_ERR, "clean timer failed.\n");
 					return -1;
 				}
 
@@ -169,7 +169,7 @@ int worker_init(void)
 					break;
 				}
 				if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
-					syslog(LOG_ERR, "led_ctl: reset setitimer failed.\n");
+					syslog(LOG_ERR, "reset setitimer failed.\n");
 					return -1;
 				}
 
@@ -182,7 +182,7 @@ int worker_init(void)
 		}
 		if (quit) {
 			if (hw_op.set(0xffff) != 0) {
-				syslog(LOG_ERR, "led_ctl: exitting led off  disk failed.\n");
+				syslog(LOG_ERR, "exitting led off  disk failed.\n");
 			}
 			return 0;
 		}

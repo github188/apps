@@ -24,7 +24,7 @@ int sem_init()
 
 	semid = semget(semkey, 1, 0666|IPC_CREAT);
 	if (semid == -1) {
-		syslog(LOG_ERR, "led-ctl: create sem failed.\n");
+		syslog(LOG_ERR, "create sem failed.\n");
 		return -1;
 	}
 
@@ -62,7 +62,7 @@ int shm_init()
 	if ((shmid = shmget(shmkey, 0,  0666)) >= 0) {
 		addr = (shm_t *)shmat(shmid, 0, 0);
 		if (addr == (shm_t*)-1) {
-			syslog(LOG_ERR, "led_ctl: shmat failed.\n");
+			syslog(LOG_ERR, "shmat failed.\n");
 			return -1;
 		}
 
@@ -72,12 +72,12 @@ int shm_init()
 	size = (sizeof(led_task_t) * (disk_max_num + 1) + sizeof(shm_head_t) + sizeof(int));
 	shmid = shmget(shmkey, size, 0666|IPC_CREAT);
 	if (shmid == -1) {
-		syslog(LOG_ERR, "led_ctl: create shm failed.\n");
+		syslog(LOG_ERR, "create shm failed.\n");
 		return -1;
 	}
 	addr = (shm_t *)shmat(shmid, 0, 0);
 	if (addr == (shm_t*)-1) {
-		syslog(LOG_ERR, "led_ctl: shmat failed.\n");
+		syslog(LOG_ERR, "shmat failed.\n");
 		return -1;
 	}
 	

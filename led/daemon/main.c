@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 		print_help();
 		return -1;
 	}
-	openlog("led_ctl", LOG_NDELAY|LOG_PID|LOG_CONS|LOG_PERROR, LOG_DAEMON);
+	openlog("led-ctl-daemon", LOG_NDELAY|LOG_PID|LOG_CONS|LOG_PERROR, LOG_DAEMON);
 	if ((fd=open(LOCK_FILE, O_RDWR|O_CREAT, 0644)) < 0) {
 		syslog(LOG_INFO, "create lock file failed.\n");
 		return -1;
@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
 
 	if ((fcntl(fd, F_SETLK, &lock)) < 0) {
 		syslog(LOG_ERR, "get file lock failed. eixting...\n");
-		fprintf(stderr, "get file lock failed. exiting...\n");
 		return -1;
 	}
 	if (open(SHMKEY, O_RDWR|O_CREAT, 0644) < 0) {
