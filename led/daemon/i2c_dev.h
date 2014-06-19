@@ -34,7 +34,7 @@
 
 #define I2C_CONF_2U	(0x22)
 #define I2C_CONF_3U	(0x22)
-
+#define I2C_CONF_DISKPW (0x22)
 enum {
 	PERR_SUCCESS	= 0,	/* ok */
 	PERR_NODEV	= -1,	/* Can't open i2c-0 */
@@ -46,6 +46,10 @@ enum {
 	I2C_ADDRESS_2U= (0x30 >> 1),
 	I2C_ADDRESS_3U1 = (0x3C >> 1),
 	I2C_ADDRESS_3U2= (0x3E >> 1),
+
+	I2C_ADDRESS_DISKPW1 = (0x32 >> 1),
+        I2C_ADDRESS_DISKPW2 = (0x34 >> 1),
+
 };
 
 enum {
@@ -61,10 +65,20 @@ enum {
 	I2C_LED_OFF	= 0x1,
 	I2C_LED_ON	= 0x0,
 
+	I2C_DISKPW_ON   = 0x1,
+	I2C_DISKPW_OFF  = 0x0,
+	I2C_MASK  = (0x3),
+	
 
 	I2C_LED_DISK_MASK_2U	= 0x3,
 	I2C_LED_DISK_MASK_3U	= 0x3,
 };
+
+int i2c_diskpw_set(int disk_id, int mode);
+int i2c_read_diskpw(void);
+int i2c_write_diskpw(int v);
+int i2c_init_diskpw(void);
+void i2c_release_diskpw(void);
 
 int i2c_write_disk_2U(int v);
 int i2c_write_disk_3U(int v);

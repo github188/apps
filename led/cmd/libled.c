@@ -13,6 +13,7 @@
 
 static shm_t *addr = (shm_t *)-1;
 static int initalized;
+static int power_initalized;
 static int semid;
 
 #define LED_CHECK_INIT()	do {			\
@@ -20,7 +21,11 @@ static int semid;
 		if (ret == -1)				\
 			return -1;			\
 	} while (0)
-
+#define POWER_CHECK_INIT()	do {			\
+		int ret = diskpw_init();		\
+		if (ret == -1)				\
+			return -1;			\
+	} while (0)
 #ifdef ONLY_INTERFACE
 int led_init(void)
 {
@@ -66,7 +71,18 @@ int sysled_get_count(void)
 {
 	return 0;
 }
-
+int diskpw_init(void)
+{
+	return 0;
+}
+void diskpw_release(void)
+{
+	return 0;
+}
+int diskpw_set(int id, enum DISKPW_STATUS mode, long time)
+{
+	return 0;
+}
 #else
 
 
@@ -396,5 +412,47 @@ int sysled_get_count(void)
 {
 	LED_CHECK_INIT();
 	return addr->task[0].count;
+}
+
+
+int diskpw_init(void)
+{
+	if (led_init() < 0)
+		return -1;
+	power_initalized = 1;
+	return 0;
+}
+
+void diskpw_release(void)
+{
+	if (power_initalized) {
+		shmdt(addr);
+		addr = (shm_t *)-1;
+		power_initalized = 0;
+	}
+}
+
+int diskpw_set(int id, enum DISKPW_STATUS mode, long time)
+{
+	if (id <= 0 || id > 16 || time < 0)
+		return -1;
+	POWER_CHECK_INIT();
+	if (addr->sys & SYS_S3U) {
+		p(semid);
+		if (mode == POWER_ON) {
+			addr->task[id].power.mode = POWER_ON;
+			addr->task[id].power.time = 0;
+		} else if (mode == POWER_OFF) {
+			addr->task[id].power.mode = POWER_OFF;
+			addr->task[id].power.time = 0;
+		} else if (mode == POWER_RESET) {
+			addr->task[id].power.mode = POWER_RESET;
+			addr->task[id].power.time = time;
+		}
+		v(semid);
+		return 0;
+	} else {
+		return -1;
+	} 
 }
 #endif

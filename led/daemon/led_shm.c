@@ -69,7 +69,9 @@ int shm_init()
 		return shmid;
 	}
 
-	size = (sizeof(led_task_t) * (disk_max_num + 1) + sizeof(shm_head_t) + sizeof(int));
+	size = (sizeof(led_task_t) * (disk_max_num + 1) + 
+		sizeof(shm_head_t) + 
+		sizeof(int));
 	shmid = shmget(shmkey, size, 0666|IPC_CREAT);
 	if (shmid == -1) {
 		syslog(LOG_ERR, "create shm failed.\n");
@@ -108,6 +110,8 @@ int shm_init()
 		addr->task[i].freq = FREQ_NONE;
 		addr->task[i].count = 0;
 		addr->task[i].time = TIME_FOREVER;
+		addr->task[i].power.mode = POWER_OFF;
+		addr->task[i].power.time = 0;
 	}
 	
 	return shmid;

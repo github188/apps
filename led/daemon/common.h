@@ -30,6 +30,10 @@
 #define COUNT_NORMAL	4
 #define COUNT_SLOW	8
 
+#define POWER_OFF 	0
+#define POWER_ON 	1
+#define POWER_RESET 	2
+
 #define TIME_FOREVER	-200
 
 #define VERSION	0x101
@@ -41,12 +45,18 @@ typedef struct hw_style {
 	void (*release) (void);
 }hw_t;
 
+typedef struct power_status power_status_t;
+struct power_status {
+	int mode;
+	long time;
+};
 typedef struct led_task led_task_t;
 struct led_task {
 	int mode;
 	long time;
 	int freq;
 	int count;
+	power_status_t power;
 };
 
 typedef struct shm_head shm_head_t;

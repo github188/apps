@@ -39,7 +39,7 @@ void do_work(void)
 	int i;
 	int n = 0;
 	int flag = 0;
-
+      
 	for (i=0; i < disk_max_num; i++) {
 		taskp = &addr->task[i+1];
 		if (taskp->mode & MODE_ON) {
@@ -93,7 +93,7 @@ void do_work(void)
 			} 
 #ifdef _DEBUG			
 			printf("led: %d mode: %d freq: %d  time: %ld count: %d\n",
-			       i+1, taskp->mode, taskp->freq, taskp->time, count[i+1]);
+					i+1, taskp->mode, taskp->freq, taskp->time, count[i+1]);
 #endif
 		}
 
@@ -110,7 +110,7 @@ void do_work(void)
 				mode = mode | (1 << i);
 			}
 		}
-		    
+
 	}
 	if (flag) {
 		if (hw_op.set(mode) < 0) {
@@ -118,6 +118,64 @@ void do_work(void)
 			quit = 1;
 		}
 	}
+
+	/*简易3U磁盘上下电功能*/
+	if (addr->sys & SYS_S3U) {
+		power_status_t *ppower=NULL;
+		int new, old;
+		
+		old = i2c_read_diskpw();
+		if (old < 0) {
+			syslog(LOG_ERR, "read disk power status failed.\n");
+			quit = 1;
+		}
+		new = old;
+		for(i=0; i<DISK_NUM_3U; i++) {
+			ppower = &addr->task[i+1].power;
+			if (ppower->mode == POWER_ON) {
+				new = new | (1 << i);
+			} else if (ppower->mode == POWER_OFF) {
+				new = new & ~(1 << i);
+			} else if (ppower->mode == POWER_RESET) {
+						
+				if (ppower->time > 0) {
+					new = new & ~(1 << i);
+      					if (j)
+                                		ppower->time = ppower->time - WORKER_TIMER * (8/j);
+                        		else
+                                		ppower->time = ppower->time - WORKER_TIMER * 8;
+
+				} else {
+					new = new | (1 << i);
+					ppower->mode = POWER_ON;
+					ppower->time = 0;
+				}
+			}
+		}
+		if (new != old) {
+			if (i2c_write_diskpw(new) < 0) {
+				syslog(LOG_ERR, "set disk power failed.\n");
+				quit = 1;
+			}	
+		}
+#ifdef _DEBUG
+		printf("old: %d\t new: %d   %d\n", old, new, WORKER_TIMER * 8);
+#endif
+	}
+
+#ifdef _DEBUG
+	printf("sys:%d\n\nversion:%d\nmagic:%d\ndisknum:%d\n\n",addr->sys,addr->shm_head.version,
+		addr->shm_head.magic, addr->shm_head.disk_num);
+	for (i=0; i <= disk_max_num; i++) {
+		printf("%d mode:%d\ttime:%ld\tfreq:%d\tcount:%d\n",i, addr->task[i].mode, addr->task[i].time,
+			addr->task[i].freq, addr->task[i].count);
+	}
+	printf("\n");
+	for (i=1; i <= disk_max_num; i++) {
+		printf("%d mode:%d\ttime:%ld\n", i, addr->task[i].power.mode, addr->task[i].power.time);
+	}
+#endif
+ 
 	go = 0;
 	j = n;
 }
@@ -154,19 +212,19 @@ int worker_init(void)
 				}
 
 				switch (j) {
-				case FREQ_NORMAL:
-					value.it_value.tv_usec = WORKER_TIMER * 4;
-					value.it_interval.tv_usec = WORKER_TIMER * 4;
-					break;
-				case FREQ_NONE: 
-				case FREQ_SLOW: 
-					value.it_value.tv_sec = 1;
-					value.it_interval.tv_sec = 1;
-					break;
-				default:
-					value.it_value.tv_usec = WORKER_TIMER;
-					value.it_interval.tv_usec = WORKER_TIMER;
-					break;
+					case FREQ_NORMAL:
+						value.it_value.tv_usec = WORKER_TIMER * 4;
+						value.it_interval.tv_usec = WORKER_TIMER * 4;
+						break;
+					case FREQ_NONE: 
+					case FREQ_SLOW: 
+						value.it_value.tv_sec = 1;
+						value.it_interval.tv_sec = 1;
+						break;
+					default:
+						value.it_value.tv_usec = WORKER_TIMER;
+						value.it_interval.tv_usec = WORKER_TIMER;
+						break;
 				}
 				if (setitimer(ITIMER_REAL, &value, NULL) < 0) {
 					syslog(LOG_ERR, "reset setitimer failed.\n");
@@ -177,7 +235,7 @@ int worker_init(void)
 			}
 #ifdef _DEBUG
 			printf("now timer tv_sec: %d tv_usec: %d freq: %d\n", (int)value.it_interval.tv_sec,
-			       (int)value.it_interval.tv_usec, freq);
+					(int)value.it_interval.tv_usec, freq);
 #endif		
 		}
 		if (quit) {
