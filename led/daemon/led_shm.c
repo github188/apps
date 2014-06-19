@@ -110,7 +110,7 @@ int shm_init()
 		addr->task[i].freq = FREQ_NONE;
 		addr->task[i].count = 0;
 		addr->task[i].time = TIME_FOREVER;
-		addr->task[i].power.mode = POWER_OFF;
+		addr->task[i].power.mode = POWER_NOSET;
 		addr->task[i].power.time = 0;
 	}
 	

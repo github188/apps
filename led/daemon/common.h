@@ -33,6 +33,7 @@
 #define POWER_OFF 	0
 #define POWER_ON 	1
 #define POWER_RESET 	2
+#define POWER_NOSET 	4
 
 #define TIME_FOREVER	-200
 
