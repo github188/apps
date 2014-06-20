@@ -3,8 +3,7 @@ set -e
 
 # individual modules
 DISK_BIN="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
-		us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset \
-		diskpower/diskpower-ctl"
+		us/md-auto-resume/mdscan/mdinfo diskpower/diskpower-ctl"
 UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'
@@ -13,7 +12,7 @@ SYSCONF_BIN='sys-conf/* sys-conf/.build-date'
 COMMON_BIN='common/*'
 MON_BIN='monitor/*'
 WEB_BIN='web/*'
-MISC_BIN="watchdog/watchdog led/daemon/led-ctl-daemon led/cmd/led-ctl \
+MISC_BIN="watchdog/watchdog led/daemon/led-ctl-daemon led/cmd/disk_reset led/cmd/led-ctl \
 		buzzer/daemon/buzzer-ctl-daemon buzzer/cmd/buzzer-ctl"
 
 # sync list

@@ -9,11 +9,6 @@ enum LED_STATUS {
 	LED_BLINK_NORMAL	= 0x05,
 	LED_BLINK_SLOW		= 0x06,
 };
-enum DISKPW_STATUS {
-	POWER_OFF 		= 0x00,
-	POWER_ON 		= 0x01,
-	POWER_RESET 		= 0x02,
-};
 
 int led_init(void);
 void led_release(void);
@@ -39,12 +34,5 @@ int diskled_get_all(enum LED_STATUS *sts_array, int size);
 int sysled_set(enum LED_STATUS sts);
 int sysled_get(enum LED_STATUS *sts);
 int sysled_get_count(void);
-
-
-int diskpw_init(void);
-void diskpw_release(void);
-/*设置硬盘上电， mode为设置的模式， 如果设置的模式为reset，time为中间等待的时间
- * 否则time为0*/
-int diskpw_set(int id, enum DISKPW_STATUS mode, long time);
 #endif // LIBLED__H__
 

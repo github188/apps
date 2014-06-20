@@ -20,8 +20,8 @@ mkdir -p $TMP_DIR
 TMP_DIR_LED=$TMP_DIR/jw-lib/led
 rm -fr $TMP_DIR_LED
 mkdir -p $TMP_DIR_LED
-cp led/cmd/libled.[has]* led/cmd/led-ctl.c led/daemon/led-ctl-daemon \
-led/readme.txt $TMP_DIR_LED/
+cp led/cmd/libled.[has]* led/cmd/libdiskpw.[has]* led/cmd/led-ctl.c led/cmd/disk_reset.c \
+ led/daemon/led-ctl-daemon led/readme.txt $TMP_DIR_LED/
 
 TMP_DIR_BUZZER=$TMP_DIR/jw-lib/buzzer
 rm -fr $TMP_DIR_BUZZER

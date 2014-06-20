@@ -136,7 +136,15 @@ void do_work(void)
 			if (ppower->mode == POWER_NOSET) {
 				continue;
 			} else if (ppower->mode == POWER_ON) {
-				new = new | (1 << i);
+				if (ppower->time > 0) {
+      					if (j)
+                                		ppower->time = ppower->time - WORKER_TIMER * (8/j);
+                        		else
+                                		ppower->time = ppower->time - WORKER_TIMER * 8;
+
+				} else {
+					new = new | (1 << i);
+				}
 			} else if (ppower->mode == POWER_OFF) {
 				new = new & ~(1 << i);
 			} else if (ppower->mode == POWER_RESET) {
