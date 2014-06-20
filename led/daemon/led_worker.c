@@ -170,7 +170,7 @@ void do_work(void)
 			}	
 		}
 #ifdef _DEBUG
-		printf("old: %d\t new: %d   %d\n", old, new, WORKER_TIMER * 8);
+		printf("old: %d\t new: %d\n", old, new);
 #endif
 	}
 

@@ -113,7 +113,7 @@ void diskpw_release(void)
 
 int diskpw_set(int id, enum DISKPW_STATUS mode, int seconds)
 {
-	if (id <= 0 || id > 16 || seconds < 0)
+	if (id <= 0 || id > 16 || seconds < 0 || seconds > 16)
 		return -1;
 	POWER_CHECK_INIT();
 	if (addr->sys & SYS_S3U) {

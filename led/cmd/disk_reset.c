@@ -9,13 +9,14 @@
 
 struct option longopts[] = {
 	{"index",		1, NULL, 'i'},
+	{"mode", 		1, NULL, 'm'},
 	{"delay",		1, NULL, 'd'},
 	{0,0,0,0}
 };
 
 int idx = 0;
 int delay = 0;
-
+int mode = POWER_RESET;
 void usage()
 {
 	fprintf(stderr, "disk_reset --index|-i <idx> [--delay|-d <seconds>]\n"
@@ -26,7 +27,7 @@ void usage()
 int parser(int argc, char *argv[])
 {
 	int c, freq = 0;
-	while((c=getopt_long(argc, argv, "i:d:h", longopts, NULL))!=-1) {
+	while((c=getopt_long(argc, argv, "i:d:m:h", longopts, NULL))!=-1) {
 		switch (c) {
 		case 'i':
 		if (optarg)
@@ -34,6 +35,16 @@ int parser(int argc, char *argv[])
 		case 'd':
 		if (optarg)
 			delay = atoi(optarg);
+		break;
+		case 'm':
+			if (!strcmp(optarg, "on")) {
+				mode = POWER_ON;
+			} else if (!strcmp(optarg, "off")) {
+				mode = POWER_OFF;
+			} else {
+				fprintf(stderr, "mode invalid.\n");
+				return -1;
+			}
 		break;
 		case 'h':
 		case -1:
@@ -69,7 +80,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (diskpw_set(idx, POWER_RESET, delay) < 0) {
+	if (diskpw_set(idx, mode, delay) < 0) {
 		fprintf(stderr, "disk power set failed.\n");
 		return -1;
 	}
