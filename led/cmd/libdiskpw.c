@@ -10,7 +10,7 @@
 #include "../daemon/common.h"
 #include "../../pic_ctl/pic_ctl.h"
 
-#define  SECONDS_MAX 16
+#define  SECONDS_MAX 15
 
 static shm_t *addr = (shm_t *)-1;
 static int initalized;
