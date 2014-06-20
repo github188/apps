@@ -6,7 +6,7 @@ sync_apps()
 	echo "copy all app files ..."
 
 	local disk_bin="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
-			us/md-auto-resume/mdscan/mdinfo diskpower/diskpower-ctl"
+			us/md-auto-resume/mdscan/mdinfo"
 	local udv_bin="udv/* nas/libnas.py"
 	local webiface_bin="web-iface/sys-manager"
 	local sysconf_bin="sys-conf/* sys-conf/.build-date"

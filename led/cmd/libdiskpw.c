@@ -10,6 +10,8 @@
 #include "../daemon/common.h"
 #include "../../pic_ctl/pic_ctl.h"
 
+#define  SECONDS_MAX 16
+
 static shm_t *addr = (shm_t *)-1;
 static int initalized;
 static int semid;
@@ -111,10 +113,20 @@ void diskpw_release(void)
 	}
 }
 
+int diskpw_get_num(void)
+{
+	POWER_CHECK_INIT();
+	return addr->shm_head.disk_num;
+}
+
 int diskpw_set(int id, enum DISKPW_STATUS mode, int seconds)
 {
-	if (id <= 0 || id > 16 || seconds < 0 || seconds > 16)
+	if (id <= 0 || id > diskpw_get_num() || seconds < 0)
 		return -1;
+
+	if (seconds > SECONDS_MAX)
+		seconds = SECONDS_MAX;
+	
 	POWER_CHECK_INIT();
 	if (addr->sys & SYS_S3U) {
 		p(semid);

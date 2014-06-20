@@ -99,6 +99,7 @@ pic_ctl/utils/disk_reset
 Watchdog/watchdog
 uart_fix/uart_fix
 led/cmd/led-ctl
+led/cmd/disk_reset
 led/daemon/led-ctl-daemon
 watchdog/watchdog
 buzzer/cmd/buzzer-ctl

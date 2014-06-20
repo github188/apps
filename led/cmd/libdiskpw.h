@@ -8,6 +8,7 @@ enum DISKPW_STATUS {
 
 int diskpw_init(void);
 void diskpw_release(void);
+int diskpw_get_num(void);
 /*
  * 设置硬盘上下电， mode为设置的模式，
  * 如果设置的模式为reset，seconds为中间等待的时间,最大为16，

@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	
-	if (idx > 16 || idx < 1) {
+	if (idx > diskpw_get_num() || idx < 1) {
 		fprintf(stderr, "input idx error.\n");
 		return -1;
 	}
@@ -75,10 +75,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (delay > 16) {
-		fprintf(stderr, "delay more than 16.\n");
-		return -1;
-	}
 
 	if (diskpw_set(idx, mode, delay) < 0) {
 		fprintf(stderr, "disk power set failed.\n");

@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
 	int c, fd;
 	int shmid, semid;
 	struct flock lock;
-	int diskpw_flag = 0;
 	lock.l_type = F_WRLCK;
 	lock.l_start = 0;
 	lock.l_whence = SEEK_SET;
@@ -72,7 +71,6 @@ int main(int argc, char *argv[])
 				hw_op.init = i2c_init_3U;
 				hw_op.set = i2c_write_disk_3U;
 				hw_op.release = i2c_release_3U;
-				diskpw_flag = 1;
 				break;
 			} else if (!strcmp(optarg, "2U8-STANDARD")) {
 				systype = SYS_2U;
@@ -120,10 +118,6 @@ int main(int argc, char *argv[])
 	if (hw_op.init() < 0) {
 		goto quit;
 	}
-	if (diskpw_flag) {
-		if (i2c_init_diskpw() < 0)
-			goto quit;
-	}	
 	if (worker_init() < 0)
 		goto quit;
 	worker_release();

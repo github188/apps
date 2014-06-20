@@ -398,7 +398,7 @@ int i2c_init_3U(void)
 	
 	i2c_is_initialized = 1;
 	i2c_fd = fd;
-	return 0;
+	return i2c_init_diskpw();
 
 }
 

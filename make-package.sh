@@ -3,7 +3,7 @@ set -e
 
 # individual modules
 DISK_BIN="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
-		us/md-auto-resume/mdscan/mdinfo diskpower/diskpower-ctl"
+		us/md-auto-resume/mdscan/mdinfo"
 UDV_BIN='udv/*'
 WEBIFACE_BIN='web-iface/sys-manager'
 ISCSI_BIN='iscsi/*'

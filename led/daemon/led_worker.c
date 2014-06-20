@@ -137,10 +137,10 @@ void do_work(void)
 				continue;
 			} else if (ppower->mode == POWER_ON) {
 				if (ppower->time > 0) {
-      					if (j)
-                                		ppower->time = ppower->time - WORKER_TIMER * (8/j);
-                        		else
-                                		ppower->time = ppower->time - WORKER_TIMER * 8;
+					if (j)
+						ppower->time = ppower->time - WORKER_TIMER * (8/j);
+					else
+						ppower->time = ppower->time - WORKER_TIMER * 8;
 
 				} else {
 					new = new | (1 << i);
@@ -151,10 +151,10 @@ void do_work(void)
 						
 				if (ppower->time > 0) {
 					new = new & ~(1 << i);
-      					if (j)
-                                		ppower->time = ppower->time - WORKER_TIMER * (8/j);
-                        		else
-                                		ppower->time = ppower->time - WORKER_TIMER * 8;
+						if (j)
+							ppower->time = ppower->time - WORKER_TIMER * (8/j);
+						else
+							ppower->time = ppower->time - WORKER_TIMER * 8;
 
 				} else {
 					new = new | (1 << i);
