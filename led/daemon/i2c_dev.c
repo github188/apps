@@ -241,7 +241,7 @@ int i2c_init_diskpw(void)
 
 }
 
-void i2c_release_disk(void)
+void i2c_release_diskpw(void)
 {
 	i2c_diskpw_fd = 0;
 	i2c_diskpw_initialized = 0;
@@ -406,7 +406,7 @@ void i2c_release_3U(void)
 {
 	close(i2c_fd);
 	i2c_is_initialized = 0;
-
+	i2c_release_diskpw();
 }
 
 /* 2U */

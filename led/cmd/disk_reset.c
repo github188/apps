@@ -80,5 +80,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "disk power set failed.\n");
 		return -1;
 	}
+	diskpw_release();
+
 	return 0;
 }
