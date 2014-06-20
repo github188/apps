@@ -14,16 +14,36 @@
 
 export "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 
+SYS_6026B_T="1001"
+SYS_6026N_T="1002"
+SYS_6036B_T="1003"
+SYS_6036C_T="1004"
+SYS_6036Z_T="1005"
+
 do_driver_start()
 {
+	hw_type="unkown"
+	product_name=`dmidecode -s baseboard-product-name 2>/dev/null`
+	if [ "$product_name" = "$SYS_6026B_T" ]; then
+		hw_type="2U8-STANDARD"
+	elif  [ "$product_name" = "$SYS_6026N_T" ]; then
+		hw_type="2U8-ATOM"
+	elif  [ "$product_name" = "$SYS_6036B_T" ]; then
+		hw_type="3U16-SIMPLE"
+	elif  [ "$product_name" = "$SYS_6036C_T" -o "$product_name" = "$SYS_6036Z_T" ]; then
+		hw_type="3U16-STANDARD"
+	fi
+
+	if [ "$hw_type" != "unkown" ]; then
+		echo $hw_type >/opt/jw-conf/system/hardware-type
+	fi
+
 	modprobe i2c-i801
 	modprobe i2c-dev
 	sys_dir=`ls -d /sys/module/i2c_i801/drivers/pci\:i801_smbus/0000\:00\:*/i2c-* 2>/dev/null`
 	i2c_node=`basename $sys_dir`
 	if [ "$i2c_node" != "" ]; then
-		cd /dev
-		ln -sfn $i2c_node i2c-i801
-		cd - >/dev/null
+		ln -sfn $i2c_node /dev/i2c-i801
 	fi
 
 	modprobe nct6106
@@ -38,16 +58,6 @@ do_driver_start()
 		modprobe smbus-power
 	fi
 	modprobe sio_watchdog
-	
-	if [ `hwtype` = "3U16-SIMPLE" ]; then
-		for i in `seq 4`
-		do
-			diskpower-ctl -c $i -m on
-			if [ $i -lt 4 ]; then
-				sleep 1
-			fi
-		done
-	fi
 }
 
 do_driver_stop()
