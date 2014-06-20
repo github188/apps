@@ -132,8 +132,19 @@ void do_work(void)
 		new = old;
 		for(i=0; i<DISK_NUM_3U; i++) {
 			ppower = &addr->task[i+1].power;
-			if (ppower->mode == POWER_ON) {
-				new = new | (1 << i);
+			
+			if (ppower->mode == POWER_NOSET) {
+				continue;
+			} else if (ppower->mode == POWER_ON) {
+				if (ppower->time > 0) {
+      					if (j)
+                                		ppower->time = ppower->time - WORKER_TIMER * (8/j);
+                        		else
+                                		ppower->time = ppower->time - WORKER_TIMER * 8;
+
+				} else {
+					new = new | (1 << i);
+				}
 			} else if (ppower->mode == POWER_OFF) {
 				new = new & ~(1 << i);
 			} else if (ppower->mode == POWER_RESET) {
@@ -159,7 +170,7 @@ void do_work(void)
 			}	
 		}
 #ifdef _DEBUG
-		printf("old: %d\t new: %d   %d\n", old, new, WORKER_TIMER * 8);
+		printf("old: %d\t new: %d\n", old, new);
 #endif
 	}
 

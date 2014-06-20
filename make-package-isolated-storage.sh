@@ -6,14 +6,13 @@ sync_apps()
 	echo "copy all app files ..."
 
 	local disk_bin="us/us_d us/us_cmd us/script/* us/md-auto-resume/md-assemble.sh \
-			us/md-auto-resume/mdscan/mdinfo pic_ctl/utils/disk_reset \
-			diskpower/diskpower-ctl"
+			us/md-auto-resume/mdscan/mdinfo diskpower/diskpower-ctl"
 	local udv_bin="udv/* nas/libnas.py"
 	local webiface_bin="web-iface/sys-manager"
 	local sysconf_bin="sys-conf/* sys-conf/.build-date"
 	local common_bin="common/*"
 	local mon_bin="monitor/sys-mon monitor/libsysmon.py"
-	local misc_bin="led/daemon/led-ctl-daemon led/cmd/led-ctl \
+	local misc_bin="led/daemon/led-ctl-daemon led/cmd/led-ctl led/cmd/disk_reset \
 			buzzer/daemon/buzzer-ctl-daemon buzzer/cmd/buzzer-ctl"
 	
 	# sync list

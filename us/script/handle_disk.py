@@ -98,7 +98,7 @@ def handle_disk_remove_kicked(diskinfo, event):
 			if hardware_type() == '3U16-STANDARD':
 				os.system('disk_reset -i %s -d 5 >/dev/null 2>&1' % diskinfo.slot[2:])
 			elif hardware_type() == '3U16-SIMPLE':
-				os.system('diskpower-ctl -i %s -r 5 >/dev/null 2>&1' % diskinfo.slot[2:])
+				os.system('disk_reset -i %s -d 5 >/dev/null 2>&1' % diskinfo.slot[2:])
 
 		# tmpfs下标示正在处理raid事件, 然后从md删除磁盘
 		rebuilder_cn = inc_md_rebuilder_cnt(basename(mdattr.dev))

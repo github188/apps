@@ -65,6 +65,19 @@ int shm_init()
 			syslog(LOG_ERR, "shmat failed.\n");
 			return -1;
 		}
+		int j;
+		for (j=0; j<=disk_max_num; j++) {
+			addr->task[j].power.mode = POWER_ON;
+			if (j <= 4)
+				addr->task[j].power.time = 1000000;
+			else if (j <= 8)
+				addr->task[j].power.time = 2000000;
+			else if (j <= 12)
+				addr->task[j].power.time = 3000000;
+			else if (j <= 16)
+				addr->task[j].power.time = 4000000;
+				
+		}
 
 		return shmid;
 	}
@@ -110,8 +123,15 @@ int shm_init()
 		addr->task[i].freq = FREQ_NONE;
 		addr->task[i].count = 0;
 		addr->task[i].time = TIME_FOREVER;
-		addr->task[i].power.mode = POWER_OFF;
-		addr->task[i].power.time = 0;
+		addr->task[i].power.mode = POWER_ON;
+		if (i <= 4)
+			addr->task[i].power.time = 1000000;
+		else if (i <= 8)
+			addr->task[i].power.time = 2000000;
+		else if (i <= 12)
+			addr->task[i].power.time = 3000000;
+		else if (i <= 16)
+			addr->task[i].power.time = 4000000;
 	}
 	
 	return shmid;

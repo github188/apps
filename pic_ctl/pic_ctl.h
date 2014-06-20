@@ -44,6 +44,7 @@ int pic_get_build_date ( uint32_t *build_date );
 int pic_set_led(uint8_t led, uint8_t sts, uint8_t freq);
 int pic_start_watchdog(void);
 int pic_stop_watchdog(void);
-
+int pic_reset_timer(int sec);
+int pic_reset_hd(int idx);
 
 #endif
