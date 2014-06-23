@@ -18,6 +18,7 @@ static volatile int go = 0;
 static volatile int quit = 0;
 static volatile int j = 0;
 static int mode;
+static unsigned int power_old;
 
 static void timer_cb(int signo)
 {
@@ -122,14 +123,9 @@ void do_work(void)
 	/*简易3U磁盘上下电功能*/
 	if (addr->sys & SYS_S3U) {
 		power_status_t *ppower=NULL;
-		int new, old;
+		int new;
 		
-		old = i2c_read_diskpw();
-		if (old < 0) {
-			syslog(LOG_ERR, "read disk power status failed.\n");
-			quit = 1;
-		}
-		new = old;
+		new = power_old;
 		for(i=0; i<DISK_NUM_3U; i++) {
 			ppower = &addr->task[i+1].power;
 			
@@ -138,12 +134,13 @@ void do_work(void)
 			} else if (ppower->mode == POWER_ON) {
 				if (ppower->time > 0) {
 					if (j)
-						ppower->time = ppower->time - WORKER_TIMER * (8/j);
+						ppower->time -= WORKER_TIMER * (8/j);
 					else
-						ppower->time = ppower->time - WORKER_TIMER * 8;
+						ppower->time -= WORKER_TIMER * 8;
 
 				} else {
 					new = new | (1 << i);
+					ppower->time = 0;
 				}
 			} else if (ppower->mode == POWER_OFF) {
 				new = new & ~(1 << i);
@@ -152,9 +149,9 @@ void do_work(void)
 				if (ppower->time > 0) {
 					new = new & ~(1 << i);
 						if (j)
-							ppower->time = ppower->time - WORKER_TIMER * (8/j);
+							ppower->time -= WORKER_TIMER * (8/j);
 						else
-							ppower->time = ppower->time - WORKER_TIMER * 8;
+							ppower->time -= WORKER_TIMER * 8;
 
 				} else {
 					new = new | (1 << i);
@@ -163,14 +160,15 @@ void do_work(void)
 				}
 			}
 		}
-		if (new != old) {
+		if (new != power_old) {
 			if (i2c_write_diskpw(new) < 0) {
 				syslog(LOG_ERR, "set disk power failed.\n");
 				quit = 1;
-			}	
+			}
+			power_old = new;	
 		}
 #ifdef _DEBUG
-		printf("old: %d\t new: %d\n", old, new);
+		printf("old: %d\t new: %d\n", power_old, new);
 #endif
 	}
 
