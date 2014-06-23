@@ -235,16 +235,17 @@ int i2c_init_diskpw(void)
 		return PERR_IOERR;
 	}
 
-	i2c_diskpw_initialized = 1;
 	i2c_diskpw_fd = fd;
+	i2c_diskpw_initialized = 1;
 	return 0;
 
 }
 
 void i2c_release_diskpw(void)
 {
-	i2c_diskpw_fd = 0;
 	i2c_diskpw_initialized = 0;
+	close(i2c_diskpw_fd);
+	i2c_diskpw_fd = -1;
 
 }
 
@@ -362,6 +363,7 @@ int do_init_3U(int fd)
 
 int i2c_init_3U(void)
 {
+	int ret = -1;
 	int fd;
 
 	if (i2c_is_initialized)
@@ -396,16 +398,20 @@ int i2c_init_3U(void)
 	}
 
 	
-	i2c_is_initialized = 1;
+	ret = i2c_init_diskpw();
+	if (ret)
+		return ret;
+	
 	i2c_fd = fd;
-	return i2c_init_diskpw();
+	i2c_is_initialized = 1;
+	return 0;
 
 }
 
 void i2c_release_3U(void)
 {
-	close(i2c_fd);
 	i2c_is_initialized = 0;
+	close(i2c_fd);
 	i2c_release_diskpw();
 }
 
@@ -524,13 +530,13 @@ int i2c_init_2U(void)
 		return PERR_IOERR;
 	}
 
-	i2c_is_initialized = 1;
 	i2c_fd = fd;
+	i2c_is_initialized = 1;
 	return 0;
 }
 
 void i2c_release_2U(void)
 {
-	close(i2c_fd);
 	i2c_is_initialized = 0;
+	close(i2c_fd);
 }
