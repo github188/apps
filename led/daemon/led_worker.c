@@ -18,7 +18,7 @@ static volatile int go = 0;
 static volatile int quit = 0;
 static volatile int j = 0;
 static int mode;
-static unsigned int power_old;
+static unsigned int power_old = 0;
 
 static void timer_cb(int signo)
 {
