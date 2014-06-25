@@ -17,6 +17,7 @@ static int time;
 static int disk_id = -1;
 static int flags = 0; 		/* 检查是否为设置系统灯 */
 static int getflag = 0;
+static int blinkflag = 0;
 struct option long_options[] = {
 	{"sysled", 1, NULL, 's'},
 	{"get", 0, NULL, 'g'},
@@ -78,6 +79,7 @@ int led_getopt(int argc, char **argv)
 					break;
 				} else if (!strcmp(optarg, "blink")) {
 					task = 0;
+					blinkflag = 1;
 					break;
 				}
 
@@ -85,18 +87,21 @@ int led_getopt(int argc, char **argv)
 				print_help();
 				return -1;
 			case 'f':
-				if (!strcmp(optarg, "fast")) {
-					task = LED_BLINK_FAST;
-					break;
-				} else if (!strcmp(optarg, "normal")) {
-					task = LED_BLINK_NORMAL;
-					break;
-				} else if (!strcmp(optarg, "slow")) {
-					task = LED_BLINK_SLOW;
-					break;
+				if (blinkflag) {
+					if (!strcmp(optarg, "fast")) {
+						task = LED_BLINK_FAST;
+						break;
+					} else if (!strcmp(optarg, "normal")) {
+						task = LED_BLINK_NORMAL;
+						break;
+					} else if (!strcmp(optarg, "slow")) {
+						task = LED_BLINK_SLOW;
+						break;
+					}
+
+					fprintf(stderr, "freq arg invalid.\n");
+					return -1;
 				}
-				fprintf(stderr, "freq arg invalid.\n");
-				return -1;
 			case 'e':
 				time = atoi(optarg);
 				break;
