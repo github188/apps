@@ -20,7 +20,7 @@ local_install()
 	tar xfj "$_pkg"
 	ret=$?
 	rm -fr "$_pkg"
-	if [ $? -ne 0 ]; then
+	if [ $ret -ne 0 ]; then
 		rm -rf $update_dir
 		return 2
 	fi

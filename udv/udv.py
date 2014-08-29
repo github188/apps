@@ -74,6 +74,9 @@ def udv_list(udvargs):
 				elif not udvargs.nas_set and 'nas' == udvinfo.state:
 					continue
 			
+			if 'nas' == udvinfo.state and software_type() != 'IPSAN-NAS':
+				udvinfo.state = 'mounted'
+			
 			udvinfo_list.append(udvinfo)
 		
 		if finished:

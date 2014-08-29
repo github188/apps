@@ -14,6 +14,11 @@ from libnas import *
 from libcommon import log_insert
 
 def nas_mkfs(udv_name, udv_dev, filesystem):
+	if software_type() == 'IPSAN-NAS':
+		volume_type = 'NAS卷'
+	else:
+		volume_type = '文件系统'
+
 	progress_file = NAS_DIR + os.sep + udv_name + '/fmt_percent'
 	cmd = 'nas-mkfs.sh %s %s' % (udv_dev, filesystem)
 	args = shlex.split(cmd)
@@ -47,9 +52,9 @@ def nas_mkfs(udv_name, udv_dev, filesystem):
 			if calc_start and len(val) == 2:
 				progress = float(val[0]) * 100.00 / float(val[1])
 				nas_fmt_record_set(udv_name, '%.2f' % progress)
-			
+
 				if i < len(fmt_record) and progress > fmt_record[i]:
-					log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化进度 %.2f' % (udv_name, progress))
+					log_insert('NAS', 'Auto', 'Info', '%s %s 格式化进度 %.2f' % (volume_type, udv_name, progress))
 					i += 1
 
 		elif 35072 == ret: # 格式化进程被kill -9杀死, nas卷被删除, 直接退出
@@ -58,28 +63,33 @@ def nas_mkfs(udv_name, udv_dev, filesystem):
 			return False
 
 def do_run(udv_name, udv_dev, mount_dir, filesystem):
+	if software_type() == 'IPSAN-NAS':
+		volume_type = 'NAS卷'
+	else:
+		volume_type = '文件系统'
+
 	# 格式化
-	log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化开始' % udv_name)
+	log_insert('NAS', 'Auto', 'Info', '%s %s 格式化开始' % (volume_type, udv_name))
 	if not nas_mkfs(udv_name, udv_dev, filesystem):
-		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 格式化失败' % udv_name)
+		log_insert('NAS', 'Auto', 'Error', '%s %s 格式化失败' % (volume_type, udv_name))
 		nas_vol_remove(udv_name)
 		return
 	else:
-		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 格式化完成' % udv_name)
+		log_insert('NAS', 'Auto', 'Info', '%s %s 格式化完成' % (volume_type, udv_name))
 
 	# 挂载
 	if not nas_vol_mount(udv_dev, mount_dir):
-		log_insert('NAS', 'Auto', 'Error', 'NAS卷 %s 挂载失败' % udv_name)
+		log_insert('NAS', 'Auto', 'Error', '%s %s 挂载失败' % (volume_type, udv_name))
 		nas_vol_remove(udv_name)
 		return
 
 	# 更新配置文件
-	if not nas_conf_update_bydev(udv_dev, 'mounted', filesystem):
-		log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 更新配置文件失败' % udv_name)
+	if not nas_conf_update_bydev(udv_dev, 'mounted', filesystem, mount_dir):
+		log_insert('NAS', 'Auto', 'Info', '%s %s 更新配置文件失败' % (volume_type, udv_name))
 		nas_vol_remove(udv_name)
 		return
-	
-	log_insert('NAS', 'Auto', 'Info', 'NAS卷 %s 挂载成功' % udv_name)
+
+	log_insert('NAS', 'Auto', 'Info', '%s %s 挂载成功' % (volume_type, udv_name))
 
 def nas_mkfs_usage():
 	print """

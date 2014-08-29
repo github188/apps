@@ -12,7 +12,7 @@ from libnas import *
 def usage():
 	print """
 nas --list [--volume <name>] [--state formatting|mounted|all] [--not-fail]
-    --map --udv <name> [--filesystem xfs|ext3|ext4]
+    --map --udv <name> [--filesystem xfs|ext3|ext4] [--mount-point <dir>]
     --unmap --volume <name>
     --misc --update-cfg
     --misc --restore-cfg
@@ -20,7 +20,7 @@ nas --list [--volume <name>] [--state formatting|mounted|all] [--not-fail]
 	sys.exit(-1)
 
 OP_MODE = ['--list', '--map', '--unmap', '--misc']
-nas_long_opt = ['list', 'volume=', 'state=', 'not-fail', 'map', 'udv=', 'unmap', 'filesystem=', 'misc', 'update-cfg', 'restore-cfg']
+nas_long_opt = ['list', 'volume=', 'state=', 'not-fail', 'map', 'udv=', 'unmap', 'filesystem=', 'mount-point=', 'misc', 'update-cfg', 'restore-cfg']
 
 def main():
 	try:
@@ -33,6 +33,7 @@ def main():
 	arg_state = 'all'
 	arg_udv = ''
 	arg_fs = 'ext4'
+	arg_mount_point = ''
 	arg_update = False
 	arg_restore = False
 	arg_not_fail = False
@@ -48,6 +49,8 @@ def main():
 			arg_udv = arg
 		elif opt == '--filesystem':
 			arg_fs = arg
+		elif opt == '--mount-point':
+			arg_mount_point = arg
 		elif opt == '--update-cfg':
 			arg_update = True
 		elif opt == '--restore-cfg':
@@ -58,7 +61,7 @@ def main():
 	if arg_op_mode == '--list':
 		CommOutput(get_nasvol_list(arg_volume, arg_state, arg_not_fail))
 	elif arg_op_mode == '--map':
-		ret,msg = nas_vol_add(arg_udv, '', arg_fs)
+		ret,msg = nas_vol_add(arg_udv, '', arg_fs, arg_mount_point)
 		log_insert('NAS', 'Auto', 'Info' if ret else 'Error', msg)
 		comm_exit(ret, msg)
 	elif arg_op_mode == '--unmap':

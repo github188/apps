@@ -21,13 +21,15 @@ extern struct ev_loop *us_main_loop;
 
 static struct sockaddr_nl src_addr, dest_addr;
 
+int us_prewarn_flag = 0;
+
 int nl_open(void)
 {
 	int nl_fd;
 
 	nl_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_VSD);
 	if (nl_fd == -1) {
-		printf("%s %s\n", __FUNCTION__, strerror(errno));
+		clog(CL_WARN, "open NETLINK_VSD error. %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -158,9 +160,11 @@ int us_prewarn_init(void)
 	int warning_level = WARNING_LEVEL_2;
 
 	if ((nl_fd = nl_open()) < 0) {
-		clog(CL_ERROR, "netlink open failed");
-		return -1;
+		return 0;
 	}
+
+	us_prewarn_flag = 1;
+	clog(CL_INFO, "netlink open ok");
 
 	// set default warning level
 	if (nl_write(nl_fd, &warning_level, sizeof(warning_level)) < 0) {

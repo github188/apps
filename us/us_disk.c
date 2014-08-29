@@ -36,6 +36,8 @@ extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
 extern regex_t ata_disk_slot_regex;
 
+extern int us_prewarn_flag;
+
 struct us_disk_pool us_dp;
 struct list _g_slot_map_list;
 
@@ -213,7 +215,6 @@ static int map_slot(int slot)
 static int find_slot(const char *path)
 {
 	int ata_slot;
-	int cook_slot = -1;
 
 	/*
 	 * 槽位号在/sys/block/sd[b-z]的链接里面
@@ -599,10 +600,15 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		                delim);
 		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
 		                delim);
-		pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
+		if (us_prewarn_flag) {
+			pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
 		               	delim, di->wi.mapped_cnt);
-		pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"%u\"",
+			pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"%u\"",
 		               	delim, di->wi.max_map_cnt);
+		} else {
+			pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"-1\"",	delim);
+			pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"-1\"", delim);
+		}
 		pos += snprintf(pos, end - pos, "%s\"smart_attr\":{", delim);
 		pos += snprintf(pos, end - pos, "\"read_err\":%llu",
 		                (unsigned long long)di->si.read_error);
