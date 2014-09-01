@@ -40,7 +40,7 @@ def web_service_exit(ret = True, msg = ''):
 def web_service_usage():
 	print """
 web --create --site-name <name>
-    --modify --site-name <name> --set-doc <document_root> --set-idx <index_file> --set-port <port number>
+    --modify --site-name <name> [--set-doc <document_root>] [--set-idx <index_file>] [--set-port <port number>]
     --remove --site-name <name>
     --default
     --list [--site-name <name>]
@@ -93,7 +93,7 @@ def main():
 			ret,msg = modify_web_service(site_name, OPT_PORT, arg_port)
 			if not ret:
 				web_service_exit(ret, msg)
-		ret, msg = restart_lig_service()
+		ret, msg = restart_lighttpd_service()
 		if ret:
 			web_service_exit(ret, msg)
 		web_service_exit(True, "设置站点%s属性成功." % (site_name))
@@ -101,13 +101,13 @@ def main():
 		ret,msg = remove_web_service(site_name)
 		if not ret:
 			web_service_exit(ret, msg)
-		ret, msg = restart_lig_service()
+		ret, msg = restart_lighttpd_service()
 		if ret:
 			web_service_exit(ret, msg)
 		web_service_exit(True, "删除站点%s成功." % (site_name))
 	elif arg_op_mode == '--default':
 		restore_web_service()
-		restart_lig_service()
+		restart_lighttpd_service()
 		sys.exit(0)
 
 	web_service_usage()

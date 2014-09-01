@@ -14,12 +14,9 @@ import codecs
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-LIG_PATH='/opt/etc/lighttpd/'
-PROG_FILE = 'lig.conf'
-LIG_FILE = 'lighttpd.conf'
-LIG_CONF_PATH = LIG_PATH + LIG_FILE
-PROG_CONF_PATH = LIG_PATH + PROG_FILE
-REAL_LIG_CONF_PATH = '/etc/lighttpd/' + LIG_FILE
+LIGHTTPD_CONF_FILE = '/etc/lighttpd/lighttpd.conf'
+WEB_CONF_DIR = '/opt/etc/lighttpd'
+WEB_CONF_FILE = WEB_CONF_DIR + '/web.conf'
 
 DEFAULT_LIST = ['defaults']
 DEFAULT_NAME = 'defaults'
@@ -29,14 +26,13 @@ OPT_DOC = "document-root"
 OPT_IDX = "index-file.names"
 OPT_PORT = "server.port"
 
-WEB_SITES_HOME = "/home/websites"
 DEFAULT_PORT = '80'
 DEFAULT_DOC = '"/var/www"'
 DEFAULT_INDEX = '( "index.php", "index.html","index.htm", "default.htm", "index.lighttpd.html" )'
 
-DEFAULT_LIG_CONF_FMT = """#请不要直接修改本配置文件
+LIGHTTPD_CONF_DEF = """#请不要直接修改本配置文件
 #修改lighttpd配置请使用 web 命令\n
-server.modules = (                                                                                                                                                                             
+server.modules = (
         "mod_access",
         "mod_alias",
         "mod_compress",
@@ -45,11 +41,11 @@ server.modules = (
         "mod_fastcgi"
 )
 
-server.port		=%s
-server.document-root        =%s
+server.port                 = %s
+server.document-root        = %s
 server.upload-dirs          = ( "/var/cache/lighttpd/uploads" )
 server.errorlog             = "/var/log/lighttpd/error.log"
-server.pid-file             = "/var/run/lighttpd.pid"                                                                                                                                          
+server.pid-file             = "/var/run/lighttpd.pid"
 server.username             = "www-data"
 server.groupname            = "www-data"
 
@@ -59,7 +55,7 @@ url.access-deny             = ( "~", ".inc" )
 
 static-file.exclude-extensions = ( ".php", ".pl", ".fcgi" )
 
-include_shell "/usr/share/lighttpd/use-ipv6.pl"
+#include_shell "/usr/share/lighttpd/use-ipv6.pl"
 
 dir-listing.encoding        = "utf-8"
 server.dir-listing          = "disable"
@@ -80,9 +76,9 @@ fastcgi.server = ( ".php" =>
                  )
 """
 
-OEM_LIG_CONF_FMT = """$SERVER["socket"] == ":%s" {
+OTHER_LIGHTTPD_CONF = """$SERVER["socket"] == ":%s" {
 	server.document-root	= "%s"
-	index-file.names	= ( "%s" ) 
+	index-file.names	= ( "%s" )
 }\n
 """
 
@@ -112,12 +108,12 @@ def deviant(config, name, field):
 def update_conf():
 	conf_str = ''
 	default_str = ''
-	oem_str = ''
+	other_str = ''
 
-	config = ConfigParser.ConfigParser()  
-	config.read(PROG_CONF_PATH) 
+	config = ConfigParser.ConfigParser()
+	config.read(WEB_CONF_FILE)
 	olist = config.sections()
-	olist.sort() 
+	olist.sort()
 	for name in olist:
 		if name in DEFAULT_LIST:
 			port_str = deviant(config, name, OPT_PORT)
@@ -126,86 +122,62 @@ def update_conf():
 			doc_str = deviant(config, name, OPT_DOC)
 			if doc_str == '':
 				doc_str = DEFAULT_DOC
-			idx_str = deviant(config, name, OPT_IDX) 
+			idx_str = deviant(config, name, OPT_IDX)
 			if idx_str == '':
 				idx_str = DEFAULT_IDX
-			default_str = DEFAULT_LIG_CONF_FMT % (port_str, doc_str, idx_str) 
+			default_str = LIGHTTPD_CONF_DEF % (port_str, doc_str, idx_str)
 		else:
-			port_str = deviant(config, name, OPT_PORT) 
+			port_str = deviant(config, name, OPT_PORT)
 			doc_str = deviant(config, name, OPT_DOC)
-			idx_str = deviant(config, name, OPT_IDX) 
-			oem_str_tmp = OEM_LIG_CONF_FMT % (port_str, doc_str, idx_str)
-			oem_str = oem_str + oem_str_tmp + '\n'
+			idx_str = deviant(config, name, OPT_IDX)
+			other_str_tmp = OTHER_LIGHTTPD_CONF % (port_str, doc_str, idx_str)
+			other_str = other_str + other_str_tmp + '\n'
 
-	conf_str = default_str + oem_str
+	conf_str = default_str + other_str
 
 	#~ generate the configuration file which lighttpd used
-	lig_file = open(LIG_CONF_PATH, 'w')
+	lighttpd_conf_file = open(LIGHTTPD_CONF_FILE, 'w')
 	try:
-		lig_file.write(conf_str)
+		lighttpd_conf_file.write(conf_str)
 	finally:
-		lig_file.close()
+		lighttpd_conf_file.close()
 
 #~#### 恢复默认值
-def set_defalt():
-	if os.path.exists(LIG_PATH) == False:
-		os.makedirs(LIG_PATH)
-	p = open(LIG_CONF_PATH, 'w')
-	try:
-		p.write('')
-	finally:
-		p.close()
-
-	config = ConfigParser.ConfigParser()  
-	config.read(PROG_CONF_PATH) 
+def set_default():
+	config = ConfigParser.ConfigParser()
 	name="defaults"
-	if config.has_section(name) == False:
-		config.add_section(name)
-		config.set(name, OPT_NAME, 'defaults')
-		config.set(name, OPT_DOC, '%s' % DEFAULT_DOC)
-		config.set(name, OPT_PORT, '%s' % DEFAULT_PORT)
-		config.set(name, OPT_IDX, '%s' % DEFAULT_INDEX)
-	config.write(open(PROG_CONF_PATH, 'w'))
-	try:
-		if os.path.exists(REAL_LIG_CONF_PATH) == False:
-			os.symlink(LIG_CONF_PATH, REAL_LIG_CONF_PATH)
-		else:
-			if os.path.islink(REAL_LIG_CONF_PATH) == False:
-				os.remove(REAL_LIG_CONF_PATH)
-				os.symlink(LIG_CONF_PATH, REAL_LIG_CONF_PATH)
-	except:
-		pass
+	config.add_section(name)
+	config.set(name, OPT_NAME, 'defaults')
+	config.set(name, OPT_DOC, '%s' % DEFAULT_DOC)
+	config.set(name, OPT_PORT, '%s' % DEFAULT_PORT)
+	config.set(name, OPT_IDX, '%s' % DEFAULT_INDEX)
+	config.write(open(WEB_CONF_FILE, 'w'))
 
-	try:
-		if os.path.exists(LIG_CONF_PATH):
-			os.remove(LIG_CONF_PATH)
-	except:
-		pass
 	update_conf()
 
 #~#### 保存配置
 def save_conf():
-	config.write(open(PROG_CONF_PATH, 'w'))
+	config.write(open(WEB_CONF_FILE, 'w'))
 	update_conf()
 
 def check_default():
 	#~ 当站点配置文件不存在时，创建默认文件
-	if os.path.exists(PROG_CONF_PATH) == False:
-		set_defalt()
+	if os.path.exists(WEB_CONF_FILE) == False:
+		set_default()
 
-def restart_lig_service():
+def restart_lighttpd_service():
 	cmd = '/etc/init.d/lighttpd restart 2>&1'
 	ret,msg = commands.getstatusoutput(cmd)
 	return ret, msg
 
-# get the web sites list or specified one if site_name is not null 
+# get the web sites list or specified one if site_name is not null
 def get_web_service_list(site_name = ''):
 	web_list = []
 	check_default()
-	config = ConfigParser.ConfigParser()  
-	config.read(PROG_CONF_PATH) 
+	config = ConfigParser.ConfigParser()
+	config.read(WEB_CONF_FILE)
 	olist = config.sections()
-	olist.sort() 
+	olist.sort()
 	for name in olist:
 		web_info = web_site_info()
 		web_info.name = deviant(config, name, OPT_NAME)
@@ -222,22 +194,21 @@ def get_web_service_list(site_name = ''):
 	return web_list
 
 # create a new web site
-def create_web_service(site_name = ''):
+def create_web_service(site_name):
+	if '' == site_name:
+		return False, "请输入站点名称."
+
 	check_default()
-	config = ConfigParser.ConfigParser()  
-	config.read(PROG_CONF_PATH) 
+	config = ConfigParser.ConfigParser()
+	config.read(WEB_CONF_FILE)
 	if config.has_section(site_name) == False:
 		config.add_section(site_name)
 		config.set(site_name, OPT_NAME, site_name)
 		config.set(site_name, OPT_DOC, '')
 		config.set(site_name, OPT_PORT, '')
 		config.set(site_name, OPT_IDX, '')
-		config.write(open(PROG_CONF_PATH, 'w'))
-		try:
-			if os.path.exists(LIG_CONF_PATH):
-				os.remove(LIG_CONF_PATH)
-		except:
-			pass
+		config.write(open(WEB_CONF_FILE, 'w'))
+
 		update_conf()
 		return True, "创建站点%s成功." % (site_name)
 	else:
@@ -245,7 +216,7 @@ def create_web_service(site_name = ''):
 
 def is_port_used(port):
 	config = ConfigParser.ConfigParser()
-	config.read(PROG_CONF_PATH)
+	config.read(WEB_CONF_FILE)
 	olist = config.sections()
 	olist.sort()
 	for name in olist:
@@ -256,33 +227,21 @@ def is_port_used(port):
 # set the web site attributes
 def modify_web_service(site_name, arg_attr, arg_value):
 	check_default()
-	config = ConfigParser.ConfigParser()  
-	config.read(PROG_CONF_PATH) 
+	config = ConfigParser.ConfigParser()
+	config.read(WEB_CONF_FILE)
 	if config.has_section(site_name) == True:
-		new_value = arg_value
 		if OPT_DOC == arg_attr:
-			old_doc = deviant(config, site_name, OPT_DOC)
-			doc_tmp = os.path.basename(arg_value)
-			new_value = "%s/%s" % (WEB_SITES_HOME, doc_tmp)
-		if OPT_PORT == arg_attr:
+			if not os.path.exists(arg_value):
+				return False, '设置站点属性失败，%s 不存在' % arg_value
+			elif not os.path.isabs(arg_value):
+				return False, '设置站点属性失败，%s 不是绝对路径' % arg_value
+		elif OPT_PORT == arg_attr:
 			if is_port_used(arg_value):
 				return False, "设置站点属性失败，端口号%s已被使用!" % arg_value
 
-		config.set(site_name, arg_attr, new_value)
-		config.write(open(PROG_CONF_PATH, 'w'))
-		try:
-			if os.path.exists(LIG_CONF_PATH):
-				os.remove(LIG_CONF_PATH)
-		except:
-			pass
+		config.set(site_name, arg_attr, arg_value)
+		config.write(open(WEB_CONF_FILE, 'w'))
 		update_conf()
-		if OPT_DOC == arg_attr:
-			if old_doc == '':
-				if not os.path.exists(new_value):
-					os.makedirs(new_value)
-			else:
-				if not os.path.exists(new_value):
-					os.rename(old_doc, new_value)
 
 		return True, "设置站点属性成功."
 	else:
@@ -293,32 +252,18 @@ def remove_web_service(site_name):
 	if DEFAULT_NAME == site_name:
 		return False, "站点%s不允许删除！" % site_name
 	check_default()
-	config = ConfigParser.ConfigParser()  
-	config.read(PROG_CONF_PATH) 
+	config = ConfigParser.ConfigParser()
+	config.read(WEB_CONF_FILE)
 	if config.has_section(site_name) == True:
 		ret = config.remove_section(site_name)
 		if ret:
-			config.write(open(PROG_CONF_PATH, 'w'))
-			try:
-				if os.path.exists(LIG_CONF_PATH):
-					os.remove(LIG_CONF_PATH)
-			except:
-				pass
+			config.write(open(WEB_CONF_FILE, 'w'))
 			update_conf()
 		else:
 			return False, "删除站点%s失败!" % (site_name)
-
-	try:
-		site_path = "%s/%s" % (WEB_SITES_HOME, site_name)
-		if os.path.exists(site_path):
-			os.rmdir(site_path)
-	except:
-		pass
 
 	return True, "删除站点%s成功." % (site_name)
 
 # restore the default configuration of website
 def restore_web_service():
-	if os.path.exists(PROG_CONF_PATH):
-		os.remove(PROG_CONF_PATH)
-	set_defalt()
+	set_default()
