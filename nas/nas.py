@@ -16,11 +16,12 @@ nas --list [--volume <name>] [--state formatting|mounted|all] [--not-fail]
     --unmap --volume <name>
     --misc --update-cfg
     --misc --restore-cfg
+    --misc --show-mount-root
 """
 	sys.exit(-1)
 
 OP_MODE = ['--list', '--map', '--unmap', '--misc']
-nas_long_opt = ['list', 'volume=', 'state=', 'not-fail', 'map', 'udv=', 'unmap', 'filesystem=', 'mount-point=', 'misc', 'update-cfg', 'restore-cfg']
+nas_long_opt = ['list', 'volume=', 'state=', 'not-fail', 'map', 'udv=', 'unmap', 'filesystem=', 'mount-point=', 'misc', 'update-cfg', 'restore-cfg', 'show-mount-root']
 
 def main():
 	try:
@@ -37,6 +38,7 @@ def main():
 	arg_update = False
 	arg_restore = False
 	arg_not_fail = False
+	arg_show_mount_root = False
 	for opt,arg in opts:
 		if opt in OP_MODE:
 			arg_op_mode = opt
@@ -57,6 +59,8 @@ def main():
 			arg_restore = True
 		elif opt == '--not-fail':
 			arg_not_fail = True
+		elif opt == '--show-mount-root':
+			arg_show_mount_root = True
 
 	if arg_op_mode == '--list':
 		CommOutput(get_nasvol_list(arg_volume, arg_state, arg_not_fail))
@@ -74,6 +78,8 @@ def main():
 		elif arg_restore:
 			ret,msg = nas_conf_load()
 			comm_exit(ret, msg)
+		elif arg_show_mount_root:
+			nas_show_mount_root()
 
 	usage()
 

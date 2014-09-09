@@ -17,7 +17,10 @@ NAS_CONF_DIR = CONF_ROOT_DIR + '/nas'
 NAS_CONF_FILE = NAS_CONF_DIR + '/nas.conf'
 NAS_DIR = '/var/run/nas-info'
 NAS_CONF_LOCK = NAS_DIR + '/.lock_conf'
-MOUNT_ROOT = '/mnt/share'
+if software_type() == 'IPSAN-NAS':
+	MOUNT_ROOT = '/mnt/share'
+else:
+	MOUNT_ROOT = '/mnt'
 
 NAS_CONF_DEF = """<?xml version="1.0" encoding="UTF-8"?>
 <nas_conf>
@@ -460,6 +463,10 @@ def nas_conf_load():
 
 	unlock_file(f_lock)
 	return True,'Load NAS Conf OK'
+
+def nas_show_mount_root():
+	print MOUNT_ROOT
+	sys.exit(0)
 
 if __name__ == '__main__':
 	sys.exit(0)
