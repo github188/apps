@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+#modify
 PKG_STORE_DIR=/home
 USER_CONF_DIR=/opt/etc
 
