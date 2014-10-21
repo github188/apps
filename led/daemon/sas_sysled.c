@@ -6,19 +6,19 @@
 #include <error.h>
 #include <string.h>
 
-#include "../daemon/sysled.h"
+#include "sysled.h"
 
 #define ARGIVALID -1
 
 
 void print_help(void)
 {
-	fprintf(stderr, "sas_sysled <on|off>\n");
+	fprintf(stderr, "Usage: sas_sysled <on|off>\n");
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc != 1) {
+	if (argc != 2) {
 		print_help();
 		return ARGIVALID;
 	}
