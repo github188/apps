@@ -6,6 +6,10 @@
 #include <errno.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 #include "libled.h"
 #include "../daemon/common.h"
 #include "../daemon/sysled.h"
@@ -396,4 +400,8 @@ int sysled_get_count(void)
 	return addr->task[0].count;
 }
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif

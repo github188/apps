@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
+#ifdef __cplusplus
+extern "C" {
+#endif	
 #include "i2c-dev.h"
 #include "pic_ctl.h"
 
@@ -183,3 +186,6 @@ int pic_clear_reset_hd(int idx)
 	PIC_CHECK_INIT();
 	return __pic_write_reg(PIC_HDD_RESET_CLR_START + idx, 1);
 }
+#ifdef __cplusplus
+}
+#endif

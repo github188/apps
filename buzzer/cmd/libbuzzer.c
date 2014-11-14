@@ -6,6 +6,10 @@
 #include <errno.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 #include "libbuzzer.h"
 #include "../daemon/common.h"
 
@@ -168,5 +172,8 @@ int buzzer_get_count(void)
 {
 	BUZZER_CHECK_INIT();
 	return addr->task.count;
+}
+#endif
+#ifdef __cplusplus
 }
 #endif

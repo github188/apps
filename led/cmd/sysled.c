@@ -6,7 +6,7 @@
 #include <error.h>
 #include <string.h>
 
-#include "sysled.h"
+#include "../daemon/sysled.h"
 
 #define ARGIVALID -1
 

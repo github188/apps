@@ -4,6 +4,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif       
+
 #include "diskpower.h"
 
 
@@ -246,3 +251,6 @@ void i2c_release_disk(void)
 
 }
 
+#ifdef __cplusplus
+}
+#endif	

@@ -5,6 +5,9 @@
 #include <sys/sem.h>
 #include <errno.h>
 #include <string.h>
+#ifdef __cplusplus
+extern "C" {
+#endif	
 
 #include "libdiskpw.h"
 #include "../daemon/common.h"
@@ -154,5 +157,8 @@ int diskpw_set(int id, enum DISKPW_STATUS mode, int seconds)
 	} else {
 		return -1;
 	} 
+}
+#endif
+#ifdef __cplusplus
 }
 #endif
