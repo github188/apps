@@ -5,12 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif       
-
 #include "diskpower.h"
-
 
 #define I2C_DEV		"/dev/i2c-i801"
 
@@ -21,14 +16,13 @@ int do_read_diskpw(uint8_t reg1, uint8_t reg2)
 {
 	int count = 10;
 	int ret;
-	
 	while(count--) {
 		ret = i2c_smbus_read_byte_data(i2c_fd ,reg1);
 		if (ret >= 0)
 			return ret;
 	}
 	return PERR_IOERR;
-	
+
 }
 
 int i2c_read_diskpw(void)
@@ -50,7 +44,7 @@ int i2c_read_diskpw(void)
 		return PERR_IOERR;
 	}
 
-	
+
 	if (ioctl(i2c_fd, I2C_SLAVE_FORCE, I2C_ADDRESS_DISKPW2) < 0) {
 		return PERR_NODEV;
 	}
@@ -66,7 +60,7 @@ int i2c_read_diskpw(void)
 	}
 	return ((mode1 & 0xf) |((mode2 & 0xf) << 4)  |
 		((mode3 & 0xf) << 8) | ((mode4 & 0xf) << 12));
-	       
+
 }
 
 int do_write_diskpw(int mode, uint8_t reg1, uint8_t reg2)
@@ -74,7 +68,7 @@ int do_write_diskpw(int mode, uint8_t reg1, uint8_t reg2)
 	int count = 10;
 	int value;
 	int ret;
-	
+
 	while(count--) {
 		value = i2c_smbus_read_byte_data(i2c_fd, reg2);
 		if (value == -1)
@@ -83,7 +77,7 @@ int do_write_diskpw(int mode, uint8_t reg1, uint8_t reg2)
 		ret = i2c_smbus_write_byte_data(i2c_fd, reg2, value);
 		if (ret == -1)
 			continue;
-	
+
 		ret = i2c_smbus_write_byte_data(i2c_fd ,reg1, mode);
 		if (ret == 0)
 			return PERR_SUCCESS;
@@ -94,7 +88,7 @@ int do_write_diskpw(int mode, uint8_t reg1, uint8_t reg2)
 
 int i2c_write_diskpw(int mode)
 {
-	
+
 	uint8_t reg1, reg2;
 	int  mode1, mode2, mode3, mode4;
 
@@ -118,7 +112,7 @@ int i2c_write_diskpw(int mode)
 		return PERR_IOERR;
 	}
 
-	
+
 	if (ioctl(i2c_fd, I2C_SLAVE_FORCE, I2C_ADDRESS_DISKPW2) < 0) {
 		return PERR_NODEV;
 	}
@@ -132,13 +126,13 @@ int i2c_write_diskpw(int mode)
 	if (do_write_diskpw(mode4, reg1, reg2) < 0) {
 		return PERR_IOERR;
 	}
-	
+
 	return PERR_SUCCESS;
 }
 
 int i2c_diskpw_set(int disk_id, int mode)
 {
-	int old = 0, new = 0;
+	int old = 0, new_stat = 0;
 	if (disk_id < 0 || disk_id > 16)
 		return PERR_NODEV;
 	if (mode != I2C_DISKPW_ON && mode != I2C_DISKPW_OFF)
@@ -147,34 +141,34 @@ int i2c_diskpw_set(int disk_id, int mode)
 	if (old < 0) {
 		return PERR_IOERR;
 	}
-	
+
 	if (mode == I2C_DISKPW_ON)
-		new = old | (1 << (disk_id -1));
-	else 
-		new = old & ~(1 << (disk_id -1));
-	
-	if (i2c_write_diskpw(new) < 0)
+		new_stat = old | (1 << (disk_id -1));
+	else
+		new_stat = old & ~(1 << (disk_id -1));
+
+	if (i2c_write_diskpw(new_stat) < 0)
 		return PERR_IOERR;
-	
+
 	return PERR_SUCCESS;
 }
 
 int do_init_diskpw(int fd)
 {
-	
+
 	int  ret;
 	//uint8_t g_config_reg_value;
 	int value;
 
 	/* g_config_reg_value = i2c_smbus_read_byte_data(fd, I2C_CONF_DISK); */
 	/* if (g_config_reg_value == 255) { */
-	/* 	return PERR_IOERR; */
+	/*	return PERR_IOERR; */
 	/* } */
 	/* g_config_reg_value |= 0x80; */
 	/* ret = i2c_smbus_write_byte_data(fd, I2C_CONF_DISK, g_config_reg_value); */
 	/* if (ret == -1) */
-	/* 	return PERR_IOERR; */
-	
+	/*	return PERR_IOERR; */
+
 	/*
 	value = i2c_smbus_read_byte_data(fd, I2C_GP1_MODE1);
 	value |= 0x0f;
@@ -189,7 +183,7 @@ int do_init_diskpw(int fd)
 	ret = i2c_smbus_write_byte_data(fd, I2C_GP1_MODE2, value);
 	if (ret == -1)
 		return PERR_IOERR;
-	
+
 	/*
 	value = i2c_smbus_read_byte_data(fd, I2C_GP2_MODE1);
 	value |= 0x0f;
@@ -227,7 +221,7 @@ int i2c_init_diskpw(void)
 		close(fd);
 		return PERR_IOERR;
 	}
-	
+
 	if (ioctl(fd, I2C_SLAVE_FORCE, I2C_ADDRESS_DISKPW2) < 0) {
 		close(fd);
 		return PERR_IOERR;
@@ -250,7 +244,3 @@ void i2c_release_disk(void)
 	i2c_is_initialized = 0;
 
 }
-
-#ifdef __cplusplus
-}
-#endif	

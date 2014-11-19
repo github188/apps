@@ -9,7 +9,7 @@
 
 #include "libled.h"
 
-char *const short_options = "s:gi:d:f:e:h";
+const char *short_options = "s:gi:d:f:e:h";
 
 enum LED_STATUS task;
 enum LED_STATUS systask;
@@ -78,7 +78,6 @@ int led_getopt(int argc, char **argv)
 					task = LED_OFF;
 					break;
 				} else if (!strcmp(optarg, "blink")) {
-					task = 0;
 					blinkflag = 1;
 					break;
 				}
@@ -118,16 +117,17 @@ int led_getopt(int argc, char **argv)
 
 int parse_args(void)
 {
-	if (task != -1 && disk_id == -1) {
+	if ((task != LED_NULL && disk_id == -1) ||
+	    (blinkflag != 0 && disk_id == -1)) {
 		fprintf(stderr, "diskid is null.\n");
 		return -1;
 	}
-	if (task == 0) {
+	if (task == LED_NULL && blinkflag != 0 ) {
 		fprintf(stderr, "blink freq invalid.\n");
 		return -1;
 	}
-	return 0;
-}
+	return 0;}
+
 
 
 
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 		print_help();
 		return -1;
 	}
-	task = -1;
+	task = LED_NULL;
 	time = 0;
 
 	if (led_getopt(argc, argv))
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (task != -1) {
+	if (task != LED_NULL) {
 		if (disk_id == -2)  {
 			diskled_set(0, task);
 		} else if (disk_id != -1){

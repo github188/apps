@@ -1,13 +1,12 @@
-OBJECTS = led_shm.o led_worker.o  main.o i2c_dev.o 
+OBJECTS = led_shm.o led_worker.o  main.o i2c_dev.o
 
-all: led-ctl-daemon sysled.o 
+all: led-ctl-daemon sysled.o
 ifneq ($(STRIP),)
 	$(STRIP) led-ctl-daemon
 endif
 
 led-ctl-daemon:$(OBJECTS) sysled.o
-	$(CC) -o led-ctl-daemon $(OBJECTS)  $(CFLAGS) 
+	$(CC) -o led-ctl-daemon $(OBJECTS)  $(CFLAGS)
 
 clean:
 	rm -rf *.o led-ctl-daemon *.a
-

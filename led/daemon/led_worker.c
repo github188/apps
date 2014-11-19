@@ -123,9 +123,9 @@ void do_work(void)
 	/*简易3U磁盘上下电功能*/
 	if (addr->sys & SYS_S3U) {
 		power_status_t *ppower=NULL;
-		int new;
+		int new_stat;
 		
-		new = power_old;
+		new_stat = power_old;
 		for(i=0; i<DISK_NUM_3U; i++) {
 			ppower = &addr->task[i+1].power;
 			
@@ -139,36 +139,36 @@ void do_work(void)
 						ppower->time -= WORKER_TIMER * 8;
 
 				} else {
-					new = new | (1 << i);
+					new_stat = new_stat | (1 << i);
 					ppower->time = 0;
 				}
 			} else if (ppower->mode == POWER_OFF) {
-				new = new & ~(1 << i);
+				new_stat = new_stat & ~(1 << i);
 			} else if (ppower->mode == POWER_RESET) {
 						
 				if (ppower->time > 0) {
-					new = new & ~(1 << i);
+					new_stat = new_stat & ~(1 << i);
 						if (j)
 							ppower->time -= WORKER_TIMER * (8/j);
 						else
 							ppower->time -= WORKER_TIMER * 8;
 
 				} else {
-					new = new | (1 << i);
+					new_stat = new_stat | (1 << i);
 					ppower->mode = POWER_ON;
 					ppower->time = 0;
 				}
 			}
 		}
-		if (new != power_old) {
-			if (i2c_write_diskpw(new) < 0) {
+		if (new_stat != power_old) {
+			if (i2c_write_diskpw(new_stat) < 0) {
 				syslog(LOG_ERR, "set disk power failed.\n");
 				quit = 1;
 			}
-			power_old = new;	
+			power_old = new_stat;	
 		}
 #ifdef _DEBUG
-		printf("old: %d\t new: %d\n", power_old, new);
+		printf("old: %d\t new_stat: %d\n", power_old, new_stat);
 #endif
 	}
 

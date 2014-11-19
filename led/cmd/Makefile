@@ -6,7 +6,6 @@ endif
 
 all: led-ctl disk_reset libled.a libled.so libdiskpw.a libdiskpw.so sysled
 
-
 led-ctl: $(OBJECTS) libled.a
 	$(CC) $(CFLAGS) -o $@ $^
 ifneq ($(STRIP),)

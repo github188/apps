@@ -5,12 +5,9 @@
 #include <sys/stat.h>
 #include <stdint.h>
 #include <stdlib.h>
-#ifdef __cplusplus
-extern "C" {
-#endif
-	
-#define GPIO_BASE_ADDR (0x500)
 
+#include "sysled.h"
+#define GPIO_BASE_ADDR (0x500)
 #define GPIO_VALUE(fd, base, op, data) \
 { \
 	lseek(fd, (base), SEEK_SET); \
@@ -74,6 +71,3 @@ bool sb_gpio28_set_atom(bool sw)
 
 	return false;
 }
-#ifdef __cplusplus
-}
-#endif

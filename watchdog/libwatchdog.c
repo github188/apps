@@ -7,9 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef __cplusplus
-extern "C" {
-#endif	
+
 #include "libwatchdog.h"
 
 //#include "sio_watchdog.h"
@@ -158,8 +156,5 @@ int main ( int argc, char *argv[] )
 	
 	close ( fd );
 	return 0;
-}
-#endif
-#ifdef __cplusplus
 }
 #endif

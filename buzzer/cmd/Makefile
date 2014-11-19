@@ -6,13 +6,13 @@ endif
 all: buzzer-ctl libbuzzer.a libbuzzer.so
 
 buzzer-ctl:$(OBJECTS) libbuzzer.a
-	gcc $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^
 ifneq ($(STRIP),)
 	$(STRIP) $@
 endif
 
 libbuzzer.so: libbuzzer.c
-	gcc $(CFLAGS) -fPIC -shared -o $@ $^
+	$(CC) $(CFLAGS) -fPIC -shared -o $@ $^
 ifneq ($(STRIP),)
 	$(STRIP) $@
 endif

@@ -5,9 +5,6 @@
 #include <sys/sem.h>
 #include <errno.h>
 #include <string.h>
-#ifdef __cplusplus
-extern "C" {
-#endif	
 
 #include "libdiskpw.h"
 #include "../daemon/common.h"
@@ -54,7 +51,7 @@ int p(int semid)
 	return 0;
 }
 
-int v(int semid) 
+int v(int semid)
 {
 	struct sembuf sem_v;
 	sem_v.sem_num = 0;
@@ -73,7 +70,7 @@ int diskpw_init(void)
 {
 	if (initalized)
 		return 0;
-	
+
 	int shmid;
 	key_t shmkey;
 	struct shmid_ds ds;
@@ -88,16 +85,16 @@ int diskpw_init(void)
 	if (shmid == -1) {
 		return -1;
 	}
-	
+
 	addr = (shm_t *)shmat(shmid, 0, 0);
 	if (addr == (shm_t *)-1) {
 		return -1;
 	}
-	
+
 	if (shmctl(shmid, IPC_STAT, &ds) < 0) {
 		return -1;
 	}
-	
+
 
 	if (addr->shm_head.magic != MAGIC) {
 		return -1;
@@ -129,7 +126,7 @@ int diskpw_set(int id, enum DISKPW_STATUS mode, int seconds)
 
 	if (seconds > SECONDS_MAX)
 		seconds = SECONDS_MAX;
-	
+
 	POWER_CHECK_INIT();
 	if (addr->sys & SYS_S3U) {
 		p(semid);
@@ -151,14 +148,11 @@ int diskpw_set(int id, enum DISKPW_STATUS mode, int seconds)
 		if (seconds > 0)
 			pic_reset_timer(seconds);
 		pic_reset_hd(id - 1);
-		
+
 		v(semid);
 		return 0;
 	} else {
 		return -1;
-	} 
-}
-#endif
-#ifdef __cplusplus
+	}
 }
 #endif
