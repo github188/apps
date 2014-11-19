@@ -135,7 +135,7 @@ int i2c_write_diskpw(int mode)
 
 int i2c_diskpw_set(int disk_id, int mode)
 {
-	int old = 0, new = 0;
+	int old = 0, new_stat = 0;
 	if (disk_id < 0 || disk_id > 16)
 		return PERR_NODEV;
 	if (mode != I2C_DISKPW_ON && mode != I2C_DISKPW_OFF)
@@ -146,11 +146,11 @@ int i2c_diskpw_set(int disk_id, int mode)
 	}
 	
 	if (mode == I2C_DISKPW_ON)
-		new = old | (1 << (disk_id -1));
+		new_stat = old | (1 << (disk_id -1));
 	else 
-		new = old & ~(1 << (disk_id -1));
+		new_stat = old & ~(1 << (disk_id -1));
 	
-	if (i2c_write_diskpw(new) < 0)
+	if (i2c_write_diskpw(new_stat) < 0)
 		return PERR_IOERR;
 	
 	return PERR_SUCCESS;

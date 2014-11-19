@@ -6,8 +6,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "sysled.h"
 #define GPIO_BASE_ADDR (0x500)
-
 #define GPIO_VALUE(fd, base, op, data) \
 { \
 	lseek(fd, (base), SEEK_SET); \

@@ -4,19 +4,20 @@
 #include <signal.h>
 #include <time.h>
 #include <getopt.h>
+#include <string.h>
 
 #include "libdiskpw.h"
 
 struct option longopts[] = {
 	{"index",		1, NULL, 'i'},
-	{"mode", 		1, NULL, 'm'},
+	{"mode",		1, NULL, 'm'},
 	{"delay",		1, NULL, 'd'},
 	{0,0,0,0}
 };
 
 int idx = 0;
 int delay = 0;
-int mode = POWER_RESET;
+enum DISKPW_STATUS  mode = POWER_RESET;
 void usage()
 {
 	fprintf(stderr, "disk_reset --index|-i <idx> [--delay|-d <seconds>]\n"
@@ -52,7 +53,7 @@ int parser(int argc, char *argv[])
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -64,12 +65,12 @@ int main(int argc, char *argv[])
 		usage();
 		return -1;
 	}
-	
+
 	if (idx > diskpw_get_num() || idx < 1) {
 		fprintf(stderr, "input idx error.\n");
 		return -1;
 	}
-	
+
 	if (diskpw_init() < 0) {
 		fprintf(stderr, "disk power init failed.\n");
 		return -1;

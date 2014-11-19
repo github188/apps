@@ -4,7 +4,7 @@ ifdef only-interface
 	CFLAGS += -DONLY_INTERFACE
 endif
 
-all: led-ctl disk_reset libled.a libled.so libdiskpw.a libdiskpw.so
+all: led-ctl disk_reset libled.a libled.so libdiskpw.a libdiskpw.so sysled
 
 led-ctl: $(OBJECTS) libled.a
 	$(CC) $(CFLAGS) -o $@ $^
@@ -18,6 +18,12 @@ ifneq ($(STRIP),)
 	$(STRIP) $@
 endif
 
+
+sysled : sysled.o ../daemon/sysled.o
+	$(CC) $(CFLAGS) -o $@ $^
+ifneq ($(STRIP),)
+	$(STRIP) $@
+endif
 
 libled.so: libled.c ../daemon/sysled.c ../../pic_ctl/pic_ctl.c
 	$(CC) $(CFLAGS) -fPIC -shared -o $@ $^
@@ -39,4 +45,4 @@ libdiskpw.a: libdiskpw.o ../../pic_ctl/pic_ctl.c
 	ar -rcs $@ $^ pic_ctl.o
 
 clean:
-	rm -rf *.o led-ctl *.a *.so disk_reset
+	rm -rf *.o led-ctl *.a *.so disk_reset sysled

@@ -1,6 +1,10 @@
 #ifndef __DISKPW_H
 #define __DISKPW_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define I2C_CONF_DISKPW (0x22)
 
 
@@ -368,6 +372,8 @@ static inline __s32 i2c_smbus_block_process_call(int file, __u8 command,
 
 #endif /* LIB_I2CDEV_H */
 
-
+#ifdef __cplusplus
+}
+#endif	
 
 #endif // TEST__H__
