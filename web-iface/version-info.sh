@@ -24,7 +24,7 @@ get_hostname()
 get_ipaddr()
 {
 	#echo "$(sudo ifconfig eth0 | grep 'inet addr' | awk -F':' '{print $2}' | awk '{print $1}' | tr '\n' '\0')"
-	echo "$(sudo ip addr show dev eth0 | grep inet | grep -v inet6 | awk -F / '{print $2}')"
+	echo "$(sudo ip addr show dev eth0 | grep inet | grep -v inet6|awk '{print $2}' | awk -F / '{print $1}')"
 }
 
 get_git_branch()
