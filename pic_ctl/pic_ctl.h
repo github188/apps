@@ -1,6 +1,10 @@
 #ifndef PIC_CTL_H
 #define PIC_CTL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 #include <stdint.h>
 #include "pic_reg.h"
 
@@ -46,5 +50,8 @@ int pic_start_watchdog(void);
 int pic_stop_watchdog(void);
 int pic_reset_timer(int sec);
 int pic_reset_hd(int idx);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

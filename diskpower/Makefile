@@ -1,10 +1,10 @@
 all: diskpower-ctl
 
 %.o : %.c %.h
-	gcc $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 diskpower-ctl: diskpower-ctl.o diskpower.o
-	gcc -o $@ $^
+	$(CC) -o $@ $^
 ifneq ($(STRIP),)
 	$(STRIP) $@
 endif

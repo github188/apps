@@ -1,6 +1,10 @@
 #ifndef LIBLED__H__
 #define LIBLED__H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum LED_STATUS {
 	LED_ON			= 0x01,
 	LED_OFF			= 0x02,
@@ -8,6 +12,7 @@ enum LED_STATUS {
 	LED_BLINK_FAST	        = 0x04,
 	LED_BLINK_NORMAL	= 0x05,
 	LED_BLINK_SLOW		= 0x06,
+	LED_NULL		= 0x10,
 };
 
 int led_init(void);
@@ -34,5 +39,8 @@ int diskled_get_all(enum LED_STATUS *sts_array, int size);
 int sysled_set(enum LED_STATUS sts);
 int sysled_get(enum LED_STATUS *sts);
 int sysled_get_count(void);
-#endif // LIBLED__H__
 
+#ifdef __cplusplus
+}
+#endif
+#endif // LIBLED__H__

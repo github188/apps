@@ -1,6 +1,9 @@
 #ifndef __JW_WATCHDOG_H__
 #define __JW_WATCHDOG_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif	
 /*
  * Enable the watchdog with default 255s as timeout value
  * The timeout can be modified by watchdog_set_timeout() function,
@@ -32,6 +35,9 @@ int watchdog_set_timeout ( unsigned char timeout );
  * Returns 0 on suceess; otherwise returns an negtive value.
 */
 int watchdog_feed ( void );
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

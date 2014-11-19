@@ -61,7 +61,7 @@ void print_help(void)
 int parse_args(int argc, char **argv)
 {
 	int c;
-	
+
 	while ((c = getopt_long(argc, (char *const *)argv,  short_options,
 					long_options, NULL)) != -1) {
 		switch (c) {
@@ -99,7 +99,7 @@ int parse_args(int argc, char **argv)
 int main(int argc, char *argv[])
 {
 	int old = 0;
-	int new = 0;
+	int new_stat = 0;
 	int stats = 0;
 	static int semid;
 	key_t semkey;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
 	if (parse_args(argc, argv) < 0) {
 		return -1;
-	}	
+	}
 	if ((id <= 0 || id > 16) && (col <= 0 || col > 4))  {
 		fprintf(stderr, "invalid input\n");
 		return -1;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 		sem_u.val = 1;
 		semctl(semid, 0, SETVAL, sem_u);
 	}
-	
+
 	d_p(semid);
 	if (i2c_init_diskpw() < 0) {
 		fprintf(stderr, "i2c init failed.\n");
@@ -158,17 +158,17 @@ int main(int argc, char *argv[])
 
 		if (mode == I2C_DISKPW_ON) {
 			if (col)
-				new = old | (0xf << ((col-1)*4)) ;
+				new_stat = old | (0xf << ((col-1)*4)) ;
 			else
-				new = old | (1 << (id-1));
-		
+				new_stat = old | (1 << (id-1));
+
 		} else {
 			if (col)
-				new = old & ~(0xf << (col-1)*4);
+				new_stat = old & ~(0xf << (col-1)*4);
 			else
-				new = old & ~(1 << (id-1));
+				new_stat = old & ~(1 << (id-1));
 		}
-		if (i2c_write_diskpw(new) < 0) {
+		if (i2c_write_diskpw(new_stat) < 0) {
 			fprintf(stderr, "i2c write failed.\n");
 			d_v(semid);
 			return -1;
@@ -184,12 +184,12 @@ int main(int argc, char *argv[])
 			d_v(semid);
 			return -1;
 		}
-	
+
 		stats = (old & (1 << (id-1))) == 0 ? I2C_DISKPW_OFF :
 			I2C_DISKPW_ON;
-		new = old & ~(1 << (id-1));
-		
-		if (i2c_write_diskpw(new) < 0) {
+		new_stat = old & ~(1 << (id-1));
+
+		if (i2c_write_diskpw(new_stat) < 0) {
 			fprintf(stderr, "i2c reset failed.\n");
 			d_v(semid);
 			return -1;
@@ -205,13 +205,13 @@ int main(int argc, char *argv[])
 			d_v(semid);
 			return -1;
 		}
-		
+
 		if (stats == I2C_DISKPW_ON)
-			new = old | (1 << (id-1));
+			new_stat = old | (1 << (id-1));
 		else
-			new = old & ~(1 << (id-1));
-		
-		if (i2c_write_diskpw(new) < 0) {
+			new_stat = old & ~(1 << (id-1));
+
+		if (i2c_write_diskpw(new_stat) < 0) {
 			fprintf(stderr, "i2c reset failed.\n");
 			d_v(semid);
 			return -1;

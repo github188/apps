@@ -1,16 +1,16 @@
 all: watchdog libwatchdog.a libwatchdog.so
 
 %.o : %.c
-	gcc $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 watchdog: watchdog.o libwatchdog.a
-	gcc -o $@ $^
+	$(CC) -o $@ $^
 ifneq ($(STRIP),)
 	$(STRIP) $@
 endif
 
 libwatchdog.so: libwatchdog.c
-	gcc $(CFLAGS) -fPIC -shared -o $@ $^
+	$(CC) $(CFLAGS) -fPIC -shared -o $@ $^
 ifneq ($(STRIP),)
 	$(STRIP) $@
 endif
