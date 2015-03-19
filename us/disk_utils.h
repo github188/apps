@@ -65,8 +65,7 @@ struct us_disk_pool {
 	struct us_disk disks[MAX_SLOT];
 };
 
-void disk_get_smart_info(const char *dev, struct disk_info *info);
-int disk_get_info(const char *dev, struct disk_info *info);
+int disk_get_smart_info(const char *dev, struct disk_info *info);
 int disk_get_raid_info(const char *dev, struct disk_md_info *i);
 void disk_set_fail(const char *dev);
 int disk_get_fail(const char *dev);

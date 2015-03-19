@@ -36,7 +36,7 @@ extern regex_t udev_md_regex;
 extern regex_t udev_dom_disk_regex;
 extern regex_t ata_disk_slot_regex;
 
-extern int us_prewarn_flag;
+int us_prewarn_flag = 0;
 
 struct us_disk_pool us_dp;
 struct list _g_slot_map_list;
@@ -316,11 +316,10 @@ static void do_update_disk(struct us_disk *disk, int op)
 	disk->is_fail = disk_get_fail(dev);
 
 	if (op & DISK_UPDATE_SMART) {
-		if (disk_get_info(dev, &disk->di) < 0) {
+		if (disk_get_smart_info(dev, &disk->di) < 0) {
 			clog(LOG_ERR,
-			     "%s: get disk smart info failed\n", __func__);
+			     "%s: get disk smartinfo failed\n", __func__);
 		}
-		disk_get_smart_info(dev, &disk->di);
 	}
 	if (op & DISK_UPDATE_RAID) {
 		if (disk_get_raid_info(dev, &disk->ri) < 0) {
@@ -416,6 +415,12 @@ static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
 	}
 
 	do_update_disk(disk, DISK_UPDATE_RAID | DISK_UPDATE_SMART | DISK_UPDATE_STATE);
+
+	if (us_prewarn_flag) {
+		disk->di.wi.max_map_cnt = disk->di.size/1000000/512;
+	} else {
+		disk->di.wi.max_map_cnt = -1;
+	}
 }
 
 static void remove_disk(struct us_disk_pool *dp, const char *dev)
@@ -555,10 +560,8 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 
 	pos += snprintf(pos, end - pos, "{ ");
 	pos += snprintf(pos, end - pos, "\"slot\":\"0:%u\"", disk->slot);
-	pos += snprintf(pos, end - pos, "%s\"model\":\"%s\"", delim,
-	                di->model);
-	pos += snprintf(pos, end - pos, "%s\"serial\":\"%s\"", delim,
-	                di->serial);
+	pos += snprintf(pos, end - pos, "%s\"model\":\"%s\"", delim, di->model);
+	pos += snprintf(pos, end - pos, "%s\"serial\":\"%s\"", delim, di->serial);
 	pos += snprintf(pos, end - pos, "%s\"firmware\":\"%s\"", delim,
 	                di->firmware);
 	pos += snprintf(pos, end - pos, "%s\"capacity\":%llu", delim,
@@ -588,25 +591,18 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 					disk->dev_node);
 
 	if (is_detail) {
-		pos += snprintf(pos, end - pos, "%s\"bus_type\": \"SATA\"",
-		                delim);
-		pos += snprintf(pos, end - pos, "%s\"rpm\":7200",
-		                delim);
-		pos += snprintf(pos, end - pos, "%s\"wr_cache\": \"enable\"",
-		                delim);
-		pos += snprintf(pos, end - pos, "%s\"rd_ahead\": \"enable\"",
-		                delim);
-		pos += snprintf(pos, end - pos, "%s\"standby\":0",
-		                delim);
-		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"",
-		                delim);
-		if (us_prewarn_flag) {
-			pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
-		               	delim, di->wi.mapped_cnt);
+		pos += snprintf(pos, end - pos, "%s\"bus_type\": \"SATA\"", delim);
+		pos += snprintf(pos, end - pos, "%s\"rpm\":7200", delim);
+		pos += snprintf(pos, end - pos, "%s\"wr_cache\": \"enable\"", delim);
+		pos += snprintf(pos, end - pos, "%s\"rd_ahead\": \"enable\"", delim);
+		pos += snprintf(pos, end - pos, "%s\"standby\":0", delim);
+		pos += snprintf(pos, end - pos, "%s\"cmd_queue\": \"enable\"", delim);
+		pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"%u\"",
+				delim, di->wi.mapped_cnt);
+		if (di->wi.max_map_cnt != -1) {
 			pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"%u\"",
-		               	delim, di->wi.max_map_cnt);
+					delim, di->wi.max_map_cnt);
 		} else {
-			pos += snprintf(pos, end - pos, "%s\"mapped_cnt\": \"-1\"",	delim);
 			pos += snprintf(pos, end - pos, "%s\"max_map_cnt\": \"-1\"", delim);
 		}
 		pos += snprintf(pos, end - pos, "%s\"smart_attr\":{", delim);
@@ -623,11 +619,9 @@ void us_dump_disk(int fd, const struct us_disk *disk, int is_detail)
 		pos += snprintf(pos, end - pos,
 		                "%s\"uncorrectable\":%llu", delim,
 		                (unsigned long long)di->si.uncorrectable_sectors);
-		pos += snprintf(pos, end - pos, "%s\"power_on_hours\":%llu",
-		                delim,
+		pos += snprintf(pos, end - pos, "%s\"power_on_hours\":%llu", delim,
 		                (unsigned long long)di->si.power_on / 3600 / 1000);
-		pos += snprintf(pos, end - pos, "%s\"temperature\":%.0f",
-		                delim,
+		pos += snprintf(pos, end - pos, "%s\"temperature\":%.0f", delim,
 		                di->si.temperature / 1000.0);
 		pos += snprintf(pos, end - pos, "}");
 	}

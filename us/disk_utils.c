@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdint.h>
@@ -26,7 +27,7 @@ static void smart_cb(SkDisk *d, const SkSmartAttributeParsedData *a, void *arg)
 
 	switch (a->pretty_unit) {
 	case SK_SMART_ATTRIBUTE_UNIT_MKELVIN:
-		if (strstr(a->name, "temperature") != NULL) {
+		if (!strcmp(a->name, "temperature-celsius-2")) {
 			attr->temperature = a->pretty_value - 273150;
 		}
 		break;
@@ -34,12 +35,12 @@ static void smart_cb(SkDisk *d, const SkSmartAttributeParsedData *a, void *arg)
 		if (!strcmp(a->name, "spin-up-time"))
 			set_value(&attr->spin_up, a->pretty_value);
 
-		else if (strstr(a->name, "power-on") != NULL)
+		else if (!strcmp(a->name, "power-on-hours"))
 			set_value(&attr->power_on, a->pretty_value);
 
 		break;
 	case SK_SMART_ATTRIBUTE_UNIT_SECTORS:
-		if (!strcmp(a->name, "reallocate-sector-count"))
+		if (!strcmp(a->name, "reallocated-sector-count"))
 			set_value(&attr->reallocate_sectors, a->pretty_value);
 
 		else if (!strcmp(a->name, "current-pending-sector"))
@@ -56,10 +57,11 @@ static void smart_cb(SkDisk *d, const SkSmartAttributeParsedData *a, void *arg)
 	}
 }
 
-void disk_get_smart_info(const char *dev, struct disk_info *info)
+int disk_get_smart_info(const char *dev, struct disk_info *info)
 {
 	SkDisk *d = NULL;
-	int ret;
+	int ret = 0;
+	const SkIdentifyParsedData *ipd;
 	SkBool avail;
 	SkBool good;
 
@@ -68,43 +70,14 @@ void disk_get_smart_info(const char *dev, struct disk_info *info)
 
 	ret = sk_disk_open(dev, &d);
 	if (ret < 0)
-		return;
-	ret = sk_disk_smart_is_available(d, &avail);
-	if (ret < 0 || avail == 0)
-		goto finish;
-
-	ret = sk_disk_smart_read_data(d);
-	if (ret < 0)
-		goto finish;
-
-	info->is_smart_avail = 1;
-	if ((ret = sk_disk_smart_status(d, &good)) < 0 ||
-	    good == 0)
-		info->si.health_good = 0;
-	else
-		info->si.health_good = 1;
-	sk_disk_smart_parse_attributes(d, smart_cb, &info->si);
-finish:
-	sk_disk_free(d);
-}
-
-int disk_get_info(const char *dev, struct disk_info *info)
-{
-	SkDisk *d = NULL;
-	int ret;
-	const SkIdentifyParsedData *ipd;
-
-	ret = sk_disk_open(dev, &d);
-	if (ret < 0)
 		return ret;
 
-	if ((ret = sk_disk_get_size(d, &info->size)) < 0)
+	ret = sk_disk_get_size(d, &info->size);
+	if (ret < 0)
 		goto out;
 
-	if (info->size > 0)
-		info->wi.max_map_cnt = info->size/1000000/512;
-
-	if (sk_disk_identify_parse(d, &ipd) >= 0) {
+	ret = sk_disk_identify_parse(d, &ipd);
+	if (ret >= 0) {
 		strncpy(info->serial, ipd->serial, sizeof(info->serial));
 		info->serial[sizeof(info->serial) - 1] = '\0';
 		strncpy(info->model, ipd->model, sizeof(info->model));
@@ -116,6 +89,23 @@ int disk_get_info(const char *dev, struct disk_info *info)
 		memset(info->model, 0, sizeof(info->model));
 		memset(info->firmware, 0, sizeof(info->firmware));
 	}
+
+	ret = sk_disk_smart_is_available(d, &avail);
+	if (ret < 0 || avail == 0)
+		goto out;
+
+	ret = sk_disk_smart_read_data(d);
+	if (ret < 0)
+		goto out;
+
+	info->is_smart_avail = 1;
+	ret = sk_disk_smart_status(d, &good);
+	if (ret < 0 || good == 0)
+		info->si.health_good = 0;
+	else
+		info->si.health_good = 1;
+	sk_disk_smart_parse_attributes(d, smart_cb, &info->si);
+
 out:
 	sk_disk_free(d);
 	return ret;
