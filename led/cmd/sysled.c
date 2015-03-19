@@ -13,7 +13,7 @@
 
 void print_help(void)
 {
-	fprintf(stderr, "Usage: sas_sysled <on|off>\n");
+	fprintf(stderr, "Usage: sysled [on|off]\n");
 }
 
 int main(int argc, char *argv[])
@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
 	if (!strcmp(argv[1], "off")) {
 		return sb_gpio28_set(false);
 	}
+
+	print_help();
 
 	return ARGIVALID;
 }
