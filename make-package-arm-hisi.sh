@@ -141,7 +141,6 @@ pkg_kernel()
 pkg_all()
 {
 	echo "packging all ..."
-	cp jw-storage-install-guide.txt $PKG_DIR/
 	cd /tmp
 	tar jcf /tmp/$PKG_STORAGE ./jw-storage-${VERSION}
 	rm -fr ./jw-storage-${VERSION}

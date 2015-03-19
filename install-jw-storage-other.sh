@@ -45,5 +45,6 @@ if ! echo $PYTHONHOME | grep -q '/usr/local/lib/python2.6'; then
 fi
 
 echo ""
-echo -e "\033[0;35;1mPackge install OK, please reboot.\033[0m"
+echo -e "\033[0;35;1mPackge install OK.\033[0m"
+echo -e "\033[0;35;1mPlease reboot, and then run script: jw-other-start.sh startup raid manage system.\033[0m"
 echo ""
