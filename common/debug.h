@@ -23,8 +23,8 @@ __BEGIN_DECLS
 void set_dbgstamp(bool stamp);
 bool get_dbgstamp(void);
 
-#ifdef NDEBUG
-/* NDEBUG: turn off */
+#ifndef DEBUG
+/* NOT DEFINE DEBUG: turn off */
 #define DBG_INSERT(...)		__ASSERT_VOID_CAST(0)
 #define DBGP(fmt, ...)		__ASSERT_VOID_CAST(0)
 #define DBGE(fmt, ...)		__ASSERT_VOID_CAST(0)

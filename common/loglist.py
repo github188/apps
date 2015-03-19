@@ -20,8 +20,6 @@ from os.path import join, getsize
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-os.chdir(os.path.dirname(sys.argv[0]))
-#~ Out_Log_PATH = "/var/www/log"
 LOG_FILE = "/opt/log/jw-log.db"
 LOG_PATH = os.path.dirname(LOG_FILE)
 if os.path.exists(LOG_PATH) == False:
@@ -34,7 +32,7 @@ def Export(ret = True, msg = ''):
 	print json.dumps(ret_msg, encoding="utf-8", ensure_ascii=False)
 	sys.exit(-1)
 
-#~ 执行系统命令并输出结果
+# 执行系统命令并输出结果
 def SYSTEM_OUT(com):
 	p = subprocess.Popen(com, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	s = p.stdout.readline()
@@ -156,12 +154,12 @@ def __List__(value):
 		res = cu.fetchall()
 		json_info = {}
 		json_info['id'] = res[0][0]
-		json_info['date'] = res[0][1]
-		json_info['user'] = res[0][2]
-		json_info['module'] = res[0][3]
-		json_info['category'] = res[0][4]
-		json_info['event'] = res[0][5]
-		json_info['content'] = res[0][6]
+		json_info['date'] = str(res[0][1])
+		json_info['user'] = str(res[0][2])
+		json_info['module'] = str(res[0][3])
+		json_info['category'] = str(res[0][4])
+		json_info['event'] = str(res[0][5])
+		json_info['content'] = str(res[0][6])
 	else:
 		sqlwhere = ''
 		if value.module_set != "":
@@ -194,12 +192,12 @@ def __List__(value):
 		for line in res:
 			out = list_info()
 			out.id = line[0]
-			out.date = line[1]
-			out.user = line[2]
-			out.module = line[3]
-			out.category = line[4]
-			out.event = line[5]
-			out.content = line[6]
+			out.date = str(line[1])
+			out.user = str(line[2])
+			out.module = str(line[3])
+			out.category = str(line[4])
+			out.event = str(line[5])
+			out.content = str(line[6])
 			list.append(out.__dict__)
 		json_info['total'] = count
 		json_info['rows'] = list

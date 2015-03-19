@@ -1,16 +1,20 @@
 CROSS_COMPILE =
 
-CFLAGS += -Dclog_level=CL_NONE -DNDEBUG -Wstrict-aliasing=0 -I/usr/include/libxml2
-ifdef no-disk-prewarn
-CFLAGS += -DNO_DISK_PREWARN
-endif
+CFLAGS += -Dclog_level=CL_NONE -DNDEBUG -Wstrict-aliasing=0
 LDFLAGS =
 LDLIBS =
-uslibs = -lev -ludev -latasmart -lxml2  -L../common -llog -lsqlite3 ../monitor/libsysmon.a -ljson
-#progs = us_d mon_test us_cmd
+uslibs = -lev -ludev -latasmart -lxml2  -L../common -llog -lsqlite3 -ljson
+ifndef isolated-storage
+uslibs += ../monitor/libsysmon.a
+endif
 progs = us_d us_cmd
 
-us_modules = us_regex.o us_ev.o us_mon.o us_disk.o us_cmd.o us_cl.o modules.o us_prewarn.o
+us_modules = us_regex.o us_ev.o us_mon.o us_disk.o us_cmd.o us_cl.o modules.o
+ifndef no-disk-prewarn
+us_modules += us_prewarn.o
+else
+CFLAGS += -DNO_DISK_PREWARN 
+endif
 us_utils = disk_utils.o safe_popen.o os_utils.o
 
 us_cmd-objs = us_map.o fd_map.o

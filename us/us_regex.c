@@ -6,8 +6,8 @@
 #define REG_UDEV_USB	"/usb[0-9]+/"
 
 #define REG_MD_DISK_INFO 	\
-	"\\s*Array UUID \\s*:\\s*(([[:xdigit:]]+:)+[[:xdigit:]]+).*"	\
-	"\\s*Device Role\\s*:\\s*([[:alpha:]]+)\\s*"
+	"Array UUID : (([[:xdigit:]]+:)+[[:xdigit:]]+).*"	\
+	"Device Role : ([[:alpha:]]+)"
 
 /**
  * 处理ata槽位号

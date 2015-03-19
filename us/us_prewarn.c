@@ -21,7 +21,7 @@ extern struct ev_loop *us_main_loop;
 
 static struct sockaddr_nl src_addr, dest_addr;
 
-int us_prewarn_flag = 0;
+extern int us_prewarn_flag;
 
 int nl_open(void)
 {

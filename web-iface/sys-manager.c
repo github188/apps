@@ -15,9 +15,11 @@ struct cmd_map cmd_map[] = {
 	{"configbak", exec_new_cmd},
 	{"web", exec_new_cmd},
 #endif
+#ifndef OTHER_HARDWARE
 	{"network", exec_new_cmd},
 	{"sysconfig", exec_new_cmd},
 	{"system", exec_new_cmd},
+#endif
 	{"log", log_main},
 	{"loglist", exec_new_cmd},
 	{"version", version_main},
@@ -46,9 +48,11 @@ void usage()
 	printf("      configbak   - 配置文件自动备份接口\n");
 	printf("      web         - WEB站点设置\n");	
 #endif
+#ifndef OTHER_HARDWARE
 	printf("      network     - 网络管理\n");
 	printf("      sysconfig   - 配置系统参数\n");
 	printf("      system      - 系统信息、系统状态、系统参数、告警\n");
+#endif
 	printf("      log         - 日志\n");
 	printf("      loglist     - 获取日志\n");
 	printf("      version     - 查看版本号\n");

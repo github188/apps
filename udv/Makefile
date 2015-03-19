@@ -1,8 +1,10 @@
-CC=gcc
 objects=libudv.o list.o
 
 libudv.a : $(objects)
-	ar -rcs libudv.a $(objects)
+	$(AR) -rcs libudv.a $(objects)
+
+%.o:%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 all: libudv.a
 

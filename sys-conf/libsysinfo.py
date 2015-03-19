@@ -285,7 +285,7 @@ def __get_stat_disk(mod):
 		_disk_list = json.loads(commands.getoutput('sys-manager disk --list'))
 		for _disk in _disk_list['rows']:
 			if _disk['state'] == 'Fail':
-				_stat['value'] = _stat['value'] + '槽位号%s的磁盘故障 ' % _disk['slot']
+				_stat['value'] = _stat['value'] + '槽位号%s的磁盘故障 ' % str(_disk['slot'])
 	except:
 		pass
 		_stat['value'] = '无法获取'
@@ -303,11 +303,11 @@ def __get_stat_vg(mod):
 		_vg_list = json.loads(commands.getoutput('sys-manager vg --list'))
 		for _vg in _vg_list['rows']:
 			if _vg['raid_state'] == 'fail':
-				_stat['value'] = _stat['value'] + '卷组%s失效 ' % _vg['name']
+				_stat['value'] = _stat['value'] + '卷组%s失效 ' % str(_vg['name'])
 			elif _vg['raid_state'] == 'degrade':
-				_stat['value'] = _stat['value'] + '卷组%s降级 ' % _vg['name']
+				_stat['value'] = _stat['value'] + '卷组%s降级 ' % str(_vg['name'])
 			elif _vg['raid_state'] == 'rebuild':
-				_stat['value'] = _stat['value'] + '卷组%s重建 ' % _vg['name']
+				_stat['value'] = _stat['value'] + '卷组%s重建 ' % str(_vg['name'])
 	except:
 		pass
 		_stat['value'] = '无法获取'

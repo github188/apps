@@ -439,7 +439,7 @@ def __md_create(raid_name, level, chunk, slots):
 	for disk_info in disk_info_list:
 		if disk_info['slot'] in slot_list:
 			if disk_info['state'] != 'Free' and disk_info['state'] != 'Invalid':
-				return False, "磁盘 %s 不是空闲盘或无效RAID盘" % disk_info['slot']
+				return False, "磁盘 %s 不是空闲盘或无效RAID盘" % str(disk_info['slot'])
 
 			slot_list.remove(disk_info['slot'])
 	
@@ -592,7 +592,7 @@ def __md_expand(raid_name, slots):
 	for disk_info in disk_info_list:
 		if disk_info['slot'] in slot_list:
 			if disk_info['state'] != 'Free' and disk_info['state'] != 'Invalid':
-				return False, "磁盘 %s 不是空闲盘或无效RAID盘" % disk_info['slot']
+				return False, "磁盘 %s 不是空闲盘或无效RAID盘" % str(disk_info['slot'])
 
 			slot_list.remove(disk_info['slot'])
 	
