@@ -28,7 +28,7 @@ sync_apps()
 	
 	# 删除程序源码, 中间文件, 配置文件
 	echo "remove source ..."
-	#rm -f $tmp_dir/*.py
+	rm -f $tmp_dir/*.py
 	chmod +x $tmp_dir/*
 	chmod -x $tmp_dir/*.pyc
 	
