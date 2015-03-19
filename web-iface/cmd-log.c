@@ -24,7 +24,8 @@ struct option log_options[] = {
 	{"end",		required_argument,	NULL,	'e'},
 	{"get-next",	no_argument,		NULL,	'n'},
 	{"amount-per-page",	required_argument,	NULL,	'p'},
-	{"session-id",	required_argument,	NULL,	's'}
+	{"session-id",	required_argument,	NULL,	's'},
+	{0, 0, 0, 0}
 };
 
 enum {
@@ -37,10 +38,7 @@ enum {
 void log_usage()
 {
 	printf(_T("\nlog\n\n"));
-	printf(_T("Usage: --insert [--user <name>] --module <name> --category <auto|manual> --event <event_info> --content <content_text>\n"));
-	printf(_T("             module: Web,Disk,VG,UDV,iSCSI,NAS,SysConf\n"));
-	printf(_T("             category: Auto,Manual\n"));
-	printf(_T("             event: Info,Warning,Error\n"));
+	printf(_T("Usage: --insert [--user <name>] --module [Web|Disk|VG|UDV|iSCSI|NAS|SysConf] --category [Auto|Manual] --event [Info|Warning|Error] --content <content_text>\n"));
 	printf(_T("       --get-quantity\n"));
 	printf(_T("       --get --begin <rec_start> --end <rec_end>\n"));
 	printf(_T("       --get-next --amount-per-page <num> --session-id <random_number>\n\n"));
@@ -164,7 +162,7 @@ int log_get_next()
 
 int log_main(int argc, char *argv[])
 {
-	char c;
+	int c;
 
 	// init basic
 	g_ins_user[0] = '\0';
