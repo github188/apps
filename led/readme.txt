@@ -8,7 +8,7 @@
 		i2c_node=`basename $sys_dir`
 	c.在/dev下建一个软链接i2c-i801
 		cd /dev
-		ls -sfn $i2c_node i2c-i801
+		ln -sfn $i2c_node i2c-i801
 	d.启动后台程序led-ctl-daemon -t <hardware-type>
 		hardware-type:
 			3U16-STANDARD
