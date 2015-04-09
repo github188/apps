@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ata2slot>
-	<map ata_lower="6" ata_upper="6" slot_lower="1"/>
-	<map ata_lower="7" ata_upper="7" slot_lower="2"/>
-	<map ata_lower="12" ata_upper="12" slot_lower="3"/>
-	<map ata_lower="11" ata_upper="11" slot_lower="4"/>
-	<map ata_lower="5" ata_upper="5" slot_lower="5"/>
-	<map ata_lower="8" ata_upper="8" slot_lower="6"/>
-	<map ata_lower="9" ata_upper="9" slot_lower="7"/>
-	<map ata_lower="10" ata_upper="10" slot_lower="8"/>
+	<map hw_addr="5:0:0:0" slot="1"/>
+	<map hw_addr="6:0:0:0" slot="2"/>
+	<map hw_addr="11:0:0:0" slot="3"/>
+	<map hw_addr="10:0:0:0" slot="4"/>
+	<map hw_addr="4::0:0:0" slot="5"/>
+	<map hw_addr="7:0:0:0" slot="6"/>
+	<map hw_addr="8:0:0:0" slot="7"/>
+	<map hw_addr="9:0:0:0" slot="8"/>
 </ata2slot>

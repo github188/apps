@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ata2slot>
+	<map hw_addr="0:3:0:0" slot="1"/>
+	<map hw_addr="0:0:0:0" slot="2"/>
+	<map hw_addr="0:2:0:0" slot="3"/>
+	<map hw_addr="0:1:0:0" slot="4"/>
+	<map hw_addr="3:3:0:0" slot="5"/>
+	<map hw_addr="3:0:0:0" slot="6"/>
+	<map hw_addr="3:2:0:0" slot="7"/>
+	<map hw_addr="3:1:0:0" slot="8"/>
+</ata2slot>

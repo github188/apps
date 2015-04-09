@@ -36,7 +36,6 @@ assemble() # arg1: md_num, arg2: disk_list
 
 	mddev=/dev/md$1
 	disks=$2
-	array_state
 	mdadm -Af $mddev $disks >/dev/null 2>&1
 	array_state=`cat /sys/block/md$1/md/array_state`
 	if [ "$array_state" = "inactive" ]; then

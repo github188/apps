@@ -300,7 +300,7 @@ void get_vg_remain(const char *vg_dev)
 
 int udv_main(int argc, char *argv[])
 {
-	int c, i;
+	int c;
 	char err_msg[256] = { 0 };
 	int ret = 0;
 

@@ -25,9 +25,8 @@
 typedef struct slot_map slot_map_t;
 struct slot_map {
 	struct list slot_map_list;
-	int ata_lower;
-	int ata_upper;
-	int slot_lower;
+	char hw_addr[16];
+	int slot;
 };
 
 extern regex_t udev_sd_regex;
@@ -47,89 +46,6 @@ static int is_md(const char *path)
 	return regexec(&udev_md_regex, path, 0, NULL, 0) == 0;
 }
 
-static int is_usb(const char *path)
-{
-	int ret;
-	ret = regexec(&udev_usb_regex, path, 0, NULL, 0);
-	return ret == 0;
-}
-
-static int is_sd(const char *path)
-{
-	int ret;
-	ret = regexec(&udev_sd_regex, path, 0, NULL, 0);
-	return ret == 0;
-}
-
-static int is_dom_disk(const char *path)
-{
-	int ret;
-	printf("dom path: %s\n", path);
-	ret = regexec(&udev_dom_disk_regex, path, 0, NULL, 0);
-	printf("ret = %d\n", ret);
-	return ret == 0;
-}
-
-static int is_sata_sas(const char *path)
-{
-	int ret;
-	ret = regexec(&ata_disk_slot_regex, path, 0, NULL, 0);
-	return ret == 0;
-}
-
-static int is_ds_disk(const char *path)
-{
-	return  is_sata_sas(path) && !is_usb(path) && (find_slot(path) > 0);
-}
-
-static int to_int(const char *buf, int *v)
-{
-	int i = 0;
-	char c;
-
-	*v = -1;
-
-	while ((c = *buf)) {
-		if (!isdigit(c))
-			return -1;
-		i *= 10;
-		i += c - '0';
-		buf++;
-	}
-	*v = i;
-
-	return 0;
-}
-
-static int find_ata_slot_from_path(const char *path)
-{
-	regmatch_t pmatch[2];
-	char slot_digit[4];
-
-	/*
-	 * path: ../devices/pci0000:00/0000:00:1f.2/ata3/host2/target2:0:0/2:0:0:0/block/sdb
-	 * not exisit ataX before kernel 3.4, so use hostX+1
-	 */
-	if (regexec(&ata_disk_slot_regex, path,
-	            ARRAY_SIZE(pmatch), pmatch, 0) == 0) {
-		int l = pmatch[1].rm_eo - pmatch[1].rm_so;
-		int slot;
-
-		if (l <= 0 || l > 2) {
-			/* Only deal with 00-99 slots */
-			clog(LOG_ERR, "%s: Invalidate slot\n", __func__);
-			return -1;
-		}
-		strncpy(slot_digit, &path[pmatch[1].rm_so], l);
-		slot_digit[l] = 0;
-		to_int(slot_digit, &slot);
-		return slot+1;
-	} else {
-		clog(LOG_ERR, "%s: match %s failed\n", __func__, path);
-		return -1;
-	}
-}
-
 static void slot_map_release(void)
 {
 	 struct list *ptr;
@@ -147,84 +63,117 @@ static int slot_map_init(void)
 {
 	xmlDocPtr doc;
 	xmlNodePtr node;
-	xmlChar *xmlatalower, *xmlataupper, *xmlslotlower;
+	xmlChar *xmlhwaddr, *xmlslot;
 	slot_map_t *slot_map_p;
-	int ret = -1;
+	int ret = -1, i = 0, count = 0;
 
 	init_list(&_g_slot_map_list);
 
 	if ((doc=xmlReadFile(MAP_SLOT_CONF, "UTF-8", XML_PARSE_RECOVER)) == NULL) {
-		clog(LOG_ERR, "%s: read config file %s error, file not found.\n", __func__, MAP_SLOT_CONF);
+		clog(LOG_ERR, "%s: read config file %s error, file not found.\n",
+			__func__, MAP_SLOT_CONF);
 		return -1;
 	}
-	
-	if ((node=xmlDocGetRootElement(doc)) == NULL) { 	
-		clog(LOG_ERR, "%s: get xml root node error.\n", __func__);
-		goto error_quit;
+
+	if ((node=xmlDocGetRootElement(doc)) == NULL) {
+			clog(LOG_ERR, "%s: get xml root node error.\n", __func__);
+			goto out;
 	}
 
 	node = node->xmlChildrenNode;
 
 	while (node) {
-		if ( (!xmlStrcmp(node->name, (const xmlChar *)"map")) &&
-		 ((xmlatalower=xmlGetProp(node, (const xmlChar *)"ata_lower")) != NULL) &&
-		 ((xmlataupper=xmlGetProp(node, (const xmlChar *)"ata_upper")) != NULL) &&
-		 ((xmlslotlower=xmlGetProp(node, (const xmlChar *)"slot_lower")) != NULL)
-		) {
+		if ((!xmlStrcmp(node->name, (const xmlChar *)"map")) &&
+		 ((xmlhwaddr=xmlGetProp(node, (const xmlChar *)"hw_addr")) != NULL) &&
+		 ((xmlslot=xmlGetProp(node, (const xmlChar *)"slot")) != NULL)) {
 			slot_map_p = (slot_map_t *)malloc(sizeof(slot_map_t));
 			if (!slot_map_p) {
-				clog(LOG_ERR, "%s : init slot map list error, no more memory.\n", __func__);
-				goto error_quit;
+				clog(LOG_ERR, "%s: init slot map list error, no more memory.\n", __func__);
+				goto mem_error;
 			}
 			list_add(&slot_map_p->slot_map_list, &_g_slot_map_list);
-			slot_map_p->ata_lower = atoi((const char *)xmlatalower);
-			slot_map_p->ata_upper = atoi((const char *)xmlataupper);
-			slot_map_p->slot_lower = atoi((const char *)xmlslotlower);
-			
-			xmlFree(xmlatalower);
-			xmlFree(xmlataupper);
-			xmlFree(xmlslotlower);
+			++count;
+			strncpy (slot_map_p->hw_addr, (const char *)xmlhwaddr,
+				sizeof(slot_map_p->hw_addr));
+			slot_map_p->slot = atoi((const char *)xmlslot);
+
+			xmlFree(xmlhwaddr);
 		}
 		node = node->next;
 	}
+
+	/* check config file */
+	for (i=1; i<=count; ++i) {
+		struct list *ptr;
+		slot_map_t *slot_map_p;
+		int found = 0;
+		list_for_each(ptr, &_g_slot_map_list) {
+		 	slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
+		 	if (i == slot_map_p->slot) {
+				clog(LOG_INFO, "slot:%d, hw_addr: %s\n",  slot_map_p->slot,
+					slot_map_p->hw_addr);
+				found = 1;
+		 	}
+		}
+		if (!found) {
+			clog(LOG_ERR, "%s: config file: %s is not correct.\n",
+				__func__, MAP_SLOT_CONF);
+			clog(LOG_ERR, "%s: not found config for slot %d.\n",
+				__func__, i);
+			goto mem_error;
+		}
+	}
+	
 	ret = 0;
 
-error_quit:
+out:
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 	return ret;
-}
 
-static int map_slot(int slot)
-{
-	 struct list *ptr;
-	 slot_map_t *slot_map_p;
-	 int ret = -1;
-
-	 list_for_each(ptr, &_g_slot_map_list) {
-	 	slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
-	 	if (slot_map_p->ata_lower <= slot && 
-	 			slot_map_p->ata_upper >= slot) {
-	 		ret = slot-slot_map_p->ata_lower+slot_map_p->slot_lower;
-	 		return ret;
-	 	}
-	 }
-	 return ret;
+mem_error:
+	slot_map_release();
+	goto out;
 }
 
 static int find_slot(const char *path)
 {
-	int ata_slot;
-
 	/*
-	 * 槽位号在/sys/block/sd[b-z]的链接里面
+	 * example: ../devices/pci0000:00/0000:00:1c.1/0000:09:00.0/ata11/host10/target10:0:0/10:0:0:0/block/sdc
 	 */
-	ata_slot = find_ata_slot_from_path(path);
-	if (ata_slot < 0) {
-		return -1;
-	}
+	int start = -1, end = -1, pos, count = 0;
+	char hw_addr[16] = { '\0' };
 
-	return map_slot(ata_slot);
+	struct list *ptr;
+	slot_map_t *slot_map_p;
+
+	pos = strlen(path) - 1;
+	if ('/' == path[pos])
+		--pos;
+	do {
+		if ('/' == path[pos]) {
+			++count;
+			if (2 == count)
+				end = pos - 1;
+			else if (3 == count) {
+				start = pos + 1;
+				break;
+			}
+		}
+	} while (--pos);
+
+	if (end != -1 && start != -1 && end-start+1 >= 7)
+		strncpy(hw_addr, &path[start], end-start+1);
+	else
+		return -1;
+
+	 list_for_each(ptr, &_g_slot_map_list) {
+	 	slot_map_p = list_entry(ptr, slot_map_t, slot_map_list);
+	 	if (strcmp(hw_addr, slot_map_p->hw_addr) == 0) {
+	 		return slot_map_p->slot;
+	 	}
+	 }
+	 return -1;
 }
 
 #if 0
@@ -384,18 +333,12 @@ ssize_t disk_name2slot(const char *name, char *slot)
 	return -EEXIST;
 }
 
-static void add_disk(struct us_disk_pool *dp, const char *dev, const char *path)
+static void add_disk(struct us_disk_pool *dp, const char *dev, int slot)
 {
-	int slot, i;
+	int i;
 	struct us_disk *disk;
 	size_t n;
 	extern int disk_get_size(const char *dev, uint64_t *sz);
-
-	slot = find_slot(path);
-	if (slot < 0) {
-		clog(LOG_ERR, "%s: can't find slot for %s\n", __func__, path);
-		return;
-	}
 
 	disk = &dp->disks[slot];
 	memset(disk, 0, sizeof(*disk));	// 磁盘掉线后会设置is_removed标志，需要清除
@@ -445,21 +388,25 @@ static void remove_disk(struct us_disk_pool *dp, const char *dev)
 static int us_disk_on_event(const char *path, const char *dev, const char *act)
 {
 	char cmd[128];
-	printf("%s: %s\n", dev, act);
+	int slot;
+	clog(LOG_INFO, "%s: %s\n", dev, act);
+	
 	if (is_md(path)) {
 		if (strcmp(act, MA_CHANGE) != 0 && strcmp(act, MA_ADD) != 0) {
 			sprintf(cmd, "%s %s %s", MD_SCRIPT, dev, act);
 			safe_system(cmd);
 		}
-
 		return MA_HANDLED;
 	}
 
-	if (!is_ds_disk(path))
-		return MA_NONE;
-
 	if (strcmp(act, MA_ADD) == 0) {
-		add_disk(&us_dp, dev, path);
+		slot = find_slot(path);
+		if (slot < 0) {
+			clog(LOG_ERR, "%s: can't find slot for %s\n", __func__, path);
+			return MA_NONE;
+		}
+
+		add_disk(&us_dp, dev, slot);
 
 		sprintf(cmd, "%s %s %s", DISK_SCRIPT, dev, MA_ADD);
 		safe_system(cmd);
