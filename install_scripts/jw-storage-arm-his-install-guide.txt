@@ -1,0 +1,21 @@
+                install guide for jw storage package
+
+1. Be sure login by user: "root", or other user with root Permission.
+
+2. kernel
+	拷贝kernel/objs目录下的子目录（修改过且必须编译进内核的.o文件）
+	到客户自己的内核源码树，然后正常编译内核。如果make clean清除了.o文件，
+	切记要重新拷贝进去。
+
+3. Install jw storage management package
+	执行脚本install-jw-storage-arm-hisi.sh安装raid管理系统及需要的动态库、
+	python及raid相关的内核模块。配置文件和log文件安装在/opt目录下，其他
+	文件安装在/usr/local目录下。
+	安装时需要选择对应的硬件类型来设置槽位号映射的配置文件，TDWY-2U8对应
+	客户自己的2U内置8盘位机箱，TDWY-JW-2U8对应我司的2U前置8盘位机箱，
+	TDWY-JW-3U16对应我司的3U前置16盘位机箱。
+
+4. Start jw storage management system
+	执行脚本jw-arm-hisi-start.sh启动存储管理系统，该脚本将按顺序加载raid
+	相关的内核模块，启动日志，设置raid参数，重组raid，启动raid管理。
+	请确保网络环回接口lo为up状态，raid管理进程需要使用lo通信。

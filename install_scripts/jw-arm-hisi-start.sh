@@ -1,5 +1,41 @@
 #!/bin/sh
-# for other hardware
+# for arm hisi3536 hardware
+
+mdadm -Ss
+cd /usr/local/modules
+rmmod raid456 2>/dev/null
+rmmod raid10 2>/dev/null
+rmmod raid1 2>/dev/null
+rmmod raid0 2>/dev/null
+rmmod linear 2>/dev/null
+rmmod md-mod 2>/dev/null
+rmmod async_pq.ko 2>/dev/null
+rmmod async_raid6_recov.ko 2>/dev/null
+rmmod raid6_pq.ko 2>/dev/null
+rmmod async_memcpy.ko 2>/dev/null
+rmmod async_xor.ko 2>/dev/null
+rmmod async_tx.ko 2>/dev/null
+rmmod xor.ko 2>/dev/null
+
+insmod xor.ko
+insmod async_tx.ko
+insmod async_xor.ko
+insmod async_memcpy.ko
+insmod raid6_pq.ko
+insmod async_raid6_recov.ko
+insmod async_pq.ko
+insmod md-mod.ko
+insmod linear.ko
+insmod raid0.ko
+insmod raid1.ko
+insmod raid10.ko
+insmod raid456.ko
+if [ $? -ne 0 ]; then
+	echo "raid modules insmod error."
+	cd - >/dev/null
+	exit 1
+fi
+cd - >/dev/null
 
 RAID_DIR="/var/run/raid-info"
 RAID_DIR_LOCK="${RAID_DIR}/lock"
@@ -34,6 +70,7 @@ do
 	fi
 done
 
+sys-manager vg --load-sync-prio >/dev/null
 /usr/local/bin/md-assemble.sh
 	
 # 等待md添加到tmp目录

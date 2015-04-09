@@ -76,7 +76,7 @@ sync_shared_lib()
 {
 	echo "copy shared library ..."
 
-	local shared_lib="/usr/lib/libparted*so* /usr/lib/libev*so*"
+	local shared_lib="/usr/local/lib/libparted*so* /usr/local/lib/libev*so*"
 	local tmp_dir=$TMP_DIR_STORAGE/usr/lib
 	mkdir -p $tmp_dir
 	
@@ -89,7 +89,7 @@ pkg_isolated_storage()
 
 	local pkg_dir=$PKG_DIR/usr
 	mkdir -p $pkg_dir
-	cp install-jw-storage.sh $pkg_dir/
+	cp install_scripts/install-jw-storage.sh $pkg_dir/
 	chmod +x $pkg_dir/install-jw-storage.sh
 
 	cd "$TMP_DIR_STORAGE"
@@ -137,7 +137,7 @@ pkg_kernel()
 {
 	local pkg_dir=$PKG_DIR/kernel
 	mkdir -p $pkg_dir
-	cp install-jw-kernel.sh $pkg_dir/
+	cp install_scripts/install-jw-kernel.sh $pkg_dir/
 	chmod +x $pkg_dir/install-jw-kernel.sh
 	
 	local pkg_kernel=`ls /tmp/jw-kernel-*-${ARCH}.tar.bz2 2>/dev/null`
@@ -158,7 +158,7 @@ pkg_kernel()
 pkg_all()
 {
 	echo "packging all ..."
-	cp jw-storage-install-guide.txt $PKG_DIR/
+	cp install_scripts/jw-storage-install-guide.txt $PKG_DIR/
 	cd /tmp
 	tar jcf /tmp/$PKG_STORAGE ./jw-storage-${VERSION}
 	rm -fr ./jw-storage-${VERSION}

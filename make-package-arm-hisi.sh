@@ -14,7 +14,7 @@ sync_apps()
 	local common_bin="common/*"
 	
 	# sync list
-	local bin_list="$disk_bin $udv_bin $webiface_bin $sysconf_bin $mon_bin $common_bin $web_bin jw-other-start.sh"
+	local bin_list="$disk_bin $udv_bin $webiface_bin $sysconf_bin $mon_bin $common_bin $web_bin install_scripts/jw-arm-hisi-start.sh"
 
 	local tmp_dir=$TMP_DIR_STORAGE/usr/local/bin
 	mkdir -p $tmp_dir
@@ -44,17 +44,17 @@ sync_conf()
 	local tmp_dir=$TMP_DIR_STORAGE/opt/jw-conf
 
 	mkdir -p $tmp_dir/disk
-	cp -fa us/ata2slot.xml.TDWY-3U16 $tmp_dir/disk/ata2slot.xml
+	cp -fa us/ata2slot.xml.TDWY* $tmp_dir/disk/
 }
 
 sync_tools()
 {
 	echo "copy tools ..."
 	local tools="parted"
-	local tmp_dir=$TMP_DIR_STORAGE/usr/local/bin
+	local tmp_dir=$TMP_DIR_STORAGE/usr/local/sbin
 	mkdir -p $tmp_dir
 
-	cd $ARM_HISI_BIN_DIR
+	cd $ARM_HISI_SBIN_DIR
 	cp -fa $tools $tmp_dir/
 	cd - >/dev/null
 }
@@ -78,8 +78,9 @@ pkg_isolated_storage()
 
 	local pkg_dir=$PKG_DIR/usr
 	mkdir -p $pkg_dir
-	cp install-jw-storage-other.sh $pkg_dir/
-	chmod +x $pkg_dir/install-jw-storage-*.sh
+	cp install_scripts/install-jw-storage-arm-hisi.sh $PKG_DIR/
+	cp install_scripts/jw-storage-arm-his-install-guide.txt $PKG_DIR/
+	chmod +x $PKG_DIR/install-jw-storage-*.sh
 
 	cd "$TMP_DIR_STORAGE"
 	chown -fR root:root ./*
@@ -96,7 +97,7 @@ pkg_python()
 	local pkg_dir=$PKG_DIR/usr/
 	mkdir -p $pkg_dir
 
-	local python_bin="$ARM_HISI_LIB_DIR/../bin/python2.6"
+	local python_bin="$ARM_HISI_BIN_DIR/python2.6"
 	local python_lib="$ARM_HISI_LIB_DIR/python2.6"
 
 	mkdir -p $TMP_DIR_PYTHON/usr/local/bin
@@ -120,22 +121,16 @@ pkg_python()
 
 pkg_kernel()
 {
-	local pkg_dir=$PKG_DIR/kernel
-	mkdir -p $pkg_dir
-	
-	local pkg_kernel=`ls /tmp/uImage 2>/dev/null`
-	if [ "$pkg_kernel" = "" ]; then
-		echo -e "\033[0;31;1mNot found jw kernel package in /tmp dir.\033[0m"
-		exit 1
-	fi
-	
+	echo "packaging kernel ..."
+
 	local val
-	file $pkg_kernel
-	read -p "Confirm kernel package: \"$pkg_kernel\" [y/n]: " val
+	ls -lR /tmp/kernel
+	read -p "Confirm kernel image, objs and modules?[y/n]: " val
 	if [ "$val" != "y" ]; then
 		exit 1
 	fi
-	cp $pkg_kernel $pkg_dir/
+
+	cp -fa /tmp/kernel $PKG_DIR
 }
 
 pkg_all()
@@ -191,12 +186,13 @@ if [ ! -x /tmp/mdadm ]; then
 	exit 1
 fi
 
-ARM_HISI_LIB_DIR=`arm-hisiv100nptl-linux-gcc --print-file-name libc.a`
+ARM_HISI_LIB_DIR=`arm-hisiv300-linux-gcc --print-file-name libc.a`
 ARM_HISI_LIB_DIR=`dirname $ARM_HISI_LIB_DIR`
 ARM_HISI_BIN_DIR=`dirname $ARM_HISI_LIB_DIR`/bin
+ARM_HISI_SBIN_DIR=`dirname $ARM_HISI_LIB_DIR`/sbin
 
 make clean other-hardware=1 isolated-storage=1 no-disk-prewarn=1
-make CROSS_COMPILE=arm-hisiv100nptl-linux- isolated-storage=1 no-disk-prewarn=1 other-hardware=1
+make CROSS_COMPILE=arm-hisiv300-linux- isolated-storage=1 no-disk-prewarn=1 other-hardware=1
 sync_apps
 sync_conf
 sync_tools
